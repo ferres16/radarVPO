@@ -45,11 +45,28 @@ function getDaysLeft(dateValue?: string | null) {
   return Math.ceil(msLeft / (1000 * 60 * 60 * 24));
 }
 
+function getDaysSincePublication(dateValue?: string | null) {
+  if (!dateValue) return null;
+  const publication = new Date(dateValue).getTime();
+  if (Number.isNaN(publication)) return null;
+
+  const now = Date.now();
+  const msDiff = now - publication;
+  if (msDiff < 0) return null;
+
+  return Math.floor(msDiff / (1000 * 60 * 60 * 24));
+}
+
 export default async function Home() {
   const [upcoming, news] = await Promise.all([
     api.getUpcomingAlerts().catch(() => []),
     api.getNews().catch(() => []),
   ]);
+
+  const recentUpcoming = upcoming.filter((promotion) => {
+    const daysSince = getDaysSincePublication(promotion.publishedAt ?? null);
+    return daysSince !== null && daysSince < 6;
+  });
 
   const recentNews = news.slice(0, 4);
   return (
@@ -78,14 +95,14 @@ export default async function Home() {
             <h2 className="text-xl font-bold text-[var(--ink)]">Proximas promociones (alerta 60 dias)</h2>
             <Link href="/dashboard" className="text-sm font-semibold text-[var(--green-700)]">Ver todas</Link>
           </div>
-          {upcoming.length === 0 ? (
+          {recentUpcoming.length === 0 ? (
             <article className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
-              <p className="text-sm text-[var(--ink-soft)]">No hay alertas activas ahora mismo.</p>
+              <p className="text-sm text-[var(--ink-soft)]">No hay alertas publicadas en los ultimos 6 dias.</p>
             </article>
           ) : (
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {upcoming.slice(0, 6).map((promotion) => {
+                {recentUpcoming.slice(0, 6).map((promotion) => {
                   const estimatedDate = getExpectedPublicationDate(promotion);
                   const daysLeft = estimatedDate
                     ? getDaysLeft(estimatedDate.toISOString())

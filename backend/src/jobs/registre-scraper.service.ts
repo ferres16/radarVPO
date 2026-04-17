@@ -74,8 +74,7 @@ export class RegistreScraperService {
       const pdfLinks = this.extractPdfLinks(detailHtml, entry.detailUrl);
       const publicationDate =
         entry.publishedAt ??
-        this.extractDate(rawText) ??
-        (entry.isSixtyDayAlert ? new Date() : undefined);
+        this.extractDate(rawText);
       const estimatedFromAlert =
         entry.isSixtyDayAlert && publicationDate
           ? this.addDays(publicationDate, 60)
@@ -188,6 +187,50 @@ export class RegistreScraperService {
   private parseNewsList(html: string, baseUrl: string): NewsEntry[] {
     const $ = cheerio.load(html);
     const entries: NewsEntry[] = [];
+    const seenUrls = new Set<string>();
+
+    // The Registre list renders date and link in sibling divs: .notizd + .notdcha.
+    $('.ContenidoGral')
+      .find('div.notizd')
+      .each((_, dateNode) => {
+        const dateText = $(dateNode).text().trim();
+        const publishedAt = this.extractDate(dateText);
+        const detailContainer = $(dateNode).nextAll('div.notdcha').first();
+        if (!detailContainer.length) {
+          return;
+        }
+
+        const anchor = detailContainer.find('a').first();
+        const href =
+          anchor.attr('href') ??
+          this.extractDetailFromOnclick(anchor.attr('onclick') ?? '');
+        const titleText = anchor.text().trim() || detailContainer.text().trim();
+        if (!href || !titleText) {
+          return;
+        }
+
+        const detailUrl = this.resolveUrl(baseUrl, href);
+        const canonicalUrl = this.canonicalizeDetailUrl(detailUrl);
+        if (seenUrls.has(canonicalUrl)) {
+          return;
+        }
+
+        const contextText = `${dateText}\n${detailContainer.text().trim()}`;
+        const title =
+          titleText
+            .replace(/leer\s*m[aà]s|llegir\s*m[eé]s/gi, '')
+            .trim()
+            .slice(0, 220) || 'Anuncio HPO';
+
+        entries.push({
+          title,
+          detailUrl,
+          publishedAt,
+          isSixtyDayAlert: this.looksLikeSixtyDayAlert(contextText),
+          isAnnouncement: this.looksLikeAnnouncement(contextText),
+        });
+        seenUrls.add(canonicalUrl);
+      });
 
     $('a').each((_, el) => {
       const href = $(el).attr('href') ?? this.extractDetailFromOnclick($(el).attr('onclick') ?? '');
@@ -206,6 +249,10 @@ export class RegistreScraperService {
       }
 
       const detailUrl = this.resolveUrl(baseUrl, href);
+      const canonicalUrl = this.canonicalizeDetailUrl(detailUrl);
+      if (seenUrls.has(canonicalUrl)) {
+        return;
+      }
       const containerText =
         $(el).closest('tr, li, div, article, p').text().trim() || text;
       const title =
@@ -222,6 +269,7 @@ export class RegistreScraperService {
         isSixtyDayAlert: this.looksLikeSixtyDayAlert(`${title}\n${containerText}`),
         isAnnouncement: this.looksLikeAnnouncement(`${title}\n${containerText}`),
       });
+      seenUrls.add(canonicalUrl);
     });
 
     return entries;
