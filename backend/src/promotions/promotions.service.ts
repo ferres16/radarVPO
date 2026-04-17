@@ -8,6 +8,8 @@ export class PromotionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(filters: ListPromotionsDto) {
+    const publishedOnly = filters.publishedOnly === 'true';
+
     const where: Prisma.PromotionWhereInput = {
       municipality: filters.municipality
         ? { contains: filters.municipality, mode: 'insensitive' }
@@ -16,7 +18,8 @@ export class PromotionsService {
         ? { contains: filters.province, mode: 'insensitive' }
         : undefined,
       promotionType: filters.promotionType,
-      status: filters.status,
+      status: publishedOnly ? { in: ['open', 'closed'] } : filters.status,
+      documents: publishedOnly ? { some: { fileType: 'pdf' } } : undefined,
     };
 
     return this.prisma.promotion.findMany({

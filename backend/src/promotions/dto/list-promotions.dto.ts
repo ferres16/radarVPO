@@ -21,4 +21,13 @@ export class ListPromotionsDto {
   @IsOptional()
   @IsEnum(['open', 'closed', 'upcoming', 'draft'])
   status?: 'open' | 'closed' | 'upcoming' | 'draft';
+
+  @ApiPropertyOptional({
+    description:
+      'When true, return published announcements only (open/closed) that have at least one PDF document.',
+    enum: ['true', 'false'],
+  })
+  @IsOptional()
+  @IsEnum(['true', 'false'])
+  publishedOnly?: 'true' | 'false';
 }
