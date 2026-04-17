@@ -72,7 +72,10 @@ export class RegistreScraperService {
       const detailHtml = await this.fetchHtml(entry.detailUrl);
       const rawText = this.extractText(detailHtml);
       const pdfLinks = this.extractPdfLinks(detailHtml, entry.detailUrl);
-      const publicationDate = entry.publishedAt ?? this.extractDate(rawText);
+      const publicationDate =
+        entry.publishedAt ??
+        this.extractDate(rawText) ??
+        (entry.isSixtyDayAlert ? new Date() : undefined);
       const estimatedFromAlert =
         entry.isSixtyDayAlert && publicationDate
           ? this.addDays(publicationDate, 60)
