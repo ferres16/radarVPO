@@ -8,6 +8,7 @@ export type Promotion = {
   deadlineDate?: string | null;
   publishedAt?: string | null;
   estimatedPublicationDate?: string | null;
+  futureLaunch?: boolean;
   sourceUrl: string;
 };
 
@@ -17,6 +18,28 @@ export type UserProfile = {
   fullName?: string | null;
   role: string;
   plan: string;
+};
+
+export type PromotionDocument = {
+  id: string;
+  documentUrl: string;
+  fileType: string;
+  extractedText?: string | null;
+  processedAt?: string | null;
+};
+
+export type PromotionAiAnalysis = {
+  id: string;
+  model: string;
+  resultJson: Record<string, unknown>;
+  confidence?: number | null;
+  createdAt: string;
+};
+
+export type PromotionDetail = Promotion & {
+  rawText?: string | null;
+  documents: PromotionDocument[];
+  aiAnalysis: PromotionAiAnalysis[];
 };
 
 export type NewsItem = {

@@ -1,4 +1,10 @@
-import { BackofficeOverview, NewsItem, Promotion, UserProfile } from '@/types';
+import {
+  BackofficeOverview,
+  NewsItem,
+  Promotion,
+  PromotionDetail,
+  UserProfile,
+} from '@/types';
 import {
   DeliveryFailure,
   JobRun,
@@ -36,7 +42,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   getPromotions: (query = '') => request<Promotion[]>(`/promotions${query}`),
-  getPromotionById: (id: string) => request<Promotion & { rawText?: string }>(`/promotions/${id}`),
+  getPromotionById: (id: string) => request<PromotionDetail>(`/promotions/${id}`),
   getUpcomingAlerts: () => request<Promotion[]>('/alerts/upcoming'),
   getNews: () => request<NewsItem[]>('/news'),
   getNewsById: (id: string) => request<NewsItem & { rawText?: string }>(`/news/${id}`),

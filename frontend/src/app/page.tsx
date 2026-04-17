@@ -4,6 +4,17 @@ import { MobileNav } from '@/components/mobile-nav';
 import { NewsCard } from '@/components/news-card';
 import { PromotionCard } from '@/components/promotion-card';
 
+function addDays(date: Date, days: number) {
+  return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function getEstimatedFromAlertDate(publishedAt?: string | null) {
+  if (!publishedAt) return null;
+  const parsed = new Date(publishedAt);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return addDays(parsed, 60);
+}
+
 function getDaysLeft(dateValue?: string | null) {
   if (!dateValue) return null;
   const target = new Date(dateValue).getTime();
@@ -17,34 +28,15 @@ function getDaysLeft(dateValue?: string | null) {
 }
 
 export default async function Home() {
-  const [upcoming, news, me] = await Promise.all([
+  const [upcoming, news] = await Promise.all([
     api.getUpcomingAlerts().catch(() => []),
     api.getNews().catch(() => []),
-    api.getMe().catch(() => null),
   ]);
 
   const recentNews = news.slice(0, 4);
   return (
     <div className="hero-bg min-h-screen pb-20 md:pb-0">
       <main className="shell">
-        <nav className="mb-5 flex items-center justify-between rounded-2xl border border-[var(--stroke)] bg-white/90 px-4 py-3 shadow-card">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[var(--green-700)]">Radar VPO</p>
-            <p className="text-sm font-semibold text-[var(--ink)]">{me?.fullName || 'Tu cuenta'}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link href="/account" className="rounded-full border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
-              Tu cuenta
-            </Link>
-            <Link href="/promotions" className="rounded-full border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
-              Todas las promociones
-            </Link>
-            <Link href="/favorites" className="rounded-full border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
-              Favoritos
-            </Link>
-          </div>
-        </nav>
-
         <header className="rounded-3xl border border-[var(--stroke)] bg-white/90 p-6 shadow-card">
           <p className="text-sm font-semibold uppercase tracking-wide text-[var(--green-700)]">Radar VPO</p>
           <h1 className="mt-2 text-3xl font-extrabold leading-tight text-[var(--ink)] md:text-5xl">
@@ -76,12 +68,19 @@ export default async function Home() {
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {upcoming.slice(0, 6).map((promotion) => {
-                  const daysLeft = getDaysLeft(promotion.estimatedPublicationDate);
+                  const estimatedDate = getEstimatedFromAlertDate(
+                    promotion.publishedAt,
+                  );
+                  const daysLeft = estimatedDate
+                    ? getDaysLeft(estimatedDate.toISOString())
+                    : null;
                   return (
                     <div key={promotion.id} className="space-y-2">
-                      <PromotionCard promotion={promotion} />
+                      <PromotionCard promotion={promotion} hideDetail />
                       <div className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)] shadow-card">
-                        {daysLeft === null ? 'Fecha de salida pendiente de confirmacion' : `Quedan ${daysLeft} dias para la salida estimada`}
+                        {daysLeft === null
+                          ? 'Fecha de alerta sin fecha valida'
+                          : `Salida estimada: ${estimatedDate?.toISOString().slice(0, 10)} · Quedan ${daysLeft} dias`}
                       </div>
                     </div>
                   );
