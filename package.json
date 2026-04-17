@@ -1,0 +1,20 @@
+{
+  "name": "radar-vpo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Radar VPO monorepo",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm --workspace backend run start:dev",
+    "dev:frontend": "npm --workspace frontend run dev",
+    "lint": "npm --workspace backend run lint && npm --workspace frontend run lint",
+    "test": "npm --workspace backend run test:unit && npm --workspace backend run test:integration && npm --workspace frontend run test",
+    "build": "npm --workspace backend run build && npm --workspace frontend run build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

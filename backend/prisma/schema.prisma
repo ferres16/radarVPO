@@ -1,0 +1,299 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  user
+  admin
+}
+
+enum UserPlan {
+  free
+  pro
+}
+
+enum PromotionType {
+  venta
+  alquiler
+  mixto
+  desconocido
+}
+
+enum TargetScope {
+  municipal
+  catalunya
+  estatal
+  otro
+}
+
+enum PromotionStatus {
+  draft
+  open
+  closed
+  upcoming
+}
+
+enum JobRunStatus {
+  running
+  success
+  failed
+}
+
+enum AudienceType {
+  normal
+  pro
+}
+
+model User {
+  id            String              @id @default(cuid())
+  email         String              @unique
+  fullName      String              @map("full_name")
+  passwordHash  String              @map("password_hash")
+  role          UserRole            @default(user)
+  plan          UserPlan            @default(free)
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  sessions      Session[]
+  savedSearches SavedSearch[]
+  alerts        UserAlert[]
+  reminders     Reminder[]
+  auditLogs     AuditLog[]
+  favorites     PromotionFavorite[]
+
+  @@map("users")
+}
+
+model Session {
+  id               String   @id
+  userId           String   @map("user_id")
+  refreshTokenHash String   @map("refresh_token_hash")
+  expiresAt        DateTime @map("expires_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+model Source {
+  id                  String    @id @default(cuid())
+  name                String
+  sourceType          String    @map("source_type")
+  baseUrl             String    @map("base_url")
+  active              Boolean   @default(true)
+  scrapeConfig        Json?     @map("scrape_config")
+  lastSuccessfulRunAt DateTime? @map("last_successful_run_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  promotions          Promotion[]
+
+  @@map("sources")
+}
+
+model Promotion {
+  id                       String              @id @default(cuid())
+  sourceId                 String              @map("source_id")
+  title                    String
+  location                 String?
+  municipality             String?
+  province                 String?
+  autonomousCommunity      String?             @map("autonomous_community")
+  promotionType            PromotionType       @default(desconocido) @map("promotion_type")
+  targetScope              TargetScope         @default(otro) @map("target_scope")
+  tenureType               String?             @map("tenure_type")
+  status                   PromotionStatus     @default(draft)
+  publishedAt              DateTime?           @map("published_at")
+  deadlineDate             DateTime?           @map("deadline_date")
+  estimatedPublicationDate DateTime?           @map("estimated_publication_date")
+  sourceUrl                String              @map("source_url")
+  rawText                  String?             @map("raw_text")
+  aiStatus                 String              @default("pending") @map("ai_status")
+  publishStatus            String              @default("pending") @map("publish_status")
+  futureLaunch             Boolean             @default(false) @map("future_launch")
+  isProOnly                Boolean             @default(false) @map("is_pro_only")
+  createdAt                DateTime            @default(now()) @map("created_at")
+  updatedAt                DateTime            @updatedAt @map("updated_at")
+  source                   Source              @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  documents                PromotionDocument[]
+  aiAnalysis               PromotionAiAnalysis[]
+  favorites                PromotionFavorite[]
+
+  @@index([municipality, province, status])
+  @@map("promotions")
+}
+
+model PromotionDocument {
+  id          String    @id @default(cuid())
+  promotionId String    @map("promotion_id")
+  documentUrl String    @map("document_url")
+  fileType    String    @map("file_type")
+  extractedText String? @map("extracted_text")
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@map("promotion_documents")
+}
+
+model PromotionAiAnalysis {
+  id          String    @id @default(cuid())
+  promotionId String    @map("promotion_id")
+  model       String
+  resultJson  Json      @map("result_json")
+  confidence  Float?
+  createdAt   DateTime  @default(now()) @map("created_at")
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@map("promotion_ai_analysis")
+}
+
+model Reminder {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  kind      String
+  payload   Json
+  remindAt  DateTime @map("remind_at")
+  sentAt    DateTime? @map("sent_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("reminders")
+}
+
+model NewsItem {
+  id          String   @id @default(cuid())
+  sourceName  String   @map("source_name")
+  sourceUrl   String   @map("source_url")
+  itemUrl     String   @unique @map("item_url")
+  title       String
+  rawText     String?  @map("raw_text")
+  summary     String?
+  relevance   String
+  contentHash String   @unique @map("content_hash")
+  publishedAt DateTime @map("published_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("news_items")
+}
+
+model EducationalTopic {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  posts       EducationalPost[]
+
+  @@map("educational_topics")
+}
+
+model EducationalPost {
+  id          String   @id @default(cuid())
+  topicId     String   @map("topic_id")
+  title       String
+  body        String
+  publishedAt DateTime? @map("published_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  topic       EducationalTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@map("educational_posts")
+}
+
+model PublishedPost {
+  id          String       @id @default(cuid())
+  sourceKind  String       @map("source_kind")
+  sourceId    String       @map("source_id")
+  audience    AudienceType
+  channel     String
+  payloadJson Json         @map("payload_json")
+  status      String
+  sentAt      DateTime?    @map("sent_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@map("published_posts")
+}
+
+model JobRun {
+  id           String       @id @default(cuid())
+  jobName      String       @map("job_name")
+  status       JobRunStatus
+  startedAt    DateTime     @map("started_at")
+  finishedAt   DateTime?    @map("finished_at")
+  resultJson   Json?        @map("result_json")
+  errorMessage String?      @map("error_message")
+  createdAt    DateTime     @default(now()) @map("created_at")
+
+  @@index([jobName, startedAt])
+  @@map("job_runs")
+}
+
+model DeliveryFailure {
+  id          String   @id @default(cuid())
+  channel     String
+  target      String
+  sourceRef   String?  @map("source_ref")
+  errorCode   String   @map("error_code")
+  errorDetail Json?    @map("error_detail")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("delivery_failures")
+}
+
+model SavedSearch {
+  id             String   @id @default(cuid())
+  userId         String   @map("user_id")
+  name           String
+  filtersJson    Json     @map("filters_json")
+  notificationsOn Boolean @default(true) @map("notifications_on")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_searches")
+}
+
+model UserAlert {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  type      String
+  enabled   Boolean  @default(true)
+  channel   String
+  configJson Json?   @map("config_json")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_alerts")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@map("audit_logs")
+}
+
+model PromotionFavorite {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  promotionId String    @map("promotion_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, promotionId])
+  @@map("promotion_favorites")
+}
