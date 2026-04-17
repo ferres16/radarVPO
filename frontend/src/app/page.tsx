@@ -17,13 +17,15 @@ function parseDate(value?: string | null) {
 function getExpectedPublicationDate(promotion: {
   estimatedPublicationDate?: string | null;
   publishedAt?: string | null;
+  createdAt?: string;
 }) {
   const estimated = parseDate(promotion.estimatedPublicationDate);
   if (estimated) {
     return estimated;
   }
 
-  const alertDate = parseDate(promotion.publishedAt);
+  const alertDate =
+    parseDate(promotion.publishedAt) ?? parseDate(promotion.createdAt);
   if (!alertDate) {
     return null;
   }
@@ -90,7 +92,9 @@ export default async function Home() {
                     : null;
                   const alertDate = promotion.publishedAt
                     ? promotion.publishedAt.slice(0, 10)
-                    : null;
+                    : promotion.createdAt
+                      ? promotion.createdAt.slice(0, 10)
+                      : null;
                   return (
                     <div key={promotion.id} className="space-y-2">
                       <PromotionCard promotion={promotion} hideDetail />

@@ -7,6 +7,7 @@ export type Promotion = {
   status: 'draft' | 'open' | 'closed' | 'upcoming';
   deadlineDate?: string | null;
   publishedAt?: string | null;
+  createdAt?: string;
   estimatedPublicationDate?: string | null;
   futureLaunch?: boolean;
   sourceUrl: string;

@@ -72,9 +72,10 @@ export class RegistreScraperService {
       const detailHtml = await this.fetchHtml(entry.detailUrl);
       const rawText = this.extractText(detailHtml);
       const pdfLinks = this.extractPdfLinks(detailHtml, entry.detailUrl);
+      const publicationDate = entry.publishedAt ?? this.extractDate(rawText);
       const estimatedFromAlert =
-        entry.isSixtyDayAlert && entry.publishedAt
-          ? this.addDays(entry.publishedAt, 60)
+        entry.isSixtyDayAlert && publicationDate
+          ? this.addDays(publicationDate, 60)
           : null;
       const status = entry.isSixtyDayAlert ? 'upcoming' : 'open';
 
@@ -90,7 +91,7 @@ export class RegistreScraperService {
             promotionType: this.guessPromotionType(rawText),
             targetScope: 'catalunya',
             autonomousCommunity: 'Catalunya',
-            publishedAt: entry.publishedAt,
+            publishedAt: publicationDate,
             estimatedPublicationDate: estimatedFromAlert,
             futureLaunch: entry.isSixtyDayAlert,
             aiStatus: 'pending',
@@ -106,7 +107,7 @@ export class RegistreScraperService {
           data: {
             rawText,
             aiStatus: 'pending',
-            publishedAt: entry.publishedAt,
+            publishedAt: publicationDate,
             estimatedPublicationDate: estimatedFromAlert,
             status,
             futureLaunch: entry.isSixtyDayAlert,
