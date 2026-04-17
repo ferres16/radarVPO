@@ -7,6 +7,8 @@ type NewsEntry = {
   title: string;
   detailUrl: string;
   publishedAt?: Date;
+  isSixtyDayAlert: boolean;
+  isAnnouncement: boolean;
 };
 
 @Injectable()
@@ -19,24 +21,39 @@ export class RegistreScraperService {
     scanned: number;
     promotionsCreated: number;
     documentsCreated: number;
+    duplicatesMerged: number;
   }> {
     const listUrl =
       process.env.REGISTRE_NEWS_URL ??
       'https://www.registresolicitants.cat/registre/noticias/03_noticias.jsp';
+    const maxPages = Number(process.env.REGISTRE_MAX_PAGES ?? 50);
 
     const source = await this.ensureSource();
-    const listHtml = await this.fetchHtml(listUrl);
-    const listingPages = this.collectListingPages(listHtml, listUrl);
     const entriesMap = new Map<string, NewsEntry>();
+    let emptyPages = 0;
 
-    for (const pageUrl of listingPages) {
-      const html =
-        pageUrl === listUrl ? listHtml : await this.fetchHtml(pageUrl);
+    for (let page = 1; page <= Math.max(1, maxPages); page += 1) {
+      const pageUrl = this.buildNewsPageUrl(listUrl, page);
+      const html = await this.fetchHtml(pageUrl);
       const pageEntries = this.parseNewsList(html, pageUrl);
 
+      if (pageEntries.length === 0) {
+        emptyPages += 1;
+        if (emptyPages >= 2) {
+          break;
+        }
+        continue;
+      }
+
+      emptyPages = 0;
+
       for (const entry of pageEntries) {
-        if (!entriesMap.has(entry.detailUrl)) {
-          entriesMap.set(entry.detailUrl, entry);
+        const key = this.canonicalizeDetailUrl(entry.detailUrl);
+        if (!entriesMap.has(key)) {
+          entriesMap.set(key, {
+            ...entry,
+            detailUrl: key,
+          });
         }
       }
     }
@@ -55,6 +72,11 @@ export class RegistreScraperService {
       const detailHtml = await this.fetchHtml(entry.detailUrl);
       const rawText = this.extractText(detailHtml);
       const pdfLinks = this.extractPdfLinks(detailHtml, entry.detailUrl);
+      const estimatedFromAlert =
+        entry.isSixtyDayAlert && entry.publishedAt
+          ? this.addDays(entry.publishedAt, 60)
+          : null;
+      const status = entry.isSixtyDayAlert ? 'upcoming' : 'open';
 
       const promotion =
         existing ??
@@ -64,11 +86,13 @@ export class RegistreScraperService {
             title: this.sanitizeTitle(entry.title),
             sourceUrl: entry.detailUrl,
             rawText,
-            status: 'open',
+            status,
             promotionType: this.guessPromotionType(rawText),
             targetScope: 'catalunya',
             autonomousCommunity: 'Catalunya',
             publishedAt: entry.publishedAt,
+            estimatedPublicationDate: estimatedFromAlert,
+            futureLaunch: entry.isSixtyDayAlert,
             aiStatus: 'pending',
           },
           select: { id: true },
@@ -83,6 +107,9 @@ export class RegistreScraperService {
             rawText,
             aiStatus: 'pending',
             publishedAt: entry.publishedAt,
+            estimatedPublicationDate: estimatedFromAlert,
+            status,
+            futureLaunch: entry.isSixtyDayAlert,
           },
         });
       }
@@ -109,12 +136,22 @@ export class RegistreScraperService {
         });
         documentsCreated += 1;
       }
+
+      if (entry.isAnnouncement && pdfLinks.length > 0) {
+        await this.prisma.promotion.update({
+          where: { id: promotion.id },
+          data: { aiStatus: 'pending' },
+        });
+      }
     }
+
+    const duplicatesMerged = await this.mergeDuplicates(source.id);
 
     return {
       scanned: entries.length,
       promotionsCreated,
       documentsCreated,
+      duplicatesMerged,
     };
   }
 
@@ -149,7 +186,7 @@ export class RegistreScraperService {
     const entries: NewsEntry[] = [];
 
     $('a').each((_, el) => {
-      const href = $(el).attr('href');
+      const href = $(el).attr('href') ?? this.extractDetailFromOnclick($(el).attr('onclick') ?? '');
       const text = $(el).text().trim();
 
       if (!href) {
@@ -178,36 +215,22 @@ export class RegistreScraperService {
         title,
         detailUrl,
         publishedAt,
+        isSixtyDayAlert: this.looksLikeSixtyDayAlert(`${title}\n${containerText}`),
+        isAnnouncement: this.looksLikeAnnouncement(`${title}\n${containerText}`),
       });
     });
 
     return entries;
   }
 
-  private collectListingPages(html: string, listUrl: string): string[] {
-    const maxPages = Number(process.env.REGISTRE_MAX_PAGES ?? 2);
-    const $ = cheerio.load(html);
-    const pages = new Set<string>([listUrl]);
-
-    $('a').each((_, el) => {
-      const href = $(el).attr('href');
-      const text = $(el).text().trim();
-
-      if (!href) {
-        return;
-      }
-
-      const isPagination = /^\d+$/.test(text) || /sig\.?/i.test(text);
-      const looksLikeListPage = /03_noticias\.jsp/i.test(href);
-
-      if (!isPagination || !looksLikeListPage) {
-        return;
-      }
-
-      pages.add(this.resolveUrl(listUrl, href));
-    });
-
-    return [...pages].slice(0, Math.max(1, maxPages));
+  private buildNewsPageUrl(listUrl: string, page: number): string {
+    try {
+      const url = new URL(listUrl);
+      url.searchParams.set('numpagactual', String(page));
+      return url.toString();
+    } catch {
+      return listUrl;
+    }
   }
 
   private extractPdfLinks(html: string, pageUrl: string): string[] {
@@ -289,6 +312,156 @@ export class RegistreScraperService {
       .replace(/^[-:;,.\s]+/, '')
       .trim()
       .slice(0, 220);
+  }
+
+  private canonicalizeDetailUrl(url: string): string {
+    try {
+      const parsed = new URL(url);
+      const isDetailPage = /03_noticias_detalle\.jsp/i.test(parsed.pathname);
+      const noticiaId = parsed.searchParams.get('idNoticia');
+
+      if (isDetailPage && noticiaId) {
+        parsed.search = `?idNoticia=${noticiaId}`;
+        parsed.hash = '';
+      }
+
+      return parsed.toString();
+    } catch {
+      return url;
+    }
+  }
+
+  private looksLikeSixtyDayAlert(text: string): boolean {
+    const normalized = text.toLowerCase();
+    return /60\s*d[ií]as|60\s*dies|seixanta\s*dies/.test(normalized);
+  }
+
+  private looksLikeAnnouncement(text: string): boolean {
+    const normalized = text.toLowerCase();
+    return /anunci|convocat[oò]ria|bases|adjudicaci[oó]|inscripci[oó]|sol[·\.]?licitud/.test(
+      normalized,
+    );
+  }
+
+  private extractDetailFromOnclick(onclick: string): string | null {
+    const match = onclick.match(/03_noticias_detalle\.jsp\?idNoticia=\d+/i);
+    return match ? match[0] : null;
+  }
+
+  private addDays(date: Date, days: number): Date {
+    return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+  }
+
+  private duplicateKey(promotion: {
+    sourceUrl: string;
+    title: string;
+    publishedAt: Date | null;
+  }): string {
+    const canonicalUrl = this.canonicalizeDetailUrl(promotion.sourceUrl);
+    const title = this.sanitizeTitle(promotion.title).toLowerCase();
+    const date = promotion.publishedAt
+      ? promotion.publishedAt.toISOString().slice(0, 10)
+      : 'no-date';
+    return `${canonicalUrl}|${title}|${date}`;
+  }
+
+  private async mergeDuplicates(sourceId: string): Promise<number> {
+    const promotions = await this.prisma.promotion.findMany({
+      where: { sourceId },
+      orderBy: [{ createdAt: 'asc' }],
+      select: {
+        id: true,
+        sourceUrl: true,
+        title: true,
+        publishedAt: true,
+      },
+    });
+
+    const keepByKey = new Map<string, string>();
+    let merged = 0;
+
+    for (const promotion of promotions) {
+      const key = this.duplicateKey(promotion);
+      const keeperId = keepByKey.get(key);
+
+      if (!keeperId) {
+        keepByKey.set(key, promotion.id);
+        continue;
+      }
+
+      if (keeperId === promotion.id) {
+        continue;
+      }
+
+      await this.mergePromotionInto(keeperId, promotion.id);
+      merged += 1;
+    }
+
+    return merged;
+  }
+
+  private async mergePromotionInto(
+    keeperId: string,
+    duplicateId: string,
+  ): Promise<void> {
+    const docs = await this.prisma.promotionDocument.findMany({
+      where: { promotionId: duplicateId },
+      select: { id: true, documentUrl: true },
+    });
+
+    for (const doc of docs) {
+      const exists = await this.prisma.promotionDocument.findFirst({
+        where: {
+          promotionId: keeperId,
+          documentUrl: doc.documentUrl,
+        },
+        select: { id: true },
+      });
+
+      if (exists) {
+        await this.prisma.promotionDocument.delete({ where: { id: doc.id } });
+      } else {
+        await this.prisma.promotionDocument.update({
+          where: { id: doc.id },
+          data: { promotionId: keeperId },
+        });
+      }
+    }
+
+    const favorites = await this.prisma.promotionFavorite.findMany({
+      where: { promotionId: duplicateId },
+      select: { id: true, userId: true },
+    });
+
+    for (const favorite of favorites) {
+      const exists = await this.prisma.promotionFavorite.findUnique({
+        where: {
+          userId_promotionId: {
+            userId: favorite.userId,
+            promotionId: keeperId,
+          },
+        },
+        select: { id: true },
+      });
+
+      if (exists) {
+        await this.prisma.promotionFavorite.delete({
+          where: { id: favorite.id },
+        });
+      } else {
+        await this.prisma.promotionFavorite.update({
+          where: { id: favorite.id },
+          data: { promotionId: keeperId },
+        });
+      }
+    }
+
+    await this.prisma.promotionAiAnalysis.updateMany({
+      where: { promotionId: duplicateId },
+      data: { promotionId: keeperId },
+    });
+
+    await this.prisma.promotion.delete({ where: { id: duplicateId } });
   }
 
   private resolveUrl(baseUrl: string, path: string): string {

@@ -32,11 +32,16 @@ export class JobsService {
         .scrapeLatestAnnouncements()
         .catch(async (error) => {
           await this.recordFailure('check_promotions', 'registre', error);
-          return { scanned: 0, promotionsCreated: 0, documentsCreated: 0 };
+          return {
+            scanned: 0,
+            promotionsCreated: 0,
+            documentsCreated: 0,
+            duplicatesMerged: 0,
+          };
         });
 
       this.logger.log(
-        `Checked active sources: ${count}. Registre scanned=${registre.scanned}, promotionsCreated=${registre.promotionsCreated}, documentsCreated=${registre.documentsCreated}`,
+        `Checked active sources: ${count}. Registre scanned=${registre.scanned}, promotionsCreated=${registre.promotionsCreated}, documentsCreated=${registre.documentsCreated}, duplicatesMerged=${registre.duplicatesMerged}`,
       );
 
       return {
