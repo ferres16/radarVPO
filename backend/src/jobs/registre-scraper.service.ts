@@ -26,7 +26,8 @@ export class RegistreScraperService {
     const listUrl =
       process.env.REGISTRE_NEWS_URL ??
       'https://www.registresolicitants.cat/registre/noticias/03_noticias.jsp';
-    const maxPages = Number(process.env.REGISTRE_MAX_PAGES ?? 50);
+    const configuredMaxPages = Number(process.env.REGISTRE_MAX_PAGES ?? 5);
+    const maxPages = Math.min(Math.max(1, configuredMaxPages), 5);
 
     const source = await this.ensureSource();
     const entriesMap = new Map<string, NewsEntry>();
