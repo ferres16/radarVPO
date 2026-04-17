@@ -1,6 +1,7 @@
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
 import { PromotionCard } from '@/components/promotion-card';
+import { Promotion } from '@/types';
 
 function extractHomesCount(text?: string | null): number | null {
   if (!text) return null;
@@ -17,13 +18,69 @@ function formatTypeLabel(type: string) {
   return 'tipo desconocido';
 }
 
+function canonicalSourceUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    const idNoticia = parsed.searchParams.get('idNoticia');
+    if (/03_noticias_detalle\.jsp/i.test(parsed.pathname) && idNoticia) {
+      parsed.search = `?idNoticia=${idNoticia}`;
+      parsed.hash = '';
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+function inferLocation(promotion: Promotion & { rawText?: string | null }) {
+  const direct = (promotion.municipality || '').trim();
+  if (direct && !/^catalunya$/i.test(direct)) {
+    return direct;
+  }
+
+  const pool = `${promotion.title}\n${promotion.rawText || ''}`;
+
+  const fromAddress = pool.match(/(carrer|calle|avinguda|avenida)\s+[^,\n]+,?\s*\d*\s+de\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,40})/i);
+  if (fromAddress?.[2]) {
+    return fromAddress[2].trim();
+  }
+
+  const fromDe = pool.match(/\bde\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,40})/);
+  if (fromDe?.[1]) {
+    const candidate = fromDe[1].trim();
+    if (!/catalunya|habitatges|hpo|venda|alquiler|promoguts/i.test(candidate)) {
+      return candidate;
+    }
+  }
+
+  return 'Ubicacion no especificada';
+}
+
+function dedupePromotions(promotions: Promotion[]) {
+  const unique = new Map<string, Promotion>();
+
+  for (const promotion of promotions) {
+    const key = `${canonicalSourceUrl(promotion.sourceUrl)}|${promotion.title
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim()}`;
+
+    if (!unique.has(key)) {
+      unique.set(key, promotion);
+    }
+  }
+
+  return [...unique.values()];
+}
+
 function buildCardTitle(promotion: {
   municipality?: string | null;
   promotionType: string;
   rawText?: string | null;
   title: string;
+  sourceUrl: string;
 }) {
-  const municipality = promotion.municipality || 'Catalunya';
+  const municipality = inferLocation(promotion as Promotion & { rawText?: string | null });
   const homes = extractHomesCount(promotion.rawText || promotion.title);
   const homesText = homes === null ? 'n/d' : String(homes);
 
@@ -54,11 +111,13 @@ export default async function PromotionsPage({
     query.size ? `?${query.toString()}` : '',
   );
 
+  const filteredPromotions = dedupePromotions(promotions).slice(0, 10);
+
   return (
     <main className="shell">
       <header className="mb-5 rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
         <h1 className="text-2xl font-bold text-[var(--ink)]">Todas las promociones</h1>
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">Listado completo de promociones publicadas y upcoming.</p>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">Mostrando automaticamente las 10 ultimas promociones unicas.</p>
         <form className="mt-4 flex flex-wrap gap-2" action="/promotions" method="get">
           <input
             name="municipality"
@@ -98,11 +157,11 @@ export default async function PromotionsPage({
         </form>
       </header>
 
-      {promotions.length === 0 ? (
+      {filteredPromotions.length === 0 ? (
         <EmptyState title="Sin promociones" description="Todavia no hay promociones disponibles." />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {promotions.map((promotion) => (
+          {filteredPromotions.map((promotion) => (
             <PromotionCard
               key={promotion.id}
               promotion={promotion}
