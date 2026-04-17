@@ -8,11 +8,27 @@ function addDays(date: Date, days: number) {
   return new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
 }
 
-function getEstimatedFromAlertDate(publishedAt?: string | null) {
-  if (!publishedAt) return null;
-  const parsed = new Date(publishedAt);
-  if (Number.isNaN(parsed.getTime())) return null;
-  return addDays(parsed, 60);
+function parseDate(value?: string | null) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getExpectedPublicationDate(promotion: {
+  estimatedPublicationDate?: string | null;
+  publishedAt?: string | null;
+}) {
+  const estimated = parseDate(promotion.estimatedPublicationDate);
+  if (estimated) {
+    return estimated;
+  }
+
+  const alertDate = parseDate(promotion.publishedAt);
+  if (!alertDate) {
+    return null;
+  }
+
+  return addDays(alertDate, 60);
 }
 
 function getDaysLeft(dateValue?: string | null) {
@@ -68,9 +84,7 @@ export default async function Home() {
             <div className="space-y-4">
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {upcoming.slice(0, 6).map((promotion) => {
-                  const estimatedDate = getEstimatedFromAlertDate(
-                    promotion.publishedAt,
-                  );
+                  const estimatedDate = getExpectedPublicationDate(promotion);
                   const daysLeft = estimatedDate
                     ? getDaysLeft(estimatedDate.toISOString())
                     : null;
@@ -87,7 +101,7 @@ export default async function Home() {
                           <>
                             <div>Publicacion alerta: {alertDate || 'n/d'}</div>
                             <div>
-                              Salida estimada: {estimatedDate?.toISOString().slice(0, 10)}
+                              Fecha esperada publicacion: {estimatedDate?.toISOString().slice(0, 10)}
                             </div>
                             <div>Quedan {daysLeft} dias</div>
                           </>
