@@ -188,6 +188,7 @@ export class StructuredExtractionService {
     const dataQuality = this.asRecord(result.data_quality);
 
     const totalHomes = this.extractHomesCount(rawText);
+    const homeMix = this.extractHousingMix(rawText);
     const address = this.extractAddress(rawText);
     const municipality = this.extractMunicipality(rawText);
     const promoter = this.extractPromoter(rawText);
@@ -215,6 +216,10 @@ export class StructuredExtractionService {
 
     if (typeof units.total_homes !== 'number' && totalHomes !== null) {
       units.total_homes = totalHomes;
+    }
+
+    if (!Array.isArray(units.home_mix) && homeMix.length > 0) {
+      units.home_mix = homeMix;
     }
 
     if (!this.asString(importantDates.alert_date) && alertDate) {
@@ -255,6 +260,28 @@ export class StructuredExtractionService {
 
     const parsed = Number(match[1]);
     return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  private extractHousingMix(
+    text: string,
+  ): Array<{ label: string; homes: number }> {
+    const regex = /(\d{1,3})\s+habitatges?\s+de\s+([^\n,.;]+)/gi;
+    const rows: Array<{ label: string; homes: number }> = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(text)) !== null) {
+      const homes = Number(match[1]);
+      if (Number.isNaN(homes)) {
+        continue;
+      }
+
+      rows.push({
+        label: match[2].trim(),
+        homes,
+      });
+    }
+
+    return rows;
   }
 
   private extractAddress(text: string): string | null {

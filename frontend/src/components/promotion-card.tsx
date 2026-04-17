@@ -11,19 +11,23 @@ function statusLabel(status: Promotion['status']) {
 export function PromotionCard({
   promotion,
   hideDetail = false,
+  hideStatus = false,
   titleOverride,
 }: {
   promotion: Promotion;
   hideDetail?: boolean;
+  hideStatus?: boolean;
   titleOverride?: string;
 }) {
   return (
     <article className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
       <div className="mb-3 flex items-start justify-between gap-2">
         <h3 className="text-base font-semibold text-[var(--ink)]">{titleOverride || promotion.title}</h3>
-        <span className="rounded-full bg-[var(--green-100)] px-3 py-1 text-xs font-semibold text-[var(--green-700)]">
-          {statusLabel(promotion.status)}
-        </span>
+        {!hideStatus ? (
+          <span className="rounded-full border border-[var(--stroke)] bg-[var(--bg-eco)] px-3 py-1 text-xs font-semibold text-[var(--green-700)]">
+            {statusLabel(promotion.status)}
+          </span>
+        ) : null}
       </div>
       <p className="text-sm text-[var(--ink-soft)]">
         {promotion.municipality || 'Catalunya'} {promotion.province ? `, ${promotion.province}` : ''}

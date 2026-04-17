@@ -73,6 +73,34 @@ function dedupePromotions(promotions: Promotion[]) {
   return [...unique.values()];
 }
 
+function getReleaseDate(promotion: Promotion) {
+  if (promotion.estimatedPublicationDate) {
+    return promotion.estimatedPublicationDate.slice(0, 10);
+  }
+
+  if (promotion.publishedAt && promotion.futureLaunch) {
+    const base = new Date(promotion.publishedAt);
+    if (!Number.isNaN(base.getTime())) {
+      const estimated = new Date(base.getTime() + 60 * 24 * 60 * 60 * 1000);
+      return estimated.toISOString().slice(0, 10);
+    }
+  }
+
+  if (promotion.publishedAt) {
+    return promotion.publishedAt.slice(0, 10);
+  }
+
+  return 'n/d';
+}
+
+function sortByLatest(promotions: Promotion[]) {
+  return [...promotions].sort((a, b) => {
+    const aDate = a.estimatedPublicationDate || a.publishedAt || '';
+    const bDate = b.estimatedPublicationDate || b.publishedAt || '';
+    return bDate.localeCompare(aDate);
+  });
+}
+
 function buildCardTitle(promotion: {
   municipality?: string | null;
   promotionType: string;
@@ -111,7 +139,7 @@ export default async function PromotionsPage({
     query.size ? `?${query.toString()}` : '',
   );
 
-  const filteredPromotions = dedupePromotions(promotions).slice(0, 10);
+  const filteredPromotions = sortByLatest(dedupePromotions(promotions)).slice(0, 10);
 
   return (
     <main className="shell">
@@ -162,11 +190,16 @@ export default async function PromotionsPage({
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredPromotions.map((promotion) => (
-            <PromotionCard
-              key={promotion.id}
-              promotion={promotion}
-              titleOverride={buildCardTitle(promotion)}
-            />
+            <div key={promotion.id} className="space-y-2">
+              <PromotionCard
+                promotion={promotion}
+                hideStatus
+                titleOverride={buildCardTitle(promotion)}
+              />
+              <div className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)] shadow-card">
+                Fecha de salida: {getReleaseDate(promotion)}
+              </div>
+            </div>
           ))}
         </div>
       )}

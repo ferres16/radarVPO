@@ -46,6 +46,50 @@ function extractMunicipality(text: string) {
   return value;
 }
 
+type HousingRow = {
+  label: string;
+  homes: number;
+};
+
+function parseHousingRows(
+  units: Record<string, unknown>,
+  textPool: string,
+): HousingRow[] {
+  const fromAi = units.home_mix;
+  if (Array.isArray(fromAi)) {
+    const rows = fromAi
+      .map((item) => {
+        const row = asRecord(item);
+        const label = asString(row.label) || asString(row.type) || asString(row.room_type);
+        const homes = asNumber(row.homes) ?? asNumber(row.count) ?? asNumber(row.units);
+        if (!label || homes === null) {
+          return null;
+        }
+        return { label, homes };
+      })
+      .filter((item): item is HousingRow => item !== null);
+
+    if (rows.length > 0) {
+      return rows;
+    }
+  }
+
+  const regex = /(\d{1,3})\s+habitatges?\s+de\s+([^\n,.;]+)/gi;
+  const rows: HousingRow[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = regex.exec(textPool)) !== null) {
+    const homes = Number(match[1]);
+    if (!Number.isNaN(homes)) {
+      rows.push({
+        label: match[2].trim(),
+        homes,
+      });
+    }
+  }
+
+  return rows;
+}
+
 function firstPdfUrl(docs: Array<{ fileType: string; documentUrl: string }>) {
   const found = docs.find((doc) => /pdf/i.test(doc.fileType));
   return found?.documentUrl || null;
@@ -67,6 +111,7 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
   const pdfUrl = firstPdfUrl(promotion.documents) || promotion.sourceUrl;
 
   const textPool = `${promotion.title}\n${promotion.rawText || ''}`;
+  const housingRows = parseHousingRows(units, textPool);
 
   const unitsTotal =
     asNumber(units.total_homes) ??
@@ -120,6 +165,30 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
             <p className="text-sm text-[var(--ink)]">Empadronamiento: {asString(requirements.residency_requirement) || 'n/d'}</p>
             <p className="text-sm text-[var(--ink)]">Otros: {asString(requirements.other_conditions) || 'n/d'}</p>
           </div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Tabla de viviendas disponibles</h2>
+          {housingRows.length === 0 ? (
+            <p className="mt-2 text-sm text-[var(--ink)]">No se han podido extraer filas de viviendas del PDF.</p>
+          ) : (
+            <table className="mt-3 w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th className="border-b border-[var(--stroke)] px-2 py-2 text-left text-[var(--ink-soft)]">Tipologia</th>
+                  <th className="border-b border-[var(--stroke)] px-2 py-2 text-left text-[var(--ink-soft)]">Viviendas</th>
+                </tr>
+              </thead>
+              <tbody>
+                {housingRows.map((row, index) => (
+                  <tr key={`${row.label}-${index}`}>
+                    <td className="border-b border-[var(--stroke)] px-2 py-2 text-[var(--ink)]">{row.label}</td>
+                    <td className="border-b border-[var(--stroke)] px-2 py-2 text-[var(--ink)]">{row.homes}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">

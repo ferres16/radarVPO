@@ -74,13 +74,24 @@ export default async function Home() {
                   const daysLeft = estimatedDate
                     ? getDaysLeft(estimatedDate.toISOString())
                     : null;
+                  const alertDate = promotion.publishedAt
+                    ? promotion.publishedAt.slice(0, 10)
+                    : null;
                   return (
                     <div key={promotion.id} className="space-y-2">
                       <PromotionCard promotion={promotion} hideDetail />
                       <div className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)] shadow-card">
-                        {daysLeft === null
-                          ? 'Fecha de alerta sin fecha valida'
-                          : `Salida estimada: ${estimatedDate?.toISOString().slice(0, 10)} · Quedan ${daysLeft} dias`}
+                        {daysLeft === null ? (
+                          'Fecha de alerta sin fecha valida'
+                        ) : (
+                          <>
+                            <div>Publicacion alerta: {alertDate || 'n/d'}</div>
+                            <div>
+                              Salida estimada: {estimatedDate?.toISOString().slice(0, 10)}
+                            </div>
+                            <div>Quedan {daysLeft} dias</div>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
