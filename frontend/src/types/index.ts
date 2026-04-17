@@ -11,6 +11,14 @@ export type Promotion = {
   sourceUrl: string;
 };
 
+export type UserProfile = {
+  id: string;
+  email: string;
+  fullName?: string | null;
+  role: string;
+  plan: string;
+};
+
 export type NewsItem = {
   id: string;
   title: string;

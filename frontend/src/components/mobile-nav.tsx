@@ -1,9 +1,10 @@
 import Link from 'next/link';
 
 const links = [
-  { href: '/dashboard', label: 'Inicio' },
+  { href: '/', label: 'Inicio' },
+  { href: '/promotions', label: 'Promos' },
   { href: '/favorites', label: 'Favoritos' },
-  { href: '/admin', label: 'Admin' },
+  { href: '/account', label: 'Cuenta' },
 ];
 
 export function MobileNav() {

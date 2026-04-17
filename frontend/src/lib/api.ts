@@ -1,4 +1,4 @@
-import { BackofficeOverview, NewsItem, Promotion } from '@/types';
+import { BackofficeOverview, NewsItem, Promotion, UserProfile } from '@/types';
 import {
   DeliveryFailure,
   JobRun,
@@ -40,6 +40,7 @@ export const api = {
   getUpcomingAlerts: () => request<Promotion[]>('/alerts/upcoming'),
   getNews: () => request<NewsItem[]>('/news'),
   getNewsById: (id: string) => request<NewsItem & { rawText?: string }>(`/news/${id}`),
+  getMe: () => request<UserProfile>('/users/me'),
   getFavorites: () => request<Array<{ id: string; promotion: Promotion }>>('/promotions/user/favorites'),
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
   getBackofficeJobs: () => request<JobRun[]>('/backoffice/jobs'),
