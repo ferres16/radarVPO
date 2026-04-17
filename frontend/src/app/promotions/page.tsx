@@ -40,6 +40,21 @@ function inferLocation(promotion: Promotion & { rawText?: string | null }) {
 
   const pool = `${promotion.title}\n${promotion.rawText || ''}`;
 
+  const fromMunicipi = pool.match(
+    /al\s+municipi\s+d(?:e|')\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})/i,
+  );
+  if (fromMunicipi?.[1]) {
+    return fromMunicipi[1].trim();
+  }
+
+  const fromA = pool.match(/\ba\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})(?:[\.,\n]|$)/i);
+  if (fromA?.[1]) {
+    const candidate = fromA[1].trim();
+    if (!/termini|dies|detalls|procediment|adjudicaci[oó]n?/i.test(candidate)) {
+      return candidate;
+    }
+  }
+
   const fromAddress = pool.match(/(carrer|calle|avinguda|avenida)\s+[^,\n]+,?\s*\d*\s+de\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,40})/i);
   if (fromAddress?.[2]) {
     return fromAddress[2].trim();
@@ -48,7 +63,7 @@ function inferLocation(promotion: Promotion & { rawText?: string | null }) {
   const fromDe = pool.match(/\bde\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,40})/);
   if (fromDe?.[1]) {
     const candidate = fromDe[1].trim();
-    if (!/catalunya|habitatges|hpo|venda|alquiler|promoguts/i.test(candidate)) {
+    if (!/^(sol)$/i.test(candidate) && !/catalunya|habitatges|hpo|venda|alquiler|promoguts/i.test(candidate)) {
       return candidate;
     }
   }
@@ -207,6 +222,7 @@ export default async function PromotionsPage({
               <div key={promotion.id} className="space-y-2">
                 <PromotionCard
                   promotion={promotion}
+                  hideDetail
                   hideStatus
                   titleOverride={buildCardTitle(promotion)}
                 />

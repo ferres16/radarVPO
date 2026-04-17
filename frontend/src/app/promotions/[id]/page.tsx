@@ -34,16 +34,49 @@ function extractAddress(text: string) {
 }
 
 function extractPromoter(text: string) {
-  const match = text.match(/promoguts\s+per\s+([^,\n\.]+)/i);
-  return match?.[1]?.trim() ?? null;
+  const match = text.match(
+    /promoguts?\s+per\s+(.+?)(?=\s+al\s+municipi\b|\s+a\s+[A-ZÀ-Ú]|\.|,|\n|$)/i,
+  );
+  if (!match?.[1]) return null;
+
+  return match[1]
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 function extractMunicipality(text: string) {
-  const match = text.match(/\bde\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,40})/);
-  if (!match) return null;
-  const value = match[1].trim();
-  if (/habitatges|hpo|venda|alquiler/i.test(value)) return null;
-  return value;
+  const patterns = [
+    /al\s+municipi\s+d(?:e|')\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})/i,
+    /al\s+municipio\s+de\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})/i,
+    /\ba\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})(?:[\.,\n]|$)/i,
+    /\bde\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,40})/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = text.match(pattern);
+    if (!match?.[1]) {
+      continue;
+    }
+
+    const value = match[1]
+      .replace(/\s+en\s+el\s+termini[\s\S]*$/i, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    if (
+      !value ||
+      /^(sol)$/i.test(value) ||
+      /habitatges|hpo|venda|alquiler|termini|dies|detalls|procediment/i.test(
+        value,
+      )
+    ) {
+      continue;
+    }
+
+    return value;
+  }
+
+  return null;
 }
 
 type HousingRow = {
@@ -119,7 +152,9 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
     asNumber(units.hpo_homes) ??
     extractHomesCount(textPool);
 
-  const promoter = asString(promotionData.promoter) || extractPromoter(textPool);
+  const promoter =
+    asString(promotionData.promoter)?.replace(/\s+al\s+municipi[\s\S]*$/i, '').trim() ||
+    extractPromoter(textPool);
 
   const fallbackMunicipality =
     promotion.municipality || extractMunicipality(textPool) || 'Catalunya';
