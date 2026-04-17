@@ -1,5 +1,5 @@
 {
   "framework": "nextjs",
   "installCommand": "npm install --include=optional",
-  "buildCommand": "(npm install --no-save lightningcss-linux-x64-gnu || npm install --no-save lightningcss-linux-x64-musl) && npm run build"
+  "buildCommand": "npm run build"
 }
