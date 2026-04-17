@@ -65,7 +65,7 @@ export default async function Home() {
 
   const recentUpcoming = upcoming.filter((promotion) => {
     const daysSince = getDaysSincePublication(promotion.publishedAt ?? null);
-    return daysSince !== null && daysSince < 6;
+    return daysSince !== null && daysSince < 60;
   });
 
   const recentNews = news.slice(0, 4);
@@ -97,7 +97,7 @@ export default async function Home() {
           </div>
           {recentUpcoming.length === 0 ? (
             <article className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
-              <p className="text-sm text-[var(--ink-soft)]">No hay alertas publicadas en los ultimos 6 dias.</p>
+              <p className="text-sm text-[var(--ink-soft)]">No hay alertas publicadas en los ultimos 60 dias.</p>
             </article>
           ) : (
             <div className="space-y-4">
