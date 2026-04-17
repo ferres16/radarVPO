@@ -21,6 +21,31 @@ function asNumber(value: unknown): number | null {
   return null;
 }
 
+function extractHomesCount(text: string) {
+  const match = text.match(/(\d{1,4})\s+(habitatges|viviendas|vivendes|vivienda)/i);
+  if (!match) return null;
+  const parsed = Number(match[1]);
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function extractAddress(text: string) {
+  const match = text.match(/(carrer|calle|avinguda|avenida|av\.|c\.)\s+[^,\n]+(?:,\s*\d+)?/i);
+  return match?.[0]?.trim() ?? null;
+}
+
+function extractPromoter(text: string) {
+  const match = text.match(/promoguts\s+per\s+([^,\n\.]+)/i);
+  return match?.[1]?.trim() ?? null;
+}
+
+function extractMunicipality(text: string) {
+  const match = text.match(/\bde\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,40})/);
+  if (!match) return null;
+  const value = match[1].trim();
+  if (/habitatges|hpo|venda|alquiler/i.test(value)) return null;
+  return value;
+}
+
 function firstPdfUrl(docs: Array<{ fileType: string; documentUrl: string }>) {
   const found = docs.find((doc) => /pdf/i.test(doc.fileType));
   return found?.documentUrl || null;
@@ -41,15 +66,25 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
   const importantDates = asRecord(asRecord(latestAnalysis).important_dates);
   const pdfUrl = firstPdfUrl(promotion.documents) || promotion.sourceUrl;
 
+  const textPool = `${promotion.title}\n${promotion.rawText || ''}`;
+
   const unitsTotal =
     asNumber(units.total_homes) ??
     asNumber(units.total_units) ??
-    asNumber(units.hpo_homes);
+    asNumber(units.hpo_homes) ??
+    extractHomesCount(textPool);
+
+  const promoter = asString(promotionData.promoter) || extractPromoter(textPool);
+
+  const fallbackMunicipality =
+    promotion.municipality || extractMunicipality(textPool) || 'Catalunya';
+
+  const address = asString(promotionData.address) || extractAddress(textPool);
 
   const specificLocation =
     asString(promotionData.full_location) ||
-    asString(promotionData.address) ||
-    `${promotion.municipality || 'Catalunya'}${
+    [address, fallbackMunicipality].filter(Boolean).join(', ') ||
+    `${fallbackMunicipality}${
       promotion.province ? `, ${promotion.province}` : ''
     }`;
 
@@ -68,6 +103,7 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
             <p className="mt-2 text-sm text-[var(--ink)]">Tipo: {promotion.promotionType}</p>
             <p className="text-sm text-[var(--ink)]">Estado: {promotion.status}</p>
             <p className="text-sm text-[var(--ink)]">Total viviendas: {unitsTotal ?? 'n/d'}</p>
+            <p className="text-sm text-[var(--ink)]">Promotor: {promoter || 'n/d'}</p>
           </div>
         </div>
 

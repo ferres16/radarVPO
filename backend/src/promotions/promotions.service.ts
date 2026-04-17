@@ -30,8 +30,12 @@ export class PromotionsService {
     const item = await this.prisma.promotion.findUnique({
       where: { id },
       include: {
-        documents: true,
-        aiAnalysis: true,
+        documents: {
+          orderBy: { createdAt: 'desc' },
+        },
+        aiAnalysis: {
+          orderBy: { createdAt: 'desc' },
+        },
       },
     });
 

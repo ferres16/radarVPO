@@ -37,7 +37,7 @@ export class StructuredExtractionService {
 
     if (!completion) {
       return {
-        result: fallback,
+        result: this.enrichPromotionResult(fallback, rawText, sourceUrl),
         provider: 'fallback',
         model: 'regex-heuristic',
         confidence: 0.35,
@@ -47,11 +47,15 @@ export class StructuredExtractionService {
     const parsed = this.safeJsonParse(completion.outputText);
     if (!parsed) {
       return {
-        result: {
+        result: this.enrichPromotionResult(
+          {
           ...fallback,
           parsing_error: 'AI output was not valid JSON',
           raw_output: completion.outputText,
-        },
+          },
+          rawText,
+          sourceUrl,
+        ),
         provider: completion.provider,
         model: completion.model,
         confidence: 0.4,
@@ -59,7 +63,7 @@ export class StructuredExtractionService {
     }
 
     return {
-      result: parsed,
+      result: this.enrichPromotionResult(parsed, rawText, sourceUrl),
       provider: completion.provider,
       model: completion.model,
       confidence: 0.8,
@@ -162,11 +166,135 @@ export class StructuredExtractionService {
         future_launch: Boolean(daysMatch),
         estimated_publication_date: estimatedPublicationDate,
       },
+      units: {
+        total_homes: this.extractHomesCount(rawText),
+      },
       data_quality: {
         extraction_mode: 'fallback',
         ambiguous_fields: [],
       },
       raw_excerpt: rawText.slice(0, 2400),
     };
+  }
+
+  private enrichPromotionResult(
+    result: Record<string, unknown>,
+    rawText: string,
+    sourceUrl: string,
+  ): Record<string, unknown> {
+    const promotion = this.asRecord(result.promotion);
+    const units = this.asRecord(result.units);
+    const importantDates = this.asRecord(result.important_dates);
+    const dataQuality = this.asRecord(result.data_quality);
+
+    const totalHomes = this.extractHomesCount(rawText);
+    const address = this.extractAddress(rawText);
+    const municipality = this.extractMunicipality(rawText);
+    const promoter = this.extractPromoter(rawText);
+    const alertDate = this.extractDate(rawText);
+
+    if (!this.asString(promotion.source_url)) {
+      promotion.source_url = sourceUrl;
+    }
+
+    if (!this.asString(promotion.address) && address) {
+      promotion.address = address;
+    }
+
+    if (!this.asString(promotion.full_location) && (address || municipality)) {
+      promotion.full_location = [address, municipality].filter(Boolean).join(', ');
+    }
+
+    if (!this.asString(promotion.municipality) && municipality) {
+      promotion.municipality = municipality;
+    }
+
+    if (!this.asString(promotion.promoter) && promoter) {
+      promotion.promoter = promoter;
+    }
+
+    if (typeof units.total_homes !== 'number' && totalHomes !== null) {
+      units.total_homes = totalHomes;
+    }
+
+    if (!this.asString(importantDates.alert_date) && alertDate) {
+      importantDates.alert_date = alertDate;
+    }
+
+    if (
+      !this.asString(promotion.estimated_publication_date) &&
+      alertDate &&
+      /60\s*d[ií]as|60\s*dies|seixanta\s*dies/i.test(rawText)
+    ) {
+      const base = new Date(alertDate);
+      if (!Number.isNaN(base.getTime())) {
+        const estimated = new Date(base.getTime() + 60 * 24 * 60 * 60 * 1000);
+        promotion.estimated_publication_date = estimated.toISOString().slice(0, 10);
+        promotion.future_launch = true;
+      }
+    }
+
+    if (!this.asString(dataQuality.extraction_mode)) {
+      dataQuality.extraction_mode = 'ai+heuristic';
+    }
+
+    return {
+      ...result,
+      promotion,
+      units,
+      important_dates: importantDates,
+      data_quality: dataQuality,
+    };
+  }
+
+  private extractHomesCount(text: string): number | null {
+    const match = text.match(/(\d{1,4})\s+(habitatges|viviendas|vivendes|vivienda)/i);
+    if (!match) {
+      return null;
+    }
+
+    const parsed = Number(match[1]);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  private extractAddress(text: string): string | null {
+    const match = text.match(
+      /(carrer|calle|avinguda|avenida|av\.|c\.)\s+[^,\n]+(?:,\s*\d+)?/i,
+    );
+    return match?.[0]?.trim() ?? null;
+  }
+
+  private extractMunicipality(text: string): string | null {
+    const match = text.match(/\bde\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,40})/);
+    if (!match) {
+      return null;
+    }
+
+    const value = match[1].trim();
+    if (/habitatges|hpo|venda|alquiler/i.test(value)) {
+      return null;
+    }
+    return value;
+  }
+
+  private extractPromoter(text: string): string | null {
+    const match = text.match(/promoguts\s+per\s+([^,\n\.]+)/i);
+    return match?.[1]?.trim() ?? null;
+  }
+
+  private extractDate(text: string): string | null {
+    const match = text.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (!match) {
+      return null;
+    }
+
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+    const parsed = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+
+    return Number.isNaN(parsed.getTime())
+      ? null
+      : parsed.toISOString().slice(0, 10);
   }
 }
