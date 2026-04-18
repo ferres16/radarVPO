@@ -22,16 +22,27 @@ export class PdfOcrService {
 
     if (this.isPdf(fileType, url)) {
       const parsed = await this.parsePdf(buffer);
-      if (parsed.text.length >= 500) {
-        return parsed;
-      }
+      const shouldFallbackToOcr = parsed.text.length < 500;
+      const shouldEnrichWithOcr =
+        !shouldFallbackToOcr && this.needsTableOcrEnrichment(parsed.text);
 
-      const ocrFallback = await this.runOcrSpace(buffer, 'application/pdf');
-      if (ocrFallback) {
-        return {
-          text: ocrFallback,
-          method: 'ocr-space',
-        };
+      if (shouldFallbackToOcr || shouldEnrichWithOcr) {
+        const ocrText = await this.runOcrSpace(buffer, 'application/pdf');
+        if (ocrText) {
+          if (shouldFallbackToOcr) {
+            return {
+              text: ocrText,
+              method: 'ocr-space',
+            };
+          }
+
+          const merged = this.mergeExtractedTexts(parsed.text, ocrText);
+          return {
+            text: merged,
+            pageCount: parsed.pageCount,
+            method: 'ocr-space',
+          };
+        }
       }
 
       return parsed;
@@ -65,6 +76,42 @@ export class PdfOcrService {
 
   buildDocumentFingerprint(text: string): string {
     return createHash('sha256').update(text).digest('hex');
+  }
+
+  private needsTableOcrEnrichment(text: string): boolean {
+    const normalized = text.toLowerCase();
+
+    const hasHousingContext =
+      /annex\s*1|annex\s*i|habitatges|viviendas|adjudicaci[oó]|lloguer/.test(
+        normalized,
+      );
+
+    const hasTableSignals =
+      /m[²2]\s*computables|lloguer\s+mensual|ocupaci[oó]\s+m[aà]xima|\bplanta\b\s+\bporta\b/.test(
+        normalized,
+      );
+
+    return hasHousingContext && !hasTableSignals;
+  }
+
+  private mergeExtractedTexts(primary: string, secondary: string): string {
+    const a = this.normalizeExtractedText(primary);
+    const b = this.normalizeExtractedText(secondary);
+
+    if (!a) {
+      return b;
+    }
+    if (!b) {
+      return a;
+    }
+    if (a.includes(b.slice(0, 200))) {
+      return a;
+    }
+    if (b.includes(a.slice(0, 200))) {
+      return b;
+    }
+
+    return this.normalizeExtractedText(`${a}\n\n${b}`);
   }
 
   private async parsePdf(buffer: Buffer): Promise<ParseResult> {
