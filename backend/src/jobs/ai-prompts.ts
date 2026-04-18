@@ -48,3 +48,36 @@ Reglas:
 - short_summary en 2 a 4 frases.
 - why_it_matters en 1 a 2 frases.
 - Nada de etiquetas HTML.`;
+
+export const HOUSING_TABLE_PROMPT = `Eres un extractor experto de tablas de viviendas en promociones VPO/HPO.
+
+Recibirás el texto completo OCR de un anuncio + su PDF.
+Tu tarea: extraer LA TABLA COMPLETA DE PISOS de la promoción.
+
+Instrucciones estrictas:
+- Responde SOLO JSON válido
+- Sin texto adicional
+- No inventes filas
+- Si una celda no aparece, usar null
+- Mantén una fila por vivienda/piso/registro de tabla
+- Conserva números como number cuando sea posible
+- Si hay precio de alquiler mensual, extraer número sin símbolo €
+
+Formato de salida obligatorio:
+{
+	"housing_table": [
+		{
+			"planta": "...",
+			"porta": "...",
+			"m2_computables": 0,
+			"numero_habitaciones": 0,
+			"num_habit_6_8_m2": 0,
+			"num_habit_8_12_m2": 0,
+			"num_habit_mas_12_m2": 0,
+			"ocupacion_maxima": 0,
+			"precio_alquiler_mensual": 0
+		}
+	]
+}
+
+Si no encuentras tabla, devuelve {"housing_table": []}.`;

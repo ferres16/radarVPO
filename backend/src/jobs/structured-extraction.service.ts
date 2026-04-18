@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AiProviderService } from '../ai/ai.provider.service';
-import { NEWS_ANALYSIS_PROMPT, VPO_EXTRACTION_PROMPT } from './ai-prompts';
+import {
+  HOUSING_TABLE_PROMPT,
+  NEWS_ANALYSIS_PROMPT,
+  VPO_EXTRACTION_PROMPT,
+} from './ai-prompts';
 
 @Injectable()
 export class StructuredExtractionService {
@@ -36,8 +40,19 @@ export class StructuredExtractionService {
       });
 
     if (!completion) {
+      const enrichedFallback = this.enrichPromotionResult(
+        fallback,
+        rawText,
+        sourceUrl,
+      );
+      const withHousingTable = await this.enrichWithHousingTable(
+        enrichedFallback,
+        rawText,
+        sourceUrl,
+      );
+
       return {
-        result: this.enrichPromotionResult(fallback, rawText, sourceUrl),
+        result: withHousingTable,
         provider: 'fallback',
         model: 'regex-heuristic',
         confidence: 0.35,
@@ -46,27 +61,103 @@ export class StructuredExtractionService {
 
     const parsed = this.safeJsonParse(completion.outputText);
     if (!parsed) {
-      return {
-        result: this.enrichPromotionResult(
-          {
+      const enrichedInvalid = this.enrichPromotionResult(
+        {
           ...fallback,
           parsing_error: 'AI output was not valid JSON',
           raw_output: completion.outputText,
-          },
-          rawText,
-          sourceUrl,
-        ),
+        },
+        rawText,
+        sourceUrl,
+      );
+      const withHousingTable = await this.enrichWithHousingTable(
+        enrichedInvalid,
+        rawText,
+        sourceUrl,
+      );
+
+      return {
+        result: withHousingTable,
         provider: completion.provider,
         model: completion.model,
         confidence: 0.4,
       };
     }
 
+    const enriched = this.enrichPromotionResult(parsed, rawText, sourceUrl);
+    const withHousingTable = await this.enrichWithHousingTable(
+      enriched,
+      rawText,
+      sourceUrl,
+    );
+
     return {
-      result: this.enrichPromotionResult(parsed, rawText, sourceUrl),
+      result: withHousingTable,
       provider: completion.provider,
       model: completion.model,
       confidence: 0.8,
+    };
+  }
+
+  private async enrichWithHousingTable(
+    result: Record<string, unknown>,
+    rawText: string,
+    sourceUrl: string,
+  ): Promise<Record<string, unknown>> {
+    const units = this.asRecord(result.units);
+    const existingRows = this.parseHousingTableRows(units.housing_table);
+    if (existingRows.length > 0) {
+      return result;
+    }
+
+    if (
+      rawText.length < 1500 ||
+      !/(planta|porta|m2|lloguer|alquiler|ocupaci[oó]n|habitaci[oó]n)/i.test(
+        rawText,
+      )
+    ) {
+      return result;
+    }
+
+    const completion = await this.aiProvider
+      .complete({
+        systemPrompt: HOUSING_TABLE_PROMPT,
+        userInput: `SOURCE_URL: ${sourceUrl}\n\nCONTENT:\n${rawText}`,
+        temperature: 0,
+        maxTokens: 3200,
+      })
+      .catch((error) => {
+        this.logger.warn(
+          `AI housing table extraction failed: ${
+            error instanceof Error ? error.message : 'unknown'
+          }`,
+        );
+        return null;
+      });
+
+    if (!completion) {
+      return result;
+    }
+
+    const parsed = this.safeJsonParse(completion.outputText);
+    if (!parsed) {
+      return result;
+    }
+
+    const rows = this.parseHousingTableRows(parsed.housing_table);
+    if (rows.length === 0) {
+      return result;
+    }
+
+    units.housing_table = rows;
+
+    const additional = this.asRecord(result.additional_extracted_data);
+    additional.housing_table_source = `ai:${completion.provider}:${completion.model}`;
+
+    return {
+      ...result,
+      units,
+      additional_extracted_data: additional,
     };
   }
 
@@ -146,6 +237,68 @@ export class StructuredExtractionService {
 
   private asString(value: unknown): string | null {
     return typeof value === 'string' ? value : null;
+  }
+
+  private asNumber(value: unknown): number | null {
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    if (typeof value === 'string') {
+      const normalized = value
+        .replace(/\./g, '')
+        .replace(',', '.')
+        .replace(/[^\d.-]/g, '')
+        .trim();
+      if (!normalized) {
+        return null;
+      }
+      const parsed = Number(normalized);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    return null;
+  }
+
+  private parseHousingTableRows(value: unknown): Array<Record<string, unknown>> {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    const rows: Array<Record<string, unknown>> = [];
+
+    for (const item of value) {
+      const record = this.asRecord(item);
+      const normalized: Record<string, unknown> = {};
+
+      for (const [key, raw] of Object.entries(record)) {
+        const safeKey = key
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, '_')
+          .replace(/[^a-z0-9_]/g, '_')
+          .replace(/_{2,}/g, '_')
+          .replace(/^_+|_+$/g, '');
+
+        if (!safeKey) {
+          continue;
+        }
+
+        const maybeNumber = this.asNumber(raw);
+        normalized[safeKey] = maybeNumber ?? this.asString(raw) ?? null;
+      }
+
+      const hasEnoughContent =
+        Object.values(normalized).filter(
+          (cell) => cell !== null && String(cell).trim() !== '',
+        ).length >= 2;
+
+      if (hasEnoughContent) {
+        rows.push(normalized);
+      }
+    }
+
+    return rows;
   }
 
   private buildPromotionFallback(

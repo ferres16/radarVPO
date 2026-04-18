@@ -104,6 +104,62 @@ type HousingRow = {
   homes: number;
 };
 
+type DetailedHousingRow = Record<string, string | number | null>;
+
+function parseDetailedHousingRows(units: Record<string, unknown>): DetailedHousingRow[] {
+  const table = units.housing_table;
+  if (!Array.isArray(table)) {
+    return [];
+  }
+
+  const rows: DetailedHousingRow[] = [];
+  for (const row of table) {
+    if (typeof row !== 'object' || row === null || Array.isArray(row)) {
+      continue;
+    }
+
+    const parsed: DetailedHousingRow = {};
+    for (const [key, value] of Object.entries(row as Record<string, unknown>)) {
+      if (typeof value === 'string' || typeof value === 'number' || value === null) {
+        parsed[key] = value;
+      }
+    }
+
+    const nonEmptyCells = Object.values(parsed).filter(
+      (cell) => cell !== null && String(cell).trim() !== '',
+    ).length;
+
+    if (nonEmptyCells >= 2) {
+      rows.push(parsed);
+    }
+  }
+
+  return rows;
+}
+
+function formatColumnLabel(column: string) {
+  const dict: Record<string, string> = {
+    planta: 'Planta',
+    porta: 'Puerta',
+    puerta: 'Puerta',
+    m2_computables: 'M2 computables',
+    numero_habitaciones: 'Num. habitaciones',
+    num_habit_6_8_m2: 'Hab. 6-8 m2',
+    num_habit_8_12_m2: 'Hab. 8-12 m2',
+    num_habit_mas_12_m2: 'Hab. mas de 12 m2',
+    ocupacion_maxima: 'Ocupacion maxima',
+    precio_alquiler_mensual: 'Precio alquiler mensual',
+  };
+
+  if (dict[column]) {
+    return dict[column];
+  }
+
+  return column
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
 function parseHousingRows(
   units: Record<string, unknown>,
   textPool: string,
@@ -187,6 +243,7 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
     .join('\n\n');
 
   const textPool = `${promotion.title}\n${promotion.rawText || ''}\n${documentsText}`;
+  const detailedHousingRows = parseDetailedHousingRows(units);
   let housingRows = parseHousingRows(units, textPool);
 
   const unitsTotal =
@@ -272,7 +329,36 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
 
         <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Tabla de viviendas disponibles</h2>
-          {housingRows.length === 0 ? (
+          {detailedHousingRows.length > 0 ? (
+            <table className="mt-3 w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  {Object.keys(detailedHousingRows[0]).map((column) => (
+                    <th
+                      key={column}
+                      className="border-b border-[var(--stroke)] px-2 py-2 text-left text-[var(--ink-soft)]"
+                    >
+                      {formatColumnLabel(column)}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {detailedHousingRows.map((row, index) => (
+                  <tr key={`detailed-row-${index}`}>
+                    {Object.keys(detailedHousingRows[0]).map((column) => (
+                      <td
+                        key={`${index}-${column}`}
+                        className="border-b border-[var(--stroke)] px-2 py-2 text-[var(--ink)]"
+                      >
+                        {row[column] ?? 'n/d'}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : housingRows.length === 0 ? (
             <p className="mt-2 text-sm text-[var(--ink)]">No se han podido extraer filas de viviendas del PDF.</p>
           ) : (
             <table className="mt-3 w-full border-collapse text-sm">
