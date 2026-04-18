@@ -19,6 +19,13 @@ INSTRUCCIONES:
 - Si dice “en N días”: calcular estimated_publication_date = alert_date + N días
 - Interpretar tablas como arrays JSON
 - Guardar ambigüedades en data_quality.ambiguous_fields
+- Priorizar texto del PDF sobre titulares cortos cuando haya conflicto
+- En promotion.municipality, extraer municipio real (ej: "al municipi de Sant Boi de Llobregat" => "Sant Boi de Llobregat")
+- En promotion.promoter, extraer solo entidad promotora sin arrastrar "al municipi de ..."
+- En requirements, rellenar income_limits, residency_requirement y other_conditions si hay información textual
+- En units.home_mix, convertir tablas del PDF a filas {label, homes}
+- En important_dates, completar alert_date, publication_date y application_deadline cuando aparezcan
+- No devolver valores genéricos como "Sol", "n/d" o "Catalunya" si existe un municipio más específico en el texto
 
 (Usa el esquema JSON extenso de promotion/document/legal/applications/economic/requirements/quotas/units/future_launch_alert/contact/important_dates/required_documents_full/process_timeline/additional_extracted_data/data_quality.)`;
 
