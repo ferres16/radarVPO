@@ -21,6 +21,19 @@ function asNumber(value: unknown): number | null {
   return null;
 }
 
+function cleanValue(value: string | null): string | null {
+  if (!value) return null;
+  const cleaned = value.replace(/\s{2,}/g, ' ').trim();
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+function isWeakLocation(value: string | null): boolean {
+  if (!value) return true;
+  const normalized = value.trim().toLowerCase();
+  if (normalized.length < 4) return true;
+  return /^(sol|n\/d|nd|catalunya|cataluna)$/.test(normalized);
+}
+
 function extractHomesCount(text: string) {
   const match = text.match(/(\d{1,4})\s+(habitatges|viviendas|vivendes|vivienda)/i);
   if (!match) return null;
@@ -48,6 +61,7 @@ function extractMunicipality(text: string) {
   const patterns = [
     /al\s+municipi\s+d(?:e|')\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})/i,
     /al\s+municipio\s+de\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})/i,
+    /situats?\s+(?:al|a\s+l['’])\s+municipi\s+d(?:e|')\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})/i,
     /\ba\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})(?:[\.,\n]|$)/i,
     /\bde\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,40})/,
   ];
@@ -79,6 +93,12 @@ function extractMunicipality(text: string) {
   return null;
 }
 
+function extractLine(text: string, pattern: RegExp): string | null {
+  const match = text.match(pattern);
+  if (!match?.[0]) return null;
+  return cleanValue(match[0]);
+}
+
 type HousingRow = {
   label: string;
   homes: number;
@@ -107,20 +127,39 @@ function parseHousingRows(
     }
   }
 
-  const regex = /(\d{1,3})\s+habitatges?\s+de\s+([^\n,.;]+)/gi;
+  const regex = /(\d{1,3})\s+(?:habitatges?|viviendas?)\s*(?:de|d')?\s*([^\n,.;]{0,70})/gi;
   const rows: HousingRow[] = [];
   let match: RegExpExecArray | null;
   while ((match = regex.exec(textPool)) !== null) {
     const homes = Number(match[1]);
     if (!Number.isNaN(homes)) {
       rows.push({
-        label: match[2].trim(),
+        label: cleanValue(match[2]) || 'Tipologia general',
         homes,
       });
     }
   }
 
-  return rows;
+  const tableLikeRegex = /(\d{1,3})\s+(?:habitatges?|viviendas?)\b/gi;
+  if (rows.length === 0) {
+    let m: RegExpExecArray | null;
+    while ((m = tableLikeRegex.exec(textPool)) !== null) {
+      const homes = Number(m[1]);
+      if (!Number.isNaN(homes)) {
+        rows.push({ label: 'Tipologia general', homes });
+      }
+    }
+  }
+
+  const deduped = new Map<string, HousingRow>();
+  for (const row of rows) {
+    const key = `${row.label.toLowerCase()}|${row.homes}`;
+    if (!deduped.has(key)) {
+      deduped.set(key, row);
+    }
+  }
+
+  return [...deduped.values()];
 }
 
 function firstPdfUrl(docs: Array<{ fileType: string; documentUrl: string }>) {
@@ -142,15 +181,23 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
   const units = asRecord(asRecord(latestAnalysis).units);
   const importantDates = asRecord(asRecord(latestAnalysis).important_dates);
   const pdfUrl = firstPdfUrl(promotion.documents) || promotion.sourceUrl;
+  const documentsText = promotion.documents
+    .map((doc) => doc.extractedText || '')
+    .filter((value) => value.trim().length > 0)
+    .join('\n\n');
 
-  const textPool = `${promotion.title}\n${promotion.rawText || ''}`;
-  const housingRows = parseHousingRows(units, textPool);
+  const textPool = `${promotion.title}\n${promotion.rawText || ''}\n${documentsText}`;
+  let housingRows = parseHousingRows(units, textPool);
 
   const unitsTotal =
     asNumber(units.total_homes) ??
     asNumber(units.total_units) ??
     asNumber(units.hpo_homes) ??
     extractHomesCount(textPool);
+
+  if (housingRows.length === 0 && unitsTotal !== null) {
+    housingRows = [{ label: 'Total viviendas', homes: unitsTotal }];
+  }
 
   const promoter =
     asString(promotionData.promoter)?.replace(/\s+al\s+municipi[\s\S]*$/i, '').trim() ||
@@ -161,12 +208,33 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
 
   const address = asString(promotionData.address) || extractAddress(textPool);
 
-  const specificLocation =
-    asString(promotionData.full_location) ||
-    [address, fallbackMunicipality].filter(Boolean).join(', ') ||
-    `${fallbackMunicipality}${
-      promotion.province ? `, ${promotion.province}` : ''
-    }`;
+  const aiLocation = cleanValue(asString(promotionData.full_location));
+  const aiAddress = cleanValue(asString(promotionData.address));
+  const specificLocation = !isWeakLocation(aiLocation)
+    ? aiLocation
+    : !isWeakLocation(aiAddress)
+      ? aiAddress
+      : [address, fallbackMunicipality].filter(Boolean).join(', ') ||
+        `${fallbackMunicipality}${
+          promotion.province ? `, ${promotion.province}` : ''
+        }`;
+
+  const incomeRequirement =
+    asString(requirements.income_limits) ||
+    extractLine(textPool, /(ingres[oa]s?|renda)[^\n]{0,140}/i) ||
+    'n/d';
+
+  const residencyRequirement =
+    asString(requirements.residency_requirement) ||
+    extractLine(textPool, /(empadronament|empadronamiento)[^\n]{0,140}/i) ||
+    'n/d';
+
+  const otherRequirement =
+    asString(requirements.other_conditions) ||
+    extractLine(textPool, /(requisits?|requisitos|condicions?|condiciones)[^\n]{0,180}/i) ||
+    'n/d';
+
+  const isUpcoming = promotion.futureLaunch || promotion.status === 'upcoming';
 
   return (
     <main className="shell">
@@ -190,15 +258,15 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
             <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Fechas importantes</h2>
-            <p className="mt-2 text-sm text-[var(--ink)]">Publicacion alerta: {promotion.publishedAt ? promotion.publishedAt.slice(0, 10) : 'n/d'}</p>
-            <p className="text-sm text-[var(--ink)]">Salida estimada: {promotion.estimatedPublicationDate ? promotion.estimatedPublicationDate.slice(0, 10) : asString(importantDates.estimated_publication_date) || 'n/d'}</p>
+            <p className="mt-2 text-sm text-[var(--ink)]">{isUpcoming ? 'Publicacion alerta' : 'Publicacion anuncio'}: {promotion.publishedAt ? promotion.publishedAt.slice(0, 10) : 'n/d'}</p>
+            <p className="text-sm text-[var(--ink)]">{isUpcoming ? 'Salida estimada' : 'Fecha de lanzamiento'}: {isUpcoming ? (promotion.estimatedPublicationDate ? promotion.estimatedPublicationDate.slice(0, 10) : asString(importantDates.estimated_publication_date) || 'n/d') : (promotion.publishedAt ? promotion.publishedAt.slice(0, 10) : 'n/d')}</p>
             <p className="text-sm text-[var(--ink)]">Fin solicitud: {promotion.deadlineDate ? promotion.deadlineDate.slice(0, 10) : asString(importantDates.application_deadline) || 'n/d'}</p>
           </div>
           <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
             <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Requisitos principales</h2>
-            <p className="mt-2 text-sm text-[var(--ink)]">Ingresos: {asString(requirements.income_limits) || 'n/d'}</p>
-            <p className="text-sm text-[var(--ink)]">Empadronamiento: {asString(requirements.residency_requirement) || 'n/d'}</p>
-            <p className="text-sm text-[var(--ink)]">Otros: {asString(requirements.other_conditions) || 'n/d'}</p>
+            <p className="mt-2 text-sm text-[var(--ink)]">Ingresos: {incomeRequirement}</p>
+            <p className="text-sm text-[var(--ink)]">Empadronamiento: {residencyRequirement}</p>
+            <p className="text-sm text-[var(--ink)]">Otros: {otherRequirement}</p>
           </div>
         </div>
 

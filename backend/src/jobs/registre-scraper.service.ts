@@ -67,7 +67,7 @@ export class RegistreScraperService {
     for (const entry of entries) {
       const existing = await this.prisma.promotion.findFirst({
         where: { sourceUrl: entry.detailUrl },
-        select: { id: true },
+        select: { id: true, rawText: true },
       });
 
       const detailHtml = await this.fetchHtml(entry.detailUrl);
@@ -105,10 +105,11 @@ export class RegistreScraperService {
       if (!existing) {
         promotionsCreated += 1;
       } else {
+        const mergedRawText = this.mergeRawText(existing.rawText, rawText);
         await this.prisma.promotion.update({
           where: { id: promotion.id },
           data: {
-            rawText,
+            rawText: mergedRawText,
             aiStatus: 'pending',
             publishedAt: publicationDate,
             estimatedPublicationDate: estimatedFromAlert,
@@ -323,6 +324,34 @@ export class RegistreScraperService {
       .replace(/\n{3,}/g, '\n\n')
       .trim()
       .slice(0, 60000);
+  }
+
+  private mergeRawText(
+    existingRawText: string | null,
+    scrapedRawText: string,
+  ): string {
+    const existing = (existingRawText ?? '').trim();
+    const incoming = scrapedRawText.trim();
+
+    if (!existing) {
+      return incoming;
+    }
+
+    if (!incoming) {
+      return existing.slice(0, 60000);
+    }
+
+    // Keep OCR-enriched content when periodic scraping brings only a short notice page.
+    const incomingSignature = incoming.slice(0, 220);
+    if (existing.length >= incoming.length && existing.includes(incomingSignature)) {
+      return existing.slice(0, 60000);
+    }
+
+    if (incoming.includes(existing.slice(0, 220))) {
+      return incoming.slice(0, 60000);
+    }
+
+    return `${existing}\n\n${incoming}`.slice(0, 60000);
   }
 
   private extractDate(text: string): Date | undefined {
