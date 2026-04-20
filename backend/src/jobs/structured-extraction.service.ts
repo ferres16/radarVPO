@@ -115,12 +115,11 @@ export class StructuredExtractionService {
       return result;
     }
 
-    if (
-      rawText.length < 1500 ||
-      !/(planta|porta|m2|lloguer|alquiler|ocupaci[oó]n|habitaci[oó]n)/i.test(
-        rawText,
-      )
-    ) {
+    const hasTableSignals = /(planta|porta|m2|lloguer|alquiler|ocupaci[oó]n|habitaci[oó]n)/i.test(
+      rawText,
+    );
+
+    if (!pdfUrl && (rawText.length < 1500 || !hasTableSignals)) {
       return result;
     }
 
