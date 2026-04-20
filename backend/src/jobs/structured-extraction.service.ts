@@ -225,10 +225,19 @@ export class StructuredExtractionService {
   }
 
   private safeJsonParse(text: string): Record<string, unknown> | null {
+    const normalized = text.trim();
+    const fenceMatch = normalized.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    const unfenced = fenceMatch ? fenceMatch[1].trim() : normalized;
+
     try {
-      return JSON.parse(text) as Record<string, unknown>;
+      return JSON.parse(unfenced) as Record<string, unknown>;
     } catch {
-      const candidate = text.match(/\{[\s\S]*\}$/)?.[0];
+      const firstBrace = unfenced.indexOf('{');
+      const lastBrace = unfenced.lastIndexOf('}');
+      const candidate =
+        firstBrace >= 0 && lastBrace > firstBrace
+          ? unfenced.slice(firstBrace, lastBrace + 1)
+          : null;
       if (!candidate) {
         return null;
       }
