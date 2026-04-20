@@ -342,6 +342,7 @@ export class StructuredExtractionService {
 
     const totalHomes = this.extractHomesCount(rawText);
     const homeMix = this.extractHousingMix(rawText);
+    const detailedHousingTable = this.extractDetailedHousingTable(rawText);
     const address = this.extractAddress(rawText);
     const municipality = this.extractMunicipality(rawText);
     const promoter = this.extractPromoter(rawText);
@@ -373,6 +374,10 @@ export class StructuredExtractionService {
 
     if (!Array.isArray(units.home_mix) && homeMix.length > 0) {
       units.home_mix = homeMix;
+    }
+
+    if (!Array.isArray(units.housing_table) && detailedHousingTable.length > 0) {
+      units.housing_table = detailedHousingTable;
     }
 
     if (!this.asString(importantDates.alert_date) && alertDate) {
@@ -435,6 +440,88 @@ export class StructuredExtractionService {
     }
 
     return rows;
+  }
+
+  private extractDetailedHousingTable(
+    text: string,
+  ): Array<Record<string, unknown>> {
+    // Expected row shape from Annex housing table:
+    // Planta Porta M2 NumHab NumHab6_8 NumHab8_12 NumHab12plus Ocupacion Precio
+    const rowRegex =
+      /\b(BX|\d{1,2})\s+(\d{1,2})\s+(\d{1,3},\d{2})\s+(\d{1,2})\s+(-|\d{1,2})\s+(-|\d{1,2})\s+(-|\d{1,2})\s+(\d{1,2})\s+(\d{1,4},\d{2})\s*€?/gi;
+
+    const rows: Array<Record<string, unknown>> = [];
+    let match: RegExpExecArray | null;
+
+    while ((match = rowRegex.exec(text)) !== null) {
+      const m2 = this.toNumberWithComma(match[3]);
+      const numHabitaciones = this.toInteger(match[4]);
+      const hab6_8 = this.toIntegerOrNull(match[5]);
+      const hab8_12 = this.toIntegerOrNull(match[6]);
+      const hab12plus = this.toIntegerOrNull(match[7]);
+      const ocupacion = this.toInteger(match[8]);
+      const precio = this.toNumberWithComma(match[9]);
+
+      if (
+        m2 === null ||
+        numHabitaciones === null ||
+        ocupacion === null ||
+        precio === null
+      ) {
+        continue;
+      }
+
+      rows.push({
+        planta: match[1],
+        porta: this.toInteger(match[2]),
+        m2_computables: m2,
+        numero_habitaciones: numHabitaciones,
+        num_habit_6_8_m2: hab6_8,
+        num_habit_8_12_m2: hab8_12,
+        num_habit_mas_12_m2: hab12plus,
+        ocupacion_maxima: ocupacion,
+        precio_alquiler_mensual: precio,
+      });
+    }
+
+    if (rows.length === 0) {
+      return rows;
+    }
+
+    const deduped = new Map<string, Record<string, unknown>>();
+    for (const row of rows) {
+      const key = `${row.planta}|${row.porta}|${row.m2_computables}|${row.precio_alquiler_mensual}`;
+      if (!deduped.has(key)) {
+        deduped.set(key, row);
+      }
+    }
+
+    return [...deduped.values()];
+  }
+
+  private toNumberWithComma(value: string): number | null {
+    const normalized = value.replace(/\./g, '').replace(',', '.').trim();
+    if (!normalized) {
+      return null;
+    }
+    const parsed = Number(normalized);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  private toInteger(value: string): number | null {
+    const parsed = Number(value.trim());
+    if (!Number.isInteger(parsed)) {
+      return null;
+    }
+    return parsed;
+  }
+
+  private toIntegerOrNull(value: string): number | null {
+    const token = value.trim();
+    if (token === '-' || token === '') {
+      return null;
+    }
+    return this.toInteger(token);
   }
 
   private extractAddress(text: string): string | null {

@@ -209,6 +209,16 @@ function parseHousingRows(
 
   const deduped = new Map<string, HousingRow>();
   for (const row of rows) {
+    const cleanedLabel = row.label.replace(/\s+/g, ' ').trim();
+    const looksNoisy =
+      cleanedLabel.length > 55 ||
+      /(promoguts?|s[’']?organitzen|procediment|adjudicaci[oó]|notificaci[oó])/i.test(
+        cleanedLabel,
+      );
+    if (looksNoisy) {
+      continue;
+    }
+
     const key = `${row.label.toLowerCase()}|${row.homes}`;
     if (!deduped.has(key)) {
       deduped.set(key, row);
@@ -252,7 +262,7 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
     asNumber(units.hpo_homes) ??
     extractHomesCount(textPool);
 
-  if (housingRows.length === 0 && unitsTotal !== null) {
+  if (housingRows.length === 0 && unitsTotal !== null && detailedHousingRows.length === 0) {
     housingRows = [{ label: 'Total viviendas', homes: unitsTotal }];
   }
 
