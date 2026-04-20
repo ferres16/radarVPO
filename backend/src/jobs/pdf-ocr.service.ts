@@ -259,7 +259,7 @@ export class PdfOcrService {
     mimeType: string,
     isTable = false,
   ): Promise<string | null> {
-    const apiKey = process.env.OCRSPACE_API_KEY;
+    const apiKey = process.env.OCRSPACE_API_KEY || 'helloworld';
     if (!apiKey) {
       return null;
     }
