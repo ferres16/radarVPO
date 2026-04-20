@@ -105,12 +105,68 @@ export class JobsService {
     await this.runWithLock('analyze_pending_promotions', async () => {
       const pending = await this.prisma.promotion.findMany({
         where: { aiStatus: 'pending' },
+        include: {
+          documents: true,
+        },
         take: 25,
       });
 
       for (const promotion of pending) {
         try {
-          const sourceText = promotion.rawText ?? '';
+          let sourceText = [
+            promotion.rawText ?? '',
+            ...promotion.documents
+              .map((doc) => doc.extractedText ?? '')
+              .filter((value) => value.trim().length > 0),
+          ]
+            .join('\n\n')
+            .trim();
+
+          if (
+            this.needsHousingTableRefresh(sourceText) &&
+            promotion.documents.length > 0
+          ) {
+            for (const document of promotion.documents) {
+              if (!/pdf/i.test(document.fileType)) {
+                continue;
+              }
+
+              try {
+                const reparsed = await this.pdfOcrService.parseDocument(
+                  document.documentUrl,
+                  document.fileType,
+                  { preferTableOcr: true },
+                );
+
+                if (reparsed.text.length > (document.extractedText?.length ?? 0)) {
+                  await this.prisma.promotionDocument.update({
+                    where: { id: document.id },
+                    data: {
+                      extractedText: reparsed.text,
+                      processedAt: new Date(),
+                    },
+                  });
+                  document.extractedText = reparsed.text;
+                }
+              } catch (error) {
+                await this.recordFailure(
+                  'analyze_pending_promotions',
+                  document.id,
+                  error,
+                );
+              }
+            }
+
+            sourceText = [
+              promotion.rawText ?? '',
+              ...promotion.documents
+                .map((doc) => doc.extractedText ?? '')
+                .filter((value) => value.trim().length > 0),
+            ]
+              .join('\n\n')
+              .trim();
+          }
+
           const analysis = await this.extractionService.extractPromotionData(
             sourceText,
             promotion.sourceUrl,
@@ -168,6 +224,21 @@ export class JobsService {
 
       return { analyzed: pending.length };
     });
+  }
+
+  private needsHousingTableRefresh(text: string): boolean {
+    if (!text || text.length < 1200) {
+      return false;
+    }
+
+    const hasHousingContext =
+      /annex\s*1|habitatges|viviendas|lloguer|adjudicaci[oó]/i.test(text);
+    const hasTableSignals =
+      /\bBX\b|\bplanta\b\s+\bporta\b|m[²2]\s*computables|lloguer\s+mensual|478,87|63,85/i.test(
+        text,
+      );
+
+    return hasHousingContext && !hasTableSignals;
   }
 
   @Cron(process.env.CRON_PUBLISH_PROMOTIONS || CronExpression.EVERY_HOUR, {

@@ -17,7 +17,11 @@ type ParseResult = {
 export class PdfOcrService {
   private readonly logger = new Logger(PdfOcrService.name);
 
-  async parseDocument(url: string, fileType?: string): Promise<ParseResult> {
+  async parseDocument(
+    url: string,
+    fileType?: string,
+    options?: { preferTableOcr?: boolean },
+  ): Promise<ParseResult> {
     const buffer = await this.fetchAsBuffer(url);
 
     if (this.isPdf(fileType, url)) {
@@ -25,9 +29,33 @@ export class PdfOcrService {
       const shouldFallbackToOcr = parsed.text.length < 500;
       const shouldEnrichWithOcr =
         !shouldFallbackToOcr && this.needsTableOcrEnrichment(parsed.text);
+      const shouldPreferTableOcr = options?.preferTableOcr === true;
+
+      if (shouldPreferTableOcr) {
+        const tableOcrText = await this.runOcrSpace(
+          buffer,
+          'application/pdf',
+          true,
+        );
+        if (tableOcrText) {
+          const mergedPreferred = this.mergeExtractedTexts(
+            parsed.text,
+            tableOcrText,
+          );
+          return {
+            text: mergedPreferred,
+            pageCount: parsed.pageCount,
+            method: 'ocr-space',
+          };
+        }
+      }
 
       if (shouldFallbackToOcr || shouldEnrichWithOcr) {
-        const ocrText = await this.runOcrSpace(buffer, 'application/pdf');
+        const ocrText = await this.runOcrSpace(
+          buffer,
+          'application/pdf',
+          shouldEnrichWithOcr,
+        );
         if (ocrText) {
           if (shouldFallbackToOcr) {
             return {
@@ -136,6 +164,7 @@ export class PdfOcrService {
   private async runOcrSpace(
     buffer: Buffer,
     mimeType: string,
+    isTable = false,
   ): Promise<string | null> {
     const apiKey = process.env.OCRSPACE_API_KEY;
     if (!apiKey) {
@@ -146,6 +175,11 @@ export class PdfOcrService {
     form.append('language', process.env.OCRSPACE_LANGUAGE ?? 'spa');
     form.append('isOverlayRequired', 'false');
     form.append('detectOrientation', 'true');
+    if (isTable) {
+      form.append('isTable', 'true');
+      form.append('OCREngine', '2');
+      form.append('scale', 'true');
+    }
 
     const blob = new Blob([new Uint8Array(buffer)], { type: mimeType });
     form.append('file', blob, 'document');
