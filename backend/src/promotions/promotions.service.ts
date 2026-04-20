@@ -144,6 +144,7 @@ export class PromotionsService {
     const analysis = await this.extractionService.extractPromotionData(
       sourceText,
       promotion.sourceUrl,
+      promotion.documents.find((doc) => /pdf/i.test(doc.fileType))?.documentUrl,
     );
 
     await this.prisma.promotionAiAnalysis.create({

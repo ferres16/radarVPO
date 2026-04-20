@@ -15,6 +15,7 @@ export class StructuredExtractionService {
   async extractPromotionData(
     rawText: string,
     sourceUrl: string,
+    pdfUrl?: string,
   ): Promise<{
     result: Record<string, unknown>;
     provider: string;
@@ -49,6 +50,7 @@ export class StructuredExtractionService {
         enrichedFallback,
         rawText,
         sourceUrl,
+        pdfUrl,
       );
 
       return {
@@ -74,6 +76,7 @@ export class StructuredExtractionService {
         enrichedInvalid,
         rawText,
         sourceUrl,
+        pdfUrl,
       );
 
       return {
@@ -89,6 +92,7 @@ export class StructuredExtractionService {
       enriched,
       rawText,
       sourceUrl,
+      pdfUrl,
     );
 
     return {
@@ -103,6 +107,7 @@ export class StructuredExtractionService {
     result: Record<string, unknown>,
     rawText: string,
     sourceUrl: string,
+    pdfUrl?: string,
   ): Promise<Record<string, unknown>> {
     const units = this.asRecord(result.units);
     const existingRows = this.parseHousingTableRows(units.housing_table);
@@ -145,11 +150,20 @@ export class StructuredExtractionService {
     }
 
     const rows = this.parseHousingTableRows(parsed.housing_table);
-    if (rows.length === 0) {
+    let finalRows = rows;
+
+    if (finalRows.length === 0 && pdfUrl) {
+      const rowsFromPdf = await this.extractHousingTableFromPdfUrl(pdfUrl);
+      if (rowsFromPdf.length > 0) {
+        finalRows = rowsFromPdf;
+      }
+    }
+
+    if (finalRows.length === 0) {
       return result;
     }
 
-    units.housing_table = rows;
+    units.housing_table = finalRows;
 
     const additional = this.asRecord(result.additional_extracted_data);
     additional.housing_table_source = `ai:${completion.provider}:${completion.model}`;
@@ -299,6 +313,117 @@ export class StructuredExtractionService {
     }
 
     return rows;
+  }
+
+  private async extractHousingTableFromPdfUrl(
+    pdfUrl: string,
+  ): Promise<Array<Record<string, unknown>>> {
+    const apiKey = process.env.OPENAI_API_KEY || process.env.OPEN_API_KEY;
+    if (!apiKey) {
+      return [];
+    }
+
+    try {
+      const response = await fetch(pdfUrl);
+      if (!response.ok) {
+        return [];
+      }
+
+      const fileBuffer = Buffer.from(await response.arrayBuffer());
+      const form = new FormData();
+      form.append('purpose', 'user_data');
+      form.append(
+        'file',
+        new Blob([new Uint8Array(fileBuffer)], { type: 'application/pdf' }),
+        'promotion.pdf',
+      );
+
+      const uploadRes = await fetch('https://api.openai.com/v1/files', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: form,
+      });
+
+      if (!uploadRes.ok) {
+        return [];
+      }
+
+      const uploaded = (await uploadRes.json()) as { id?: string };
+      if (!uploaded.id) {
+        return [];
+      }
+
+      const model = process.env.OPENAI_MODEL ?? 'gpt-4o-mini';
+      const responsesRes = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0,
+          max_output_tokens: 3200,
+          input: [
+            {
+              role: 'system',
+              content: [{ type: 'input_text', text: HOUSING_TABLE_PROMPT }],
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'input_file',
+                  file_id: uploaded.id,
+                },
+                {
+                  type: 'input_text',
+                  text: 'Devuelve la tabla completa de pisos en el JSON solicitado.',
+                },
+              ],
+            },
+          ],
+        }),
+      });
+
+      if (!responsesRes.ok) {
+        return [];
+      }
+
+      const payload = (await responsesRes.json()) as Record<string, unknown>;
+      const outputArray = Array.isArray(payload.output)
+        ? (payload.output as Array<Record<string, unknown>>)
+        : [];
+      const firstOutput = this.asRecord(outputArray[0]);
+      const firstContentArray = Array.isArray(firstOutput.content)
+        ? (firstOutput.content as Array<Record<string, unknown>>)
+        : [];
+      const firstContent = this.asRecord(firstContentArray[0]);
+      const outputText =
+        (payload.output_text as string | undefined) ??
+        this.asString(firstContent.text);
+
+      if (!outputText) {
+        return [];
+      }
+
+      const parsed = this.safeJsonParse(outputText);
+      if (!parsed) {
+        return [];
+      }
+
+      const rows = this.parseHousingTableRows(parsed.housing_table);
+      return rows;
+    } catch (error) {
+      this.logger.warn(
+        `OpenAI PDF table extraction failed: ${
+          error instanceof Error ? error.message : 'unknown'
+        }`,
+      );
+      return [];
+    }
   }
 
   private buildPromotionFallback(
