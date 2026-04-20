@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import pdfParse from 'pdf-parse';
 import { createHash } from 'crypto';
+import PDFParser from 'pdf2json';
 
 type PdfParsed = {
   text: string;
@@ -145,8 +146,12 @@ export class PdfOcrService {
   private async parsePdf(buffer: Buffer): Promise<ParseResult> {
     try {
       const parsed = (await pdfParse(buffer)) as PdfParsed;
+      const normalized = this.normalizeExtractedText(parsed.text || '');
+      const structured = await this.parsePdfStructured(buffer);
+      const merged = this.mergeExtractedTexts(normalized, structured);
+
       return {
-        text: this.normalizeExtractedText(parsed.text || ''),
+        text: merged,
         pageCount: parsed.numpages,
         method: 'pdf-parse',
       };
@@ -158,6 +163,94 @@ export class PdfOcrService {
         text: '',
         method: 'none',
       };
+    }
+  }
+
+  private async parsePdfStructured(buffer: Buffer): Promise<string> {
+    try {
+      const payload = await new Promise<Record<string, unknown>>(
+        (resolve, reject) => {
+          const parser = new PDFParser();
+          parser.on('pdfParser_dataError', (errMsg: unknown) => {
+            if (
+              typeof errMsg === 'object' &&
+              errMsg !== null &&
+              'parserError' in errMsg
+            ) {
+              reject((errMsg as { parserError?: unknown }).parserError);
+              return;
+            }
+
+            reject(errMsg);
+          });
+          parser.on('pdfParser_dataReady', (data: unknown) =>
+            resolve(data as Record<string, unknown>),
+          );
+          parser.parseBuffer(buffer);
+        },
+      );
+
+      const pages = Array.isArray(payload.Pages)
+        ? (payload.Pages as Array<Record<string, unknown>>)
+        : [];
+
+      const lines: string[] = [];
+
+      for (const page of pages) {
+        const texts = Array.isArray(page.Texts)
+          ? (page.Texts as Array<Record<string, unknown>>)
+          : [];
+        const byLine = new Map<string, Array<{ x: number; text: string }>>();
+
+        for (const item of texts) {
+          const x = typeof item.x === 'number' ? item.x : Number(item.x ?? 0);
+          const y = typeof item.y === 'number' ? item.y : Number(item.y ?? 0);
+          const runs = Array.isArray(item.R)
+            ? (item.R as Array<Record<string, unknown>>)
+            : [];
+          const raw = runs
+            .map((run) => String(run.T ?? ''))
+            .map((token) => {
+              try {
+                return decodeURIComponent(token);
+              } catch {
+                return token;
+              }
+            })
+            .join('')
+            .trim();
+
+          if (!raw) {
+            continue;
+          }
+
+          const lineKey = `${Math.round(y * 10) / 10}`;
+          const bucket = byLine.get(lineKey) ?? [];
+          bucket.push({ x, text: raw });
+          byLine.set(lineKey, bucket);
+        }
+
+        const orderedKeys = [...byLine.keys()].sort(
+          (a, b) => Number(a) - Number(b),
+        );
+
+        for (const key of orderedKeys) {
+          const parts = (byLine.get(key) ?? [])
+            .sort((a, b) => a.x - b.x)
+            .map((entry) => entry.text);
+          const line = parts.join(' ').replace(/\s{2,}/g, ' ').trim();
+          if (line) {
+            lines.push(line);
+          }
+        }
+      }
+
+      return this.normalizeExtractedText(lines.join('\n'));
+    } catch (error) {
+      this.logger.warn(
+        `pdf2json failed: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
+      return '';
     }
   }
 
