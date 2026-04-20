@@ -37,4 +37,9 @@ export class PromotionsController {
   ) {
     return this.promotionsService.toggleFavorite(user.sub, id);
   }
+
+  @Post(':id/reanalyze-table')
+  async reanalyzeTable(@Param('id') id: string) {
+    return this.promotionsService.reanalyzeTable(id);
+  }
 }

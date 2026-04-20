@@ -15,5 +15,6 @@ import { RegistreScraperService } from './registre-scraper.service';
     RssNewsService,
     RegistreScraperService,
   ],
+  exports: [PdfOcrService, StructuredExtractionService],
 })
 export class JobsModule {}
