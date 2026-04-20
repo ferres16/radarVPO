@@ -368,6 +368,8 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
                 ))}
               </tbody>
             </table>
+          ) : !isUpcoming ? (
+            <p className="mt-2 text-sm text-[var(--ink)]">No se ha podido extraer la tabla estructurada de pisos del PDF para esta promocion.</p>
           ) : housingRows.length === 0 ? (
             <p className="mt-2 text-sm text-[var(--ink)]">No se han podido extraer filas de viviendas del PDF.</p>
           ) : (
