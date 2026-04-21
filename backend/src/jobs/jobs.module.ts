@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AiModule } from '../ai/ai.module';
 import { JobsService } from './jobs.service';
 import { PdfOcrService } from './pdf-ocr.service';
+import { PromotionPdfHybridPipelineService } from './promotion-pdf-hybrid-pipeline.service';
 import { StructuredExtractionService } from './structured-extraction.service';
 import { RssNewsService } from './rss-news.service';
 import { RegistreScraperService } from './registre-scraper.service';
@@ -11,10 +12,11 @@ import { RegistreScraperService } from './registre-scraper.service';
   providers: [
     JobsService,
     PdfOcrService,
+    PromotionPdfHybridPipelineService,
     StructuredExtractionService,
     RssNewsService,
     RegistreScraperService,
   ],
-  exports: [PdfOcrService, StructuredExtractionService],
+  exports: [PdfOcrService, StructuredExtractionService, PromotionPdfHybridPipelineService],
 })
 export class JobsModule {}

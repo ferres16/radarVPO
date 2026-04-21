@@ -25,6 +25,77 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
+## Hybrid PDF Pipeline (VPO/HPO)
+
+This backend includes a reliability-first hybrid pipeline for complex VPO/HPO PDFs.
+
+### Recommended architecture
+
+- Next.js frontend on Vercel.
+- NestJS API on Railway.
+- Dedicated worker process on Railway for PDF jobs.
+- PostgreSQL + Prisma for durable storage.
+- Store per document:
+  - Original PDF URL
+  - Native extracted text
+  - OCR extracted text
+  - Final normalized JSON
+  - Confidence and quality metadata
+
+### Core libraries used
+
+- `pdf-parse` + `pdf2json`: native text extraction.
+- `pdfjs-dist` + `@napi-rs/canvas`: render each PDF page to PNG.
+- OCR.Space API: OCR fallback and table-aware OCR mode.
+- OpenAI Responses API (vision model): visual reconstruction for difficult pages/tables.
+
+### Processing flow
+
+1. Download PDF and render all pages to images.
+2. Extract native text from rendered pages/text layer.
+3. Run OCR per page when native text is weak or table signals are detected.
+4. Run visual page analysis (multimodal) for location, summary, dates, requirements,
+   promoter, promotion type, status, and table hints.
+5. Merge native text + OCR + vision evidence.
+6. Apply table extraction in 3 levels:
+   1. Native text table parsing.
+   2. OCR-based table parsing (+ AI text parser when needed).
+   3. Vision-based table reconstruction from page images.
+7. Return stable normalized JSON with confidence and explicit missing/ambiguous fields.
+
+### Table fallback guarantees
+
+`units.value` always returns one of:
+
+- `status: "complete"` with structured rows.
+- `status: "partial"` with structured partial rows and missing columns.
+- `status: "error"` with exact `error_reason` and low confidence.
+
+No silent failures are allowed.
+
+### Final normalized JSON contract
+
+Top-level sections:
+
+- `promotion_data`
+- `requirements`
+- `dates`
+- `contact`
+- `units`
+- `fees_or_reservations`
+- `confidence_score`
+- `missing_fields`
+- `ambiguous_fields`
+- `processing_meta`
+
+Each section contains:
+
+- `value`
+- `confidence_score`
+- `source_evidence`
+
+If a field is not reliable, it is returned as `null`.
+
 ## Project setup
 
 ```bash

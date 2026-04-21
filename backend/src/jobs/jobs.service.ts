@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PdfOcrService } from './pdf-ocr.service';
+import { PromotionPdfHybridPipelineService } from './promotion-pdf-hybrid-pipeline.service';
 import { StructuredExtractionService } from './structured-extraction.service';
 import { RssNewsService } from './rss-news.service';
 import { sha256 } from './hash.util';
@@ -17,6 +18,7 @@ export class JobsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly pdfOcrService: PdfOcrService,
+    private readonly hybridPdfPipeline: PromotionPdfHybridPipelineService,
     private readonly extractionService: StructuredExtractionService,
     private readonly rssNewsService: RssNewsService,
     private readonly registreScraperService: RegistreScraperService,
@@ -167,12 +169,30 @@ export class JobsService {
               .trim();
           }
 
-          const analysis = await this.extractionService.extractPromotionData(
-            sourceText,
-            promotion.sourceUrl,
-            promotion.documents.find((doc) => /pdf/i.test(doc.fileType))
-              ?.documentUrl,
-          );
+          const mainPdf = promotion.documents.find((doc) => /pdf/i.test(doc.fileType));
+
+          const analysis = mainPdf
+            ? await this.hybridPdfPipeline
+                .analyzePromotionPdf({
+                  sourceUrl: promotion.sourceUrl,
+                  pdfUrl: mainPdf.documentUrl,
+                  seedText: sourceText,
+                  options: {
+                    // Reliability is prioritized for complex VPO/HPO annex tables.
+                    preferReliability: true,
+                  },
+                })
+                .then((result) => ({
+                  result,
+                  provider: 'hybrid-pipeline',
+                  model: 'native+ocr+vision',
+                  confidence: result.confidence_score,
+                }))
+            : await this.extractionService.extractPromotionData(
+                sourceText,
+                promotion.sourceUrl,
+                undefined,
+              );
 
           await this.prisma.promotionAiAnalysis.create({
             data: {
@@ -183,15 +203,27 @@ export class JobsService {
             },
           });
 
-          const extractedPromotion =
-            (analysis.result.promotion as
+          const analysisResultRecord = analysis.result as Record<string, unknown>;
+
+          const extractedPromotionLegacy =
+            (analysisResultRecord.promotion as
               | Record<string, unknown>
               | undefined) ?? {};
-          const estimatedDate = extractedPromotion.estimated_publication_date;
+          const extractedPromotionHybrid =
+            (analysisResultRecord.promotion_data as
+              | { value?: Record<string, unknown> }
+              | undefined)?.value ?? {};
+
+          const estimatedDate =
+            extractedPromotionLegacy.estimated_publication_date ?? null;
+          const hybridStatus =
+            typeof extractedPromotionHybrid.status === 'string'
+              ? extractedPromotionHybrid.status.toLowerCase()
+              : null;
           const isFutureLaunch =
-            typeof extractedPromotion.future_launch === 'boolean'
-              ? extractedPromotion.future_launch
-              : false;
+            typeof extractedPromotionLegacy.future_launch === 'boolean'
+              ? extractedPromotionLegacy.future_launch
+              : hybridStatus === 'upcoming';
 
           const parsedDate =
             typeof estimatedDate === 'string' &&

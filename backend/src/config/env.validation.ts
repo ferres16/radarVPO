@@ -64,6 +64,10 @@ class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  OPENAI_VISION_MODEL?: string;
+
+  @IsOptional()
+  @IsString()
   AZURE_OPENAI_API_KEY?: string;
 
   @IsOptional()
