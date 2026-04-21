@@ -13,7 +13,6 @@ import { NewsModule } from './news/news.module';
 import { BackofficeModule } from './backoffice/backoffice.module';
 import { JobsModule } from './jobs/jobs.module';
 import { HealthModule } from './health/health.module';
-import { RolesGuard } from './common/guards/roles.guard';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
 
@@ -42,7 +41,6 @@ import { RequestLoggingInterceptor } from './common/interceptors/request-logging
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
-    { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_INTERCEPTOR, useClass: RequestLoggingInterceptor },
   ],

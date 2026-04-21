@@ -1,5 +1,7 @@
 import {
+  BackofficeNewsItem,
   BackofficeOverview,
+  BackofficeUser,
   NewsItem,
   Promotion,
   PromotionDetail,
@@ -68,6 +70,44 @@ export const api = {
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
   getBackofficeJobs: () => request<JobRun[]>('/backoffice/jobs'),
   getBackofficeFailures: () => request<DeliveryFailure[]>('/backoffice/failures'),
+  getBackofficeUsers: () => request<BackofficeUser[]>('/backoffice/users'),
+  updateBackofficeUser: (
+    id: string,
+    payload: Partial<Pick<BackofficeUser, 'fullName' | 'role' | 'plan'>>,
+  ) =>
+    request<BackofficeUser>(`/backoffice/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  getBackofficeNews: () => request<BackofficeNewsItem[]>('/backoffice/news'),
+  createBackofficeNews: (
+    payload: {
+      title: string;
+      sourceName: string;
+      sourceUrl: string;
+      relevance: string;
+      publishedAt: string;
+      summary?: string;
+      body?: string;
+      practicalImpact?: string;
+      topic?: string;
+      rawText?: string;
+      itemUrl?: string;
+    },
+  ) =>
+    request<BackofficeNewsItem>('/backoffice/news', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateBackofficeNews: (id: string, payload: Record<string, unknown>) =>
+    request<BackofficeNewsItem>(`/backoffice/news/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteBackofficeNews: (id: string) =>
+    request<{ deleted: boolean }>(`/backoffice/news/${id}`, {
+      method: 'DELETE',
+    }),
   getBackofficePromotions: (status?: string) =>
     request<PromotionDetail[]>(
       `/backoffice/promotions${status ? `?status=${encodeURIComponent(status)}` : ''}`,

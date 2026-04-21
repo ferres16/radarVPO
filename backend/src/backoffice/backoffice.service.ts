@@ -3,11 +3,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, PromotionStatus } from '@prisma/client';
+import { Prisma, PromotionStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3StorageService } from '../storage/s3-storage.service';
+import { CreateNewsItemDto } from './dto/create-news-item.dto';
+import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
 import { UpdatePromotionStatusDto } from './dto/update-promotion-status.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpsertUnitDto } from './dto/upsert-unit.dto';
 
@@ -51,6 +54,113 @@ export class BackofficeService {
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+  }
+
+  async listUsers() {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        plan: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+  }
+
+  async updateUser(userId: string, dto: UpdateUserDto) {
+    const existing = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (existing.role === UserRole.admin && dto.role === UserRole.user) {
+      const admins = await this.prisma.user.count({
+        where: { role: UserRole.admin },
+      });
+      if (admins <= 1) {
+        throw new BadRequestException('Cannot demote the only admin user');
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        fullName: dto.fullName,
+        role: dto.role,
+        plan: dto.plan,
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        role: true,
+        plan: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  async listNews() {
+    return this.prisma.newsItem.findMany({
+      orderBy: { publishedAt: 'desc' },
+      take: 300,
+    });
+  }
+
+  async createNews(dto: CreateNewsItemDto) {
+    const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const itemUrl = dto.itemUrl ?? `${dto.sourceUrl.replace(/\/$/, '')}#manual-${token}`;
+
+    return this.prisma.newsItem.create({
+      data: {
+        sourceName: dto.sourceName,
+        sourceUrl: dto.sourceUrl,
+        itemUrl,
+        title: dto.title,
+        rawText: dto.rawText,
+        summary: dto.summary,
+        body: dto.body,
+        practicalImpact: dto.practicalImpact,
+        topic: dto.topic,
+        relevance: dto.relevance,
+        contentHash: `manual-${token}`,
+        publishedAt: new Date(dto.publishedAt),
+      },
+    });
+  }
+
+  async updateNews(newsId: string, dto: UpdateBackofficeNewsItemDto) {
+    await this.ensureNews(newsId);
+
+    return this.prisma.newsItem.update({
+      where: { id: newsId },
+      data: {
+        title: dto.title,
+        sourceName: dto.sourceName,
+        sourceUrl: dto.sourceUrl,
+        rawText: dto.rawText,
+        summary: dto.summary,
+        body: dto.body,
+        practicalImpact: dto.practicalImpact,
+        topic: dto.topic,
+        relevance: dto.relevance,
+        publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
+      },
+    });
+  }
+
+  async deleteNews(newsId: string) {
+    await this.ensureNews(newsId);
+    await this.prisma.newsItem.delete({ where: { id: newsId } });
+    return { deleted: true };
   }
 
   async listPromotions(status?: string) {
@@ -421,6 +531,19 @@ export class BackofficeService {
     }
 
     return unit;
+  }
+
+  private async ensureNews(newsId: string) {
+    const item = await this.prisma.newsItem.findUnique({
+      where: { id: newsId },
+      select: { id: true },
+    });
+
+    if (!item) {
+      throw new NotFoundException('News item not found');
+    }
+
+    return item;
   }
 
   private validStatus(input?: string): PromotionStatus | null {

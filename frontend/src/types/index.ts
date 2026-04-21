@@ -88,6 +88,31 @@ export type BackofficeOverview = {
   jobsFailed: number;
 };
 
+export type BackofficeUser = {
+  id: string;
+  email: string;
+  fullName?: string | null;
+  role: 'user' | 'admin';
+  plan: 'free' | 'pro';
+  createdAt: string;
+};
+
+export type BackofficeNewsItem = {
+  id: string;
+  title: string;
+  sourceName: string;
+  sourceUrl: string;
+  itemUrl: string;
+  rawText?: string | null;
+  summary?: string | null;
+  body?: string | null;
+  practicalImpact?: string | null;
+  topic?: string | null;
+  relevance: string;
+  publishedAt: string;
+  createdAt: string;
+};
+
 export type JobRun = {
   id: string;
   jobName: string;

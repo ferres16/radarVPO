@@ -15,18 +15,22 @@ import { ApiConsumes, ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { BackofficeService } from './backoffice.service';
+import { CreateNewsItemDto } from './dto/create-news-item.dto';
 import { ImportUnitsFromPasteDto } from './dto/import-units-from-paste.dto';
 import { ReorderUnitsDto } from './dto/reorder-units.dto';
+import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
 import { UpdatePromotionStatusDto } from './dto/update-promotion-status.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpsertUnitDto } from './dto/upsert-unit.dto';
 
 @ApiTags('backoffice')
 @Controller('backoffice')
 @ApiCookieAuth('access_token')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('admin')
 export class BackofficeController {
   constructor(private readonly backofficeService: BackofficeService) {}
@@ -44,6 +48,36 @@ export class BackofficeController {
   @Get('failures')
   failures() {
     return this.backofficeService.failures();
+  }
+
+  @Get('users')
+  listUsers() {
+    return this.backofficeService.listUsers();
+  }
+
+  @Patch('users/:id')
+  updateUser(@Param('id') userId: string, @Body() dto: UpdateUserDto) {
+    return this.backofficeService.updateUser(userId, dto);
+  }
+
+  @Get('news')
+  listNews() {
+    return this.backofficeService.listNews();
+  }
+
+  @Post('news')
+  createNews(@Body() dto: CreateNewsItemDto) {
+    return this.backofficeService.createNews(dto);
+  }
+
+  @Patch('news/:id')
+  updateNews(@Param('id') newsId: string, @Body() dto: UpdateBackofficeNewsItemDto) {
+    return this.backofficeService.updateNews(newsId, dto);
+  }
+
+  @Delete('news/:id')
+  deleteNews(@Param('id') newsId: string) {
+    return this.backofficeService.deleteNews(newsId);
   }
 
   @Get('promotions')

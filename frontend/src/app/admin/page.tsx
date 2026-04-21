@@ -76,11 +76,19 @@ export default function AdminPage() {
       <header className="rounded-3xl border border-[var(--stroke)] bg-gradient-to-r from-emerald-50 via-lime-50 to-white p-6 shadow-card">
         <h1 className="text-3xl font-bold text-[var(--ink)]">Panel de administracion</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
-          Flujo simplificado sin IA: deteccion, revision manual, publicacion y archivo.
+          Gestion centralizada de promociones, usuarios y noticias.
         </p>
-        <Link href="/services" className="mt-4 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-[var(--green-700)]">
-          Ver servicios
-        </Link>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Link href="/admin/users" className="inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-[var(--green-700)]">
+            Administrar usuarios
+          </Link>
+          <Link href="/admin/news" className="inline-flex rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-card transition hover:bg-[var(--bg-app)]">
+            Administrar noticias
+          </Link>
+          <Link href="/services" className="inline-flex rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-card transition hover:bg-[var(--bg-app)]">
+            Ver servicios
+          </Link>
+        </div>
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
