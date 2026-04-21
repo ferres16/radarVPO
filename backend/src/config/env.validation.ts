@@ -146,6 +146,10 @@ class EnvironmentVariables {
   REGISTRE_NEWS_URL?: string;
 
   @IsOptional()
+  @IsString()
+  CRON_REPAIR_DOCUMENT_LINKS?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(2000)
   REGISTRE_MIN_YEAR?: number;

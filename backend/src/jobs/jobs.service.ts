@@ -102,6 +102,95 @@ export class JobsService {
     });
   }
 
+  @Cron(
+    process.env.CRON_REPAIR_DOCUMENT_LINKS || CronExpression.EVERY_4_HOURS,
+    {
+      timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
+    },
+  )
+  async repairWeakDocumentExtractions() {
+    await this.runWithLock('repair_weak_document_extractions', async () => {
+      const candidates = await this.prisma.promotionDocument.findMany({
+        where: {
+          processedAt: { not: null },
+        },
+        include: {
+          promotion: {
+            select: {
+              id: true,
+              aiStatus: true,
+            },
+          },
+        },
+        take: 50,
+        orderBy: {
+          processedAt: 'asc',
+        },
+      });
+
+      let repaired = 0;
+      for (const doc of candidates) {
+        const extractedLength = (doc.extractedText ?? '').trim().length;
+        const urlLooksPdf = /\.pdf(\?|$)/i.test(doc.documentUrl);
+        const fileType = (doc.fileType ?? '').toLowerCase();
+        const fileTypeLooksWeak =
+          fileType.includes('html') || fileType.includes('octet-stream');
+
+        const needsRepair = extractedLength < 500 && (!urlLooksPdf || fileTypeLooksWeak);
+        if (!needsRepair) {
+          continue;
+        }
+
+        try {
+          const reparsed = await this.pdfOcrService.parseDocument(
+            doc.documentUrl,
+            doc.fileType,
+            { preferTableOcr: true },
+          );
+
+          const nextLength = reparsed.text.trim().length;
+          const improvedUrl =
+            reparsed.resolvedUrl && reparsed.resolvedUrl !== doc.documentUrl;
+          const improvedText = nextLength > extractedLength;
+
+          if (!improvedUrl && !improvedText) {
+            continue;
+          }
+
+          await this.prisma.promotionDocument.update({
+            where: { id: doc.id },
+            data: {
+              documentUrl: reparsed.resolvedUrl ?? doc.documentUrl,
+              fileType: reparsed.detectedMimeType ?? doc.fileType,
+              extractedText: reparsed.text || doc.extractedText,
+              processedAt: new Date(),
+            },
+          });
+
+          if (doc.promotion.aiStatus === 'done') {
+            await this.prisma.promotion.update({
+              where: { id: doc.promotionId },
+              data: { aiStatus: 'pending' },
+            });
+          }
+
+          repaired += 1;
+        } catch (error) {
+          await this.recordFailure(
+            'repair_weak_document_extractions',
+            doc.id,
+            error,
+          );
+        }
+      }
+
+      return {
+        scanned: candidates.length,
+        repaired,
+      };
+    });
+  }
+
   @Cron(process.env.CRON_ANALYZE_PROMOTIONS || CronExpression.EVERY_HOUR, {
     timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
   })
