@@ -1,6 +1,14 @@
 import Link from 'next/link';
 import { Promotion } from '@/types';
 
+function displayDate(promotion: Promotion) {
+  if (promotion.status === 'published' || promotion.status === 'pending_review') {
+    return promotion.publishedAt ? `Publicado: ${promotion.publishedAt.slice(0, 10)}` : null;
+  }
+
+  return promotion.deadlineDate ? `Fin: ${promotion.deadlineDate.slice(0, 10)}` : null;
+}
+
 function statusLabel(status: Promotion['status']) {
   if (status === 'detected') return 'Detectada';
   if (status === 'pending_review') return 'Pendiente de revision';
@@ -34,7 +42,7 @@ export function PromotionCard({
       </p>
       <div className="mt-3 flex items-center gap-2">
         <span className="chip">{promotion.promotionType}</span>
-        {promotion.deadlineDate ? <span className="chip">Fin: {promotion.deadlineDate.slice(0, 10)}</span> : null}
+        {displayDate(promotion) ? <span className="chip">{displayDate(promotion)}</span> : null}
       </div>
       {!hideDetail ? (
         <Link

@@ -127,9 +127,9 @@ export default async function PromotionDetailPage({
                   href={doc.publicUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="block rounded-lg border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink)]"
+                  className="inline-flex items-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-[var(--green-700)]"
                 >
-                  {doc.originalName || doc.publicUrl} - {doc.documentKind}
+                  {doc.documentKind === 'pdf_original' ? 'Ver PDF' : 'Abrir documento'}
                 </a>
               ))}
             </div>

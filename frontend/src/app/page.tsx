@@ -4,6 +4,43 @@ import { MobileNav } from '@/components/mobile-nav';
 import { NewsCard } from '@/components/news-card';
 import { PromotionCard } from '@/components/promotion-card';
 
+function parseDate(value?: string | null) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getUpcomingWindow(promotion: {
+  estimatedPublicationDate?: string | null;
+  publishedAt?: string | null;
+  alertDetectedAt?: string;
+}) {
+  const reference =
+    parseDate(promotion.estimatedPublicationDate) ??
+    parseDate(promotion.publishedAt) ??
+    parseDate(promotion.alertDetectedAt);
+
+  if (!reference) {
+    return null;
+  }
+
+  const daysLeft = Math.ceil(
+    (reference.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+  );
+  if (daysLeft >= 0 && daysLeft <= 60) {
+    return { state: 'active' as const, daysLeft };
+  }
+
+  const daysSince = Math.floor(
+    (Date.now() - reference.getTime()) / (1000 * 60 * 60 * 24),
+  );
+  if (daysSince >= 60 && daysSince <= 67) {
+    return { state: 'expired' as const, daysSince };
+  }
+
+  return null;
+}
+
 export default async function Home() {
   const [alerts, news] = await Promise.all([
     api.getUpcomingAlerts().catch(() => []),
@@ -11,6 +48,11 @@ export default async function Home() {
   ]);
 
   const recentNews = news.slice(0, 4);
+  const upcoming = alerts
+    .map((promotion) => ({ promotion, window: getUpcomingWindow(promotion) }))
+    .filter((entry): entry is { promotion: (typeof alerts)[number]; window: NonNullable<ReturnType<typeof getUpcomingWindow>> } => Boolean(entry.window));
+  const activeAlerts = upcoming.filter((entry) => entry.window.state === 'active');
+  const expiredAlerts = upcoming.filter((entry) => entry.window.state === 'expired');
 
   return (
     <div className="hero-bg min-h-screen pb-20 md:pb-0">
@@ -27,7 +69,7 @@ export default async function Home() {
             <Link href="/register" className="rounded-xl bg-[var(--green-500)] px-5 py-3 font-semibold text-white transition hover:bg-[var(--green-700)]">
               Crear cuenta gratis
             </Link>
-            <Link href="/promotions" className="rounded-xl border border-[var(--stroke)] bg-white px-5 py-3 font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
+            <Link href="/promotions?view=upcoming" className="rounded-xl border border-[var(--stroke)] bg-white px-5 py-3 font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
               Ver promociones
             </Link>
           </div>
@@ -35,31 +77,45 @@ export default async function Home() {
 
         <section className="mt-6">
           <div className="mb-3 flex items-end justify-between">
-            <h2 className="text-xl font-bold text-[var(--ink)]">Promociones detectadas</h2>
-            <Link href="/promotions" className="text-sm font-semibold text-[var(--green-700)]">Ver todas</Link>
+            <h2 className="text-xl font-bold text-[var(--ink)]">Próximas promociones por salir</h2>
+            <Link href="/promotions?view=upcoming" className="text-sm font-semibold text-[var(--green-700)]">Ver más</Link>
           </div>
           {alerts.length === 0 ? (
             <article className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
               <p className="text-sm text-[var(--ink-soft)]">No hay alertas nuevas ahora mismo.</p>
             </article>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {alerts.slice(0, 6).map((promotion) => (
-                <div key={promotion.id} className="space-y-2">
-                  <PromotionCard promotion={promotion} hideDetail />
-                  <div className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink-soft)] shadow-card">
-                    {promotion.statusMessage || 'Estamos analizando esta promocion y actualizando la informacion'}
+            <>
+              <div className="mb-3 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {activeAlerts.slice(0, 3).map(({ promotion, window }) => (
+                  <div key={promotion.id} className="space-y-2">
+                    <PromotionCard promotion={promotion} hideDetail />
+                    <div className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink-soft)] shadow-card">
+                      Activa: quedan {window.daysLeft} dias.
+                    </div>
                   </div>
+                ))}
+              </div>
+              {expiredAlerts.length > 0 ? (
+                <div className="mb-3 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {expiredAlerts.slice(0, 3).map(({ promotion, window }) => (
+                    <div key={promotion.id} className="space-y-2 opacity-90">
+                      <PromotionCard promotion={promotion} hideDetail />
+                      <div className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink-soft)] shadow-card">
+                        Vencida hace {window.daysSince} dias.
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              ) : null}
+            </>
           )}
         </section>
 
         <section className="mt-7">
           <div className="mb-3 flex items-end justify-between">
             <h2 className="text-xl font-bold text-[var(--ink)]">Noticias vivienda Catalunya</h2>
-            <Link href="/dashboard" className="text-sm font-semibold text-[var(--green-700)]">Ver mas</Link>
+            <Link href="/dashboard#noticias" className="text-sm font-semibold text-[var(--green-700)]">Ver más</Link>
           </div>
           {recentNews.length === 0 ? (
             <article className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">

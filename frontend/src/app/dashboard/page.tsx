@@ -78,7 +78,7 @@ export default async function DashboardPage({
           )}
         </section>
 
-        <section>
+        <section id="noticias">
           <h2 className="mb-3 text-lg font-bold text-[var(--ink)]">Noticias</h2>
           <div className="grid gap-4 md:grid-cols-2">
             {news.map((item) => (

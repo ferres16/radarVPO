@@ -19,7 +19,6 @@ export class NewsService {
           }
         : undefined,
       orderBy: { publishedAt: 'desc' },
-      take: 50,
     });
   }
 

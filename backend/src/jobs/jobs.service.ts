@@ -69,6 +69,11 @@ export class JobsService {
         });
 
         if (existing) {
+
+      const dailyBrief = await this.publishDailyCatalunyaBrief();
+      if (dailyBrief.created) {
+        inserted += 1;
+      }
           continue;
         }
 
@@ -200,6 +205,78 @@ export class JobsService {
       relevance,
       topic,
     };
+  }
+
+  private async publishDailyCatalunyaBrief(): Promise<{ created: boolean }> {
+    const dayKey = new Date().toISOString().slice(0, 10);
+    const contentHash = sha256(`daily-housing-brief|${dayKey}`);
+    const existing = await this.prisma.newsItem.findUnique({
+      where: { contentHash },
+      select: { id: true },
+    });
+
+    if (existing) {
+      return { created: false };
+    }
+
+    const briefs = [
+      {
+        title: 'Catalunya: claves para no perder una convocatoria de vivienda publica',
+        summary:
+          'Revisa empadronamiento, ingresos, calendario y documentacion antes de presentar la solicitud. Un error pequeño puede dejarte fuera de una promocion aunque cumplas los requisitos.',
+        practicalImpact:
+          'Impacto practico: prepara copias, certificados y justificantes con antelacion; el plazo real suele ser el punto donde mas solicitudes se descartan.',
+      },
+      {
+        title: 'VPO en Catalunya: que mirar hoy en las bases antes de solicitar',
+        summary:
+          'La letra pequena importa: cupos, reservas, municipio, unidad de convivencia y compatibilidad con ayudas suelen cambiar entre convocatorias. Leerlo bien evita sorpresas en la adjudicacion.',
+        practicalImpact:
+          'Impacto practico: comprueba si hay cupo juvenil, familiar o de movilidad reducida y guarda capturas del anuncio y de los anexos.',
+      },
+      {
+        title: 'Alquiler asequible en Catalunya: el dato que mas afecta a tu expediente',
+        summary:
+          'El umbral de ingresos y la fecha de presentacion siguen siendo los dos filtros mas sensibles. Si uno falla, la solicitud puede quedar fuera sin pasar a valoracion.',
+        practicalImpact:
+          'Impacto practico: confirma ingresos computables, miembros de la unidad de convivencia y fecha de referencia antes de enviar la solicitud.',
+      },
+      {
+        title: 'Generalitat y ayuntamientos: novedades de vivienda a vigilar esta semana',
+        summary:
+          'Las convocatorias cambian rápido cuando entran nuevos plazos, listados provisionales o rectificaciones. Seguir los anuncios oficiales ayuda a reaccionar a tiempo.',
+        practicalImpact:
+          'Impacto practico: activa avisos y revisa la sede electrónica al menos una vez al día si estás esperando una promoción concreta.',
+      },
+      {
+        title: 'Documentacion de vivienda publica: el repaso que evita exclusiones',
+        summary:
+          'Antes de entregar nada, conviene revisar DNI, empadronamiento, renta, composición de la unidad familiar y cualquier anexo adicional. Una omission suele costar la plaza.',
+        practicalImpact:
+          'Impacto practico: monta una carpeta con todo el expediente y confirma que cada documento coincide con la convocatoria en curso.',
+      },
+    ];
+
+    const index = new Date().getDate() % briefs.length;
+    const brief = briefs[index];
+
+    await this.prisma.newsItem.create({
+      data: {
+        sourceName: 'Radar VPO',
+        sourceUrl: 'https://radarvpo.com/noticias',
+        itemUrl: `https://radarvpo.com/noticias/diaria/${dayKey}`,
+        title: brief.title,
+        summary: brief.summary,
+        body: `${brief.summary} ${brief.practicalImpact}`,
+        practicalImpact: brief.practicalImpact,
+        relevance: 'high',
+        topic: 'brief_diario',
+        contentHash,
+        publishedAt: new Date(),
+      },
+    });
+
+    return { created: true };
   }
 
   private detectTopic(text: string): string {
