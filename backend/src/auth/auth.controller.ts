@@ -13,7 +13,7 @@ import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 
-const secureCookie = process.env.NODE_ENV === 'production';
+const isProduction = process.env.NODE_ENV === 'production';
 
 type RequestWithCookies = Request & {
   cookies?: {
@@ -97,24 +97,25 @@ export class AuthController {
     refreshToken: string,
     sessionId: string,
   ) {
-    res.cookie('access_token', accessToken, {
+    const cookieOptions = {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: secureCookie,
+      sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
+      secure: isProduction,
+      path: '/',
+    };
+
+    res.cookie('access_token', accessToken, {
+      ...cookieOptions,
       maxAge: 15 * 60 * 1000,
     });
 
     res.cookie('refresh_token', refreshToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: secureCookie,
+      ...cookieOptions,
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 
     res.cookie('session_id', sessionId, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: secureCookie,
+      ...cookieOptions,
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
   }
