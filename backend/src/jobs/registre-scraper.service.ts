@@ -67,7 +67,7 @@ export class RegistreScraperService {
     for (const entry of entries) {
       const existing = await this.prisma.promotion.findFirst({
         where: { sourceUrl: entry.detailUrl },
-        select: { id: true, rawText: true },
+        select: { id: true, rawText: true, status: true },
       });
 
       const detailHtml = await this.fetchHtml(entry.detailUrl);
@@ -76,11 +76,12 @@ export class RegistreScraperService {
       const publicationDate =
         entry.publishedAt ??
         this.extractDate(rawText);
-      const estimatedFromAlert =
-        entry.isSixtyDayAlert && publicationDate
-          ? this.addDays(publicationDate, 60)
-          : null;
-      const status = entry.isSixtyDayAlert ? 'upcoming' : 'open';
+      const estimatedFromAlert = publicationDate
+        ? this.addDays(publicationDate, 60)
+        : null;
+      const inferredMunicipality = this.inferMunicipality(`${entry.title}\n${rawText}`);
+      const inferredPromoter = this.inferPromoter(rawText);
+      const inferredType = this.guessPromotionType(`${entry.title}\n${rawText}`);
 
       const promotion =
         existing ??
@@ -88,16 +89,21 @@ export class RegistreScraperService {
           data: {
             sourceId: source.id,
             title: this.sanitizeTitle(entry.title),
+            location: inferredMunicipality ?? undefined,
+            municipality: inferredMunicipality ?? undefined,
+            promoter: inferredPromoter ?? undefined,
             sourceUrl: entry.detailUrl,
             rawText,
-            status,
-            promotionType: this.guessPromotionType(rawText),
+            status: 'pending_review',
+            promotionType: inferredType,
             targetScope: 'catalunya',
             autonomousCommunity: 'Catalunya',
             publishedAt: publicationDate,
-            estimatedPublicationDate: estimatedFromAlert,
-            futureLaunch: entry.isSixtyDayAlert,
-            aiStatus: 'pending',
+            estimatedPublicationDate: entry.isSixtyDayAlert
+              ? estimatedFromAlert
+              : publicationDate,
+            statusMessage:
+              'Estamos analizando esta promocion y actualizando la informacion',
           },
           select: { id: true },
         }));
@@ -110,11 +116,19 @@ export class RegistreScraperService {
           where: { id: promotion.id },
           data: {
             rawText: mergedRawText,
-            aiStatus: 'pending',
+            municipality: inferredMunicipality ?? undefined,
+            promoter: inferredPromoter ?? undefined,
+            promotionType: inferredType,
             publishedAt: publicationDate,
-            estimatedPublicationDate: estimatedFromAlert,
-            status,
-            futureLaunch: entry.isSixtyDayAlert,
+            estimatedPublicationDate: entry.isSixtyDayAlert
+              ? estimatedFromAlert
+              : publicationDate,
+            status:
+              existing && ['published', 'archived'].includes((existing as { status?: string }).status || '')
+                ? undefined
+                : 'pending_review',
+            statusMessage:
+              'Estamos analizando esta promocion y actualizando la informacion',
           },
         });
       }
@@ -123,7 +137,7 @@ export class RegistreScraperService {
         const docExists = await this.prisma.promotionDocument.findFirst({
           where: {
             promotionId: promotion.id,
-            documentUrl: link,
+            publicUrl: link,
           },
           select: { id: true },
         });
@@ -135,18 +149,15 @@ export class RegistreScraperService {
         await this.prisma.promotionDocument.create({
           data: {
             promotionId: promotion.id,
-            documentUrl: link,
+            documentKind: 'pdf_original',
             fileType: 'pdf',
+            originalName: this.fileNameFromUrl(link),
+            storagePath: link,
+            publicUrl: link,
+            uploadedBy: 'system:scraper',
           },
         });
         documentsCreated += 1;
-      }
-
-      if (entry.isAnnouncement && pdfLinks.length > 0) {
-        await this.prisma.promotion.update({
-          where: { id: promotion.id },
-          data: { aiStatus: 'pending' },
-        });
       }
     }
 
@@ -465,6 +476,7 @@ export class RegistreScraperService {
         sourceUrl: true,
         title: true,
         publishedAt: true,
+        status: true,
       },
     });
 
@@ -497,14 +509,14 @@ export class RegistreScraperService {
   ): Promise<void> {
     const docs = await this.prisma.promotionDocument.findMany({
       where: { promotionId: duplicateId },
-      select: { id: true, documentUrl: true },
+      select: { id: true, publicUrl: true },
     });
 
     for (const doc of docs) {
       const exists = await this.prisma.promotionDocument.findFirst({
         where: {
           promotionId: keeperId,
-          documentUrl: doc.documentUrl,
+          publicUrl: doc.publicUrl,
         },
         select: { id: true },
       });
@@ -547,12 +559,43 @@ export class RegistreScraperService {
       }
     }
 
-    await this.prisma.promotionAiAnalysis.updateMany({
-      where: { promotionId: duplicateId },
-      data: { promotionId: keeperId },
-    });
-
     await this.prisma.promotion.delete({ where: { id: duplicateId } });
+  }
+
+  private inferMunicipality(text: string): string | null {
+    const patterns = [
+      /al\s+municipi\s+d(?:e|')\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})/i,
+      /al\s+municipio\s+de\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})/i,
+      /\ba\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})(?:[\.,\n]|$)/i,
+    ];
+
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      const value = match?.[1]?.trim();
+      if (value && !/catalunya|termini|dies|anunci/i.test(value)) {
+        return value;
+      }
+    }
+
+    return null;
+  }
+
+  private inferPromoter(text: string): string | null {
+    const match = text.match(
+      /promoguts?\s+per\s+(.+?)(?=\s+al\s+municipi\b|\.|,|\n|$)/i,
+    );
+    const value = match?.[1]?.replace(/\s+/g, ' ').trim();
+    return value || null;
+  }
+
+  private fileNameFromUrl(url: string): string {
+    try {
+      const parsed = new URL(url);
+      const segments = parsed.pathname.split('/').filter(Boolean);
+      return segments[segments.length - 1] || 'document.pdf';
+    } catch {
+      return 'document.pdf';
+    }
   }
 
   private resolveUrl(baseUrl: string, path: string): string {

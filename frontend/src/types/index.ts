@@ -1,15 +1,21 @@
 export type Promotion = {
   id: string;
   title: string;
+  location?: string | null;
   municipality?: string | null;
   province?: string | null;
   promotionType: 'venta' | 'alquiler' | 'mixto' | 'desconocido';
-  status: 'draft' | 'open' | 'closed' | 'upcoming';
+  status: 'detected' | 'pending_review' | 'published' | 'archived';
+  statusMessage?: string;
+  promoter?: string | null;
+  totalHomes?: number | null;
   deadlineDate?: string | null;
   publishedAt?: string | null;
+  alertDetectedAt?: string;
   createdAt?: string;
   estimatedPublicationDate?: string | null;
-  futureLaunch?: boolean;
+  publicDescription?: string | null;
+  availableUnitsText?: string | null;
   sourceUrl: string;
 };
 
@@ -23,24 +29,42 @@ export type UserProfile = {
 
 export type PromotionDocument = {
   id: string;
-  documentUrl: string;
+  documentKind: 'pdf_original' | 'screenshot' | 'image' | 'support_document';
   fileType: string;
-  extractedText?: string | null;
-  processedAt?: string | null;
+  originalName?: string | null;
+  storagePath: string;
+  publicUrl: string;
+  uploadedBy?: string | null;
 };
 
-export type PromotionAiAnalysis = {
+export type PromotionUnit = {
   id: string;
-  model: string;
-  resultJson: Record<string, unknown>;
-  confidence?: number | null;
-  createdAt: string;
+  rowOrder: number;
+  unitLabel?: string | null;
+  building?: string | null;
+  stair?: string | null;
+  floor?: string | null;
+  door?: string | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  usefulAreaM2?: string | number | null;
+  builtAreaM2?: string | number | null;
+  priceSale?: string | number | null;
+  monthlyRent?: string | number | null;
+  reservation?: string | number | null;
+  notes?: string | null;
+  extraData?: Record<string, unknown> | null;
 };
 
 export type PromotionDetail = Promotion & {
   rawText?: string | null;
+  importantDates?: Record<string, unknown> | null;
+  requirements?: Record<string, unknown> | null;
+  economicInfo?: Record<string, unknown> | null;
+  feesAndReservations?: Record<string, unknown> | null;
+  contactInfo?: Record<string, unknown> | null;
   documents: PromotionDocument[];
-  aiAnalysis: PromotionAiAnalysis[];
+  units: PromotionUnit[];
 };
 
 export type NewsItem = {
@@ -48,6 +72,9 @@ export type NewsItem = {
   title: string;
   sourceName: string;
   summary?: string | null;
+  body?: string | null;
+  practicalImpact?: string | null;
+  topic?: string | null;
   relevance: string;
   publishedAt: string;
 };
@@ -55,7 +82,8 @@ export type NewsItem = {
 export type BackofficeOverview = {
   users: number;
   promotions: number;
-  upcoming: number;
+  pendingReview: number;
+  published: number;
   news: number;
   jobsFailed: number;
 };

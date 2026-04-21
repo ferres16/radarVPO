@@ -1,9 +1,8 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../common/decorators/current-user.decorator';
-import { AnalyzePdfUrlDto } from './dto/analyze-pdf-url.dto';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
 import { PromotionsService } from './promotions.service';
 
@@ -39,13 +38,4 @@ export class PromotionsController {
     return this.promotionsService.toggleFavorite(user.sub, id);
   }
 
-  @Post(':id/reanalyze-table')
-  async reanalyzeTable(@Param('id') id: string) {
-    return this.promotionsService.reanalyzeTable(id);
-  }
-
-  @Post('analyze-pdf')
-  async analyzePdf(@Body() payload: AnalyzePdfUrlDto) {
-    return this.promotionsService.analyzePdfUrl(payload);
-  }
 }

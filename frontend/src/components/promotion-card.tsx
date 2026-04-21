@@ -2,10 +2,10 @@ import Link from 'next/link';
 import { Promotion } from '@/types';
 
 function statusLabel(status: Promotion['status']) {
-  if (status === 'open') return 'Abierta';
-  if (status === 'closed') return 'Cerrada';
-  if (status === 'upcoming') return 'Proxima';
-  return 'Borrador';
+  if (status === 'detected') return 'Detectada';
+  if (status === 'pending_review') return 'Pendiente de revision';
+  if (status === 'published') return 'Publicada';
+  return 'Archivada';
 }
 
 export function PromotionCard({

@@ -8,10 +8,10 @@ export class AlertsService {
   async upcoming() {
     return this.prisma.promotion.findMany({
       where: {
-        status: 'upcoming',
+        status: { in: ['detected', 'pending_review'] },
       },
       orderBy: {
-        estimatedPublicationDate: 'asc',
+        alertDetectedAt: 'desc',
       },
       take: 50,
     });

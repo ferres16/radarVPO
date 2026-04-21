@@ -13,6 +13,8 @@ export class NewsService {
             OR: [
               { title: { contains: query.q, mode: 'insensitive' } },
               { summary: { contains: query.q, mode: 'insensitive' } },
+              { body: { contains: query.q, mode: 'insensitive' } },
+              { practicalImpact: { contains: query.q, mode: 'insensitive' } },
             ],
           }
         : undefined,

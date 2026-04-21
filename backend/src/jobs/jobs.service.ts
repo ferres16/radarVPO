@@ -2,9 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { PdfOcrService } from './pdf-ocr.service';
-import { PromotionPdfHybridPipelineService } from './promotion-pdf-hybrid-pipeline.service';
-import { StructuredExtractionService } from './structured-extraction.service';
 import { RssNewsService } from './rss-news.service';
 import { sha256 } from './hash.util';
 import { RegistreScraperService } from './registre-scraper.service';
@@ -17,9 +14,6 @@ export class JobsService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly pdfOcrService: PdfOcrService,
-    private readonly hybridPdfPipeline: PromotionPdfHybridPipelineService,
-    private readonly extractionService: StructuredExtractionService,
     private readonly rssNewsService: RssNewsService,
     private readonly registreScraperService: RegistreScraperService,
   ) {}
@@ -43,486 +37,13 @@ export class JobsService {
         });
 
       this.logger.log(
-        `Checked active sources: ${count}. Registre scanned=${registre.scanned}, promotionsCreated=${registre.promotionsCreated}, documentsCreated=${registre.documentsCreated}, duplicatesMerged=${registre.duplicatesMerged}`,
+        `Checked active sources=${count}; registre scanned=${registre.scanned}, created=${registre.promotionsCreated}, docs=${registre.documentsCreated}, merged=${registre.duplicatesMerged}`,
       );
 
       return {
         checkedSources: count,
         registre,
       };
-    });
-  }
-
-  @Cron(process.env.CRON_PROCESS_PDFS || CronExpression.EVERY_30_MINUTES, {
-    timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
-  })
-  async processPendingPdfs() {
-    await this.runWithLock('process_pending_pdfs', async () => {
-      const pending = await this.prisma.promotionDocument.findMany({
-        where: { processedAt: null },
-        include: { promotion: true },
-        take: 25,
-      });
-
-      for (const doc of pending) {
-        try {
-          const parsed = await this.pdfOcrService.parseDocument(
-            doc.documentUrl,
-            doc.fileType,
-          );
-
-          await this.prisma.promotionDocument.update({
-            where: { id: doc.id },
-            data: {
-              documentUrl: parsed.resolvedUrl ?? doc.documentUrl,
-              fileType: parsed.detectedMimeType ?? doc.fileType,
-              extractedText: parsed.text,
-              processedAt: new Date(),
-            },
-          });
-
-          if (parsed.text.length > 0) {
-            const joined = [doc.promotion.rawText, parsed.text]
-              .filter(Boolean)
-              .join('\n\n');
-            await this.prisma.promotion.update({
-              where: { id: doc.promotionId },
-              data: {
-                rawText: joined.slice(0, 60000),
-                aiStatus: 'pending',
-              },
-            });
-          }
-        } catch (error) {
-          await this.recordFailure('process_pending_pdfs', doc.id, error);
-        }
-      }
-
-      return { processed: pending.length };
-    });
-  }
-
-  @Cron(
-    process.env.CRON_REPAIR_DOCUMENT_LINKS || CronExpression.EVERY_4_HOURS,
-    {
-      timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
-    },
-  )
-  async repairWeakDocumentExtractions() {
-    await this.runWithLock('repair_weak_document_extractions', async () => {
-      const candidates = await this.prisma.promotionDocument.findMany({
-        where: {
-          processedAt: { not: null },
-        },
-        include: {
-          promotion: {
-            select: {
-              id: true,
-              aiStatus: true,
-            },
-          },
-        },
-        take: 50,
-        orderBy: {
-          processedAt: 'asc',
-        },
-      });
-
-      let repaired = 0;
-      for (const doc of candidates) {
-        const extractedLength = (doc.extractedText ?? '').trim().length;
-        const urlLooksPdf = /\.pdf(\?|$)/i.test(doc.documentUrl);
-        const fileType = (doc.fileType ?? '').toLowerCase();
-        const fileTypeLooksWeak =
-          fileType.includes('html') || fileType.includes('octet-stream');
-
-        const needsRepair = extractedLength < 500 && (!urlLooksPdf || fileTypeLooksWeak);
-        if (!needsRepair) {
-          continue;
-        }
-
-        try {
-          const reparsed = await this.pdfOcrService.parseDocument(
-            doc.documentUrl,
-            doc.fileType,
-            { preferTableOcr: true },
-          );
-
-          const nextLength = reparsed.text.trim().length;
-          const improvedUrl =
-            reparsed.resolvedUrl && reparsed.resolvedUrl !== doc.documentUrl;
-          const improvedText = nextLength > extractedLength;
-
-          if (!improvedUrl && !improvedText) {
-            continue;
-          }
-
-          await this.prisma.promotionDocument.update({
-            where: { id: doc.id },
-            data: {
-              documentUrl: reparsed.resolvedUrl ?? doc.documentUrl,
-              fileType: reparsed.detectedMimeType ?? doc.fileType,
-              extractedText: reparsed.text || doc.extractedText,
-              processedAt: new Date(),
-            },
-          });
-
-          if (doc.promotion.aiStatus === 'done') {
-            await this.prisma.promotion.update({
-              where: { id: doc.promotionId },
-              data: { aiStatus: 'pending' },
-            });
-          }
-
-          repaired += 1;
-        } catch (error) {
-          await this.recordFailure(
-            'repair_weak_document_extractions',
-            doc.id,
-            error,
-          );
-        }
-      }
-
-      return {
-        scanned: candidates.length,
-        repaired,
-      };
-    });
-  }
-
-  @Cron(
-    process.env.CRON_REANALYZE_STALE_PDFS || CronExpression.EVERY_6_HOURS,
-    {
-      timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
-    },
-  )
-  async requeueStalePdfAnalyses() {
-    await this.runWithLock('requeue_stale_pdf_analyses', async () => {
-      const candidates = await this.prisma.promotion.findMany({
-        where: {
-          aiStatus: 'done',
-          documents: {
-            some: {
-              fileType: {
-                contains: 'pdf',
-                mode: 'insensitive',
-              },
-            },
-          },
-        },
-        include: {
-          aiAnalysis: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-          },
-          documents: {
-            take: 1,
-          },
-        },
-        take: 50,
-        orderBy: {
-          updatedAt: 'asc',
-        },
-      });
-
-      let requeued = 0;
-
-      for (const promotion of candidates) {
-        const latest = promotion.aiAnalysis[0];
-        if (!latest) {
-          await this.prisma.promotion.update({
-            where: { id: promotion.id },
-            data: { aiStatus: 'pending' },
-          });
-          requeued += 1;
-          continue;
-        }
-
-        const resultRecord =
-          typeof latest.resultJson === 'object' &&
-          latest.resultJson !== null &&
-          !Array.isArray(latest.resultJson)
-            ? (latest.resultJson as Record<string, unknown>)
-            : {};
-
-        const dataQuality =
-          typeof resultRecord.data_quality === 'object' &&
-          resultRecord.data_quality !== null &&
-          !Array.isArray(resultRecord.data_quality)
-            ? (resultRecord.data_quality as Record<string, unknown>)
-            : {};
-
-        const unitsLegacy =
-          typeof resultRecord.units === 'object' &&
-          resultRecord.units !== null &&
-          !Array.isArray(resultRecord.units)
-            ? (resultRecord.units as Record<string, unknown>)
-            : {};
-
-        const hasLegacyRows = Array.isArray(unitsLegacy.housing_table);
-        const hasHybridUnits =
-          typeof resultRecord.units === 'object' &&
-          resultRecord.units !== null &&
-          typeof (resultRecord.units as { value?: unknown }).value === 'object';
-        const extractionMode =
-          typeof dataQuality.extraction_mode === 'string'
-            ? dataQuality.extraction_mode
-            : '';
-
-        const modelLooksLegacy = !latest.model.startsWith('hybrid-pipeline:');
-        const needsHybridUpgrade =
-          modelLooksLegacy ||
-          extractionMode === 'fallback' ||
-          (!hasLegacyRows && !hasHybridUnits);
-
-        if (!needsHybridUpgrade) {
-          continue;
-        }
-
-        await this.prisma.promotion.update({
-          where: { id: promotion.id },
-          data: { aiStatus: 'pending' },
-        });
-        requeued += 1;
-      }
-
-      return {
-        scanned: candidates.length,
-        requeued,
-      };
-    });
-  }
-
-  @Cron(process.env.CRON_ANALYZE_PROMOTIONS || CronExpression.EVERY_HOUR, {
-    timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
-  })
-  async analyzePendingPromotions() {
-    await this.runWithLock('analyze_pending_promotions', async () => {
-      const pending = await this.prisma.promotion.findMany({
-        where: { aiStatus: 'pending' },
-        include: {
-          documents: true,
-        },
-        take: 25,
-      });
-
-      for (const promotion of pending) {
-        try {
-          let sourceText = [
-            promotion.rawText ?? '',
-            ...promotion.documents
-              .map((doc) => doc.extractedText ?? '')
-              .filter((value) => value.trim().length > 0),
-          ]
-            .join('\n\n')
-            .trim();
-
-          if (
-            this.needsHousingTableRefresh(sourceText) &&
-            promotion.documents.length > 0
-          ) {
-            for (const document of promotion.documents) {
-              if (!/pdf/i.test(document.fileType)) {
-                continue;
-              }
-
-              try {
-                const reparsed = await this.pdfOcrService.parseDocument(
-                  document.documentUrl,
-                  document.fileType,
-                  { preferTableOcr: true },
-                );
-
-                if (reparsed.text.length > (document.extractedText?.length ?? 0)) {
-                  await this.prisma.promotionDocument.update({
-                    where: { id: document.id },
-                    data: {
-                      extractedText: reparsed.text,
-                      processedAt: new Date(),
-                    },
-                  });
-                  document.extractedText = reparsed.text;
-                }
-              } catch (error) {
-                await this.recordFailure(
-                  'analyze_pending_promotions',
-                  document.id,
-                  error,
-                );
-              }
-            }
-
-            sourceText = [
-              promotion.rawText ?? '',
-              ...promotion.documents
-                .map((doc) => doc.extractedText ?? '')
-                .filter((value) => value.trim().length > 0),
-            ]
-              .join('\n\n')
-              .trim();
-          }
-
-          const mainPdf = promotion.documents.find((doc) => /pdf/i.test(doc.fileType));
-
-          const analysis = mainPdf
-            ? await this.hybridPdfPipeline
-                .analyzePromotionPdf({
-                  sourceUrl: promotion.sourceUrl,
-                  pdfUrl: mainPdf.documentUrl,
-                  seedText: sourceText,
-                  options: {
-                    // Reliability is prioritized for complex VPO/HPO annex tables.
-                    preferReliability: true,
-                  },
-                })
-                .then((result) => ({
-                  result,
-                  provider: 'hybrid-pipeline',
-                  model: 'native+ocr+vision',
-                  confidence: result.confidence_score,
-                }))
-            : await this.extractionService.extractPromotionData(
-                sourceText,
-                promotion.sourceUrl,
-                undefined,
-              );
-
-          await this.prisma.promotionAiAnalysis.create({
-            data: {
-              promotionId: promotion.id,
-              model: `${analysis.provider}:${analysis.model}`,
-              resultJson: analysis.result as Prisma.InputJsonValue,
-              confidence: analysis.confidence,
-            },
-          });
-
-          const analysisResultRecord = analysis.result as Record<string, unknown>;
-
-          const extractedPromotionLegacy =
-            (analysisResultRecord.promotion as
-              | Record<string, unknown>
-              | undefined) ?? {};
-          const extractedPromotionHybrid =
-            (analysisResultRecord.promotion_data as
-              | { value?: Record<string, unknown> }
-              | undefined)?.value ?? {};
-
-          const estimatedDate =
-            extractedPromotionLegacy.estimated_publication_date ?? null;
-          const hybridStatus =
-            typeof extractedPromotionHybrid.status === 'string'
-              ? extractedPromotionHybrid.status.toLowerCase()
-              : null;
-          const isFutureLaunch =
-            typeof extractedPromotionLegacy.future_launch === 'boolean'
-              ? extractedPromotionLegacy.future_launch
-              : hybridStatus === 'upcoming';
-
-          const parsedDate =
-            typeof estimatedDate === 'string' &&
-            !Number.isNaN(Date.parse(estimatedDate))
-              ? new Date(estimatedDate)
-              : null;
-
-          await this.prisma.promotion.update({
-            where: { id: promotion.id },
-            data: {
-              aiStatus: 'done',
-              futureLaunch: isFutureLaunch,
-              status: isFutureLaunch ? 'upcoming' : promotion.status,
-              estimatedPublicationDate:
-                isFutureLaunch && parsedDate
-                  ? parsedDate
-                  : promotion.estimatedPublicationDate,
-            },
-          });
-        } catch (error) {
-          await this.recordFailure(
-            'analyze_pending_promotions',
-            promotion.id,
-            error,
-          );
-          await this.prisma.promotion.update({
-            where: { id: promotion.id },
-            data: { aiStatus: 'failed' },
-          });
-        }
-      }
-
-      return { analyzed: pending.length };
-    });
-  }
-
-  private needsHousingTableRefresh(text: string): boolean {
-    if (!text || text.length < 1200) {
-      return false;
-    }
-
-    const hasHousingContext =
-      /annex\s*1|habitatges|viviendas|lloguer|adjudicaci[oó]/i.test(text);
-    const hasTableSignals =
-      /\bBX\b|\bplanta\b\s+\bporta\b|m[²2]\s*computables|lloguer\s+mensual|478,87|63,85/i.test(
-        text,
-      );
-
-    return hasHousingContext && !hasTableSignals;
-  }
-
-  @Cron(process.env.CRON_PUBLISH_PROMOTIONS || CronExpression.EVERY_HOUR, {
-    timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
-  })
-  async publishPendingPromotions() {
-    await this.runWithLock('publish_pending_promotions', async () => {
-      const pending = await this.prisma.promotion.findMany({
-        where: { publishStatus: 'pending' },
-        take: 50,
-      });
-
-      for (const promotion of pending) {
-        await this.prisma.publishedPost.create({
-          data: {
-            sourceKind: 'promotion',
-            sourceId: promotion.id,
-            audience: promotion.isProOnly ? 'pro' : 'normal',
-            channel: 'in_app',
-            payloadJson: { title: promotion.title, id: promotion.id },
-            status: 'sent',
-            sentAt: new Date(),
-          },
-        });
-
-        await this.prisma.promotion.update({
-          where: { id: promotion.id },
-          data: { publishStatus: 'published' },
-        });
-      }
-
-      return { published: pending.length };
-    });
-  }
-
-  @Cron(process.env.CRON_SEND_REMINDERS || CronExpression.EVERY_DAY_AT_8AM, {
-    timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
-  })
-  async sendReminders() {
-    await this.runWithLock('send_reminders', async () => {
-      const due = await this.prisma.reminder.findMany({
-        where: {
-          sentAt: null,
-          remindAt: { lte: new Date() },
-        },
-        take: 100,
-      });
-
-      for (const reminder of due) {
-        await this.prisma.reminder.update({
-          where: { id: reminder.id },
-          data: { sentAt: new Date() },
-        });
-      }
-
-      return { sent: due.length };
     });
   }
 
@@ -536,7 +57,7 @@ export class JobsService {
         return { inserted: 0, reason: 'disabled' };
       }
 
-      const maxItems = Number(process.env.DAILY_NEWS_MAX_ITEMS ?? 5);
+      const maxItems = Number(process.env.DAILY_NEWS_MAX_ITEMS ?? 10);
       const items = await this.rssNewsService.fetchDailyItems(maxItems);
       let inserted = 0;
 
@@ -551,24 +72,24 @@ export class JobsService {
           continue;
         }
 
-        const analyzed = await this.extractionService.analyzeNewsItem({
-          title: item.title,
-          content: item.content,
-          source: item.sourceName,
-          url: item.link,
-          publishedAt: item.publishedAt.toISOString(),
-        });
+        const enriched = this.buildCatalunyaHousingStory(item);
+        if (!enriched) {
+          continue;
+        }
 
         await this.prisma.newsItem.create({
           data: {
-            title: item.title,
+            title: enriched.title,
             sourceName: item.sourceName,
             sourceUrl: item.sourceUrl,
             itemUrl: item.link,
             publishedAt: item.publishedAt,
             rawText: item.content,
-            summary: analyzed.summary,
-            relevance: analyzed.relevance,
+            summary: enriched.summary,
+            body: enriched.body,
+            practicalImpact: enriched.practicalImpact,
+            relevance: enriched.relevance,
+            topic: enriched.topic,
             contentHash: hash,
           },
         });
@@ -607,6 +128,110 @@ export class JobsService {
 
       return { published: 1 };
     });
+  }
+
+  private buildCatalunyaHousingStory(item: {
+    title: string;
+    content: string;
+    sourceName: string;
+    link: string;
+  }): {
+    title: string;
+    summary: string;
+    body: string;
+    practicalImpact: string;
+    relevance: string;
+    topic: string;
+  } | null {
+    const combined = `${item.title}\n${item.content}`.toLowerCase();
+
+    const hasCatalunyaFocus =
+      /catalunya|cataluna|barcelona|girona|lleida|tarragona|generalitat|incasol|ajuntament/.test(
+        combined,
+      );
+    const hasHousingFocus =
+      /vpo|hpo|habitatge|vivienda|lloguer|alquiler|asequible|solicitants|registre|ayuda|bono/.test(
+        combined,
+      );
+
+    if (!hasCatalunyaFocus || !hasHousingFocus) {
+      return null;
+    }
+
+    const topic = this.detectTopic(combined);
+    const relevance = this.detectRelevance(combined);
+
+    const hook =
+      topic === 'promociones_publicas'
+        ? 'Nuevas oportunidades de vivienda publica en Catalunya'
+        : topic === 'ayudas_vivienda'
+          ? 'Cambios en ayudas de vivienda que pueden mejorar tu acceso'
+          : topic === 'normativa'
+            ? 'Nueva normativa de vivienda en Catalunya: lo que cambia para solicitantes'
+            : 'Actualizacion clave para quienes buscan vivienda asequible en Catalunya';
+
+    const title = `${hook}: ${item.title}`.slice(0, 220);
+
+    const cleaned = item.content.replace(/\s+/g, ' ').trim();
+    const baseParagraph = cleaned.slice(0, 600);
+
+    const summary = [
+      'Contexto:',
+      `${item.sourceName} publica una novedad vinculada a vivienda en Catalunya.`,
+      baseParagraph || 'Se han anunciado cambios con impacto directo en procesos de acceso a vivienda protegida.',
+    ].join(' ');
+
+    const practicalImpact =
+      'Impacto practico: revisa requisitos de ingresos, empadronamiento, plazos y canales de solicitud porque estos elementos suelen cambiar entre convocatorias y pueden dejarte fuera si presentas documentacion incompleta.';
+
+    const body = [
+      `Por que importa: esta informacion esta orientada a personas inscritas o interesadas en VPO, alquiler asequible y convocatorias publicas en Catalunya.`,
+      `Que ha pasado: ${baseParagraph || 'se han comunicado novedades relevantes para el acceso a vivienda publica.'}`,
+      `Que debes vigilar ahora: fecha de apertura, fecha limite, municipio, promotora, documentacion exigida y posibles cupos de reserva.`,
+      `Recomendacion: compara esta novedad con convocatorias recientes del mismo municipio para anticipar cambios de baremacion y preparar mejor tu solicitud.`,
+      practicalImpact,
+    ].join('\n\n');
+
+    return {
+      title,
+      summary,
+      body,
+      practicalImpact,
+      relevance,
+      topic,
+    };
+  }
+
+  private detectTopic(text: string): string {
+    if (/promocion|convocatoria|adjudicacion|incasol|obra nueva|viviendas?/.test(text)) {
+      return 'promociones_publicas';
+    }
+    if (/ayuda|subvencion|bono|prestacion|alquiler joven/.test(text)) {
+      return 'ayudas_vivienda';
+    }
+    if (/decreto|ley|normativa|reglamento|modificacion/.test(text)) {
+      return 'normativa';
+    }
+    if (/registre|solicitants|inscripcion|empadronamiento/.test(text)) {
+      return 'registro_solicitantes';
+    }
+    return 'vivienda_catalunya';
+  }
+
+  private detectRelevance(text: string): string {
+    const score = [
+      /catalunya|generalitat|incasol/.test(text),
+      /vpo|hpo|vivienda protegida|habitatge protegit/.test(text),
+      /plazo|convocatoria|adjudicacion|solicitud/.test(text),
+    ].filter(Boolean).length;
+
+    if (score >= 3) {
+      return 'high';
+    }
+    if (score === 2) {
+      return 'medium';
+    }
+    return 'low';
   }
 
   private async runWithLock(

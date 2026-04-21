@@ -52,65 +52,35 @@ class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
-  OPENAI_API_KEY?: string;
+  JOB_TIMEZONE?: string;
 
   @IsOptional()
   @IsString()
-  OPEN_API_KEY?: string;
+  S3_ENDPOINT?: string;
 
   @IsOptional()
   @IsString()
-  OPENAI_MODEL?: string;
+  S3_REGION?: string;
 
   @IsOptional()
   @IsString()
-  OPENAI_VISION_MODEL?: string;
+  S3_ACCESS_KEY_ID?: string;
 
   @IsOptional()
   @IsString()
-  AZURE_OPENAI_API_KEY?: string;
+  S3_SECRET_ACCESS_KEY?: string;
 
   @IsOptional()
   @IsString()
-  AZURE_OPENAI_ENDPOINT?: string;
+  S3_BUCKET?: string;
 
   @IsOptional()
   @IsString()
-  AZURE_OPENAI_DEPLOYMENT?: string;
+  S3_PUBLIC_BASE_URL?: string;
 
   @IsOptional()
-  @IsString()
-  AZURE_OPENAI_API_VERSION?: string;
-
-  @IsOptional()
-  @IsString()
-  ANTHROPIC_API_KEY?: string;
-
-  @IsOptional()
-  @IsString()
-  ANTHROPIC_MODEL?: string;
-
-  @IsOptional()
-  @IsString()
-  AI_PROVIDER_ORDER?: string;
-
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  AI_MAX_RETRIES?: number;
-
-  @IsOptional()
-  @IsInt()
-  @Min(1000)
-  AI_TIMEOUT_MS?: number;
-
-  @IsOptional()
-  @IsString()
-  OCRSPACE_API_KEY?: string;
-
-  @IsOptional()
-  @IsString()
-  OCRSPACE_LANGUAGE?: string;
+  @IsBooleanString()
+  S3_FORCE_PATH_STYLE?: string;
 
   @IsOptional()
   @IsBooleanString()
@@ -144,14 +114,6 @@ class EnvironmentVariables {
   @IsOptional()
   @IsUrl()
   REGISTRE_NEWS_URL?: string;
-
-  @IsOptional()
-  @IsString()
-  CRON_REPAIR_DOCUMENT_LINKS?: string;
-
-  @IsOptional()
-  @IsString()
-  CRON_REANALYZE_STALE_PDFS?: string;
 
   @IsOptional()
   @IsInt()

@@ -29,7 +29,7 @@ export default async function DashboardPage({
       <main className="shell space-y-6">
         <header className="rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card">
           <h1 className="text-2xl font-bold text-[var(--ink)]">Dashboard Radar VPO</h1>
-          <p className="mt-1 text-sm text-[var(--ink-soft)]">Promociones activas, alertas upcoming y noticias relevantes.</p>
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">Promociones detectadas, revisiones manuales y noticias relevantes de Catalunya.</p>
           <form className="mt-4 flex flex-wrap gap-2" action="/dashboard" method="get">
             <input
               name="municipality"
@@ -66,9 +66,9 @@ export default async function DashboardPage({
         </section>
 
         <section>
-          <h2 className="mb-3 text-lg font-bold text-[var(--ink)]">Alertas de proximos lanzamientos</h2>
+          <h2 className="mb-3 text-lg font-bold text-[var(--ink)]">Alertas detectadas y pendientes de revision</h2>
           {upcoming.length === 0 ? (
-            <EmptyState title="Sin alertas upcoming" description="Todavia no hay publicaciones futuras detectadas." />
+            <EmptyState title="Sin alertas detectadas" description="Todavia no hay alertas nuevas para revisar." />
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {upcoming.map((promotion) => (

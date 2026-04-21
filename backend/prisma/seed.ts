@@ -54,34 +54,58 @@ async function main() {
       promotionType: 'alquiler',
       targetScope: 'catalunya',
       tenureType: 'arrendamiento',
-      status: 'open',
+      status: 'published',
       publishedAt: new Date('2026-03-21'),
       deadlineDate: new Date('2026-05-08'),
       sourceUrl: 'https://habitatge.gencat.cat/promocion-2026',
-      rawText: 'Bases de adjudicacion para vivienda protegida en alquiler',
-      aiStatus: 'done',
-      publishStatus: 'published',
+      rawText: 'Alerta inicial registrada para promocion de alquiler protegido.',
+      promoter: 'Incasol',
+      totalHomes: 42,
+      generalInfo: {
+        statusLabel: 'Publicado',
+      },
+      importantDates: {
+        publicationDate: '2026-03-21',
+        applicationDeadline: '2026-05-08',
+      },
+      requirements: {
+        income: 'Segun bases de convocatoria',
+      },
+      economicInfo: {
+        averageRent: 520,
+      },
+      feesAndReservations: {
+        reservation: 300,
+      },
+      contactInfo: {
+        email: 'info@habitatge.gencat.cat',
+      },
+      publicDescription:
+        'Promocion de alquiler protegido con prioridad para unidades familiares.',
     },
   });
 
   await prisma.promotionDocument.create({
     data: {
       promotionId: promotion.id,
-      documentUrl: 'https://habitatge.gencat.cat/docs/bases.pdf',
+      documentKind: 'pdf_original',
       fileType: 'pdf',
-      extractedText: 'Texto extraido de las bases oficiales',
-      processedAt: new Date(),
+      originalName: 'bases.pdf',
+      storagePath: 'seed/promocion/bases.pdf',
+      publicUrl: 'https://habitatge.gencat.cat/docs/bases.pdf',
     },
   });
 
-  await prisma.promotionAiAnalysis.create({
+  await prisma.promotionUnit.create({
     data: {
       promotionId: promotion.id,
-      model: 'gpt-4o-mini',
-      resultJson: {
-        summary: 'Promocion de alquiler protegido con cupos de juventud',
-      },
-      confidence: 0.91,
+      rowOrder: 1,
+      unitLabel: 'Escalera A - 1o 1a',
+      floor: '1',
+      door: '1',
+      bedrooms: 2,
+      monthlyRent: 520,
+      reservation: 300,
     },
   });
 

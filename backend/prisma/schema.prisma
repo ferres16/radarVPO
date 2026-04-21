@@ -32,10 +32,17 @@ enum TargetScope {
 }
 
 enum PromotionStatus {
-  draft
-  open
-  closed
-  upcoming
+  detected
+  pending_review
+  published
+  archived
+}
+
+enum PromotionDocumentKind {
+  pdf_original
+  screenshot
+  image
+  support_document
 }
 
 enum JobRunStatus {
@@ -107,21 +114,30 @@ model Promotion {
   promotionType            PromotionType       @default(desconocido) @map("promotion_type")
   targetScope              TargetScope         @default(otro) @map("target_scope")
   tenureType               String?             @map("tenure_type")
-  status                   PromotionStatus     @default(draft)
+  status                   PromotionStatus     @default(pending_review)
   publishedAt              DateTime?           @map("published_at")
   deadlineDate             DateTime?           @map("deadline_date")
   estimatedPublicationDate DateTime?           @map("estimated_publication_date")
   sourceUrl                String              @map("source_url")
   rawText                  String?             @map("raw_text")
-  aiStatus                 String              @default("pending") @map("ai_status")
-  publishStatus            String              @default("pending") @map("publish_status")
-  futureLaunch             Boolean             @default(false) @map("future_launch")
+  alertDetectedAt          DateTime            @default(now()) @map("alert_detected_at")
+  statusMessage            String              @default("Estamos analizando esta promocion y actualizando la informacion") @map("status_message")
+  promoter                 String?
+  totalHomes               Int?                @map("total_homes")
+  generalInfo              Json?               @map("general_info")
+  importantDates           Json?               @map("important_dates")
+  requirements             Json?               @map("requirements")
+  economicInfo             Json?               @map("economic_info")
+  feesAndReservations      Json?               @map("fees_and_reservations")
+  contactInfo              Json?               @map("contact_info")
+  publicDescription        String?             @map("public_description")
+  availableUnitsText       String?             @map("available_units_text")
   isProOnly                Boolean             @default(false) @map("is_pro_only")
   createdAt                DateTime            @default(now()) @map("created_at")
   updatedAt                DateTime            @updatedAt @map("updated_at")
   source                   Source              @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   documents                PromotionDocument[]
-  aiAnalysis               PromotionAiAnalysis[]
+  units                    PromotionUnit[]
   favorites                PromotionFavorite[]
 
   @@index([municipality, province, status])
@@ -131,26 +147,45 @@ model Promotion {
 model PromotionDocument {
   id          String    @id @default(cuid())
   promotionId String    @map("promotion_id")
-  documentUrl String    @map("document_url")
+  documentKind PromotionDocumentKind @map("document_kind")
   fileType    String    @map("file_type")
-  extractedText String? @map("extracted_text")
-  processedAt DateTime? @map("processed_at")
+  originalName String?  @map("original_name")
+  storagePath String    @map("storage_path")
+  publicUrl   String    @map("public_url")
+  uploadedBy  String?   @map("uploaded_by")
   createdAt   DateTime  @default(now()) @map("created_at")
   promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+
+  @@index([promotionId, documentKind])
 
   @@map("promotion_documents")
 }
 
-model PromotionAiAnalysis {
+model PromotionUnit {
   id          String    @id @default(cuid())
   promotionId String    @map("promotion_id")
-  model       String
-  resultJson  Json      @map("result_json")
-  confidence  Float?
+  rowOrder    Int       @default(0) @map("row_order")
+  unitLabel   String?   @map("unit_label")
+  building    String?
+  stair       String?
+  floor       String?
+  door        String?
+  bedrooms    Int?
+  bathrooms   Int?
+  usefulAreaM2 Decimal? @db.Decimal(8, 2) @map("useful_area_m2")
+  builtAreaM2 Decimal?  @db.Decimal(8, 2) @map("built_area_m2")
+  priceSale   Decimal?  @db.Decimal(12, 2) @map("price_sale")
+  monthlyRent Decimal?  @db.Decimal(12, 2) @map("monthly_rent")
+  reservation Decimal?  @db.Decimal(12, 2)
+  notes       String?
+  extraData   Json?     @map("extra_data")
   createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
   promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
 
-  @@map("promotion_ai_analysis")
+  @@index([promotionId, rowOrder])
+
+  @@map("promotion_units")
 }
 
 model Reminder {
@@ -174,7 +209,10 @@ model NewsItem {
   title       String
   rawText     String?  @map("raw_text")
   summary     String?
+  body        String?
+  practicalImpact String? @map("practical_impact")
   relevance   String
+  topic       String?
   contentHash String   @unique @map("content_hash")
   publishedAt DateTime @map("published_at")
   createdAt   DateTime @default(now()) @map("created_at")

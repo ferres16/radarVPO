@@ -3,6 +3,7 @@ import {
   NewsItem,
   Promotion,
   PromotionDetail,
+  PromotionUnit,
   UserProfile,
 } from '@/types';
 import {
@@ -40,6 +41,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+async function requestForm<T>(path: string, body: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE_URL}${path}`, {
+    method: 'POST',
+    body,
+    credentials: 'include',
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    const fallback = `Request failed with status ${res.status}`;
+    throw new Error(fallback);
+  }
+
+  return res.json() as Promise<T>;
+}
+
 export const api = {
   getPromotions: (query = '') => request<Promotion[]>(`/promotions${query}`),
   getPromotionById: (id: string) => request<PromotionDetail>(`/promotions/${id}`),
@@ -51,6 +68,66 @@ export const api = {
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
   getBackofficeJobs: () => request<JobRun[]>('/backoffice/jobs'),
   getBackofficeFailures: () => request<DeliveryFailure[]>('/backoffice/failures'),
+  getBackofficePromotions: (status?: string) =>
+    request<PromotionDetail[]>(
+      `/backoffice/promotions${status ? `?status=${encodeURIComponent(status)}` : ''}`,
+    ),
+  getBackofficePromotionById: (id: string) =>
+    request<PromotionDetail>(`/backoffice/promotions/${id}`),
+  getBackofficePromotionPreview: (id: string) =>
+    request<Record<string, unknown>>(`/backoffice/promotions/${id}/preview`),
+  updateBackofficePromotion: (id: string, payload: Record<string, unknown>) =>
+    request<PromotionDetail>(`/backoffice/promotions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  updateBackofficePromotionStatus: (id: string, status: Promotion['status']) =>
+    request<Promotion>(`/backoffice/promotions/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    }),
+  createBackofficeUnit: (id: string, payload: Partial<PromotionUnit>) =>
+    request<PromotionUnit>(`/backoffice/promotions/${id}/units`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateBackofficeUnit: (
+    id: string,
+    unitId: string,
+    payload: Partial<PromotionUnit>,
+  ) =>
+    request<PromotionUnit>(`/backoffice/promotions/${id}/units/${unitId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteBackofficeUnit: (id: string, unitId: string) =>
+    request<{ deleted: boolean }>(`/backoffice/promotions/${id}/units/${unitId}`, {
+      method: 'DELETE',
+    }),
+  duplicateBackofficeUnit: (id: string, unitId: string) =>
+    request<PromotionUnit>(`/backoffice/promotions/${id}/units/${unitId}/duplicate`, {
+      method: 'POST',
+    }),
+  reorderBackofficeUnits: (id: string, unitIds: string[]) =>
+    request<PromotionUnit[]>(`/backoffice/promotions/${id}/units/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ unitIds }),
+    }),
+  importBackofficeUnits: (id: string, text: string) =>
+    request<{ imported: number }>(`/backoffice/promotions/${id}/units/import-paste`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    }),
+  uploadBackofficeDocument: (
+    id: string,
+    documentKind: 'pdf_original' | 'screenshot' | 'image' | 'support_document',
+    file: File,
+  ) => {
+    const form = new FormData();
+    form.append('documentKind', documentKind);
+    form.append('file', file);
+    return requestForm(`/backoffice/promotions/${id}/documents/upload`, form);
+  },
   login: (email: string, password: string) =>
     request<{ user: { id: string; email: string } }>('/auth/login', {
       method: 'POST',

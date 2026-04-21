@@ -1,295 +1,20 @@
 import { notFound } from 'next/navigation';
 import { api } from '@/lib/api';
 
-function asRecord(value: unknown): Record<string, unknown> {
-  if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-    return value as Record<string, unknown>;
+function printJson(value: unknown) {
+  if (!value) return 'n/d';
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return 'n/d';
   }
-  return {};
 }
 
-function asString(value: unknown): string | null {
-  return typeof value === 'string' ? value : null;
-}
-
-function asNumber(value: unknown): number | null {
-  if (typeof value === 'number') return value;
-  if (typeof value === 'string') {
-    const parsed = Number(value);
-    return Number.isNaN(parsed) ? null : parsed;
-  }
-  return null;
-}
-
-function asArray(value: unknown): unknown[] {
-  return Array.isArray(value) ? value : [];
-}
-
-function sectionValue(value: unknown): unknown {
-  const record = asRecord(value);
-  if (record.value !== undefined) {
-    return record.value;
-  }
-  return value;
-}
-
-function cleanValue(value: string | null): string | null {
-  if (!value) return null;
-  const cleaned = value.replace(/\s{2,}/g, ' ').trim();
-  return cleaned.length > 0 ? cleaned : null;
-}
-
-function isWeakLocation(value: string | null): boolean {
-  if (!value) return true;
-  const normalized = value.trim().toLowerCase();
-  if (normalized.length < 4) return true;
-  return /^(sol|n\/d|nd|catalunya|cataluna)$/.test(normalized);
-}
-
-function extractHomesCount(text: string) {
-  const match = text.match(/(\d{1,4})\s+(habitatges|viviendas|vivendes|vivienda)/i);
-  if (!match) return null;
-  const parsed = Number(match[1]);
-  return Number.isNaN(parsed) ? null : parsed;
-}
-
-function extractAddress(text: string) {
-  const match = text.match(/(carrer|calle|avinguda|avenida|av\.|c\.)\s+[^,\n]+(?:,\s*\d+)?/i);
-  return match?.[0]?.trim() ?? null;
-}
-
-function extractPromoter(text: string) {
-  const match = text.match(
-    /promoguts?\s+per\s+(.+?)(?=\s+al\s+municipi\b|\s+a\s+[A-ZÀ-Ú]|\.|,|\n|$)/i,
-  );
-  if (!match?.[1]) return null;
-
-  return match[1]
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-}
-
-function extractMunicipality(text: string) {
-  const patterns = [
-    /al\s+municipi\s+d(?:e|')\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})/i,
-    /al\s+municipio\s+de\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})/i,
-    /situats?\s+(?:al|a\s+l['’])\s+municipi\s+d(?:e|')\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})/i,
-    /\ba\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,60})(?:[\.,\n]|$)/i,
-    /\bde\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\-\s]{2,40})/,
-  ];
-
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (!match?.[1]) {
-      continue;
-    }
-
-    const value = match[1]
-      .replace(/\s+en\s+el\s+termini[\s\S]*$/i, '')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-
-    if (
-      !value ||
-      /^(sol)$/i.test(value) ||
-      /habitatges|hpo|venda|alquiler|termini|dies|detalls|procediment/i.test(
-        value,
-      )
-    ) {
-      continue;
-    }
-
-    return value;
-  }
-
-  return null;
-}
-
-function extractLine(text: string, pattern: RegExp): string | null {
-  const match = text.match(pattern);
-  if (!match?.[0]) return null;
-  return cleanValue(match[0]);
-}
-
-type HousingRow = {
-  label: string;
-  homes: number;
-};
-
-type DetailedHousingRow = Record<string, string | number | null>;
-
-function parseDetailedHousingRows(units: Record<string, unknown>): DetailedHousingRow[] {
-  const table = Array.isArray(units.housing_table) ? units.housing_table : units.rows;
-  if (!Array.isArray(table)) {
-    return [];
-  }
-
-  const rows: DetailedHousingRow[] = [];
-  for (const row of table) {
-    if (typeof row !== 'object' || row === null || Array.isArray(row)) {
-      continue;
-    }
-
-    const parsed: DetailedHousingRow = {};
-    for (const [key, value] of Object.entries(row as Record<string, unknown>)) {
-      if (typeof value === 'string' || typeof value === 'number' || value === null) {
-        parsed[key] = value;
-      }
-    }
-
-    const nonEmptyCells = Object.values(parsed).filter(
-      (cell) => cell !== null && String(cell).trim() !== '',
-    ).length;
-
-    if (nonEmptyCells >= 2) {
-      rows.push(parsed);
-    }
-  }
-
-  return rows;
-}
-
-function formatColumnLabel(column: string) {
-  const dict: Record<string, string> = {
-    planta: 'Planta',
-    porta: 'Puerta',
-    puerta: 'Puerta',
-    m2_computables: 'M2 computables',
-    numero_habitaciones: 'Num. habitaciones',
-    num_habit_6_8_m2: 'Hab. 6-8 m2',
-    num_habit_8_12_m2: 'Hab. 8-12 m2',
-    num_habit_mas_12_m2: 'Hab. mas de 12 m2',
-    ocupacion_maxima: 'Ocupacion maxima',
-    precio_alquiler_mensual: 'Precio alquiler mensual',
-  };
-
-  if (dict[column]) {
-    return dict[column];
-  }
-
-  return column
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (ch) => ch.toUpperCase());
-}
-
-function parseHousingRows(
-  units: Record<string, unknown>,
-  textPool: string,
-): HousingRow[] {
-  const fromAi = units.home_mix;
-  if (Array.isArray(fromAi)) {
-    const rows = fromAi
-      .map((item) => {
-        const row = asRecord(item);
-        const label = asString(row.label) || asString(row.type) || asString(row.room_type);
-        const homes = asNumber(row.homes) ?? asNumber(row.count) ?? asNumber(row.units);
-        if (!label || homes === null) {
-          return null;
-        }
-        return { label, homes };
-      })
-      .filter((item): item is HousingRow => item !== null);
-
-    if (rows.length > 0) {
-      return rows;
-    }
-  }
-
-  const regex = /(\d{1,3})\s+(?:habitatges?|viviendas?)\s*(?:de|d')?\s*([^\n,.;]{0,70})/gi;
-  const rows: HousingRow[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(textPool)) !== null) {
-    const homes = Number(match[1]);
-    if (!Number.isNaN(homes)) {
-      rows.push({
-        label: cleanValue(match[2]) || 'Tipologia general',
-        homes,
-      });
-    }
-  }
-
-  const tableLikeRegex = /(\d{1,3})\s+(?:habitatges?|viviendas?)\b/gi;
-  if (rows.length === 0) {
-    let m: RegExpExecArray | null;
-    while ((m = tableLikeRegex.exec(textPool)) !== null) {
-      const homes = Number(m[1]);
-      if (!Number.isNaN(homes)) {
-        rows.push({ label: 'Tipologia general', homes });
-      }
-    }
-  }
-
-  const deduped = new Map<string, HousingRow>();
-  for (const row of rows) {
-    const cleanedLabel = row.label.replace(/\s+/g, ' ').trim();
-    const looksNoisy =
-      cleanedLabel.length > 55 ||
-      /(promoguts?|s[’']?organitzen|procediment|adjudicaci[oó]|notificaci[oó])/i.test(
-        cleanedLabel,
-      );
-    if (looksNoisy) {
-      continue;
-    }
-
-    const key = `${row.label.toLowerCase()}|${row.homes}`;
-    if (!deduped.has(key)) {
-      deduped.set(key, row);
-    }
-  }
-
-  return [...deduped.values()];
-}
-
-function requirementFromList(
-  requirements: Array<Record<string, unknown>>,
-  keyPattern: RegExp,
-): string | null {
-  for (const item of requirements) {
-    const code = asString(item.code) ?? '';
-    const description = asString(item.description) ?? '';
-    if (!keyPattern.test(`${code} ${description}`.toLowerCase())) {
-      continue;
-    }
-
-    const value = cleanValue(asString(item.value));
-    if (value) {
-      return value;
-    }
-
-    const fallback = cleanValue(description);
-    if (fallback) {
-      return fallback;
-    }
-  }
-
-  return null;
-}
-
-function dateFromList(
-  dates: Array<Record<string, unknown>>,
-  keyPattern: RegExp,
-): string | null {
-  for (const item of dates) {
-    const label = asString(item.label) ?? '';
-    if (!keyPattern.test(label.toLowerCase())) {
-      continue;
-    }
-
-    const value = cleanValue(asString(item.date));
-    if (value) {
-      return value;
-    }
-  }
-
-  return null;
-}
-
-function firstPdfUrl(docs: Array<{ fileType: string; documentUrl: string }>) {
-  const found = docs.find((doc) => /pdf/i.test(doc.fileType));
-  return found?.documentUrl || null;
-}
-
-export default async function PromotionDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PromotionDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = await params;
   const promotion = await api.getPromotionById(id).catch(() => null);
 
@@ -297,228 +22,119 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
     return notFound();
   }
 
-  const latestAnalysis = asRecord(promotion.aiAnalysis[0]?.resultJson || {});
-  const promotionData = asRecord(
-    sectionValue(latestAnalysis.promotion_data ?? latestAnalysis.promotion),
-  );
-  const requirementsValue = sectionValue(latestAnalysis.requirements);
-  const requirements = asRecord(requirementsValue);
-  const requirementsList = asArray(requirementsValue).map((item) => asRecord(item));
-  const units = asRecord(sectionValue(latestAnalysis.units));
-  const importantDatesValue = sectionValue(
-    latestAnalysis.dates ?? latestAnalysis.important_dates,
-  );
-  const importantDates = asRecord(importantDatesValue);
-  const importantDatesList = asArray(importantDatesValue).map((item) => asRecord(item));
-  const analysisWarnings = asArray(latestAnalysis.warnings)
-    .map((item) => asString(item))
-    .filter((item): item is string => Boolean(item));
-  const pdfUrl = firstPdfUrl(promotion.documents) || promotion.sourceUrl;
-  const documentsText = promotion.documents
-    .map((doc) => doc.extractedText || '')
-    .filter((value) => value.trim().length > 0)
-    .join('\n\n');
-
-  const textPool = `${promotion.title}\n${promotion.rawText || ''}\n${documentsText}`;
-  const detailedHousingRows = parseDetailedHousingRows(units);
-  let housingRows = parseHousingRows(units, textPool);
-
-  const unitsTotal =
-    asNumber(units.total_homes) ??
-    asNumber(units.total_units) ??
-    asNumber(units.hpo_homes) ??
-    extractHomesCount(textPool);
-
-  if (housingRows.length === 0 && unitsTotal !== null && detailedHousingRows.length === 0) {
-    housingRows = [{ label: 'Total viviendas', homes: unitsTotal }];
-  }
-
-  const promoter =
-    asString(promotionData.promoter)?.replace(/\s+al\s+municipi[\s\S]*$/i, '').trim() ||
-    extractPromoter(textPool);
-
-  const fallbackMunicipality =
-    promotion.municipality || extractMunicipality(textPool) || 'Catalunya';
-
-  const address = asString(promotionData.address) || extractAddress(textPool);
-
-  const aiLocation = cleanValue(asString(promotionData.full_location));
-  const aiAddress = cleanValue(asString(promotionData.address));
-  const specificLocation = !isWeakLocation(aiLocation)
-    ? aiLocation
-    : !isWeakLocation(aiAddress)
-      ? aiAddress
-      : [address, fallbackMunicipality].filter(Boolean).join(', ') ||
-        `${fallbackMunicipality}${
-          promotion.province ? `, ${promotion.province}` : ''
-        }`;
-
-  const incomeRequirement =
-    asString(requirements.income_limits) ||
-    requirementFromList(requirementsList, /(ingres|renda|renta|income)/i) ||
-    extractLine(textPool, /(ingres[oa]s?|renda)[^\n]{0,140}/i) ||
-    'n/d';
-
-  const residencyRequirement =
-    asString(requirements.residency_requirement) ||
-    requirementFromList(requirementsList, /(empadron|residen)/i) ||
-    extractLine(textPool, /(empadronament|empadronamiento)[^\n]{0,140}/i) ||
-    'n/d';
-
-  const otherRequirement =
-    asString(requirements.other_conditions) ||
-    requirementFromList(requirementsList, /(other|altres|otros|condicion|requisit)/i) ||
-    extractLine(textPool, /(requisits?|requisitos|condicions?|condiciones)[^\n]{0,180}/i) ||
-    'n/d';
-
-  const publicationDateFromAnalysis =
-    asString(importantDates.alert_date) ||
-    asString(importantDates.publication_date) ||
-    dateFromList(importantDatesList, /(public|alert|anunci|anuncio)/i);
-  const launchDateFromAnalysis =
-    asString(importantDates.estimated_publication_date) ||
-    dateFromList(importantDatesList, /(launch|estimad|salida|publicaci)/i);
-  const deadlineDateFromAnalysis =
-    asString(importantDates.application_deadline) ||
-    dateFromList(importantDatesList, /(deadline|termini|plazo|solicitud|inscrip)/i);
-
-  const tableStatus = asString(units.status);
-  const tableErrorReason = asString(units.error_reason);
-  const tableMessage =
-    analysisWarnings[0] ||
-    tableErrorReason ||
-    'No se ha podido extraer la tabla estructurada de pisos del PDF para esta promocion.';
-
-  const isUpcoming = promotion.futureLaunch || promotion.status === 'upcoming';
-
   return (
     <main className="shell">
       <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
         <h1 className="text-2xl font-bold text-[var(--ink)]">{promotion.title}</h1>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">
+          {promotion.municipality || 'Catalunya'}
+          {promotion.province ? `, ${promotion.province}` : ''}
+        </p>
+
+        <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm">
+          <p className="font-semibold text-[var(--ink)]">Estado: {promotion.status}</p>
+          <p className="mt-1 text-[var(--ink-soft)]">
+            {promotion.statusMessage ||
+              'Estamos analizando esta promocion y actualizando la informacion'}
+          </p>
+        </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Ubicacion</h2>
-            <p className="mt-2 text-sm text-[var(--ink)]">{specificLocation}</p>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Informacion general</h2>
+            <p className="mt-2 text-sm text-[var(--ink)]">Tipo: {promotion.promotionType}</p>
+            <p className="text-sm text-[var(--ink)]">Promotor: {promotion.promoter || 'n/d'}</p>
+            <p className="text-sm text-[var(--ink)]">Total viviendas: {promotion.totalHomes ?? 'n/d'}</p>
           </div>
           <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Resumen</h2>
-            <p className="mt-2 text-sm text-[var(--ink)]">Tipo: {promotion.promotionType}</p>
-            <p className="text-sm text-[var(--ink)]">Estado: {promotion.status}</p>
-            <p className="text-sm text-[var(--ink)]">Total viviendas: {unitsTotal ?? 'n/d'}</p>
-            <p className="text-sm text-[var(--ink)]">Promotor: {promoter || 'n/d'}</p>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Descripcion</h2>
+            <p className="mt-2 text-sm text-[var(--ink)]">
+              {promotion.publicDescription ||
+                'Ficha preliminar detectada automaticamente. El equipo esta completando los datos.'}
+            </p>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Fechas importantes</h2>
-            <p className="mt-2 text-sm text-[var(--ink)]">{isUpcoming ? 'Publicacion alerta' : 'Publicacion anuncio'}: {promotion.publishedAt ? promotion.publishedAt.slice(0, 10) : publicationDateFromAnalysis || 'n/d'}</p>
-            <p className="text-sm text-[var(--ink)]">{isUpcoming ? 'Salida estimada' : 'Fecha de lanzamiento'}: {isUpcoming ? (promotion.estimatedPublicationDate ? promotion.estimatedPublicationDate.slice(0, 10) : launchDateFromAnalysis || 'n/d') : (promotion.publishedAt ? promotion.publishedAt.slice(0, 10) : publicationDateFromAnalysis || 'n/d')}</p>
-            <p className="text-sm text-[var(--ink)]">Fin solicitud: {promotion.deadlineDate ? promotion.deadlineDate.slice(0, 10) : deadlineDateFromAnalysis || 'n/d'}</p>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Fechas</h2>
+            <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
+              {printJson(promotion.importantDates)}
+            </pre>
           </div>
           <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Requisitos principales</h2>
-            <p className="mt-2 text-sm text-[var(--ink)]">Ingresos: {incomeRequirement}</p>
-            <p className="text-sm text-[var(--ink)]">Empadronamiento: {residencyRequirement}</p>
-            <p className="text-sm text-[var(--ink)]">Otros: {otherRequirement}</p>
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Requisitos</h2>
+            <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
+              {printJson(promotion.requirements)}
+            </pre>
           </div>
         </div>
 
         <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Tabla de viviendas disponibles</h2>
-          {detailedHousingRows.length > 0 && detailedHousingRows.some((row) => {
-            const nonNullCount = Object.values(row).filter((v) => v !== null && v !== '' && String(v).toLowerCase() !== 'n/d').length;
-            return nonNullCount > 2;
-          }) ? (
-            <table className="mt-3 w-full border-collapse text-sm">
-              <thead>
-                <tr>
-                  {Object.keys(detailedHousingRows[0]).map((column) => (
-                    <th
-                      key={column}
-                      className="border-b border-[var(--stroke)] px-2 py-2 text-left text-[var(--ink-soft)]"
-                    >
-                      {formatColumnLabel(column)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {detailedHousingRows.map((row, index) => (
-                  <tr key={`detailed-row-${index}`}>
-                    {Object.keys(detailedHousingRows[0]).map((column) => (
-                      <td
-                        key={`${index}-${column}`}
-                        className="border-b border-[var(--stroke)] px-2 py-2 text-[var(--ink)]"
-                      >
-                        {row[column] ?? 'n/d'}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : detailedHousingRows.length > 0 ? (
-            <table className="mt-3 w-full border-collapse text-sm">
-              <thead>
-                <tr>
-                  <th className="border-b border-[var(--stroke)] px-2 py-2 text-left text-[var(--ink-soft)]">Categoria</th>
-                  <th className="border-b border-[var(--stroke)] px-2 py-2 text-left text-[var(--ink-soft)]">Valor</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detailedHousingRows.map((row, index) => (
-                  <tr key={`summary-row-${index}`}>
-                    <td className="border-b border-[var(--stroke)] px-2 py-2 text-[var(--ink)]">{row.label}</td>
-                    <td className="border-b border-[var(--stroke)] px-2 py-2 text-[var(--ink)]">{row.homes}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : !isUpcoming ? (
-            <div>
-              <p className="mt-2 text-sm text-[var(--ink)]">{tableMessage}</p>
-              {tableStatus ? (
-                <p className="mt-1 text-xs text-[var(--ink-soft)]">Estado de tabla: {tableStatus}</p>
-              ) : null}
-            </div>
-          ) : housingRows.length === 0 ? (
-            <p className="mt-2 text-sm text-[var(--ink)]">No se han podido extraer filas de viviendas del PDF.</p>
+          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Tabla de viviendas</h2>
+          {promotion.units.length === 0 ? (
+            <p className="mt-2 text-sm text-[var(--ink-soft)]">Pendiente de revision manual.</p>
           ) : (
-            <table className="mt-3 w-full border-collapse text-sm">
-              <thead>
-                <tr>
-                  <th className="border-b border-[var(--stroke)] px-2 py-2 text-left text-[var(--ink-soft)]">Tipologia</th>
-                  <th className="border-b border-[var(--stroke)] px-2 py-2 text-left text-[var(--ink-soft)]">Viviendas</th>
-                </tr>
-              </thead>
-              <tbody>
-                {housingRows.map((row, index) => (
-                  <tr key={`${row.label}-${index}`}>
-                    <td className="border-b border-[var(--stroke)] px-2 py-2 text-[var(--ink)]">{row.label}</td>
-                    <td className="border-b border-[var(--stroke)] px-2 py-2 text-[var(--ink)]">{row.homes}</td>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--stroke)]">
+                    <th className="p-2 text-left">Unidad</th>
+                    <th className="p-2 text-left">Planta</th>
+                    <th className="p-2 text-left">Puerta</th>
+                    <th className="p-2 text-left">Hab.</th>
+                    <th className="p-2 text-left">Alquiler</th>
+                    <th className="p-2 text-left">Reserva</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {promotion.units.map((row) => (
+                    <tr key={row.id} className="border-b border-[var(--stroke)]">
+                      <td className="p-2">{row.unitLabel || 'n/d'}</td>
+                      <td className="p-2">{row.floor || 'n/d'}</td>
+                      <td className="p-2">{row.door || 'n/d'}</td>
+                      <td className="p-2">{row.bedrooms ?? 'n/d'}</td>
+                      <td className="p-2">{row.monthlyRent ?? 'n/d'}</td>
+                      <td className="p-2">{row.reservation ?? 'n/d'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2">
-          <span className="chip">{promotion.promotionType}</span>
-          <span className="chip">Estado: {promotion.status}</span>
-          {promotion.futureLaunch ? <span className="chip">Alerta 60 dias</span> : null}
+        <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Viviendas disponibles (texto plano)</h2>
+          {promotion.availableUnitsText ? (
+            <pre className="mt-2 whitespace-pre-wrap text-sm text-[var(--ink)]">
+              {promotion.availableUnitsText}
+            </pre>
+          ) : (
+            <p className="mt-2 text-sm text-[var(--ink-soft)]">Aun no hay bloque de texto manual cargado.</p>
+          )}
         </div>
 
-        <details className="mt-5 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-          <summary className="cursor-pointer text-sm font-semibold text-[var(--ink)]">Ver texto original analizado</summary>
-          <p className="mt-3 whitespace-pre-wrap text-sm text-[var(--ink)]">{promotion.rawText || 'Sin texto original.'}</p>
-        </details>
-
-        <a href={pdfUrl} target="_blank" rel="noreferrer" className="mt-5 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]">
-          Ver PDF
-        </a>
+        <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Documentos de referencia</h2>
+          {promotion.documents.length === 0 ? (
+            <p className="mt-2 text-sm text-[var(--ink-soft)]">Sin documentos adjuntos.</p>
+          ) : (
+            <div className="mt-2 space-y-2">
+              {promotion.documents.map((doc) => (
+                <a
+                  key={doc.id}
+                  href={doc.publicUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block rounded-lg border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink)]"
+                >
+                  {doc.originalName || doc.publicUrl} - {doc.documentKind}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
       </article>
     </main>
   );

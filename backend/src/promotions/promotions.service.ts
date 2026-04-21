@@ -1,24 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { PromotionPdfHybridPipelineService } from '../jobs/promotion-pdf-hybrid-pipeline.service';
-import { PdfOcrService } from '../jobs/pdf-ocr.service';
-import { StructuredExtractionService } from '../jobs/structured-extraction.service';
-import { AnalyzePdfUrlDto } from './dto/analyze-pdf-url.dto';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
 
 @Injectable()
 export class PromotionsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly hybridPdfPipeline: PromotionPdfHybridPipelineService,
-    private readonly pdfOcrService: PdfOcrService,
-    private readonly extractionService: StructuredExtractionService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async list(filters: ListPromotionsDto) {
-    const publishedOnly = filters.publishedOnly === 'true';
-
     const where: Prisma.PromotionWhereInput = {
       municipality: filters.municipality
         ? { contains: filters.municipality, mode: 'insensitive' }
@@ -27,14 +16,18 @@ export class PromotionsService {
         ? { contains: filters.province, mode: 'insensitive' }
         : undefined,
       promotionType: filters.promotionType,
-      status: publishedOnly ? { in: ['open', 'closed'] } : filters.status,
-      documents: publishedOnly ? { some: { fileType: 'pdf' } } : undefined,
+      status: filters.status,
     };
 
     return this.prisma.promotion.findMany({
       where,
-      orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
-      take: 50,
+      orderBy: [{ alertDetectedAt: 'desc' }, { createdAt: 'desc' }],
+      take: 100,
+      include: {
+        documents: {
+          orderBy: { createdAt: 'desc' },
+        },
+      },
     });
   }
 
@@ -45,8 +38,8 @@ export class PromotionsService {
         documents: {
           orderBy: { createdAt: 'desc' },
         },
-        aiAnalysis: {
-          orderBy: { createdAt: 'desc' },
+        units: {
+          orderBy: { rowOrder: 'asc' },
         },
       },
     });
@@ -88,163 +81,17 @@ export class PromotionsService {
   async listFavorites(userId: string) {
     return this.prisma.promotionFavorite.findMany({
       where: { userId },
-      include: { promotion: true },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async reanalyzeTable(promotionId: string) {
-    const promotion = await this.prisma.promotion.findUnique({
-      where: { id: promotionId },
       include: {
-        documents: true,
-      },
-    });
-
-    if (!promotion) {
-      throw new NotFoundException('Promotion not found');
-    }
-
-    let refreshedDocs = 0;
-
-    for (const document of promotion.documents) {
-      if (!/pdf/i.test(document.fileType)) {
-        continue;
-      }
-
-      const reparsed = await this.pdfOcrService.parseDocument(
-        document.documentUrl,
-        document.fileType,
-        { preferTableOcr: true },
-      );
-
-      if (reparsed.text.length === 0) {
-        continue;
-      }
-
-      if (reparsed.text !== (document.extractedText ?? '')) {
-        await this.prisma.promotionDocument.update({
-          where: { id: document.id },
-          data: {
-            extractedText: reparsed.text,
-            processedAt: new Date(),
+        promotion: {
+          include: {
+            documents: {
+              orderBy: { createdAt: 'desc' },
+              take: 1,
+            },
           },
-        });
-        document.extractedText = reparsed.text;
-        refreshedDocs += 1;
-      }
-    }
-
-    const sourceText = [
-      promotion.rawText ?? '',
-      ...promotion.documents
-        .map((doc) => doc.extractedText ?? '')
-        .filter((value) => value.trim().length > 0),
-    ]
-      .join('\n\n')
-      .trim();
-
-    const mainPdf = promotion.documents.find((doc) => /pdf/i.test(doc.fileType));
-    const analysis = mainPdf
-      ? await this.hybridPdfPipeline
-          .analyzePromotionPdf({
-            sourceUrl: promotion.sourceUrl,
-            pdfUrl: mainPdf.documentUrl,
-            seedText: sourceText,
-            options: { preferReliability: true },
-          })
-          .then((result) => ({
-            result,
-            provider: 'hybrid-pipeline',
-            model: 'native+ocr+vision',
-            confidence: result.confidence_score,
-          }))
-      : await this.extractionService.extractPromotionData(
-          sourceText,
-          promotion.sourceUrl,
-          undefined,
-        );
-
-    await this.prisma.promotionAiAnalysis.create({
-      data: {
-        promotionId: promotion.id,
-        model: `${analysis.provider}:${analysis.model}`,
-        resultJson: analysis.result as Prisma.InputJsonValue,
-        confidence: analysis.confidence,
+        },
       },
-    });
-
-    const analysisResultRecord = analysis.result as Record<string, unknown>;
-    const extractedPromotionLegacy =
-      (analysisResultRecord.promotion as Record<string, unknown> | undefined) ??
-      {};
-    const extractedPromotionHybrid =
-      (analysisResultRecord.promotion_data as
-        | { value?: Record<string, unknown> }
-        | undefined)?.value ?? {};
-
-    const estimatedDate =
-      extractedPromotionLegacy.estimated_publication_date ?? null;
-    const hybridStatus =
-      typeof extractedPromotionHybrid.status === 'string'
-        ? extractedPromotionHybrid.status.toLowerCase()
-        : null;
-    const isFutureLaunch =
-      typeof extractedPromotionLegacy.future_launch === 'boolean'
-        ? extractedPromotionLegacy.future_launch
-        : hybridStatus === 'upcoming';
-
-    const parsedDate =
-      typeof estimatedDate === 'string' && !Number.isNaN(Date.parse(estimatedDate))
-        ? new Date(estimatedDate)
-        : null;
-
-    await this.prisma.promotion.update({
-      where: { id: promotion.id },
-      data: {
-        aiStatus: 'done',
-        futureLaunch: isFutureLaunch,
-        status: isFutureLaunch ? 'upcoming' : promotion.status,
-        estimatedPublicationDate:
-          isFutureLaunch && parsedDate
-            ? parsedDate
-            : promotion.estimatedPublicationDate,
-      },
-    });
-
-    const legacyUnits =
-      (analysisResultRecord.units as Record<string, unknown> | undefined) ?? {};
-    const hybridUnits =
-      (analysisResultRecord.units as
-        | { value?: { rows?: unknown[] } }
-        | undefined)?.value ?? {};
-
-    const tableRows = Array.isArray(legacyUnits.housing_table)
-      ? legacyUnits.housing_table.length
-      : Array.isArray(hybridUnits.rows)
-        ? hybridUnits.rows.length
-        : 0;
-
-    return {
-      ok: true,
-      promotionId: promotion.id,
-      refreshedDocs,
-      housingTableRows: tableRows,
-    };
-  }
-
-  async analyzePdfUrl(payload: AnalyzePdfUrlDto) {
-    const normalizedPdfUrl = this.pdfOcrService.normalizeDocumentUrl(payload.pdfUrl);
-    const normalizedSourceUrl = payload.sourceUrl
-      ? this.pdfOcrService.normalizeDocumentUrl(payload.sourceUrl)
-      : normalizedPdfUrl;
-
-    return this.hybridPdfPipeline.analyzePromotionPdfForFrontend({
-      sourceUrl: normalizedSourceUrl,
-      pdfUrl: normalizedPdfUrl,
-      options: {
-        preferReliability: true,
-      },
+      orderBy: { createdAt: 'desc' },
     });
   }
 }

@@ -18,7 +18,7 @@ describe('PromotionCard', () => {
           municipality: 'Barcelona',
           province: 'Barcelona',
           promotionType: 'alquiler',
-          status: 'open',
+          status: 'published',
           sourceUrl: 'https://example.com',
         }}
       />, 
