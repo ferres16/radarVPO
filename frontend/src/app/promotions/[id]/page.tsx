@@ -427,7 +427,10 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
 
         <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Tabla de viviendas disponibles</h2>
-          {detailedHousingRows.length > 0 ? (
+          {detailedHousingRows.length > 0 && detailedHousingRows.some((row) => {
+            const nonNullCount = Object.values(row).filter((v) => v !== null && v !== '' && String(v).toLowerCase() !== 'n/d').length;
+            return nonNullCount > 2;
+          }) ? (
             <table className="mt-3 w-full border-collapse text-sm">
               <thead>
                 <tr>
@@ -452,6 +455,23 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
                         {row[column] ?? 'n/d'}
                       </td>
                     ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : detailedHousingRows.length > 0 ? (
+            <table className="mt-3 w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <th className="border-b border-[var(--stroke)] px-2 py-2 text-left text-[var(--ink-soft)]">Categoria</th>
+                  <th className="border-b border-[var(--stroke)] px-2 py-2 text-left text-[var(--ink-soft)]">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                {detailedHousingRows.map((row, index) => (
+                  <tr key={`summary-row-${index}`}>
+                    <td className="border-b border-[var(--stroke)] px-2 py-2 text-[var(--ink)]">{row.label}</td>
+                    <td className="border-b border-[var(--stroke)] px-2 py-2 text-[var(--ink)]">{row.homes}</td>
                   </tr>
                 ))}
               </tbody>
