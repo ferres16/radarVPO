@@ -294,9 +294,18 @@ export class RegistreScraperService {
     $('a, area, iframe, embed').each((_, el) => {
       const href = $(el).attr('href') ?? $(el).attr('src');
       const onclick = $(el).attr('onclick') ?? '';
+      const text = $(el).text().trim().toLowerCase();
 
-      if (href && /\.pdf(\?|$)/i.test(href)) {
-        links.add(this.resolveUrl(pageUrl, href));
+      if (href) {
+        const normalizedHref = this.resolveUrl(pageUrl, href);
+        const hasPdfSignal =
+          /\.pdf(\?|$)|[?&](format|tipo|type)=pdf|descarga|download|fitxer|document/i.test(
+            normalizedHref,
+          ) || /\b(pdf|annex|anexo|bases?)\b/i.test(text);
+
+        if (hasPdfSignal) {
+          links.add(normalizedHref);
+        }
       }
 
       const onclickMatches = onclick.matchAll(
