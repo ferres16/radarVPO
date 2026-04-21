@@ -1,11 +1,68 @@
-import Link from 'next/link';
-import { api } from '@/lib/api';
+'use client';
 
-export default async function AdminPage() {
-  const [overview, promotions] = await Promise.all([
-    api.getBackofficeOverview(),
-    api.getBackofficePromotions(),
-  ]);
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { api } from '@/lib/api';
+import type { BackofficeOverview, PromotionDetail } from '@/types';
+
+const STATUSES = ['detected', 'pending_review', 'published', 'archived'] as const;
+
+export default function AdminPage() {
+  const [overview, setOverview] = useState<BackofficeOverview | null>(null);
+  const [promotions, setPromotions] = useState<PromotionDetail[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      try {
+        const [nextOverview, nextPromotions] = await Promise.all([
+          api.getBackofficeOverview(),
+          api.getBackofficePromotions(),
+        ]);
+        if (!active) return;
+        setOverview(nextOverview);
+        setPromotions(nextPromotions);
+      } catch (err) {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : 'No se pudo cargar el panel de admin');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <main className="shell">
+        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
+          <p className="text-sm text-[var(--ink-soft)]">Cargando panel de administracion...</p>
+        </article>
+      </main>
+    );
+  }
+
+  if (error || !overview) {
+    return (
+      <main className="shell">
+        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
+          <h1 className="text-2xl font-bold text-[var(--ink)]">Panel de administracion</h1>
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">
+            {error || 'No se pudo cargar el panel.'}
+          </p>
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">
+            Accede primero con una cuenta de administrador desde <Link href="/login" className="font-semibold text-[var(--green-700)]">iniciar sesion</Link>.
+          </p>
+        </article>
+      </main>
+    );
+  }
 
   const grouped = {
     detected: promotions.filter((p) => p.status === 'detected'),
@@ -21,6 +78,9 @@ export default async function AdminPage() {
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
           Flujo simplificado sin IA: deteccion, revision manual, publicacion y archivo.
         </p>
+        <Link href="/services" className="mt-4 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-[var(--green-700)]">
+          Ver servicios
+        </Link>
       </header>
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
@@ -33,9 +93,7 @@ export default async function AdminPage() {
       </section>
 
       <section className="grid gap-4 lg:grid-cols-2">
-        {(
-          ['detected', 'pending_review', 'published', 'archived'] as const
-        ).map((status) => (
+        {STATUSES.map((status) => (
           <article key={status} className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
             <h2 className="text-lg font-semibold capitalize text-[var(--ink)]">
               {status.replace('_', ' ')} ({grouped[status].length})

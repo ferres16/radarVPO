@@ -72,6 +72,9 @@ export default async function Home() {
             <Link href="/promotions?view=upcoming" className="rounded-xl border border-[var(--stroke)] bg-white px-5 py-3 font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
               Ver promociones
             </Link>
+            <Link href="/services" className="rounded-xl border border-[var(--stroke)] bg-white px-5 py-3 font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
+              Servicios
+            </Link>
           </div>
         </header>
 
@@ -89,7 +92,7 @@ export default async function Home() {
               <div className="mb-3 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {activeAlerts.slice(0, 3).map(({ promotion, window }) => (
                   <div key={promotion.id} className="space-y-2">
-                    <PromotionCard promotion={promotion} hideDetail />
+                    <PromotionCard promotion={promotion} hideDetail hideStatus />
                     <div className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink-soft)] shadow-card">
                       Activa: quedan {window.daysLeft} dias.
                     </div>
@@ -100,7 +103,7 @@ export default async function Home() {
                 <div className="mb-3 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                   {expiredAlerts.slice(0, 3).map(({ promotion, window }) => (
                     <div key={promotion.id} className="space-y-2 opacity-90">
-                      <PromotionCard promotion={promotion} hideDetail />
+                        <PromotionCard promotion={promotion} hideDetail hideStatus />
                       <div className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink-soft)] shadow-card">
                         Vencida hace {window.daysSince} dias.
                       </div>

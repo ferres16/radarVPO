@@ -3,7 +3,7 @@ import Link from 'next/link';
 const links = [
   { href: '/', label: 'Inicio' },
   { href: '/promotions', label: 'Todas las promociones' },
-  { href: '/favorites', label: 'Favoritos' },
+  { href: '/services', label: 'Servicios' },
   { href: '/account', label: 'Tu cuenta' },
 ];
 

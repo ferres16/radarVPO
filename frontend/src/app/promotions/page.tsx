@@ -116,7 +116,7 @@ export default async function PromotionsPage({
                 .filter((entry) => entry.window.state === 'active')
                 .map(({ promotion, window }) => (
                   <div key={promotion.id} className="space-y-2">
-                    <PromotionCard promotion={promotion} hideDetail />
+                    <PromotionCard promotion={promotion} hideDetail hideStatus />
                     <p className="rounded-lg border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink-soft)] shadow-card">
                       Quedan {window.daysLeft} dias para el vencimiento estimado.
                     </p>
@@ -134,7 +134,7 @@ export default async function PromotionsPage({
                 .filter((entry) => entry.window.state === 'expired')
                 .map(({ promotion, window }) => (
                   <div key={promotion.id} className="space-y-2 opacity-90">
-                    <PromotionCard promotion={promotion} hideDetail />
+                    <PromotionCard promotion={promotion} hideDetail hideStatus />
                     <p className="rounded-lg border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink-soft)] shadow-card">
                       Vencida hace {window.daysSince} dias. Sigue visible por margen de gracia.
                     </p>

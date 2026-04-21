@@ -31,7 +31,7 @@ export default function LoginPage() {
     <main className="shell">
       <section className="mx-auto max-w-md rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
         <h1 className="text-2xl font-bold text-[var(--ink)]">Iniciar sesion</h1>
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">Accede a tus alertas y favoritos.</p>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">Accede a tu cuenta, alertas y servicios.</p>
 
         <form className="mt-5 space-y-4" onSubmit={onSubmit}>
           <div>

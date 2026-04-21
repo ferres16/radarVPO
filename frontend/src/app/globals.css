@@ -53,3 +53,22 @@ body {
 .shadow-card {
   box-shadow: 0 8px 24px rgba(30, 31, 28, 0.06);
 }
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(0, -12px, 0) scale(1.03);
+  }
+}
+
+.animate-float-slow {
+  animation: float-slow 10s ease-in-out infinite;
+}
+
+.animate-float-slow-delay {
+  animation: float-slow 12s ease-in-out infinite 1s;
+}

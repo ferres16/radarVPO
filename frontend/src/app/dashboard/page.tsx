@@ -48,7 +48,7 @@ export default async function DashboardPage({
               <option value="mixto">Mixto</option>
             </select>
             <button className="rounded-full bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]">Filtrar</button>
-            <Link href="/favorites" className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)]">Favoritos</Link>
+            <Link href="/services" className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)]">Servicios</Link>
           </form>
         </header>
 
