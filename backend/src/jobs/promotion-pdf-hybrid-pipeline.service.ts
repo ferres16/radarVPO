@@ -9,9 +9,11 @@ import {
   PageExtraction,
   PromotionCoreData,
   PromotionPdfAnalysisResult,
+  PromotionPdfFinalJson,
   PromotionUnitRow,
   RequirementItem,
   SectionEvidence,
+  TableExtractionMethod,
   TableResult,
 } from './promotion-pdf-analysis.types';
 
@@ -49,12 +51,15 @@ export class PromotionPdfHybridPipelineService {
     const maxPagesForVision =
       options.maxPagesForVision ?? (reliabilityMode ? 28 : 12);
 
+    const tableCandidatePages = this.detectTableCandidatePages(renderedPages);
     const pageExtractions: PageExtraction[] = [];
 
     for (const page of renderedPages) {
+      const isTableCandidate = tableCandidatePages.has(page.page);
       const shouldRunOcr =
         page.nativeText.length < minNativeCharsPerPage ||
-        this.looksLikeTablePage(page.nativeText);
+        this.looksLikeTablePage(page.nativeText) ||
+        isTableCandidate;
 
       const ocrText =
         shouldRunOcr && page.imageBase64Png
@@ -62,7 +67,7 @@ export class PromotionPdfHybridPipelineService {
           : null;
 
       const shouldRunVision =
-        page.page <= maxPagesForVision && Boolean(page.imageBase64Png);
+        Boolean(page.imageBase64Png) && (isTableCandidate || page.page <= maxPagesForVision);
       const visionSummary =
         shouldRunVision && page.imageBase64Png
           ? await this.extractPageWithVision(page.imageBase64Png, page.page)
@@ -74,6 +79,21 @@ export class PromotionPdfHybridPipelineService {
         ocrText: this.normalizeText(ocrText ?? ''),
         renderedImageBase64Png: page.imageBase64Png,
         visionSummary,
+      });
+    }
+
+    if (pageExtractions.length === 0) {
+      const fallbackParsed = await this.pdfOcrService.parseDocument(
+        resolvedPdfUrl,
+        'application/pdf',
+        { preferTableOcr: true },
+      );
+      pageExtractions.push({
+        page: 1,
+        nativeText: this.normalizeText(fallbackParsed.text),
+        ocrText: null,
+        renderedImageBase64Png: null,
+        visionSummary: null,
       });
     }
 
@@ -118,7 +138,7 @@ export class PromotionPdfHybridPipelineService {
     return this.buildFinalPayload({
       sourceUrl: input.sourceUrl,
       pdfUrl: resolvedPdfUrl,
-      pageCount: renderedPages.length,
+      pageCount: Math.max(renderedPages.length, pageExtractions.length),
       tableResult,
       aiSections,
       pageExtractions,
@@ -129,6 +149,26 @@ export class PromotionPdfHybridPipelineService {
     });
   }
 
+  async analyzePromotionPdfForFrontend(input: {
+    sourceUrl?: string;
+    pdfUrl: string;
+    seedText?: string;
+    options?: HybridPipelineOptions;
+  }): Promise<PromotionPdfFinalJson> {
+    const normalizedPdfUrl = this.pdfOcrService.normalizeDocumentUrl(input.pdfUrl);
+    const analysis = await this.analyzePromotionPdf({
+      sourceUrl: input.sourceUrl ?? normalizedPdfUrl,
+      pdfUrl: normalizedPdfUrl,
+      seedText: input.seedText,
+      options: {
+        preferReliability: true,
+        ...input.options,
+      },
+    });
+
+    return this.toFrontendContract(analysis);
+  }
+
   private async extractTableWithThreeLevels(input: {
     nativeCorpus: string;
     ocrCorpus: string;
@@ -136,41 +176,54 @@ export class PromotionPdfHybridPipelineService {
     sourceUrl: string;
   }): Promise<TableResult & { strategyLevel: 1 | 2 | 3 }> {
     const level1Rows = this.parseTableRowsFromText(input.nativeCorpus);
-    if (level1Rows.length > 0) {
-      const assessment = this.assessTableRows(level1Rows);
+    const level1Assessment = this.assessTableRows(level1Rows);
+    if (level1Assessment.status === 'complete') {
       return {
-        ...assessment,
+        ...level1Assessment,
+        extraction_method: 'pdf_text',
         strategyLevel: 1,
       };
     }
 
     const level2Rows = this.parseTableRowsFromText(input.ocrCorpus);
-    if (level2Rows.length > 0) {
-      const assessment = this.assessTableRows(level2Rows);
-      return {
-        ...assessment,
-        strategyLevel: 2,
-      };
-    }
-
     const level2AiRows = await this.extractTableRowsWithAiText(
       input.sourceUrl,
       input.ocrCorpus,
     );
-    if (level2AiRows.length > 0) {
-      const assessment = this.assessTableRows(level2AiRows);
+    const mergedOcrRows = this.mergeUniqueRows([level2Rows, level2AiRows]);
+    const level2Assessment = this.assessTableRows(mergedOcrRows);
+    if (level2Assessment.status === 'complete') {
       return {
-        ...assessment,
+        ...level2Assessment,
+        extraction_method: level1Rows.length > 0 ? 'mixed' : 'ocr',
         strategyLevel: 2,
       };
     }
 
     const level3Rows = this.parseTableRowsFromVision(input.pageExtractions);
-    if (level3Rows.length > 0) {
-      const assessment = this.assessTableRows(level3Rows);
+    const level3Assessment = this.assessTableRows(level3Rows);
+    if (level3Assessment.status === 'complete') {
+      const hasOtherSourceRows = level1Rows.length > 0 || mergedOcrRows.length > 0;
       return {
-        ...assessment,
+        ...level3Assessment,
+        extraction_method: hasOtherSourceRows ? 'mixed' : 'vision',
         strategyLevel: 3,
+      };
+    }
+
+    const combinedRows = this.mergeUniqueRows([level1Rows, mergedOcrRows, level3Rows]);
+    if (combinedRows.length > 0) {
+      const combinedAssessment = this.assessTableRows(combinedRows);
+      const method = this.resolveCombinedMethod({
+        hasPdfTextRows: level1Rows.length > 0,
+        hasOcrRows: mergedOcrRows.length > 0,
+        hasVisionRows: level3Rows.length > 0,
+      });
+
+      return {
+        ...combinedAssessment,
+        extraction_method: method,
+        strategyLevel: method === 'vision' ? 3 : method === 'ocr' ? 2 : 3,
       };
     }
 
@@ -187,6 +240,7 @@ export class PromotionPdfHybridPipelineService {
         'useful_area_m2',
         'monthly_rent_eur',
       ],
+      extraction_method: 'mixed',
       strategyLevel: 3,
     };
   }
@@ -385,6 +439,175 @@ export class PromotionPdfHybridPipelineService {
           used_vision: input.usedVision,
           table_strategy_level: input.tableResult.strategyLevel,
         },
+      },
+    };
+  }
+
+  private toFrontendContract(analysis: PromotionPdfAnalysisResult): PromotionPdfFinalJson {
+    const promotion = analysis.promotion_data.value;
+    const contact = analysis.contact.value;
+    const dates = analysis.dates.value;
+    const requirements = analysis.requirements.value;
+    const fees = analysis.fees_or_reservations.value;
+    const units = analysis.units.value;
+
+    const publicationDate = this.pickDateByLabel(dates, [
+      'public',
+      'publicacio',
+      'publicacion',
+      'anunci',
+    ]);
+    const launchDate = this.pickDateByLabel(dates, [
+      'inici',
+      'inicio',
+      'obertura',
+      'apertura',
+    ]);
+    const deadlineDate = this.pickDateByLabel(dates, [
+      'termini',
+      'plazo',
+      'deadline',
+      'fi',
+      'final',
+      'solicitud',
+      'inscrip',
+    ]);
+
+    const incomeRequirement = this.pickRequirementByKeyword(requirements, [
+      'ingres',
+      'ingress',
+      'renta',
+      'iprem',
+    ]);
+    const registrationRequirement = this.pickRequirementByKeyword(requirements, [
+      'registre',
+      'registro',
+      'solicitant',
+      'inscrip',
+    ]);
+    const empadronamientoRequirement = this.pickRequirementByKeyword(requirements, [
+      'empadron',
+      'empadronament',
+    ]);
+    const ageRequirement = this.pickRequirementByKeyword(requirements, [
+      'edad',
+      'edat',
+      'major',
+      'menor',
+    ]);
+
+    const rows = units.rows;
+    const rentValues = rows
+      .map((row) => row.monthly_rent_eur)
+      .filter((value): value is number => value !== null);
+    const saleValues = rows
+      .map((row) => row.sale_price_eur)
+      .filter((value): value is number => value !== null);
+    const reservationValues = [
+      ...rows
+        .map((row) => row.reservation_eur)
+        .filter((value): value is number => value !== null),
+      ...fees
+        .filter((item) => /reserva|deposit|fian[sz]a|garantia/i.test(item.concept))
+        .map((item) => item.amount_eur)
+        .filter((value): value is number => value !== null),
+    ];
+
+    const unitsCountByHomes = rows
+      .map((row) => row.homes)
+      .filter((value): value is number => value !== null)
+      .reduce((acc, value) => acc + value, 0);
+
+    const pagesUsed = this.collectPagesUsed(analysis);
+    const tableMethod = units.extraction_method ?? this.resolveMethodFromStrategy(analysis);
+    const quotas = this.extractQuotas(requirements, fees);
+
+    return {
+      promotion: {
+        title: promotion.title,
+        location: promotion.location,
+        municipality: promotion.municipality,
+        province: promotion.province,
+        type: this.normalizePromotionType(promotion.promotion_type),
+        status: this.normalizePromotionStatus(promotion.status),
+        total_units:
+          unitsCountByHomes > 0 ? unitsCountByHomes : rows.length > 0 ? rows.length : null,
+        developer: contact.promoter_name,
+        developer_cif: contact.promoter_tax_id,
+        regime: promotion.tenure_type,
+        expedient_number: this.extractExpedientNumber(analysis),
+        qualification_type: null,
+        qualification_date: null,
+      },
+      important_dates: {
+        publication_date: publicationDate?.date ?? null,
+        launch_date: launchDate?.date ?? null,
+        application_deadline: deadlineDate?.date ?? null,
+        other_dates: dates.map((item) => ({
+          label: item.label,
+          date: item.date,
+          notes: item.notes,
+        })),
+      },
+      main_requirements: {
+        income: incomeRequirement,
+        registration: registrationRequirement,
+        empadronamiento: empadronamientoRequirement,
+        age: ageRequirement,
+        other: requirements
+          .map((item) => (item.value ? `${item.description}: ${item.value}` : item.description))
+          .filter((item) =>
+            !/ingres|ingress|renta|iprem|registre|registro|solicitant|inscrip|empadron|edad|edat/i.test(
+              item,
+            ),
+          ),
+      },
+      economic_info: {
+        price_min: saleValues.length > 0 ? Math.min(...saleValues) : null,
+        price_max: saleValues.length > 0 ? Math.max(...saleValues) : null,
+        rent_min: rentValues.length > 0 ? Math.min(...rentValues) : null,
+        rent_max: rentValues.length > 0 ? Math.max(...rentValues) : null,
+        reservation_amount:
+          reservationValues.length > 0 ? Math.min(...reservationValues) : null,
+        deposit: this.pickFeeByKeyword(fees, ['fianza', 'fian', 'deposit', 'garantia']),
+        other: fees
+          .map((item) =>
+            item.amount_eur !== null ? `${item.concept}: ${item.amount_eur}` : item.concept,
+          )
+          .filter((item) => !/reserva|fian|deposit|garantia/i.test(item)),
+      },
+      quotas,
+      available_units: rows.map((row) => ({
+        unit_reference: row.id ?? row.label,
+        staircase: null,
+        floor: row.floor,
+        door: row.door,
+        bedrooms: row.bedrooms,
+        bathrooms: null,
+        useful_area_m2: row.useful_area_m2,
+        computable_area_m2: row.built_area_m2,
+        parking: null,
+        storage: null,
+        adapted: row.accessibility ? /adapt|pmr|mobilidad/i.test(row.accessibility) : null,
+        price_sale: row.sale_price_eur,
+        price_rent: row.monthly_rent_eur,
+        notes: row.label,
+      })),
+      contact: {
+        email: contact.email,
+        phone: contact.phone,
+        website: contact.website,
+        office_address: contact.office_address,
+      },
+      source: {
+        pdf_url: promotion.pdf_url,
+        table_extraction_method: tableMethod,
+        pages_used: pagesUsed,
+      },
+      data_quality: {
+        confidence_score: analysis.confidence_score,
+        missing_fields: analysis.missing_fields,
+        ambiguous_fields: analysis.ambiguous_fields,
       },
     };
   }
@@ -701,6 +924,121 @@ export class PromotionPdfHybridPipelineService {
     });
   }
 
+  private mergeUniqueRows(sourceRows: PromotionUnitRow[][]): PromotionUnitRow[] {
+    const bySignature = new Map<string, PromotionUnitRow>();
+
+    for (const rows of sourceRows) {
+      for (const row of rows) {
+        const signature = this.getRowSignature(row);
+        const existing = bySignature.get(signature);
+
+        if (!existing) {
+          bySignature.set(signature, row);
+          continue;
+        }
+
+        bySignature.set(signature, this.mergeRowValues(existing, row));
+      }
+    }
+
+    return this.filterUsefulRows([...bySignature.values()]);
+  }
+
+  private getRowSignature(row: PromotionUnitRow): string {
+    const parts = [
+      row.id,
+      row.floor,
+      row.door,
+      row.label,
+      row.bedrooms?.toString() ?? null,
+      row.useful_area_m2?.toString() ?? null,
+      row.monthly_rent_eur?.toString() ?? null,
+      row.sale_price_eur?.toString() ?? null,
+    ];
+
+    return parts.map((item) => item ?? '').join('|').toLowerCase();
+  }
+
+  private mergeRowValues(a: PromotionUnitRow, b: PromotionUnitRow): PromotionUnitRow {
+    return {
+      id: a.id ?? b.id,
+      label: a.label ?? b.label,
+      homes: a.homes ?? b.homes,
+      floor: a.floor ?? b.floor,
+      door: a.door ?? b.door,
+      bedrooms: a.bedrooms ?? b.bedrooms,
+      useful_area_m2: a.useful_area_m2 ?? b.useful_area_m2,
+      built_area_m2: a.built_area_m2 ?? b.built_area_m2,
+      max_occupancy: a.max_occupancy ?? b.max_occupancy,
+      monthly_rent_eur: a.monthly_rent_eur ?? b.monthly_rent_eur,
+      sale_price_eur: a.sale_price_eur ?? b.sale_price_eur,
+      reservation_eur: a.reservation_eur ?? b.reservation_eur,
+      tenure: a.tenure ?? b.tenure,
+      accessibility: a.accessibility ?? b.accessibility,
+    };
+  }
+
+  private resolveCombinedMethod(flags: {
+    hasPdfTextRows: boolean;
+    hasOcrRows: boolean;
+    hasVisionRows: boolean;
+  }): TableExtractionMethod {
+    const sources = [flags.hasPdfTextRows, flags.hasOcrRows, flags.hasVisionRows].filter(
+      Boolean,
+    ).length;
+
+    if (sources >= 2) {
+      return 'mixed';
+    }
+    if (flags.hasVisionRows) {
+      return 'vision';
+    }
+    if (flags.hasOcrRows) {
+      return 'ocr';
+    }
+    return 'pdf_text';
+  }
+
+  private detectTableCandidatePages(pages: RenderedPage[]): Set<number> {
+    const keywords = [
+      'planta',
+      'porta',
+      'escalera',
+      'escala',
+      'm2',
+      'm²',
+      'superficie',
+      'viviendas',
+      'habitatges',
+      'llistat',
+      'listado',
+      'anexo',
+      'annex',
+      'precio',
+      'preu',
+      'lloguer',
+      'alquiler',
+      'quota',
+      'cuota',
+      'reserva',
+    ];
+
+    const candidates = new Set<number>();
+    for (const page of pages) {
+      const lower = page.nativeText.toLowerCase();
+      const score = keywords.reduce(
+        (acc, keyword) => acc + (lower.includes(keyword) ? 1 : 0),
+        0,
+      );
+
+      if (score >= 2 || /\b\d{1,2}\s+\d{1,2}\s+\d{1,3}[,.]\d{1,2}\b/.test(lower)) {
+        candidates.add(page.page);
+      }
+    }
+
+    return candidates;
+  }
+
   private async renderPages(buffer: Buffer): Promise<RenderedPage[]> {
     try {
       const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
@@ -760,6 +1098,176 @@ export class PromotionPdfHybridPipelineService {
     return /(planta|porta|m2|m²|lloguer|alquiler|ocupaci[oó]n|habitaci[oó]n)/i.test(
       text,
     );
+  }
+
+  private pickDateByLabel(
+    dates: DateItem[],
+    keywords: string[],
+  ): DateItem | null {
+    for (const item of dates) {
+      const lower = item.label.toLowerCase();
+      if (keywords.some((keyword) => lower.includes(keyword))) {
+        return item;
+      }
+    }
+
+    return null;
+  }
+
+  private pickRequirementByKeyword(
+    requirements: RequirementItem[],
+    keywords: string[],
+  ): string | null {
+    for (const item of requirements) {
+      const candidate = `${item.description} ${item.value ?? ''}`.toLowerCase();
+      if (keywords.some((keyword) => candidate.includes(keyword))) {
+        return item.value ? `${item.description}: ${item.value}` : item.description;
+      }
+    }
+
+    return null;
+  }
+
+  private pickFeeByKeyword(fees: FeeItem[], keywords: string[]): number | null {
+    for (const item of fees) {
+      if (keywords.some((keyword) => item.concept.toLowerCase().includes(keyword))) {
+        return item.amount_eur;
+      }
+    }
+
+    return null;
+  }
+
+  private extractQuotas(
+    requirements: RequirementItem[],
+    fees: FeeItem[],
+  ): Array<{
+    type: string | null;
+    units: number | null;
+    percentage: number | null;
+    notes: string | null;
+  }> {
+    const result: Array<{
+      type: string | null;
+      units: number | null;
+      percentage: number | null;
+      notes: string | null;
+    }> = [];
+
+    for (const item of requirements) {
+      const combined = `${item.description} ${item.value ?? ''}`;
+      if (!/(quota|cuota|cupo|reservad|reserva|contingent)/i.test(combined)) {
+        continue;
+      }
+
+      const percentageMatch = combined.match(/(\d{1,2}(?:[,.]\d{1,2})?)\s*%/i);
+      const unitsMatch = combined.match(/(\d{1,3})\s*(habitatges|viviendas|unitats|unidades)/i);
+
+      result.push({
+        type: item.description,
+        units: unitsMatch?.[1] ? this.asNumber(unitsMatch[1]) : null,
+        percentage: percentageMatch?.[1] ? this.asNumber(percentageMatch[1]) : null,
+        notes: item.value,
+      });
+    }
+
+    for (const item of fees) {
+      if (!/(quota|cuota|reserva|contingent)/i.test(item.concept)) {
+        continue;
+      }
+
+      result.push({
+        type: item.concept,
+        units: null,
+        percentage: null,
+        notes: item.amount_eur !== null ? `Importe: ${item.amount_eur}` : item.notes,
+      });
+    }
+
+    return result;
+  }
+
+  private collectPagesUsed(analysis: PromotionPdfAnalysisResult): number[] {
+    const pages = [
+      ...analysis.promotion_data.source_evidence,
+      ...analysis.requirements.source_evidence,
+      ...analysis.dates.source_evidence,
+      ...analysis.contact.source_evidence,
+      ...analysis.units.source_evidence,
+      ...analysis.fees_or_reservations.source_evidence,
+    ]
+      .map((item) => item.page)
+      .filter((item): item is number => typeof item === 'number' && Number.isInteger(item));
+
+    return [...new Set(pages)].sort((a, b) => a - b);
+  }
+
+  private resolveMethodFromStrategy(
+    analysis: PromotionPdfAnalysisResult,
+  ): TableExtractionMethod {
+    const level = analysis.processing_meta.strategy.table_strategy_level;
+    if (level === 1) {
+      return 'pdf_text';
+    }
+    if (level === 2) {
+      return analysis.processing_meta.strategy.used_native_text ? 'mixed' : 'ocr';
+    }
+    if (analysis.processing_meta.strategy.used_ocr || analysis.processing_meta.strategy.used_native_text) {
+      return 'mixed';
+    }
+    return 'vision';
+  }
+
+  private normalizePromotionType(value: string | null): string | null {
+    if (!value) {
+      return null;
+    }
+
+    const lower = value.toLowerCase();
+    if (/(alquiler|lloguer|arrendament|rent)/.test(lower)) {
+      return 'alquiler';
+    }
+    if (/(venta|venda|compraventa)/.test(lower)) {
+      return 'venta';
+    }
+    return value;
+  }
+
+  private normalizePromotionStatus(value: string | null): string | null {
+    if (!value) {
+      return null;
+    }
+
+    const lower = value.toLowerCase();
+    if (/(upcoming|proxim|pr[oó]xim|pending|future|borrador)/.test(lower)) {
+      return 'upcoming';
+    }
+    if (/(closed|cerrad|tancad|finalizad|esgotat)/.test(lower)) {
+      return 'closed';
+    }
+    if (/(open|obert|abiert|vigent|actiu)/.test(lower)) {
+      return 'open';
+    }
+    return value;
+  }
+
+  private extractExpedientNumber(analysis: PromotionPdfAnalysisResult): string | null {
+    const snippets = [
+      ...analysis.promotion_data.source_evidence,
+      ...analysis.contact.source_evidence,
+      ...analysis.units.source_evidence,
+    ].map((item) => item.snippet);
+
+    for (const snippet of snippets) {
+      const match = snippet.match(
+        /(exp(?:edient|ediente)?\s*(?:num(?:ero)?|n[.ºo])?\s*[:\-]?\s*[a-z0-9\/-]{3,})/i,
+      );
+      if (match?.[1]) {
+        return match[1].trim();
+      }
+    }
+
+    return null;
   }
 
   private async runOcrSpaceOnImage(

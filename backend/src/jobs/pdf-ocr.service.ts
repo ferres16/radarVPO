@@ -29,6 +29,26 @@ type DocumentResource = {
 export class PdfOcrService {
   private readonly logger = new Logger(PdfOcrService.name);
 
+  normalizeDocumentUrl(rawUrl: string): string {
+    const trimmed = rawUrl.trim();
+    if (!trimmed) {
+      return trimmed;
+    }
+
+    // Chrome PDF viewer wrappers usually embed the real URL at the end.
+    const chromeWrapped = trimmed.match(/chrome-extension:\/\/.+?(https?:\/\/.+)$/i);
+    if (chromeWrapped?.[1]) {
+      return chromeWrapped[1];
+    }
+
+    const viewSource = trimmed.match(/^view-source:(https?:\/\/.+)$/i);
+    if (viewSource?.[1]) {
+      return viewSource[1];
+    }
+
+    return trimmed;
+  }
+
   async parseDocument(
     url: string,
     fileType?: string,
@@ -145,7 +165,8 @@ export class PdfOcrService {
     maxDepth = 3,
     viaHtml = false,
   ): Promise<DocumentResource> {
-    const response = await fetch(url, {
+    const normalizedUrl = this.normalizeDocumentUrl(url);
+    const response = await fetch(normalizedUrl, {
       headers: {
         'User-Agent':
           'RadarVPOBot/1.0 (+https://www.registresolicitants.cat/registre/)',
@@ -157,7 +178,7 @@ export class PdfOcrService {
       throw new Error(`Failed downloading document (${response.status})`);
     }
 
-    const resolvedUrl = response.url || url;
+    const resolvedUrl = this.normalizeDocumentUrl(response.url || normalizedUrl);
     const mimeType = this.normalizeMimeType(
       response.headers.get('content-type') ?? '',
     );
@@ -506,9 +527,9 @@ export class PdfOcrService {
 
   private resolveUrl(baseUrl: string, value: string): string {
     try {
-      return new URL(value, baseUrl).toString();
+      return this.normalizeDocumentUrl(new URL(value, baseUrl).toString());
     } catch {
-      return value;
+      return this.normalizeDocumentUrl(value);
     }
   }
 

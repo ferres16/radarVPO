@@ -10,6 +10,8 @@ export type ConfidenceLevel = 'high' | 'medium' | 'low';
 
 export type TableExtractionStatus = 'complete' | 'partial' | 'error';
 
+export type TableExtractionMethod = 'pdf_text' | 'ocr' | 'vision' | 'mixed';
+
 export type PromotionUnitRow = {
   id: string | null;
   label: string | null;
@@ -74,6 +76,7 @@ export type TableResult = {
   rows: PromotionUnitRow[];
   error_reason: string | null;
   missing_columns: string[];
+  extraction_method?: TableExtractionMethod;
 };
 
 export type SectionWithEvidence<TValue> = {
@@ -117,4 +120,86 @@ export type HybridPipelineOptions = {
   minNativeCharsPerPage?: number;
   maxPagesForVision?: number;
   preferReliability?: boolean;
+};
+
+export type PromotionPdfFinalJson = {
+  promotion: {
+    title: string | null;
+    location: string | null;
+    municipality: string | null;
+    province: string | null;
+    type: string | null;
+    status: string | null;
+    total_units: number | null;
+    developer: string | null;
+    developer_cif: string | null;
+    regime: string | null;
+    expedient_number: string | null;
+    qualification_type: string | null;
+    qualification_date: string | null;
+  };
+  important_dates: {
+    publication_date: string | null;
+    launch_date: string | null;
+    application_deadline: string | null;
+    other_dates: Array<{
+      label: string;
+      date: string | null;
+      notes: string | null;
+    }>;
+  };
+  main_requirements: {
+    income: string | null;
+    registration: string | null;
+    empadronamiento: string | null;
+    age: string | null;
+    other: string[];
+  };
+  economic_info: {
+    price_min: number | null;
+    price_max: number | null;
+    rent_min: number | null;
+    rent_max: number | null;
+    reservation_amount: number | null;
+    deposit: number | null;
+    other: string[];
+  };
+  quotas: Array<{
+    type: string | null;
+    units: number | null;
+    percentage: number | null;
+    notes: string | null;
+  }>;
+  available_units: Array<{
+    unit_reference: string | null;
+    staircase: string | null;
+    floor: string | null;
+    door: string | null;
+    bedrooms: number | null;
+    bathrooms: number | null;
+    useful_area_m2: number | null;
+    computable_area_m2: number | null;
+    parking: boolean | null;
+    storage: boolean | null;
+    adapted: boolean | null;
+    price_sale: number | null;
+    price_rent: number | null;
+    notes: string | null;
+  }>;
+  contact: {
+    email: string | null;
+    phone: string | null;
+    website: string | null;
+    office_address: string | null;
+  };
+  source: {
+    pdf_url: string | null;
+    table_extraction_method: TableExtractionMethod;
+    pages_used: number[];
+  };
+  data_quality: {
+    confidence_score: number | null;
+    missing_fields: string[];
+    ambiguous_fields: string[];
+  };
 };

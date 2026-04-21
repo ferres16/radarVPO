@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PromotionPdfHybridPipelineService } from '../jobs/promotion-pdf-hybrid-pipeline.service';
 import { PdfOcrService } from '../jobs/pdf-ocr.service';
 import { StructuredExtractionService } from '../jobs/structured-extraction.service';
+import { AnalyzePdfUrlDto } from './dto/analyze-pdf-url.dto';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
 
 @Injectable()
@@ -230,5 +231,20 @@ export class PromotionsService {
       refreshedDocs,
       housingTableRows: tableRows,
     };
+  }
+
+  async analyzePdfUrl(payload: AnalyzePdfUrlDto) {
+    const normalizedPdfUrl = this.pdfOcrService.normalizeDocumentUrl(payload.pdfUrl);
+    const normalizedSourceUrl = payload.sourceUrl
+      ? this.pdfOcrService.normalizeDocumentUrl(payload.sourceUrl)
+      : normalizedPdfUrl;
+
+    return this.hybridPdfPipeline.analyzePromotionPdfForFrontend({
+      sourceUrl: normalizedSourceUrl,
+      pdfUrl: normalizedPdfUrl,
+      options: {
+        preferReliability: true,
+      },
+    });
   }
 }
