@@ -74,6 +74,8 @@ export class JobsService {
           await this.prisma.promotionDocument.update({
             where: { id: doc.id },
             data: {
+              documentUrl: parsed.resolvedUrl ?? doc.documentUrl,
+              fileType: parsed.detectedMimeType ?? doc.fileType,
               extractedText: parsed.text,
               processedAt: new Date(),
             },

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import pdfParse from 'pdf-parse';
 import { createHash } from 'crypto';
 import PDFParser from 'pdf2json';
+import * as cheerio from 'cheerio';
 
 type PdfParsed = {
   text: string;
@@ -12,6 +13,16 @@ type ParseResult = {
   text: string;
   pageCount?: number;
   method: 'pdf-parse' | 'ocr-space' | 'none';
+  resolvedUrl?: string;
+  detectedMimeType?: string;
+  discoveredViaHtml?: boolean;
+};
+
+type DocumentResource = {
+  buffer: Buffer;
+  resolvedUrl: string;
+  mimeType: string;
+  discoveredViaHtml: boolean;
 };
 
 @Injectable()
@@ -23,9 +34,11 @@ export class PdfOcrService {
     fileType?: string,
     options?: { preferTableOcr?: boolean },
   ): Promise<ParseResult> {
-    const buffer = await this.fetchAsBuffer(url);
+    const resource = await this.fetchDocumentResource(url);
+    const { buffer, resolvedUrl, mimeType, discoveredViaHtml } = resource;
+    const shouldParseAsPdf = this.isPdf(fileType, resolvedUrl, mimeType);
 
-    if (this.isPdf(fileType, url)) {
+    if (shouldParseAsPdf) {
       const parsed = await this.parsePdf(buffer);
       const shouldFallbackToOcr = parsed.text.length < 500;
       const shouldEnrichWithOcr =
@@ -47,6 +60,9 @@ export class PdfOcrService {
             text: mergedPreferred,
             pageCount: parsed.pageCount,
             method: 'ocr-space',
+            resolvedUrl,
+            detectedMimeType: mimeType,
+            discoveredViaHtml,
           };
         }
       }
@@ -62,6 +78,9 @@ export class PdfOcrService {
             return {
               text: ocrText,
               method: 'ocr-space',
+              resolvedUrl,
+              detectedMimeType: mimeType,
+              discoveredViaHtml,
             };
           }
 
@@ -70,27 +89,106 @@ export class PdfOcrService {
             text: merged,
             pageCount: parsed.pageCount,
             method: 'ocr-space',
+            resolvedUrl,
+            detectedMimeType: mimeType,
+            discoveredViaHtml,
           };
         }
       }
 
-      return parsed;
+      return {
+        ...parsed,
+        resolvedUrl,
+        detectedMimeType: mimeType,
+        discoveredViaHtml,
+      };
+    }
+
+    if (mimeType.includes('text/html')) {
+      this.logger.warn(
+        `Document URL did not resolve to a PDF/binary file: ${resolvedUrl}`,
+      );
+      return {
+        text: '',
+        method: 'none',
+        resolvedUrl,
+        detectedMimeType: mimeType,
+        discoveredViaHtml,
+      };
     }
 
     const ocr = await this.runOcrSpace(
       buffer,
-      fileType ?? 'application/octet-stream',
+      mimeType || fileType || 'application/octet-stream',
     );
     if (ocr) {
       return {
         text: ocr,
         method: 'ocr-space',
+        resolvedUrl,
+        detectedMimeType: mimeType,
+        discoveredViaHtml,
       };
     }
 
     return {
       text: '',
       method: 'none',
+      resolvedUrl,
+      detectedMimeType: mimeType,
+      discoveredViaHtml,
+    };
+  }
+
+  async fetchDocumentResource(
+    url: string,
+    maxDepth = 3,
+    viaHtml = false,
+  ): Promise<DocumentResource> {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent':
+          'RadarVPOBot/1.0 (+https://www.registresolicitants.cat/registre/)',
+        Accept: 'application/pdf,text/html,application/xhtml+xml,image/*,*/*',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed downloading document (${response.status})`);
+    }
+
+    const resolvedUrl = response.url || url;
+    const mimeType = this.normalizeMimeType(
+      response.headers.get('content-type') ?? '',
+    );
+    const arr = await response.arrayBuffer();
+    const buffer = Buffer.from(arr);
+
+    if (this.isPdf(undefined, resolvedUrl, mimeType) || this.looksLikePdf(buffer)) {
+      return {
+        buffer,
+        resolvedUrl,
+        mimeType: mimeType || 'application/pdf',
+        discoveredViaHtml: viaHtml,
+      };
+    }
+
+    const looksHtml =
+      mimeType.includes('text/html') || this.looksLikeHtmlDocument(buffer);
+
+    if (looksHtml && maxDepth > 0) {
+      const html = this.decodeHtml(buffer, response.headers.get('content-type'));
+      const embeddedPdfUrl = this.extractEmbeddedPdfUrl(html, resolvedUrl);
+      if (embeddedPdfUrl) {
+        return this.fetchDocumentResource(embeddedPdfUrl, maxDepth - 1, true);
+      }
+    }
+
+    return {
+      buffer,
+      resolvedUrl,
+      mimeType: mimeType || 'application/octet-stream',
+      discoveredViaHtml: viaHtml,
     };
   }
 
@@ -309,7 +407,15 @@ export class PdfOcrService {
     return text ? this.normalizeExtractedText(text) : null;
   }
 
-  private isPdf(fileType: string | undefined, url: string): boolean {
+  private isPdf(
+    fileType: string | undefined,
+    url: string,
+    mimeType?: string,
+  ): boolean {
+    if (mimeType?.includes('application/pdf')) {
+      return true;
+    }
+
     if (fileType?.toLowerCase().includes('pdf')) {
       return true;
     }
@@ -317,13 +423,97 @@ export class PdfOcrService {
     return url.toLowerCase().includes('.pdf');
   }
 
-  private async fetchAsBuffer(url: string): Promise<Buffer> {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed downloading document (${response.status})`);
+  private normalizeMimeType(contentType: string): string {
+    return contentType.split(';')[0]?.trim().toLowerCase() ?? '';
+  }
+
+  private looksLikePdf(buffer: Buffer): boolean {
+    return buffer.subarray(0, 5).toString('utf8') === '%PDF-';
+  }
+
+  private looksLikeHtmlDocument(buffer: Buffer): boolean {
+    const start = buffer
+      .subarray(0, 512)
+      .toString('utf8')
+      .toLowerCase();
+    return start.includes('<html') || start.includes('<!doctype html');
+  }
+
+  private decodeHtml(buffer: Buffer, contentType: string | null): string {
+    const header = contentType ?? '';
+    const charsetMatch = header.match(/charset=([^;]+)/i);
+    const charset = charsetMatch?.[1]?.trim().toLowerCase() ?? 'utf-8';
+
+    try {
+      if (charset.includes('iso-8859-1') || charset.includes('latin1')) {
+        return new TextDecoder('iso-8859-1').decode(buffer);
+      }
+      return new TextDecoder('utf-8').decode(buffer);
+    } catch {
+      return new TextDecoder('utf-8').decode(buffer);
+    }
+  }
+
+  private extractEmbeddedPdfUrl(html: string, pageUrl: string): string | null {
+    const $ = cheerio.load(html);
+    const candidates: string[] = [];
+
+    $('a, iframe, embed, object, area').each((_, el) => {
+      const href =
+        $(el).attr('href') ??
+        $(el).attr('src') ??
+        $(el).attr('data') ??
+        '';
+      const onclick = $(el).attr('onclick') ?? '';
+
+      if (href) {
+        candidates.push(href);
+      }
+
+      const matches = onclick.matchAll(
+        /(['"])(https?:\/\/[^'"\s]+|\/[^'"\s]+)(\?.*?)?\1/gi,
+      );
+      for (const match of matches) {
+        const token = `${match[2] ?? ''}${match[3] ?? ''}`;
+        if (token) {
+          candidates.push(token);
+        }
+      }
+    });
+
+    const scriptText = $('script').text();
+    const scriptMatches = scriptText.matchAll(
+      /(https?:\/\/[^\s'"`]+\.pdf[^\s'"`]*)|(\/[^\s'"`]+\.pdf[^\s'"`]*)/gi,
+    );
+    for (const match of scriptMatches) {
+      const token = match[0];
+      if (token) {
+        candidates.push(token);
+      }
     }
 
-    const arr = await response.arrayBuffer();
-    return Buffer.from(arr);
+    const normalized = candidates
+      .map((token) => token.trim())
+      .filter(Boolean)
+      .map((token) => this.resolveUrl(pageUrl, token));
+
+    const withPdfSignals = normalized.find((value) =>
+      /\.pdf(\?|$)|[?&](format|tipo|type)=pdf|download/i.test(value),
+    );
+
+    return withPdfSignals ?? null;
+  }
+
+  private resolveUrl(baseUrl: string, value: string): string {
+    try {
+      return new URL(value, baseUrl).toString();
+    } catch {
+      return value;
+    }
+  }
+
+  private async fetchAsBuffer(url: string): Promise<Buffer> {
+    const resource = await this.fetchDocumentResource(url);
+    return resource.buffer;
   }
 }

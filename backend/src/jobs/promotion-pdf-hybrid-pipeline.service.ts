@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AiProviderService } from '../ai/ai.provider.service';
+import { PdfOcrService } from './pdf-ocr.service';
 import {
   ContactSection,
   DateItem,
@@ -26,7 +27,10 @@ type RenderedPage = {
 export class PromotionPdfHybridPipelineService {
   private readonly logger = new Logger(PromotionPdfHybridPipelineService.name);
 
-  constructor(private readonly aiProvider: AiProviderService) {}
+  constructor(
+    private readonly aiProvider: AiProviderService,
+    private readonly pdfOcrService: PdfOcrService,
+  ) {}
 
   async analyzePromotionPdf(input: {
     sourceUrl: string;
@@ -34,7 +38,9 @@ export class PromotionPdfHybridPipelineService {
     seedText?: string;
     options?: HybridPipelineOptions;
   }): Promise<PromotionPdfAnalysisResult> {
-    const buffer = await this.fetchAsBuffer(input.pdfUrl);
+    const resource = await this.pdfOcrService.fetchDocumentResource(input.pdfUrl);
+    const buffer = resource.buffer;
+    const resolvedPdfUrl = resource.resolvedUrl;
     const renderedPages = await this.renderPages(buffer);
     const options = input.options ?? {};
     const reliabilityMode = options.preferReliability !== false;
@@ -103,7 +109,7 @@ export class PromotionPdfHybridPipelineService {
 
     const aiSections = await this.extractSectionsWithAi({
       sourceUrl: input.sourceUrl,
-      pdfUrl: input.pdfUrl,
+      pdfUrl: resolvedPdfUrl,
       mergedCorpus,
       tableResult,
     });
@@ -111,7 +117,7 @@ export class PromotionPdfHybridPipelineService {
     const languageDetected = this.detectLanguages(mergedCorpus);
     return this.buildFinalPayload({
       sourceUrl: input.sourceUrl,
-      pdfUrl: input.pdfUrl,
+      pdfUrl: resolvedPdfUrl,
       pageCount: renderedPages.length,
       tableResult,
       aiSections,
@@ -1076,13 +1082,4 @@ export class PromotionPdfHybridPipelineService {
       .trim();
   }
 
-  private async fetchAsBuffer(url: string): Promise<Buffer> {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed downloading document (${response.status})`);
-    }
-
-    const arr = await response.arrayBuffer();
-    return Buffer.from(arr);
-  }
 }
