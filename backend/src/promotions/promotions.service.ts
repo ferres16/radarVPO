@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { PromotionPdfHybridPipelineService } from '../jobs/promotion-pdf-hybrid-pipeline.service';
 import { PdfOcrService } from '../jobs/pdf-ocr.service';
 import { StructuredExtractionService } from '../jobs/structured-extraction.service';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
@@ -9,6 +10,7 @@ import { ListPromotionsDto } from './dto/list-promotions.dto';
 export class PromotionsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly hybridPdfPipeline: PromotionPdfHybridPipelineService,
     private readonly pdfOcrService: PdfOcrService,
     private readonly extractionService: StructuredExtractionService,
   ) {}
@@ -141,11 +143,26 @@ export class PromotionsService {
       .join('\n\n')
       .trim();
 
-    const analysis = await this.extractionService.extractPromotionData(
-      sourceText,
-      promotion.sourceUrl,
-      promotion.documents.find((doc) => /pdf/i.test(doc.fileType))?.documentUrl,
-    );
+    const mainPdf = promotion.documents.find((doc) => /pdf/i.test(doc.fileType));
+    const analysis = mainPdf
+      ? await this.hybridPdfPipeline
+          .analyzePromotionPdf({
+            sourceUrl: promotion.sourceUrl,
+            pdfUrl: mainPdf.documentUrl,
+            seedText: sourceText,
+            options: { preferReliability: true },
+          })
+          .then((result) => ({
+            result,
+            provider: 'hybrid-pipeline',
+            model: 'native+ocr+vision',
+            confidence: result.confidence_score,
+          }))
+      : await this.extractionService.extractPromotionData(
+          sourceText,
+          promotion.sourceUrl,
+          undefined,
+        );
 
     await this.prisma.promotionAiAnalysis.create({
       data: {
@@ -156,13 +173,25 @@ export class PromotionsService {
       },
     });
 
-    const extractedPromotion =
-      (analysis.result.promotion as Record<string, unknown> | undefined) ?? {};
-    const estimatedDate = extractedPromotion.estimated_publication_date;
+    const analysisResultRecord = analysis.result as Record<string, unknown>;
+    const extractedPromotionLegacy =
+      (analysisResultRecord.promotion as Record<string, unknown> | undefined) ??
+      {};
+    const extractedPromotionHybrid =
+      (analysisResultRecord.promotion_data as
+        | { value?: Record<string, unknown> }
+        | undefined)?.value ?? {};
+
+    const estimatedDate =
+      extractedPromotionLegacy.estimated_publication_date ?? null;
+    const hybridStatus =
+      typeof extractedPromotionHybrid.status === 'string'
+        ? extractedPromotionHybrid.status.toLowerCase()
+        : null;
     const isFutureLaunch =
-      typeof extractedPromotion.future_launch === 'boolean'
-        ? extractedPromotion.future_launch
-        : false;
+      typeof extractedPromotionLegacy.future_launch === 'boolean'
+        ? extractedPromotionLegacy.future_launch
+        : hybridStatus === 'upcoming';
 
     const parsedDate =
       typeof estimatedDate === 'string' && !Number.isNaN(Date.parse(estimatedDate))
@@ -182,11 +211,18 @@ export class PromotionsService {
       },
     });
 
-    const units =
-      (analysis.result.units as Record<string, unknown> | undefined) ?? {};
-    const tableRows = Array.isArray(units.housing_table)
-      ? units.housing_table.length
-      : 0;
+    const legacyUnits =
+      (analysisResultRecord.units as Record<string, unknown> | undefined) ?? {};
+    const hybridUnits =
+      (analysisResultRecord.units as
+        | { value?: { rows?: unknown[] } }
+        | undefined)?.value ?? {};
+
+    const tableRows = Array.isArray(legacyUnits.housing_table)
+      ? legacyUnits.housing_table.length
+      : Array.isArray(hybridUnits.rows)
+        ? hybridUnits.rows.length
+        : 0;
 
     return {
       ok: true,

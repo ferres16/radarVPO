@@ -150,6 +150,10 @@ class EnvironmentVariables {
   CRON_REPAIR_DOCUMENT_LINKS?: string;
 
   @IsOptional()
+  @IsString()
+  CRON_REANALYZE_STALE_PDFS?: string;
+
+  @IsOptional()
   @IsInt()
   @Min(2000)
   REGISTRE_MIN_YEAR?: number;

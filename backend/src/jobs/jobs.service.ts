@@ -191,6 +191,109 @@ export class JobsService {
     });
   }
 
+  @Cron(
+    process.env.CRON_REANALYZE_STALE_PDFS || CronExpression.EVERY_6_HOURS,
+    {
+      timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
+    },
+  )
+  async requeueStalePdfAnalyses() {
+    await this.runWithLock('requeue_stale_pdf_analyses', async () => {
+      const candidates = await this.prisma.promotion.findMany({
+        where: {
+          aiStatus: 'done',
+          documents: {
+            some: {
+              fileType: {
+                contains: 'pdf',
+                mode: 'insensitive',
+              },
+            },
+          },
+        },
+        include: {
+          aiAnalysis: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+          documents: {
+            take: 1,
+          },
+        },
+        take: 50,
+        orderBy: {
+          updatedAt: 'asc',
+        },
+      });
+
+      let requeued = 0;
+
+      for (const promotion of candidates) {
+        const latest = promotion.aiAnalysis[0];
+        if (!latest) {
+          await this.prisma.promotion.update({
+            where: { id: promotion.id },
+            data: { aiStatus: 'pending' },
+          });
+          requeued += 1;
+          continue;
+        }
+
+        const resultRecord =
+          typeof latest.resultJson === 'object' &&
+          latest.resultJson !== null &&
+          !Array.isArray(latest.resultJson)
+            ? (latest.resultJson as Record<string, unknown>)
+            : {};
+
+        const dataQuality =
+          typeof resultRecord.data_quality === 'object' &&
+          resultRecord.data_quality !== null &&
+          !Array.isArray(resultRecord.data_quality)
+            ? (resultRecord.data_quality as Record<string, unknown>)
+            : {};
+
+        const unitsLegacy =
+          typeof resultRecord.units === 'object' &&
+          resultRecord.units !== null &&
+          !Array.isArray(resultRecord.units)
+            ? (resultRecord.units as Record<string, unknown>)
+            : {};
+
+        const hasLegacyRows = Array.isArray(unitsLegacy.housing_table);
+        const hasHybridUnits =
+          typeof resultRecord.units === 'object' &&
+          resultRecord.units !== null &&
+          typeof (resultRecord.units as { value?: unknown }).value === 'object';
+        const extractionMode =
+          typeof dataQuality.extraction_mode === 'string'
+            ? dataQuality.extraction_mode
+            : '';
+
+        const modelLooksLegacy = !latest.model.startsWith('hybrid-pipeline:');
+        const needsHybridUpgrade =
+          modelLooksLegacy ||
+          extractionMode === 'fallback' ||
+          (!hasLegacyRows && !hasHybridUnits);
+
+        if (!needsHybridUpgrade) {
+          continue;
+        }
+
+        await this.prisma.promotion.update({
+          where: { id: promotion.id },
+          data: { aiStatus: 'pending' },
+        });
+        requeued += 1;
+      }
+
+      return {
+        scanned: candidates.length,
+        requeued,
+      };
+    });
+  }
+
   @Cron(process.env.CRON_ANALYZE_PROMOTIONS || CronExpression.EVERY_HOUR, {
     timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
   })
