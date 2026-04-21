@@ -21,6 +21,18 @@ function asNumber(value: unknown): number | null {
   return null;
 }
 
+function asArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function sectionValue(value: unknown): unknown {
+  const record = asRecord(value);
+  if (record.value !== undefined) {
+    return record.value;
+  }
+  return value;
+}
+
 function cleanValue(value: string | null): string | null {
   if (!value) return null;
   const cleaned = value.replace(/\s{2,}/g, ' ').trim();
@@ -107,7 +119,7 @@ type HousingRow = {
 type DetailedHousingRow = Record<string, string | number | null>;
 
 function parseDetailedHousingRows(units: Record<string, unknown>): DetailedHousingRow[] {
-  const table = units.housing_table;
+  const table = Array.isArray(units.housing_table) ? units.housing_table : units.rows;
   if (!Array.isArray(table)) {
     return [];
   }
@@ -228,6 +240,50 @@ function parseHousingRows(
   return [...deduped.values()];
 }
 
+function requirementFromList(
+  requirements: Array<Record<string, unknown>>,
+  keyPattern: RegExp,
+): string | null {
+  for (const item of requirements) {
+    const code = asString(item.code) ?? '';
+    const description = asString(item.description) ?? '';
+    if (!keyPattern.test(`${code} ${description}`.toLowerCase())) {
+      continue;
+    }
+
+    const value = cleanValue(asString(item.value));
+    if (value) {
+      return value;
+    }
+
+    const fallback = cleanValue(description);
+    if (fallback) {
+      return fallback;
+    }
+  }
+
+  return null;
+}
+
+function dateFromList(
+  dates: Array<Record<string, unknown>>,
+  keyPattern: RegExp,
+): string | null {
+  for (const item of dates) {
+    const label = asString(item.label) ?? '';
+    if (!keyPattern.test(label.toLowerCase())) {
+      continue;
+    }
+
+    const value = cleanValue(asString(item.date));
+    if (value) {
+      return value;
+    }
+  }
+
+  return null;
+}
+
 function firstPdfUrl(docs: Array<{ fileType: string; documentUrl: string }>) {
   const found = docs.find((doc) => /pdf/i.test(doc.fileType));
   return found?.documentUrl || null;
@@ -241,11 +297,22 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
     return notFound();
   }
 
-  const latestAnalysis = promotion.aiAnalysis[0]?.resultJson || {};
-  const promotionData = asRecord(asRecord(latestAnalysis).promotion);
-  const requirements = asRecord(asRecord(latestAnalysis).requirements);
-  const units = asRecord(asRecord(latestAnalysis).units);
-  const importantDates = asRecord(asRecord(latestAnalysis).important_dates);
+  const latestAnalysis = asRecord(promotion.aiAnalysis[0]?.resultJson || {});
+  const promotionData = asRecord(
+    sectionValue(latestAnalysis.promotion_data ?? latestAnalysis.promotion),
+  );
+  const requirementsValue = sectionValue(latestAnalysis.requirements);
+  const requirements = asRecord(requirementsValue);
+  const requirementsList = asArray(requirementsValue).map((item) => asRecord(item));
+  const units = asRecord(sectionValue(latestAnalysis.units));
+  const importantDatesValue = sectionValue(
+    latestAnalysis.dates ?? latestAnalysis.important_dates,
+  );
+  const importantDates = asRecord(importantDatesValue);
+  const importantDatesList = asArray(importantDatesValue).map((item) => asRecord(item));
+  const analysisWarnings = asArray(latestAnalysis.warnings)
+    .map((item) => asString(item))
+    .filter((item): item is string => Boolean(item));
   const pdfUrl = firstPdfUrl(promotion.documents) || promotion.sourceUrl;
   const documentsText = promotion.documents
     .map((doc) => doc.extractedText || '')
@@ -288,18 +355,39 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
 
   const incomeRequirement =
     asString(requirements.income_limits) ||
+    requirementFromList(requirementsList, /(ingres|renda|renta|income)/i) ||
     extractLine(textPool, /(ingres[oa]s?|renda)[^\n]{0,140}/i) ||
     'n/d';
 
   const residencyRequirement =
     asString(requirements.residency_requirement) ||
+    requirementFromList(requirementsList, /(empadron|residen)/i) ||
     extractLine(textPool, /(empadronament|empadronamiento)[^\n]{0,140}/i) ||
     'n/d';
 
   const otherRequirement =
     asString(requirements.other_conditions) ||
+    requirementFromList(requirementsList, /(other|altres|otros|condicion|requisit)/i) ||
     extractLine(textPool, /(requisits?|requisitos|condicions?|condiciones)[^\n]{0,180}/i) ||
     'n/d';
+
+  const publicationDateFromAnalysis =
+    asString(importantDates.alert_date) ||
+    asString(importantDates.publication_date) ||
+    dateFromList(importantDatesList, /(public|alert|anunci|anuncio)/i);
+  const launchDateFromAnalysis =
+    asString(importantDates.estimated_publication_date) ||
+    dateFromList(importantDatesList, /(launch|estimad|salida|publicaci)/i);
+  const deadlineDateFromAnalysis =
+    asString(importantDates.application_deadline) ||
+    dateFromList(importantDatesList, /(deadline|termini|plazo|solicitud|inscrip)/i);
+
+  const tableStatus = asString(units.status);
+  const tableErrorReason = asString(units.error_reason);
+  const tableMessage =
+    analysisWarnings[0] ||
+    tableErrorReason ||
+    'No se ha podido extraer la tabla estructurada de pisos del PDF para esta promocion.';
 
   const isUpcoming = promotion.futureLaunch || promotion.status === 'upcoming';
 
@@ -325,9 +413,9 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
             <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Fechas importantes</h2>
-            <p className="mt-2 text-sm text-[var(--ink)]">{isUpcoming ? 'Publicacion alerta' : 'Publicacion anuncio'}: {promotion.publishedAt ? promotion.publishedAt.slice(0, 10) : 'n/d'}</p>
-            <p className="text-sm text-[var(--ink)]">{isUpcoming ? 'Salida estimada' : 'Fecha de lanzamiento'}: {isUpcoming ? (promotion.estimatedPublicationDate ? promotion.estimatedPublicationDate.slice(0, 10) : asString(importantDates.estimated_publication_date) || 'n/d') : (promotion.publishedAt ? promotion.publishedAt.slice(0, 10) : 'n/d')}</p>
-            <p className="text-sm text-[var(--ink)]">Fin solicitud: {promotion.deadlineDate ? promotion.deadlineDate.slice(0, 10) : asString(importantDates.application_deadline) || 'n/d'}</p>
+            <p className="mt-2 text-sm text-[var(--ink)]">{isUpcoming ? 'Publicacion alerta' : 'Publicacion anuncio'}: {promotion.publishedAt ? promotion.publishedAt.slice(0, 10) : publicationDateFromAnalysis || 'n/d'}</p>
+            <p className="text-sm text-[var(--ink)]">{isUpcoming ? 'Salida estimada' : 'Fecha de lanzamiento'}: {isUpcoming ? (promotion.estimatedPublicationDate ? promotion.estimatedPublicationDate.slice(0, 10) : launchDateFromAnalysis || 'n/d') : (promotion.publishedAt ? promotion.publishedAt.slice(0, 10) : publicationDateFromAnalysis || 'n/d')}</p>
+            <p className="text-sm text-[var(--ink)]">Fin solicitud: {promotion.deadlineDate ? promotion.deadlineDate.slice(0, 10) : deadlineDateFromAnalysis || 'n/d'}</p>
           </div>
           <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
             <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Requisitos principales</h2>
@@ -369,7 +457,12 @@ export default async function PromotionDetailPage({ params }: { params: Promise<
               </tbody>
             </table>
           ) : !isUpcoming ? (
-            <p className="mt-2 text-sm text-[var(--ink)]">No se ha podido extraer la tabla estructurada de pisos del PDF para esta promocion.</p>
+            <div>
+              <p className="mt-2 text-sm text-[var(--ink)]">{tableMessage}</p>
+              {tableStatus ? (
+                <p className="mt-1 text-xs text-[var(--ink-soft)]">Estado de tabla: {tableStatus}</p>
+              ) : null}
+            </div>
           ) : housingRows.length === 0 ? (
             <p className="mt-2 text-sm text-[var(--ink)]">No se han podido extraer filas de viviendas del PDF.</p>
           ) : (
