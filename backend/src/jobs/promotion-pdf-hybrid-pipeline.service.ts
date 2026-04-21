@@ -515,6 +515,8 @@ export class PromotionPdfHybridPipelineService {
     while ((match = regex.exec(text)) !== null) {
       rows.push({
         id: `${match[1]}-${match[2]}`,
+        label: null,
+        homes: null,
         floor: match[1],
         door: match[2],
         bedrooms: this.toInt(match[4]),
@@ -527,6 +529,29 @@ export class PromotionPdfHybridPipelineService {
         tenure: null,
         accessibility: null,
       });
+    }
+
+    if (rows.length === 0) {
+      const countMatch = text.match(/(\d{1,4})\s+(habitatges|viviendas|vivendes|vivienda)/i);
+      if (countMatch) {
+        const homes = this.toInt(countMatch[1]);
+        rows.push({
+          id: null,
+          label: 'total_homes',
+          homes,
+          floor: null,
+          door: null,
+          bedrooms: null,
+          useful_area_m2: null,
+          built_area_m2: null,
+          max_occupancy: null,
+          monthly_rent_eur: null,
+          sale_price_eur: null,
+          reservation_eur: null,
+          tenure: null,
+          accessibility: null,
+        });
+      }
     }
 
     return this.filterUsefulRows(rows);
@@ -543,21 +568,27 @@ export class PromotionPdfHybridPipelineService {
     const completion = await this.aiProvider
       .complete({
         systemPrompt:
-          'Extrae filas de tabla de viviendas VPO/HPO desde OCR en JSON. No inventes. Si un valor no aparece, null.',
+          'Extrae filas de tabla de viviendas VPO/HPO desde OCR en JSON. Debes soportar tablas de alquiler y venta. No inventes. Si un valor no aparece, null. Si solo aparece un total, devuelve una fila resumida con label y homes.',
         userInput: JSON.stringify({
           source_url: sourceUrl,
           text: ocrCorpus.slice(0, 60000),
           output_schema: {
             table_rows: [
               {
+                id: null,
+                label: null,
+                homes: null,
                 floor: null,
                 door: null,
                 bedrooms: null,
                 useful_area_m2: null,
+                built_area_m2: null,
                 monthly_rent_eur: null,
                 sale_price_eur: null,
                 reservation_eur: null,
                 tenure: null,
+                max_occupancy: null,
+                accessibility: null,
               },
             ],
           },
@@ -614,17 +645,39 @@ export class PromotionPdfHybridPipelineService {
   private mapToUnitRow(row: JsonRecord): PromotionUnitRow {
     return {
       id: this.asString(row.id),
+      label:
+        this.asString(row.label) ??
+        this.asString(row.tipologia) ??
+        this.asString(row.vivienda) ??
+        this.asString(row.habitatge),
+      homes:
+        this.asNumber(row.homes) ??
+        this.asNumber(row.total_homes) ??
+        this.asNumber(row.viviendas),
       floor: this.asString(row.floor) ?? this.asString(row.planta),
       door: this.asString(row.door) ?? this.asString(row.porta),
-      bedrooms: this.asNumber(row.bedrooms) ?? this.asNumber(row.numero_habitaciones),
+      bedrooms:
+        this.asNumber(row.bedrooms) ??
+        this.asNumber(row.numero_habitaciones) ??
+        this.asNumber(row.dormitorios) ??
+        this.asNumber(row.habitacions),
       useful_area_m2:
-        this.asNumber(row.useful_area_m2) ?? this.asNumber(row.m2_computables),
-      built_area_m2: this.asNumber(row.built_area_m2),
+        this.asNumber(row.useful_area_m2) ??
+        this.asNumber(row.m2_computables) ??
+        this.asNumber(row.superficie_util_m2) ??
+        this.asNumber(row.superficie_util),
+      built_area_m2:
+        this.asNumber(row.built_area_m2) ??
+        this.asNumber(row.superficie_construida_m2),
       max_occupancy: this.asNumber(row.max_occupancy),
       monthly_rent_eur:
         this.asNumber(row.monthly_rent_eur) ??
         this.asNumber(row.precio_alquiler_mensual),
-      sale_price_eur: this.asNumber(row.sale_price_eur),
+      sale_price_eur:
+        this.asNumber(row.sale_price_eur) ??
+        this.asNumber(row.precio_venta_eur) ??
+        this.asNumber(row.precio_venta) ??
+        this.asNumber(row.preu_venda),
       reservation_eur: this.asNumber(row.reservation_eur),
       tenure: this.asString(row.tenure),
       accessibility: this.asString(row.accessibility),
@@ -634,10 +687,13 @@ export class PromotionPdfHybridPipelineService {
   private filterUsefulRows(rows: PromotionUnitRow[]): PromotionUnitRow[] {
     return rows.filter((row) => {
       const contentCount = [
+        row.label,
+        row.homes,
         row.floor,
         row.door,
         row.bedrooms,
         row.useful_area_m2,
+        row.sale_price_eur,
         row.monthly_rent_eur,
       ].filter((value) => value !== null && value !== '').length;
 

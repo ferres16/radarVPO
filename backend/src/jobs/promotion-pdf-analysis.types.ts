@@ -12,6 +12,8 @@ export type TableExtractionStatus = 'complete' | 'partial' | 'error';
 
 export type PromotionUnitRow = {
   id: string | null;
+  label: string | null;
+  homes: number | null;
   floor: string | null;
   door: string | null;
   bedrooms: number | null;
