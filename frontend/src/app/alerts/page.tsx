@@ -1,6 +1,5 @@
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
-import { PromotionCard } from '@/components/promotion-card';
 
 function parseDate(value?: string | null) {
   if (!value) return null;
@@ -12,6 +11,17 @@ function daysSinceAlert(alertDate?: string, fallbackAlertDate?: string) {
   const reference = parseDate(alertDate) ?? parseDate(fallbackAlertDate);
   if (!reference) return null;
   return Math.floor((Date.now() - reference.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function publicationEtaText(daysSince: number) {
+  const daysToPublication = 60 - daysSince;
+  if (daysToPublication > 0) {
+    return `Faltan ${daysToPublication} días para la publicación estimada.`;
+  }
+  if (daysToPublication === 0) {
+    return 'Publicación estimada para hoy.';
+  }
+  return `Publicación estimada vencida hace ${Math.abs(daysToPublication)} días.`;
 }
 
 export default async function AlertsPage() {
@@ -44,10 +54,11 @@ export default async function AlertsPage() {
       ) : (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {activeAlerts.map(({ item, daysSince }) => (
-            <div key={item.id} className="space-y-2">
-              <PromotionCard promotion={item} />
-              <p className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink-soft)] shadow-card">
-                Alerta detectada hace {daysSince} días.
+            <div key={item.id} className="rounded-2xl border border-[rgba(78,143,58,0.22)] bg-[linear-gradient(135deg,rgba(78,143,58,0.08),rgba(255,255,255,0.94))] p-4 shadow-card">
+              <p className="text-base font-semibold text-[var(--ink)]">{item.title}</p>
+              <p className="mt-2 text-sm text-[var(--ink-soft)]">{item.municipality || 'Catalunya'}</p>
+              <p className="mt-3 rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink-soft)]">
+                {publicationEtaText(daysSince)}
               </p>
             </div>
           ))}

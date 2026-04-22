@@ -16,6 +16,17 @@ function daysSinceAlert(alertDate?: string, fallbackAlertDate?: string) {
   return days;
 }
 
+function publicationEtaText(daysSince: number) {
+  const daysToPublication = 60 - daysSince;
+  if (daysToPublication > 0) {
+    return `faltan ${daysToPublication} días para la publicación estimada.`;
+  }
+  if (daysToPublication === 0) {
+    return 'publicación estimada para hoy.';
+  }
+  return `publicación estimada vencida hace ${Math.abs(daysToPublication)} días.`;
+}
+
 export default async function Home() {
   const [promotions, alerts] = await Promise.all([
     api.getPromotions().catch(() => []),
@@ -172,7 +183,7 @@ export default async function Home() {
                 <div key={promotion.id} className="rounded-2xl border border-[rgba(78,143,58,0.24)] bg-[linear-gradient(135deg,rgba(78,143,58,0.12),rgba(255,255,255,0.92))] p-4 shadow-card transition hover:-translate-y-0.5">
                   <p className="text-sm font-semibold text-[var(--ink)]">{promotion.title}</p>
                   <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                    {promotion.municipality || 'Catalunya'} · alerta detectada hace {daysSince} días.
+                    {promotion.municipality || 'Catalunya'} · {publicationEtaText(daysSince)}
                   </p>
                 </div>
               ))}
