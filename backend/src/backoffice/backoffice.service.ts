@@ -22,12 +22,13 @@ export class BackofficeService {
   ) {}
 
   async overview() {
-    const [users, promotions, pendingReview, published, news, jobsFailed] =
+    const [users, promotions, pendingReview, publishedUnreviewed, publishedReviewed, news, jobsFailed] =
       await Promise.all([
         this.prisma.user.count(),
         this.prisma.promotion.count(),
         this.prisma.promotion.count({ where: { status: 'pending_review' } }),
-        this.prisma.promotion.count({ where: { status: 'published' } }),
+        this.prisma.promotion.count({ where: { status: 'published_unreviewed' } }),
+        this.prisma.promotion.count({ where: { status: 'published_reviewed' } }),
         this.prisma.newsItem.count(),
         this.prisma.jobRun.count({ where: { status: 'failed' } }),
       ]);
@@ -36,7 +37,8 @@ export class BackofficeService {
       users,
       promotions,
       pendingReview,
-      published,
+      publishedUnreviewed,
+      publishedReviewed,
       news,
       jobsFailed,
     };
@@ -567,9 +569,9 @@ export class BackofficeService {
     }
 
     const allowed: PromotionStatus[] = [
-      'detected',
       'pending_review',
-      'published',
+      'published_unreviewed',
+      'published_reviewed',
       'archived',
     ];
 

@@ -3,6 +3,7 @@
 :root {
   --green-500: #4E8F3A;
   --green-700: #2F6B24;
+  --green-100: #EDF6E8;
   --bg-eco: #EAF4E4;
   --bg-app: #F7F8F5;
   --surface: #FFFFFF;
@@ -20,7 +21,9 @@
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(circle at top, rgba(78, 143, 58, 0.08), transparent 30%),
+    linear-gradient(180deg, #fbfcfa 0%, var(--background) 100%);
   color: var(--foreground);
   font-family: var(--font-inter), sans-serif;
 }
@@ -35,9 +38,9 @@ body {
 
 .hero-bg {
   background:
-    radial-gradient(circle at 18% 20%, #d3e9c9 0%, transparent 45%),
-    radial-gradient(circle at 78% 0%, #e8f2e3 0%, transparent 35%),
-    linear-gradient(180deg, #f7f8f5 0%, #eef5ea 100%);
+    radial-gradient(circle at 18% 20%, rgba(78, 143, 58, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 78% 0%, rgba(47, 107, 36, 0.08) 0%, transparent 32%),
+    linear-gradient(180deg, #f8faf6 0%, #eef5ea 100%);
 }
 
 .chip {
@@ -51,7 +54,62 @@ body {
 }
 
 .shadow-card {
-  box-shadow: 0 8px 24px rgba(30, 31, 28, 0.06);
+  box-shadow: 0 10px 30px rgba(30, 31, 28, 0.07);
+}
+
+.surface-card {
+  border: 1px solid var(--stroke);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 10px 30px rgba(30, 31, 28, 0.07);
+  backdrop-filter: blur(8px);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.55s ease-out both;
+}
+
+.animate-fade-up-delay-1 {
+  animation: fade-up 0.65s ease-out both 0.08s;
+}
+
+.animate-fade-up-delay-2 {
+  animation: fade-up 0.75s ease-out both 0.16s;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out both;
+}
+
+.hover-lift {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 40px rgba(30, 31, 28, 0.12);
 }
 
 @keyframes float-slow {

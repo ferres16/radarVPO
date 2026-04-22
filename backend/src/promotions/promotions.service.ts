@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PromotionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
 
@@ -8,6 +8,14 @@ export class PromotionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(filters: ListPromotionsDto) {
+    const publishedStatuses: PromotionStatus[] = [
+      'published_unreviewed',
+      'published_reviewed',
+    ];
+    const statusFilter = filters.status
+      ? filters.status
+      : { in: publishedStatuses };
+
     const where: Prisma.PromotionWhereInput = {
       municipality: filters.municipality
         ? { contains: filters.municipality, mode: 'insensitive' }
@@ -16,7 +24,7 @@ export class PromotionsService {
         ? { contains: filters.province, mode: 'insensitive' }
         : undefined,
       promotionType: filters.promotionType,
-      status: filters.status,
+      status: statusFilter,
     };
 
     return this.prisma.promotion.findMany({

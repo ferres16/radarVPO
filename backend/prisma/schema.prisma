@@ -32,9 +32,9 @@ enum TargetScope {
 }
 
 enum PromotionStatus {
-  detected
   pending_review
-  published
+  published_unreviewed
+  published_reviewed
   archived
 }
 

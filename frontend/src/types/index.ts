@@ -5,7 +5,7 @@ export type Promotion = {
   municipality?: string | null;
   province?: string | null;
   promotionType: 'venta' | 'alquiler' | 'mixto' | 'desconocido';
-  status: 'detected' | 'pending_review' | 'published' | 'archived';
+  status: 'pending_review' | 'published_unreviewed' | 'published_reviewed' | 'archived';
   statusMessage?: string;
   promoter?: string | null;
   totalHomes?: number | null;
@@ -87,7 +87,8 @@ export type BackofficeOverview = {
   users: number;
   promotions: number;
   pendingReview: number;
-  published: number;
+  publishedUnreviewed: number;
+  publishedReviewed: number;
   news: number;
   jobsFailed: number;
 };

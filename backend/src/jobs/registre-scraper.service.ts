@@ -94,7 +94,7 @@ export class RegistreScraperService {
             promoter: inferredPromoter ?? undefined,
             sourceUrl: entry.detailUrl,
             rawText,
-            status: 'pending_review',
+            status: 'published_unreviewed',
             promotionType: inferredType,
             targetScope: 'catalunya',
             autonomousCommunity: 'Catalunya',
@@ -124,9 +124,9 @@ export class RegistreScraperService {
               ? estimatedFromAlert
               : publicationDate,
             status:
-              existing && ['published', 'archived'].includes((existing as { status?: string }).status || '')
+              existing && ['published_reviewed', 'archived'].includes((existing as { status?: string }).status || '')
                 ? undefined
-                : 'pending_review',
+                : 'published_unreviewed',
             statusMessage:
               'Estamos analizando esta promocion y actualizando la informacion',
           },

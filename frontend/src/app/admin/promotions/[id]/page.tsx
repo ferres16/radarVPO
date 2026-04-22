@@ -6,11 +6,18 @@ import { api } from '@/lib/api';
 import { PromotionDetail, PromotionUnit } from '@/types';
 
 const STATUS_OPTIONS: PromotionDetail['status'][] = [
-  'detected',
   'pending_review',
-  'published',
+  'published_unreviewed',
+  'published_reviewed',
   'archived',
 ];
+
+const STATUS_LABELS: Record<PromotionDetail['status'], string> = {
+  pending_review: 'Pendiente de revisión',
+  published_unreviewed: 'Publicado sin revisar',
+  published_reviewed: 'Publicado revisado',
+  archived: 'Archivado',
+};
 
 function toJsonString(value: unknown) {
   if (!value) return '{}';
@@ -210,7 +217,7 @@ export default function AdminPromotionEditPage() {
   return (
     <main className="shell space-y-5 pb-12">
       <header className="rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card">
-        <h1 className="text-2xl font-bold text-[var(--ink)]">Editor de promocion</h1>
+        <h1 className="text-2xl font-bold text-[var(--ink)]">Editor de promoción</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">{promotion.title}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           {STATUS_OPTIONS.map((status) => (
@@ -224,7 +231,7 @@ export default function AdminPromotionEditPage() {
                   : 'border border-[var(--stroke)] bg-white text-[var(--ink)]'
               }`}
             >
-              {status}
+              {STATUS_LABELS[status]}
             </button>
           ))}
         </div>

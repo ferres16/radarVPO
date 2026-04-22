@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
 
 export class ListPromotionsDto {
   @ApiPropertyOptional()
@@ -14,11 +14,11 @@ export class ListPromotionsDto {
 
   @ApiPropertyOptional({ enum: ['venta', 'alquiler', 'mixto', 'desconocido'] })
   @IsOptional()
-  @IsEnum(['venta', 'alquiler', 'mixto', 'desconocido'])
+  @IsIn(['venta', 'alquiler', 'mixto', 'desconocido'])
   promotionType?: 'venta' | 'alquiler' | 'mixto' | 'desconocido';
 
-  @ApiPropertyOptional({ enum: ['detected', 'pending_review', 'published', 'archived'] })
+  @ApiPropertyOptional({ enum: ['pending_review', 'published_unreviewed', 'published_reviewed', 'archived'] })
   @IsOptional()
-  @IsEnum(['detected', 'pending_review', 'published', 'archived'])
-  status?: 'detected' | 'pending_review' | 'published' | 'archived';
+  @IsIn(['pending_review', 'published_unreviewed', 'published_reviewed', 'archived'])
+  status?: 'pending_review' | 'published_unreviewed' | 'published_reviewed' | 'archived';
 }

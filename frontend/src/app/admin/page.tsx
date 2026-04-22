@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import type { BackofficeOverview, PromotionDetail } from '@/types';
 
-const STATUSES = ['detected', 'pending_review', 'published', 'archived'] as const;
+const STATUSES = ['pending_review', 'published_unreviewed', 'published_reviewed', 'archived'] as const;
 
 export default function AdminPage() {
   const [overview, setOverview] = useState<BackofficeOverview | null>(null);
@@ -53,9 +53,7 @@ export default function AdminPage() {
       <main className="shell">
         <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
           <h1 className="text-2xl font-bold text-[var(--ink)]">Panel de administracion</h1>
-          <p className="mt-2 text-sm text-[var(--ink-soft)]">
-            {error || 'No se pudo cargar el panel.'}
-          </p>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">Gestión centralizada de promociones, usuarios y noticias.</p>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
             Accede primero con una cuenta de administrador desde <Link href="/login" className="font-semibold text-[var(--green-700)]">iniciar sesion</Link>.
           </p>
@@ -65,15 +63,15 @@ export default function AdminPage() {
   }
 
   const grouped = {
-    detected: promotions.filter((p) => p.status === 'detected'),
     pending_review: promotions.filter((p) => p.status === 'pending_review'),
-    published: promotions.filter((p) => p.status === 'published'),
+    published_unreviewed: promotions.filter((p) => p.status === 'published_unreviewed'),
+    published_reviewed: promotions.filter((p) => p.status === 'published_reviewed'),
     archived: promotions.filter((p) => p.status === 'archived'),
   };
 
   return (
     <main className="shell space-y-6">
-      <header className="rounded-3xl border border-[var(--stroke)] bg-gradient-to-r from-emerald-50 via-lime-50 to-white p-6 shadow-card">
+      <header className="rounded-3xl border border-[var(--stroke)] bg-gradient-to-r from-emerald-50 via-lime-50 to-white p-6 shadow-card animate-fade-up">
         <h1 className="text-3xl font-bold text-[var(--ink)]">Panel de administracion</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
           Gestion centralizada de promociones, usuarios y noticias.
@@ -93,7 +91,7 @@ export default function AdminPage() {
 
       <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
         {Object.entries(overview).map(([key, value]) => (
-          <article key={key} className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
+            <article key={key} className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card hover-lift">
             <p className="text-xs uppercase tracking-wide text-[var(--ink-soft)]">{key}</p>
             <p className="mt-2 text-2xl font-bold text-[var(--ink)]">{value}</p>
           </article>

@@ -54,7 +54,7 @@ async function main() {
       promotionType: 'alquiler',
       targetScope: 'catalunya',
       tenureType: 'arrendamiento',
-      status: 'published',
+      status: 'published_reviewed',
       publishedAt: new Date('2026-03-21'),
       deadlineDate: new Date('2026-05-08'),
       sourceUrl: 'https://habitatge.gencat.cat/promocion-2026',

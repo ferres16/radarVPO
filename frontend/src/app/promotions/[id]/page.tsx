@@ -23,15 +23,15 @@ export default async function PromotionDetailPage({
   }
 
   return (
-    <main className="shell">
-      <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-        <h1 className="text-2xl font-bold text-[var(--ink)]">{promotion.title}</h1>
+    <main className="shell pb-10">
+      <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-white p-6 shadow-card animate-fade-up">
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--ink)] md:text-3xl">{promotion.title}</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
           {promotion.municipality || 'Catalunya'}
           {promotion.province ? `, ${promotion.province}` : ''}
         </p>
 
-        <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm">
+        <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[linear-gradient(135deg,rgba(78,143,58,0.08),rgba(255,255,255,0.92))] p-4 text-sm">
           <p className="font-semibold text-[var(--ink)]">Estado: {promotion.status}</p>
           <p className="mt-1 text-[var(--ink-soft)]">
             {promotion.statusMessage ||
@@ -40,29 +40,29 @@ export default async function PromotionDetailPage({
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 transition hover:-translate-y-0.5">
             <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Informacion general</h2>
             <p className="mt-2 text-sm text-[var(--ink)]">Tipo: {promotion.promotionType}</p>
             <p className="text-sm text-[var(--ink)]">Promotor: {promotion.promoter || 'n/d'}</p>
             <p className="text-sm text-[var(--ink)]">Total viviendas: {promotion.totalHomes ?? 'n/d'}</p>
           </div>
-          <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 transition hover:-translate-y-0.5">
             <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Descripcion</h2>
             <p className="mt-2 text-sm text-[var(--ink)]">
               {promotion.publicDescription ||
-                'Ficha preliminar detectada automaticamente. El equipo esta completando los datos.'}
+                'Estamos completando esta ficha para ofrecerte la información más útil posible.'}
             </p>
           </div>
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
             <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Fechas</h2>
             <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
               {printJson(promotion.importantDates)}
             </pre>
           </div>
-          <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
             <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Requisitos</h2>
             <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
               {printJson(promotion.requirements)}
@@ -70,7 +70,7 @@ export default async function PromotionDetailPage({
           </div>
         </div>
 
-        <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+        <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Tabla de viviendas</h2>
           {promotion.units.length === 0 ? (
             <p className="mt-2 text-sm text-[var(--ink-soft)]">Pendiente de revision manual.</p>
@@ -104,7 +104,7 @@ export default async function PromotionDetailPage({
           )}
         </div>
 
-        <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+        <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Viviendas disponibles (texto plano)</h2>
           {promotion.availableUnitsText ? (
             <pre className="mt-2 whitespace-pre-wrap text-sm text-[var(--ink)]">
@@ -115,7 +115,7 @@ export default async function PromotionDetailPage({
           )}
         </div>
 
-        <div className="mt-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+        <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Documentos de referencia</h2>
           {promotion.documents.length === 0 ? (
             <p className="mt-2 text-sm text-[var(--ink-soft)]">Sin documentos adjuntos.</p>
@@ -127,9 +127,9 @@ export default async function PromotionDetailPage({
                   href={doc.publicUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-[var(--green-700)]"
+                  className="inline-flex items-center rounded-full bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-700)]"
                 >
-                  {doc.documentKind === 'pdf_original' ? 'Ver PDF' : 'Abrir documento'}
+                  Ver PDF
                 </a>
               ))}
             </div>
