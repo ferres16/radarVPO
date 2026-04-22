@@ -21,7 +21,6 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
             <strong>Impacto practico:</strong> {item.practicalImpact}
           </div>
         ) : null}
-        <p className="mt-4 whitespace-pre-wrap text-sm text-[var(--ink-soft)]">{item.rawText || 'Sin contenido original.'}</p>
       </article>
     </main>
   );

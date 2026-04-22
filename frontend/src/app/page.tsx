@@ -78,20 +78,6 @@ export default async function Home() {
           <article className="surface-card relative overflow-hidden p-5 md:h-full md:p-6 animate-fade-up">
             <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-[rgba(78,143,58,0.12)] blur-3xl" />
             <div className="absolute -bottom-10 left-1/2 h-32 w-32 rounded-full bg-[rgba(47,107,36,0.08)] blur-2xl" />
-            <div className="pointer-events-none absolute inset-0 hidden md:block">
-              {serviceTags.slice(0, 4).map((tag, index) => (
-                <span
-                  key={tag}
-                  className="absolute rounded-full border border-[rgba(78,143,58,0.25)] bg-white/80 px-3 py-1 text-[11px] font-semibold text-[var(--green-700)] shadow-sm"
-                  style={{
-                    top: `${18 + index * 12}%`,
-                    right: `${3 + (index % 2) * 10}%`,
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
 
             <div className="relative max-w-2xl">
               <span className="inline-flex rounded-full border border-[rgba(78,143,58,0.18)] bg-[rgba(78,143,58,0.08)] px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">
@@ -123,6 +109,20 @@ export default async function Home() {
                     <p className="mt-1 text-xs text-[var(--ink-soft)]">{stat.label}</p>
                   </div>
                 ))}
+              </div>
+
+              <div className="mt-5 min-h-36 rounded-3xl border border-[var(--stroke)] bg-[linear-gradient(135deg,rgba(78,143,58,0.10),rgba(255,255,255,0.96))] p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Servicios</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {serviceTags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-[rgba(78,143,58,0.24)] bg-white/90 px-3 py-1 text-xs font-semibold text-[var(--green-700)] shadow-sm"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </article>
@@ -172,7 +172,7 @@ export default async function Home() {
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Alertas próximas</p>
-              <h2 className="mt-1 text-xl font-black text-[var(--ink)]">Suben primero las alertas pendientes</h2>
+              <h2 className="mt-1 text-xl font-black text-[var(--ink)]">Próximas viviendas por salir</h2>
             </div>
             <Link href="/promotions" className="text-sm font-semibold text-[var(--green-700)]">
               Explorar
@@ -187,7 +187,7 @@ export default async function Home() {
           ) : (
             <div className="grid gap-3 md:grid-cols-3">
               {activeAlerts.slice(0, 3).map(({ promotion, window }) => (
-                <div key={promotion.id} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 transition hover:-translate-y-0.5">
+                <div key={promotion.id} className="rounded-2xl border border-[rgba(78,143,58,0.24)] bg-[linear-gradient(135deg,rgba(78,143,58,0.12),rgba(255,255,255,0.92))] p-4 shadow-card transition hover:-translate-y-0.5">
                   <p className="text-sm font-semibold text-[var(--ink)]">{promotion.title}</p>
                   <p className="mt-1 text-sm text-[var(--ink-soft)]">
                     {promotion.municipality || 'Catalunya'} · quedan {window.daysLeft} días para el plazo estimado.
