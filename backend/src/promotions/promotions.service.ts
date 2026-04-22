@@ -30,7 +30,7 @@ export class PromotionsService {
     return this.prisma.promotion.findMany({
       where,
       orderBy: [{ alertDetectedAt: 'desc' }, { createdAt: 'desc' }],
-      take: 100,
+      take: 10,
       include: {
         documents: {
           orderBy: { createdAt: 'desc' },

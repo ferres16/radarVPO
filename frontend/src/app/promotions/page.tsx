@@ -25,10 +25,10 @@ export default async function PromotionsPage({
         <div className="max-w-3xl">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Promociones publicadas</p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-[var(--ink)] md:text-4xl">
-            Todas las promociones visibles, sin alertas preliminares
+            Últimas 10 promociones publicadas
           </h1>
           <p className="mt-3 max-w-2xl text-base text-[var(--ink-soft)]">
-            Aquí solo verás promociones ya publicadas. Las fichas con información en actualización aparecen marcadas con un aviso claro para que sepas si faltan datos por completar.
+            Aquí solo verás promociones ya publicadas, con un máximo de las últimas 10. Las fichas con información en actualización aparecen marcadas con un aviso claro para que sepas si faltan datos por completar.
           </p>
         </div>
 
@@ -48,7 +48,7 @@ export default async function PromotionsPage({
       </header>
 
       {promotions.length === 0 ? (
-        <EmptyState title="Sin promociones publicadas" description="Aún no hay promociones publicadas que encajen con estos filtros." />
+        <EmptyState title="Sin promociones publicadas" description="Aún no hay promociones publicadas que encajen con estos filtros dentro del máximo de 10 resultados." />
       ) : (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {promotions.map((promotion) => (
