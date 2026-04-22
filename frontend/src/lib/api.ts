@@ -63,6 +63,7 @@ export const api = {
   getPromotions: (query = '') => request<Promotion[]>(`/promotions${query}`),
   getPromotionById: (id: string) => request<PromotionDetail>(`/promotions/${id}`),
   getUpcomingAlerts: () => request<Promotion[]>('/alerts/upcoming'),
+  getAlerts: () => request<Promotion[]>('/alerts/upcoming'),
   getNews: () => request<NewsItem[]>('/news'),
   getNewsById: (id: string) => request<NewsItem & { rawText?: string }>(`/news/${id}`),
   getMe: () => request<UserProfile>('/users/me'),

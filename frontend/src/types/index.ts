@@ -1,5 +1,7 @@
 export type Promotion = {
   id: string;
+  type?: 'alert' | 'published';
+  alertDate?: string;
   title: string;
   location?: string | null;
   municipality?: string | null;

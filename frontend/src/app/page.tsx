@@ -9,33 +9,11 @@ function parseDate(value?: string | null) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function getUpcomingWindow(promotion: {
-  estimatedPublicationDate?: string | null;
-  publishedAt?: string | null;
-  alertDetectedAt?: string;
-}) {
-  const reference =
-    parseDate(promotion.estimatedPublicationDate) ??
-    parseDate(promotion.publishedAt) ??
-    parseDate(promotion.alertDetectedAt);
-
+function daysSinceAlert(alertDate?: string, fallbackAlertDate?: string) {
+  const reference = parseDate(alertDate) ?? parseDate(fallbackAlertDate);
   if (!reference) return null;
-
-  const daysLeft = Math.ceil(
-    (reference.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
-  );
-  if (daysLeft >= 0 && daysLeft <= 60) {
-    return { state: 'active' as const, daysLeft };
-  }
-
-  const daysSince = Math.floor(
-    (Date.now() - reference.getTime()) / (1000 * 60 * 60 * 24),
-  );
-  if (daysSince >= 60 && daysSince <= 67) {
-    return { state: 'expired' as const, daysSince };
-  }
-
-  return null;
+  const days = Math.floor((Date.now() - reference.getTime()) / (1000 * 60 * 60 * 24));
+  return days;
 }
 
 export default async function Home() {
@@ -45,10 +23,14 @@ export default async function Home() {
   ]);
 
   const recentPromotions = promotions.slice(0, 10);
-  const upcoming = alerts
-    .map((promotion) => ({ promotion, window: getUpcomingWindow(promotion) }))
-    .filter((entry): entry is { promotion: (typeof alerts)[number]; window: NonNullable<ReturnType<typeof getUpcomingWindow>> } => Boolean(entry.window));
-  const activeAlerts = upcoming.filter((entry) => entry.window.state === 'active');
+  const activeAlerts = alerts
+    .filter((promotion) => promotion.type === 'alert')
+    .map((promotion) => {
+      const days = daysSinceAlert(promotion.alertDate, promotion.alertDetectedAt);
+      return { promotion, daysSince: days };
+    })
+    .filter((entry): entry is { promotion: (typeof alerts)[number]; daysSince: number } => entry.daysSince !== null && entry.daysSince >= 0 && entry.daysSince <= 67)
+    .slice(0, 3);
 
   const serviceTags = [
     'Asesoria personalizada',
@@ -174,8 +156,8 @@ export default async function Home() {
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Alertas próximas</p>
               <h2 className="mt-1 text-xl font-black text-[var(--ink)]">Próximas viviendas por salir</h2>
             </div>
-            <Link href="/promotions" className="text-sm font-semibold text-[var(--green-700)]">
-              Explorar
+            <Link href="/alerts" className="text-sm font-semibold text-[var(--green-700)]">
+              Ver más
             </Link>
           </div>
 
@@ -186,11 +168,11 @@ export default async function Home() {
             </div>
           ) : (
             <div className="grid gap-3 md:grid-cols-3">
-              {activeAlerts.slice(0, 3).map(({ promotion, window }) => (
+              {activeAlerts.map(({ promotion, daysSince }) => (
                 <div key={promotion.id} className="rounded-2xl border border-[rgba(78,143,58,0.24)] bg-[linear-gradient(135deg,rgba(78,143,58,0.12),rgba(255,255,255,0.92))] p-4 shadow-card transition hover:-translate-y-0.5">
                   <p className="text-sm font-semibold text-[var(--ink)]">{promotion.title}</p>
                   <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                    {promotion.municipality || 'Catalunya'} · quedan {window.daysLeft} días para el plazo estimado.
+                    {promotion.municipality || 'Catalunya'} · alerta detectada hace {daysSince} días.
                   </p>
                 </div>
               ))}

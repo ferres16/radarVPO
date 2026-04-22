@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma, PromotionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
+import { withPromotionView } from '../common/promotion-view.util';
 
 @Injectable()
 export class PromotionsService {
@@ -13,8 +14,14 @@ export class PromotionsService {
       'published_reviewed',
     ];
     const statusFilter = filters.status
-      ? filters.status
+      ? publishedStatuses.includes(filters.status as PromotionStatus)
+        ? (filters.status as PromotionStatus)
+        : null
       : { in: publishedStatuses };
+
+    if (statusFilter === null) {
+      return [];
+    }
 
     const where: Prisma.PromotionWhereInput = {
       municipality: filters.municipality
@@ -27,7 +34,7 @@ export class PromotionsService {
       status: statusFilter,
     };
 
-    return this.prisma.promotion.findMany({
+    const items = await this.prisma.promotion.findMany({
       where,
       orderBy: [{ alertDetectedAt: 'desc' }, { createdAt: 'desc' }],
       take: 10,
@@ -37,6 +44,8 @@ export class PromotionsService {
         },
       },
     });
+
+    return items.map(withPromotionView);
   }
 
   async getById(id: string) {
@@ -56,7 +65,7 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
-    return item;
+    return withPromotionView(item);
   }
 
   async toggleFavorite(userId: string, promotionId: string) {

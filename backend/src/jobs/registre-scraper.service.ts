@@ -76,6 +76,9 @@ export class RegistreScraperService {
       const publicationDate =
         entry.publishedAt ??
         this.extractDate(rawText);
+      const alertDate = publicationDate ?? new Date();
+      const isAlertEntry = entry.isSixtyDayAlert;
+      const nextStatus = isAlertEntry ? 'pending_review' : 'published_unreviewed';
       const estimatedFromAlert = publicationDate
         ? this.addDays(publicationDate, 60)
         : null;
@@ -94,16 +97,19 @@ export class RegistreScraperService {
             promoter: inferredPromoter ?? undefined,
             sourceUrl: entry.detailUrl,
             rawText,
-            status: 'published_unreviewed',
+            status: nextStatus,
             promotionType: inferredType,
             targetScope: 'catalunya',
             autonomousCommunity: 'Catalunya',
-            publishedAt: publicationDate,
-            estimatedPublicationDate: entry.isSixtyDayAlert
+            alertDetectedAt: alertDate,
+            publishedAt: isAlertEntry ? undefined : publicationDate,
+            estimatedPublicationDate: isAlertEntry
               ? estimatedFromAlert
               : publicationDate,
             statusMessage:
-              'Estamos analizando esta promocion y actualizando la informacion',
+              isAlertEntry
+                ? 'Alerta detectada. Esta promoción puede publicarse próximamente.'
+                : 'Anuncio publicado. Estamos completando la información detallada.',
           },
           select: { id: true },
         }));
@@ -119,16 +125,19 @@ export class RegistreScraperService {
             municipality: inferredMunicipality ?? undefined,
             promoter: inferredPromoter ?? undefined,
             promotionType: inferredType,
-            publishedAt: publicationDate,
-            estimatedPublicationDate: entry.isSixtyDayAlert
+            alertDetectedAt: alertDate,
+            publishedAt: isAlertEntry ? undefined : publicationDate,
+            estimatedPublicationDate: isAlertEntry
               ? estimatedFromAlert
               : publicationDate,
             status:
               existing && ['published_reviewed', 'archived'].includes((existing as { status?: string }).status || '')
                 ? undefined
-                : 'published_unreviewed',
+                : nextStatus,
             statusMessage:
-              'Estamos analizando esta promocion y actualizando la informacion',
+              isAlertEntry
+                ? 'Alerta detectada. Esta promoción puede publicarse próximamente.'
+                : 'Anuncio publicado. Estamos completando la información detallada.',
           },
         });
       }

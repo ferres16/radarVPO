@@ -18,6 +18,7 @@ export default async function PromotionsPage({
   if (promotionType) query.set('promotionType', promotionType);
 
   const promotions = await api.getPromotions(query.size ? `?${query.toString()}` : '');
+  const published = promotions.filter((item) => item.type === 'published').slice(0, 10);
 
   return (
     <main className="shell space-y-6 pb-10">
@@ -47,11 +48,11 @@ export default async function PromotionsPage({
         </form>
       </header>
 
-      {promotions.length === 0 ? (
+      {published.length === 0 ? (
         <EmptyState title="Sin promociones publicadas" description="Aún no hay promociones publicadas que encajen con estos filtros dentro del máximo de 10 resultados." />
       ) : (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {promotions.map((promotion) => (
+          {published.map((promotion) => (
             <PromotionCard key={promotion.id} promotion={promotion} />
           ))}
         </section>
