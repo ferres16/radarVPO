@@ -118,9 +118,11 @@ export class BackofficeService {
   async createNews(dto: CreateNewsItemDto) {
     const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     const itemUrl = dto.itemUrl ?? `${dto.sourceUrl.replace(/\/$/, '')}#manual-${token}`;
+    const slug = this.buildSlug(dto.title, token);
 
     return this.prisma.newsItem.create({
       data: {
+        slug,
         sourceName: dto.sourceName,
         sourceUrl: dto.sourceUrl,
         itemUrl,
@@ -131,6 +133,7 @@ export class BackofficeService {
         practicalImpact: dto.practicalImpact,
         topic: dto.topic,
         relevance: dto.relevance,
+        category: 'general',
         contentHash: `manual-${token}`,
         publishedAt: new Date(dto.publishedAt),
       },
@@ -138,11 +141,13 @@ export class BackofficeService {
   }
 
   async updateNews(newsId: string, dto: UpdateBackofficeNewsItemDto) {
-    await this.ensureNews(newsId);
+    const existing = await this.ensureNews(newsId);
+    const nextSlug = dto.title ? this.buildSlug(dto.title, existing.slug || existing.id) : existing.slug;
 
     return this.prisma.newsItem.update({
       where: { id: newsId },
       data: {
+        slug: nextSlug ?? undefined,
         title: dto.title,
         sourceName: dto.sourceName,
         sourceUrl: dto.sourceUrl,
@@ -533,10 +538,20 @@ export class BackofficeService {
     return unit;
   }
 
+  private buildSlug(title: string, suffix: string) {
+    return `${title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80)}-${suffix.slice(0, 8)}`;
+  }
+
   private async ensureNews(newsId: string) {
     const item = await this.prisma.newsItem.findUnique({
       where: { id: newsId },
-      select: { id: true },
+      select: { id: true, slug: true },
     });
 
     if (!item) {

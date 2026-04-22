@@ -1,22 +1,27 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { RssNewsService } from './rss-news.service';
-import { sha256 } from './hash.util';
 import { RegistreScraperService } from './registre-scraper.service';
+import { NewsAutomationService } from './news-automation.service';
 
 const inMemoryLocks = new Set<string>();
 
 @Injectable()
-export class JobsService {
+export class JobsService implements OnApplicationBootstrap {
   private readonly logger = new Logger(JobsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly rssNewsService: RssNewsService,
     private readonly registreScraperService: RegistreScraperService,
+    private readonly newsAutomationService: NewsAutomationService,
   ) {}
+
+  async onApplicationBootstrap() {
+    if ((process.env.NEWS_ENABLED ?? 'true') === 'true') {
+      await this.generateDailyHousingNews();
+    }
+  }
 
   @Cron(process.env.CRON_CHECK_PROMOTIONS || CronExpression.EVERY_30_MINUTES, {
     timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
@@ -50,58 +55,14 @@ export class JobsService {
   @Cron(process.env.CRON_FETCH_DAILY_NEWS || CronExpression.EVERY_DAY_AT_6AM, {
     timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
   })
-  async fetchDailyNews() {
-    await this.runWithLock('fetch_daily_news', async () => {
+  async generateDailyHousingNews() {
+    await this.runWithLock('generate_daily_housing_news', async () => {
       const enabled = (process.env.NEWS_ENABLED ?? 'true') === 'true';
       if (!enabled) {
         return { inserted: 0, reason: 'disabled' };
       }
 
-      const maxItems = Number(process.env.DAILY_NEWS_MAX_ITEMS ?? 10);
-      const items = await this.rssNewsService.fetchDailyItems(maxItems);
-      let inserted = 0;
-
-      for (const item of items) {
-        const hash = sha256(`${item.title}|${item.link}|${item.content}`);
-        const existing = await this.prisma.newsItem.findUnique({
-          where: { contentHash: hash },
-          select: { id: true },
-        });
-
-        if (existing) {
-
-      const dailyBrief = await this.publishDailyCatalunyaBrief();
-      if (dailyBrief.created) {
-        inserted += 1;
-      }
-          continue;
-        }
-
-        const enriched = this.buildCatalunyaHousingStory(item);
-        if (!enriched) {
-          continue;
-        }
-
-        await this.prisma.newsItem.create({
-          data: {
-            title: enriched.title,
-            sourceName: item.sourceName,
-            sourceUrl: item.sourceUrl,
-            itemUrl: item.link,
-            publishedAt: item.publishedAt,
-            rawText: item.content,
-            summary: enriched.summary,
-            body: enriched.body,
-            practicalImpact: enriched.practicalImpact,
-            relevance: enriched.relevance,
-            topic: enriched.topic,
-            contentHash: hash,
-          },
-        });
-        inserted += 1;
-      }
-
-      return { inserted, fetched: items.length };
+      return this.newsAutomationService.generateDailyCatalunyaNews();
     });
   }
 
@@ -133,182 +94,6 @@ export class JobsService {
 
       return { published: 1 };
     });
-  }
-
-  private buildCatalunyaHousingStory(item: {
-    title: string;
-    content: string;
-    sourceName: string;
-    link: string;
-  }): {
-    title: string;
-    summary: string;
-    body: string;
-    practicalImpact: string;
-    relevance: string;
-    topic: string;
-  } | null {
-    const combined = `${item.title}\n${item.content}`.toLowerCase();
-
-    const hasCatalunyaFocus =
-      /catalunya|cataluna|barcelona|girona|lleida|tarragona|generalitat|incasol|ajuntament/.test(
-        combined,
-      );
-    const hasHousingFocus =
-      /vpo|hpo|habitatge|vivienda|lloguer|alquiler|asequible|solicitants|registre|ayuda|bono/.test(
-        combined,
-      );
-
-    if (!hasCatalunyaFocus || !hasHousingFocus) {
-      return null;
-    }
-
-    const topic = this.detectTopic(combined);
-    const relevance = this.detectRelevance(combined);
-
-    const hook =
-      topic === 'promociones_publicas'
-        ? 'Nuevas oportunidades de vivienda publica en Catalunya'
-        : topic === 'ayudas_vivienda'
-          ? 'Cambios en ayudas de vivienda que pueden mejorar tu acceso'
-          : topic === 'normativa'
-            ? 'Nueva normativa de vivienda en Catalunya: lo que cambia para solicitantes'
-            : 'Actualizacion clave para quienes buscan vivienda asequible en Catalunya';
-
-    const title = `${hook}: ${item.title}`.slice(0, 220);
-
-    const cleaned = item.content.replace(/\s+/g, ' ').trim();
-    const baseParagraph = cleaned.slice(0, 600);
-
-    const summary = [
-      'Contexto:',
-      `${item.sourceName} publica una novedad vinculada a vivienda en Catalunya.`,
-      baseParagraph || 'Se han anunciado cambios con impacto directo en procesos de acceso a vivienda protegida.',
-    ].join(' ');
-
-    const practicalImpact =
-      'Impacto practico: revisa requisitos de ingresos, empadronamiento, plazos y canales de solicitud porque estos elementos suelen cambiar entre convocatorias y pueden dejarte fuera si presentas documentacion incompleta.';
-
-    const body = [
-      `Por que importa: esta informacion esta orientada a personas inscritas o interesadas en VPO, alquiler asequible y convocatorias publicas en Catalunya.`,
-      `Que ha pasado: ${baseParagraph || 'se han comunicado novedades relevantes para el acceso a vivienda publica.'}`,
-      `Que debes vigilar ahora: fecha de apertura, fecha limite, municipio, promotora, documentacion exigida y posibles cupos de reserva.`,
-      `Recomendacion: compara esta novedad con convocatorias recientes del mismo municipio para anticipar cambios de baremacion y preparar mejor tu solicitud.`,
-      practicalImpact,
-    ].join('\n\n');
-
-    return {
-      title,
-      summary,
-      body,
-      practicalImpact,
-      relevance,
-      topic,
-    };
-  }
-
-  private async publishDailyCatalunyaBrief(): Promise<{ created: boolean }> {
-    const dayKey = new Date().toISOString().slice(0, 10);
-    const contentHash = sha256(`daily-housing-brief|${dayKey}`);
-    const existing = await this.prisma.newsItem.findUnique({
-      where: { contentHash },
-      select: { id: true },
-    });
-
-    if (existing) {
-      return { created: false };
-    }
-
-    const briefs = [
-      {
-        title: 'Catalunya: claves para no perder una convocatoria de vivienda publica',
-        summary:
-          'Revisa empadronamiento, ingresos, calendario y documentacion antes de presentar la solicitud. Un error pequeño puede dejarte fuera de una promocion aunque cumplas los requisitos.',
-        practicalImpact:
-          'Impacto practico: prepara copias, certificados y justificantes con antelacion; el plazo real suele ser el punto donde mas solicitudes se descartan.',
-      },
-      {
-        title: 'VPO en Catalunya: que mirar hoy en las bases antes de solicitar',
-        summary:
-          'La letra pequena importa: cupos, reservas, municipio, unidad de convivencia y compatibilidad con ayudas suelen cambiar entre convocatorias. Leerlo bien evita sorpresas en la adjudicacion.',
-        practicalImpact:
-          'Impacto practico: comprueba si hay cupo juvenil, familiar o de movilidad reducida y guarda capturas del anuncio y de los anexos.',
-      },
-      {
-        title: 'Alquiler asequible en Catalunya: el dato que mas afecta a tu expediente',
-        summary:
-          'El umbral de ingresos y la fecha de presentacion siguen siendo los dos filtros mas sensibles. Si uno falla, la solicitud puede quedar fuera sin pasar a valoracion.',
-        practicalImpact:
-          'Impacto practico: confirma ingresos computables, miembros de la unidad de convivencia y fecha de referencia antes de enviar la solicitud.',
-      },
-      {
-        title: 'Generalitat y ayuntamientos: novedades de vivienda a vigilar esta semana',
-        summary:
-          'Las convocatorias cambian rápido cuando entran nuevos plazos, listados provisionales o rectificaciones. Seguir los anuncios oficiales ayuda a reaccionar a tiempo.',
-        practicalImpact:
-          'Impacto practico: activa avisos y revisa la sede electrónica al menos una vez al día si estás esperando una promoción concreta.',
-      },
-      {
-        title: 'Documentacion de vivienda publica: el repaso que evita exclusiones',
-        summary:
-          'Antes de entregar nada, conviene revisar DNI, empadronamiento, renta, composición de la unidad familiar y cualquier anexo adicional. Una omission suele costar la plaza.',
-        practicalImpact:
-          'Impacto practico: monta una carpeta con todo el expediente y confirma que cada documento coincide con la convocatoria en curso.',
-      },
-    ];
-
-    const index = new Date().getDate() % briefs.length;
-    const brief = briefs[index];
-
-    await this.prisma.newsItem.create({
-      data: {
-        sourceName: 'Radar VPO',
-        sourceUrl: 'https://radarvpo.com/noticias',
-        itemUrl: `https://radarvpo.com/noticias/diaria/${dayKey}`,
-        title: brief.title,
-        summary: brief.summary,
-        body: `${brief.summary} ${brief.practicalImpact}`,
-        practicalImpact: brief.practicalImpact,
-        relevance: 'high',
-        topic: 'brief_diario',
-        contentHash,
-        publishedAt: new Date(),
-      },
-    });
-
-    return { created: true };
-  }
-
-  private detectTopic(text: string): string {
-    if (/promocion|convocatoria|adjudicacion|incasol|obra nueva|viviendas?/.test(text)) {
-      return 'promociones_publicas';
-    }
-    if (/ayuda|subvencion|bono|prestacion|alquiler joven/.test(text)) {
-      return 'ayudas_vivienda';
-    }
-    if (/decreto|ley|normativa|reglamento|modificacion/.test(text)) {
-      return 'normativa';
-    }
-    if (/registre|solicitants|inscripcion|empadronamiento/.test(text)) {
-      return 'registro_solicitantes';
-    }
-    return 'vivienda_catalunya';
-  }
-
-  private detectRelevance(text: string): string {
-    const score = [
-      /catalunya|generalitat|incasol/.test(text),
-      /vpo|hpo|vivienda protegida|habitatge protegit/.test(text),
-      /plazo|convocatoria|adjudicacion|solicitud/.test(text),
-    ].filter(Boolean).length;
-
-    if (score >= 3) {
-      return 'high';
-    }
-    if (score === 2) {
-      return 'medium';
-    }
-    return 'low';
   }
 
   private async runWithLock(

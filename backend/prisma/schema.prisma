@@ -203,6 +203,7 @@ model Reminder {
 
 model NewsItem {
   id          String   @id @default(cuid())
+  slug        String?  @unique
   sourceName  String   @map("source_name")
   sourceUrl   String   @map("source_url")
   itemUrl     String   @unique @map("item_url")
@@ -212,12 +213,47 @@ model NewsItem {
   body        String?
   practicalImpact String? @map("practical_impact")
   relevance   String
+  category    String   @default("general")
   topic       String?
+  municipality String?
   contentHash String   @unique @map("content_hash")
   publishedAt DateTime @map("published_at")
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@map("news_items")
+}
+
+model NewsFeedItem {
+  id             String   @id @default(cuid())
+  contentHash    String   @unique @map("content_hash")
+  feedUrl        String   @map("feed_url")
+  sourceName     String   @map("source_name")
+  sourceUrl      String   @map("source_url")
+  title          String
+  link           String   @map("link")
+  snippet        String?  @map("snippet")
+  publishedAt    DateTime @map("published_at")
+  category       String?  @map("category")
+  relevanceScore Int      @default(0) @map("relevance_score")
+  matchedKeywords Json?   @map("matched_keywords")
+  selectedAt     DateTime? @map("selected_at")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([publishedAt, relevanceScore])
+  @@index([category, selectedAt])
+
+  @@map("news_feed_items")
+}
+
+model SystemSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_settings")
 }
 
 model EducationalTopic {

@@ -69,12 +69,16 @@ export type PromotionDetail = Promotion & {
 
 export type NewsItem = {
   id: string;
+  slug?: string | null;
   title: string;
   sourceName: string;
+  sourceUrl: string;
   summary?: string | null;
   body?: string | null;
   practicalImpact?: string | null;
   topic?: string | null;
+  category?: 'vpo' | 'alquiler' | 'ayudas' | 'normativa' | 'general';
+  municipality?: string | null;
   relevance: string;
   publishedAt: string;
 };

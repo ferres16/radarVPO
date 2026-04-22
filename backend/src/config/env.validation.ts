@@ -100,6 +100,24 @@ class EnvironmentVariables {
   NEWS_RSS_FEEDS?: string;
 
   @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(7)
+  NEWS_RSS_LOOKBACK_DAYS?: number;
+
+  @IsOptional()
+  @IsString()
+  OPENAI_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  OPENAI_MODEL?: string;
+
+  @IsOptional()
+  @IsUrl()
+  OPENAI_BASE_URL?: string;
+
+  @IsOptional()
   @IsString()
   TELEGRAM_BOT_TOKEN?: string;
 

@@ -116,34 +116,6 @@ async function main() {
     },
   });
 
-  await prisma.newsItem.createMany({
-    data: [
-      {
-        sourceName: 'Ajuntament Barcelona',
-        sourceUrl: 'https://ajuntament.barcelona.cat',
-        itemUrl: 'https://ajuntament.barcelona.cat/noticia-vpo-1',
-        title: 'Barcelona amplia parque de vivienda asequible',
-        rawText: 'Nuevas promociones VPO previstas para 2026',
-        summary: 'Se anuncian nuevas lineas de vivienda protegida en varios distritos.',
-        relevance: 'high',
-        contentHash: 'news-hash-1',
-        publishedAt: new Date('2026-04-14'),
-      },
-      {
-        sourceName: 'Generalitat',
-        sourceUrl: 'https://gencat.cat',
-        itemUrl: 'https://gencat.cat/noticia-vpo-2',
-        title: 'Nueva convocatoria de ayudas al alquiler social',
-        rawText: 'Ayudas dirigidas a colectivos vulnerables.',
-        summary: 'La convocatoria refuerza el acceso a vivienda protegida en Catalunya.',
-        relevance: 'medium',
-        contentHash: 'news-hash-2',
-        publishedAt: new Date('2026-04-13'),
-      },
-    ],
-    skipDuplicates: true,
-  });
-
   await prisma.educationalTopic.create({
     data: {
       title: 'Como preparar documentacion VPO',
