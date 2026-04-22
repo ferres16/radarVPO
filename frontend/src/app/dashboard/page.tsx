@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
-import { MobileNav } from '@/components/mobile-nav';
 import { NewsCard } from '@/components/news-card';
 import { PromotionCard } from '@/components/promotion-card';
 
@@ -25,7 +24,7 @@ export default async function DashboardPage({
   ]);
 
   return (
-    <div className="pb-20 md:pb-0">
+    <div>
       <main className="shell space-y-6">
         <header className="rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card">
           <h1 className="text-2xl font-bold text-[var(--ink)]">Dashboard Radar VPO</h1>
@@ -87,7 +86,6 @@ export default async function DashboardPage({
           </div>
         </section>
       </main>
-      <MobileNav />
     </div>
   );
 }

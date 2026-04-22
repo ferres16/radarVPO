@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
-import { MobileNav } from '@/components/mobile-nav';
 import { PromotionCard } from '@/components/promotion-card';
 
 function parseDate(value?: string | null) {
@@ -51,25 +50,19 @@ export default async function Home() {
     .filter((entry): entry is { promotion: (typeof alerts)[number]; window: NonNullable<ReturnType<typeof getUpcomingWindow>> } => Boolean(entry.window));
   const activeAlerts = upcoming.filter((entry) => entry.window.state === 'active');
 
+  const serviceTags = [
+    'Asesoria personalizada',
+    'Guia PDF de compra',
+    'Radar VPO Pro SMS',
+    'Alertas por cambios de estado',
+    'Checklist de documentacion',
+    'Seguimiento de plazos',
+  ];
+
   const stats = [
     { value: `${promotions.length}+`, label: 'Promociones publicadas' },
     { value: `${alerts.length}+`, label: 'Alertas seguidas' },
     { value: '24/7', label: 'Monitorización' },
-  ];
-
-  const steps = [
-    {
-      title: '1. Activa tu perfil',
-      text: 'Crea tu cuenta y define dónde buscas vivienda, qué tipo te interesa y qué límites tienes.',
-    },
-    {
-      title: '2. Sigue el radar',
-      text: 'Te mostramos nuevas promociones y alertas en una interfaz clara, sin ruido ni intermediarios.',
-    },
-    {
-      title: '3. Llega antes',
-      text: 'Revisa requisitos, documentos y plazos para no perder oportunidades reales de acceso.',
-    },
   ];
 
   const proBenefits = [
@@ -81,10 +74,24 @@ export default async function Home() {
   return (
     <div className="hero-bg min-h-screen pb-20 md:pb-0">
       <main className="shell space-y-5 py-3 md:py-6">
-        <section className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-          <article className="surface-card relative overflow-hidden p-5 md:p-6 animate-fade-up">
+        <section className="grid items-stretch gap-5 lg:grid-cols-[1.15fr_0.85fr]">
+          <article className="surface-card relative overflow-hidden p-5 md:h-full md:p-6 animate-fade-up">
             <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-[rgba(78,143,58,0.12)] blur-3xl" />
             <div className="absolute -bottom-10 left-1/2 h-32 w-32 rounded-full bg-[rgba(47,107,36,0.08)] blur-2xl" />
+            <div className="pointer-events-none absolute inset-0 hidden md:block">
+              {serviceTags.slice(0, 4).map((tag, index) => (
+                <span
+                  key={tag}
+                  className="absolute rounded-full border border-[rgba(78,143,58,0.25)] bg-white/80 px-3 py-1 text-[11px] font-semibold text-[var(--green-700)] shadow-sm"
+                  style={{
+                    top: `${18 + index * 12}%`,
+                    right: `${3 + (index % 2) * 10}%`,
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
 
             <div className="relative max-w-2xl">
               <span className="inline-flex rounded-full border border-[rgba(78,143,58,0.18)] bg-[rgba(78,143,58,0.08)] px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">
@@ -117,28 +124,11 @@ export default async function Home() {
                   </div>
                 ))}
               </div>
-
-              <div className="mt-5 rounded-3xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Cómo funciona</p>
-                <div className="mt-3 grid gap-3 lg:grid-cols-3">
-                  {steps.map((step, index) => (
-                    <div key={step.title} className="flex gap-3 rounded-2xl border border-[var(--stroke)] bg-white p-3 shadow-sm">
-                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--green-500)] text-sm font-black text-white">
-                        {index + 1}
-                      </span>
-                      <div>
-                        <p className="font-semibold text-[var(--ink)]">{step.title}</p>
-                        <p className="mt-1 text-sm text-[var(--ink-soft)]">{step.text}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
           </article>
 
-          <aside className="space-y-3 animate-fade-up-delay-1">
-            <div className="surface-card p-4">
+          <aside className="animate-fade-up-delay-1">
+            <div className="surface-card flex h-full flex-col p-4">
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Sección PRO</p>
               <h2 className="mt-2 text-xl font-black tracking-tight text-[var(--ink)]">Más rápido, más útil, más cerca de la oportunidad</h2>
               <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
@@ -166,6 +156,13 @@ export default async function Home() {
                 <p className="mt-2 text-sm text-white/75">
                   Activa el plan PRO para priorizar avisos y reducir el ruido al mínimo.
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                  {serviceTags.slice(4).map((tag) => (
+                    <span key={tag} className="rounded-full bg-white/10 px-3 py-1 font-semibold">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
           </aside>
@@ -201,59 +198,29 @@ export default async function Home() {
           )}
         </section>
 
-        <section className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
-          <article className="surface-card p-4 animate-fade-up-delay-2">
-            <div className="mb-4 flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Promociones recientes</p>
-                <h2 className="mt-1 text-xl font-black text-[var(--ink)]">Últimas 10 publicadas</h2>
-              </div>
-              <Link href="/promotions" className="text-sm font-semibold text-[var(--green-700)]">
-                Ver todas
-              </Link>
+        <section className="surface-card p-4 animate-fade-up-delay-2">
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Promociones recientes</p>
+              <h2 className="mt-1 text-xl font-black text-[var(--ink)]">Últimas 10 publicadas</h2>
             </div>
+            <Link href="/promotions" className="text-sm font-semibold text-[var(--green-700)]">
+              Ver todas
+            </Link>
+          </div>
 
-            {recentPromotions.length === 0 ? (
-              <EmptyState title="Sin promociones publicadas" description="Aún no hay promociones publicadas." />
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {recentPromotions.map((promotion) => (
-                  <PromotionCard key={promotion.id} promotion={promotion} />
-                ))}
-              </div>
-            )}
-          </article>
-
-          <article className="surface-card p-4 animate-fade-up-delay-2">
-            <div className="mb-4 flex items-end justify-between gap-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Foro</p>
-                <h2 className="mt-1 text-xl font-black text-[var(--ink)]">Comunidad y actualidad</h2>
-              </div>
-              <Link href="/news" className="text-sm font-semibold text-[var(--green-700)]">
-                Entrar al foro
-              </Link>
+          {recentPromotions.length === 0 ? (
+            <EmptyState title="Sin promociones publicadas" description="Aún no hay promociones publicadas." />
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {recentPromotions.map((promotion) => (
+                <PromotionCard key={promotion.id} promotion={promotion} />
+              ))}
             </div>
-
-            <div className="space-y-3">
-              <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-                <p className="text-sm font-semibold text-[var(--ink)]">Dudas frecuentes</p>
-                <p className="mt-1 text-sm text-[var(--ink-soft)]">Requisitos, plazos, documentación y pasos de inscripción explicados con lenguaje claro.</p>
-              </div>
-              <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-                <p className="text-sm font-semibold text-[var(--ink)]">Cambios normativos</p>
-                <p className="mt-1 text-sm text-[var(--ink-soft)]">Seguimiento del contexto de vivienda para entender qué cambia y cómo te afecta.</p>
-              </div>
-              <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-                <p className="text-sm font-semibold text-[var(--ink)]">Experiencias reales</p>
-                <p className="mt-1 text-sm text-[var(--ink-soft)]">Comparte y consulta experiencias de otras personas que están buscando vivienda en Catalunya.</p>
-              </div>
-            </div>
-          </article>
+          )}
         </section>
 
       </main>
-      <MobileNav />
     </div>
   );
 }
