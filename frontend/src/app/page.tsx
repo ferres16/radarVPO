@@ -117,6 +117,23 @@ export default async function Home() {
                   </div>
                 ))}
               </div>
+
+              <div className="mt-5 rounded-3xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Cómo funciona</p>
+                <div className="mt-3 grid gap-3 lg:grid-cols-3">
+                  {steps.map((step, index) => (
+                    <div key={step.title} className="flex gap-3 rounded-2xl border border-[var(--stroke)] bg-white p-3 shadow-sm">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--green-500)] text-sm font-black text-white">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <p className="font-semibold text-[var(--ink)]">{step.title}</p>
+                        <p className="mt-1 text-sm text-[var(--ink-soft)]">{step.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </article>
 
@@ -143,20 +160,12 @@ export default async function Home() {
                   Empezar gratis
                 </Link>
               </div>
-            </div>
-
-            <div className="surface-card p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Cómo funciona</p>
-              <div className="mt-3 space-y-2.5">
-                {steps.map((step, index) => (
-                  <div key={step.title} className="flex gap-3 rounded-2xl border border-[var(--stroke)] bg-white p-2.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--green-500)] text-sm font-black text-white">{index + 1}</span>
-                    <div>
-                      <p className="font-semibold text-[var(--ink)]">{step.title}</p>
-                      <p className="mt-1 text-sm text-[var(--ink-soft)]">{step.text}</p>
-                    </div>
-                  </div>
-                ))}
+              <div className="mt-4 rounded-2xl bg-[linear-gradient(135deg,#1e1f1c,#325b26)] p-4 text-white shadow-card">
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/70">Radar VPO PRO</p>
+                <p className="mt-2 text-base font-black leading-tight">Alertas, seguimiento y foco en una sola pantalla.</p>
+                <p className="mt-2 text-sm text-white/75">
+                  Activa el plan PRO para priorizar avisos y reducir el ruido al mínimo.
+                </p>
               </div>
             </div>
           </aside>
@@ -243,29 +252,6 @@ export default async function Home() {
           </article>
         </section>
 
-        <section className="surface-card p-4 animate-fade-up-delay-2">
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">PRO</p>
-              <h2 className="mt-1 text-xl font-black text-[var(--ink)]">Haz que el radar trabaje por ti</h2>
-            </div>
-            <Link href="/register" className="text-sm font-semibold text-[var(--green-700)]">
-              Activar PRO
-            </Link>
-          </div>
-
-          <div className="rounded-3xl bg-[linear-gradient(135deg,#1e1f1c,#325b26)] p-4 text-white shadow-card">
-            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/70">Radar VPO PRO</p>
-            <p className="mt-2 text-lg font-black leading-tight">Alertas, seguimiento y foco en una sola pantalla.</p>
-            <div className="mt-3 flex flex-wrap gap-2 text-sm">
-              {['WhatsApp alerts', 'VPO', 'alquiler asequible', 'prioridad'].map((badge) => (
-                <span key={badge} className="rounded-full bg-white/10 px-3 py-1 font-semibold">
-                  {badge}
-                </span>
-              ))}
-            </div>
-          </div>
-        </section>
       </main>
       <MobileNav />
     </div>
