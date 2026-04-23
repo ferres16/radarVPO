@@ -1,23 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { activeAlertWindowDates, withPromotionView } from '../common/promotion-view.util';
+import { estimatedPublicationVisibilityStart, withPromotionView } from '../common/promotion-view.util';
 
 @Injectable()
 export class AlertsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async upcoming() {
-    const { start, end } = activeAlertWindowDates();
+    const start = estimatedPublicationVisibilityStart();
 
     const alerts = await this.prisma.promotion.findMany({
       where: {
         status: 'pending_review',
-        alertDetectedAt: {
+        estimatedPublicationDate: {
           gte: start,
-          lte: end,
         },
       },
-      orderBy: [{ alertDetectedAt: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ estimatedPublicationDate: 'asc' }, { createdAt: 'desc' }],
       take: 100,
     });
 

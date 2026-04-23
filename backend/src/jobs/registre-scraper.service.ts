@@ -82,8 +82,10 @@ export class RegistreScraperService {
         : publicationDate ?? new Date();
       const isAlertEntry = entry.isAlertEntry;
       const nextStatus = isAlertEntry ? 'pending_review' : 'published_unreviewed';
-      const alertLeadDays = entry.alertLeadDays ?? 60;
-      const estimatedFromAlert = this.addDays(alertDate, alertLeadDays + 7);
+      const alertLeadDays = entry.alertLeadDays;
+      const estimatedFromAlert = alertLeadDays != null
+        ? this.addDays(alertDate, alertLeadDays)
+        : alertDate;
       const inferredMunicipality = this.inferMunicipality(`${entry.title}\n${rawText}`);
       const inferredPromoter = this.inferPromoter(rawText);
       const inferredType = this.guessPromotionType(`${entry.title}\n${rawText}`);
@@ -105,12 +107,12 @@ export class RegistreScraperService {
             autonomousCommunity: 'Catalunya',
             alertDetectedAt: alertDate,
             publishedAt: isAlertEntry ? undefined : publicationDate,
-            estimatedPublicationDate: isAlertEntry
-              ? estimatedFromAlert
-              : publicationDate,
+            estimatedPublicationDate: isAlertEntry ? estimatedFromAlert : publicationDate,
             statusMessage:
               isAlertEntry
-                ? `Alerta detectada. Se prevé publicación en ${alertLeadDays} días con 7 días de margen.`
+                ? alertLeadDays != null
+                  ? `Alerta detectada. Publicación estimada en ${alertLeadDays} días.`
+                  : 'Alerta detectada. Estamos revisando la fecha estimada de publicación.'
                 : 'Anuncio publicado. Estamos completando la información detallada.',
           },
           select: { id: true },
@@ -129,9 +131,7 @@ export class RegistreScraperService {
             promotionType: inferredType,
             alertDetectedAt: alertDate,
             publishedAt: isAlertEntry ? undefined : publicationDate,
-            estimatedPublicationDate: isAlertEntry
-              ? estimatedFromAlert
-              : publicationDate,
+            estimatedPublicationDate: isAlertEntry ? estimatedFromAlert : publicationDate,
             status:
               isAlertEntry
                 ? 'pending_review'
@@ -140,7 +140,9 @@ export class RegistreScraperService {
                   : nextStatus,
             statusMessage:
               isAlertEntry
-                ? `Alerta detectada. Se prevé publicación en ${alertLeadDays} días con 7 días de margen.`
+                ? alertLeadDays != null
+                  ? `Alerta detectada. Publicación estimada en ${alertLeadDays} días.`
+                  : 'Alerta detectada. Estamos revisando la fecha estimada de publicación.'
                 : 'Anuncio publicado. Estamos completando la información detallada.',
           },
         });

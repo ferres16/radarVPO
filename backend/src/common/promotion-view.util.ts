@@ -19,8 +19,6 @@ export function withPromotionView<T extends PromotionLike>(promotion: T) {
   };
 }
 
-export function activeAlertWindowDates(now = new Date()) {
-  const end = now;
-  const start = new Date(now.getTime() - 67 * 24 * 60 * 60 * 1000);
-  return { start, end };
+export function estimatedPublicationVisibilityStart(now = new Date()) {
+  return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 }
