@@ -7,21 +7,33 @@ function parseDate(value?: string | null) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function daysSinceAlert(alertDate?: string, fallbackAlertDate?: string) {
-  const reference = parseDate(alertDate) ?? parseDate(fallbackAlertDate);
+function daysUntilPublication(promotion: {
+  estimatedPublicationDate?: string | null;
+  alertDate?: string;
+  alertDetectedAt?: string;
+}) {
+  const estimatedPublicationDate = parseDate(promotion.estimatedPublicationDate);
+  if (estimatedPublicationDate) {
+    return Math.floor((estimatedPublicationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  }
+
+  const reference = parseDate(promotion.alertDate) ?? parseDate(promotion.alertDetectedAt);
   if (!reference) return null;
   return Math.floor((Date.now() - reference.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function publicationEtaText(daysSince: number) {
-  const daysToPublication = 60 - daysSince;
-  if (daysToPublication > 0) {
-    return `Faltan ${daysToPublication} días para la publicación estimada.`;
+function publicationEtaText(daysUntil?: number | null) {
+  if (daysUntil === null || daysUntil === undefined) {
+    return 'Sin fecha estimada disponible.';
   }
-  if (daysToPublication === 0) {
+
+  if (daysUntil > 0) {
+    return `Faltan ${daysUntil} días para la publicación estimada.`;
+  }
+  if (daysUntil === 0) {
     return 'Publicación estimada para hoy.';
   }
-  return `Publicación estimada vencida hace ${Math.abs(daysToPublication)} días.`;
+  return `Publicación estimada vencida hace ${Math.abs(daysUntil)} días.`;
 }
 
 export default async function AlertsPage() {
@@ -31,9 +43,9 @@ export default async function AlertsPage() {
     .filter((item) => item.type === 'alert')
     .map((item) => ({
       item,
-      daysSince: daysSinceAlert(item.alertDate, item.alertDetectedAt),
+      daysUntil: daysUntilPublication(item),
     }))
-    .filter((entry): entry is { item: (typeof alerts)[number]; daysSince: number } => entry.daysSince !== null && entry.daysSince >= 0 && entry.daysSince <= 67);
+    .filter((entry): entry is { item: (typeof alerts)[number]; daysUntil: number } => entry.daysUntil !== null && entry.daysUntil >= -67 && entry.daysUntil <= 67);
 
   return (
     <main className="shell space-y-6 pb-10">
@@ -53,12 +65,12 @@ export default async function AlertsPage() {
         <EmptyState title="Sin alertas activas" description="Ahora mismo no hay alertas dentro de la ventana 0-67 días." />
       ) : (
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {activeAlerts.map(({ item, daysSince }) => (
+          {activeAlerts.map(({ item, daysUntil }) => (
             <div key={item.id} className="rounded-2xl border border-[rgba(78,143,58,0.22)] bg-[linear-gradient(135deg,rgba(78,143,58,0.08),rgba(255,255,255,0.94))] p-4 shadow-card">
               <p className="text-base font-semibold text-[var(--ink)]">{item.title}</p>
               <p className="mt-2 text-sm text-[var(--ink-soft)]">{item.municipality || 'Catalunya'}</p>
               <p className="mt-3 rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm text-[var(--ink-soft)]">
-                {publicationEtaText(daysSince)}
+                {publicationEtaText(daysUntil)}
               </p>
             </div>
           ))}

@@ -9,22 +9,33 @@ function parseDate(value?: string | null) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function daysSinceAlert(alertDate?: string, fallbackAlertDate?: string) {
-  const reference = parseDate(alertDate) ?? parseDate(fallbackAlertDate);
+function daysUntilPublication(promotion: {
+  estimatedPublicationDate?: string | null;
+  alertDate?: string;
+  alertDetectedAt?: string;
+}) {
+  const estimatedPublicationDate = parseDate(promotion.estimatedPublicationDate);
+  if (estimatedPublicationDate) {
+    return Math.floor((estimatedPublicationDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  }
+
+  const reference = parseDate(promotion.alertDate) ?? parseDate(promotion.alertDetectedAt);
   if (!reference) return null;
-  const days = Math.floor((Date.now() - reference.getTime()) / (1000 * 60 * 60 * 24));
-  return days;
+  return Math.floor((Date.now() - reference.getTime()) / (1000 * 60 * 60 * 24));
 }
 
-function publicationEtaText(daysSince: number) {
-  const daysToPublication = 60 - daysSince;
-  if (daysToPublication > 0) {
-    return `faltan ${daysToPublication} días para la publicación estimada.`;
+function publicationEtaText(daysUntil?: number | null) {
+  if (daysUntil === null || daysUntil === undefined) {
+    return 'sin fecha estimada disponible.';
   }
-  if (daysToPublication === 0) {
+
+  if (daysUntil > 0) {
+    return `faltan ${daysUntil} días para la publicación estimada.`;
+  }
+  if (daysUntil === 0) {
     return 'publicación estimada para hoy.';
   }
-  return `publicación estimada vencida hace ${Math.abs(daysToPublication)} días.`;
+  return `publicación estimada vencida hace ${Math.abs(daysUntil)} días.`;
 }
 
 export default async function Home() {
@@ -37,10 +48,10 @@ export default async function Home() {
   const activeAlerts = alerts
     .filter((promotion) => promotion.type === 'alert')
     .map((promotion) => {
-      const days = daysSinceAlert(promotion.alertDate, promotion.alertDetectedAt);
-      return { promotion, daysSince: days };
+      const daysUntil = daysUntilPublication(promotion);
+      return { promotion, daysUntil };
     })
-    .filter((entry): entry is { promotion: (typeof alerts)[number]; daysSince: number } => entry.daysSince !== null && entry.daysSince >= 0 && entry.daysSince <= 67)
+    .filter((entry): entry is { promotion: (typeof alerts)[number]; daysUntil: number } => entry.daysUntil !== null && entry.daysUntil >= -67 && entry.daysUntil <= 67)
     .slice(0, 3);
 
   const serviceTags = [
@@ -179,11 +190,11 @@ export default async function Home() {
             </div>
           ) : (
             <div className="grid gap-3 md:grid-cols-3">
-              {activeAlerts.map(({ promotion, daysSince }) => (
+              {activeAlerts.map(({ promotion, daysUntil }) => (
                 <div key={promotion.id} className="rounded-2xl border border-[rgba(78,143,58,0.24)] bg-[linear-gradient(135deg,rgba(78,143,58,0.12),rgba(255,255,255,0.92))] p-4 shadow-card transition hover:-translate-y-0.5">
                   <p className="text-sm font-semibold text-[var(--ink)]">{promotion.title}</p>
                   <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                    {promotion.municipality || 'Catalunya'} · {publicationEtaText(daysSince)}
+                    {promotion.municipality || 'Catalunya'} · {publicationEtaText(daysUntil)}
                   </p>
                 </div>
               ))}
