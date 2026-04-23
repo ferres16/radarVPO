@@ -24,6 +24,33 @@ function toJsonString(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
 
+function normalizeMasterJson(value: {
+  importantDates?: unknown;
+  requirements?: unknown;
+  economicInfo?: unknown;
+  contactInfo?: unknown;
+  feesAndReservations?: unknown;
+}) {
+  return JSON.stringify(
+    {
+      fechas: value.importantDates || {},
+      requisitos: value.requirements || {},
+      economia: value.economicInfo || {},
+      contacto: value.contactInfo || {},
+      cuotas_reservas: value.feesAndReservations || {},
+    },
+    null,
+    2,
+  );
+}
+
+function parseNumberInput(value: string) {
+  if (!value.trim()) return undefined;
+  const normalized = value.replace(/\./g, '').replace(',', '.');
+  const parsed = Number(normalized);
+  return Number.isNaN(parsed) ? undefined : parsed;
+}
+
 export default function AdminPromotionEditPage() {
   const params = useParams<{ id: string }>();
   const id = params.id;
@@ -42,12 +69,7 @@ export default function AdminPromotionEditPage() {
     totalHomes: '',
     statusMessage: '',
     publicDescription: '',
-    availableUnitsText: '',
-    importantDatesJson: '{}',
-    requirementsJson: '{}',
-    economicInfoJson: '{}',
-    feesAndReservationsJson: '{}',
-    contactInfoJson: '{}',
+    masterJson: '{}',
   });
 
   async function refresh() {
@@ -66,12 +88,13 @@ export default function AdminPromotionEditPage() {
           : String(data.totalHomes),
       statusMessage: data.statusMessage || '',
       publicDescription: data.publicDescription || '',
-      availableUnitsText: data.availableUnitsText || '',
-      importantDatesJson: toJsonString(data.importantDates),
-      requirementsJson: toJsonString(data.requirements),
-      economicInfoJson: toJsonString(data.economicInfo),
-      feesAndReservationsJson: toJsonString(data.feesAndReservations),
-      contactInfoJson: toJsonString(data.contactInfo),
+      masterJson: normalizeMasterJson({
+        importantDates: data.importantDates,
+        requirements: data.requirements,
+        economicInfo: data.economicInfo,
+        contactInfo: data.contactInfo,
+        feesAndReservations: data.feesAndReservations,
+      }),
     });
   }
 
@@ -96,12 +119,13 @@ export default function AdminPromotionEditPage() {
               : String(data.totalHomes),
           statusMessage: data.statusMessage || '',
           publicDescription: data.publicDescription || '',
-          availableUnitsText: data.availableUnitsText || '',
-          importantDatesJson: toJsonString(data.importantDates),
-          requirementsJson: toJsonString(data.requirements),
-          economicInfoJson: toJsonString(data.economicInfo),
-          feesAndReservationsJson: toJsonString(data.feesAndReservations),
-          contactInfoJson: toJsonString(data.contactInfo),
+          masterJson: normalizeMasterJson({
+            importantDates: data.importantDates,
+            requirements: data.requirements,
+            economicInfo: data.economicInfo,
+            contactInfo: data.contactInfo,
+            feesAndReservations: data.feesAndReservations,
+          }),
         });
       } finally {
         if (active) setLoading(false);
@@ -116,6 +140,14 @@ export default function AdminPromotionEditPage() {
   const units = useMemo(() => promotion?.units || [], [promotion]);
 
   async function savePromotion() {
+    let masterJsonParsed: Record<string, unknown>;
+    try {
+      masterJsonParsed = JSON.parse(form.masterJson || '{}') as Record<string, unknown>;
+    } catch {
+      alert('JSON principal invalido. Revisa el formato antes de guardar.');
+      return;
+    }
+
     setSaving(true);
     try {
       await api.updateBackofficePromotion(id, {
@@ -128,12 +160,11 @@ export default function AdminPromotionEditPage() {
         totalHomes: form.totalHomes ? Number(form.totalHomes) : undefined,
         statusMessage: form.statusMessage,
         publicDescription: form.publicDescription,
-        availableUnitsText: form.availableUnitsText,
-        importantDatesJson: form.importantDatesJson,
-        requirementsJson: form.requirementsJson,
-        economicInfoJson: form.economicInfoJson,
-        feesAndReservationsJson: form.feesAndReservationsJson,
-        contactInfoJson: form.contactInfoJson,
+        importantDatesJson: toJsonString(masterJsonParsed.fechas || {}),
+        requirementsJson: toJsonString(masterJsonParsed.requisitos || {}),
+        economicInfoJson: toJsonString(masterJsonParsed.economia || {}),
+        feesAndReservationsJson: toJsonString(masterJsonParsed.cuotas_reservas || {}),
+        contactInfoJson: toJsonString(masterJsonParsed.contacto || {}),
       });
       await refresh();
       alert('Promocion actualizada');
@@ -255,19 +286,19 @@ export default function AdminPromotionEditPage() {
             </select>
             <textarea className="min-h-20 w-full rounded-lg border p-2" value={form.statusMessage} onChange={(e) => setForm((f) => ({ ...f, statusMessage: e.target.value }))} placeholder="Mensaje visible para usuario" />
             <textarea className="min-h-28 w-full rounded-lg border p-2" value={form.publicDescription} onChange={(e) => setForm((f) => ({ ...f, publicDescription: e.target.value }))} placeholder="Descripcion publica" />
-            <textarea className="min-h-40 w-full rounded-lg border p-2" value={form.availableUnitsText} onChange={(e) => setForm((f) => ({ ...f, availableUnitsText: e.target.value }))} placeholder="Recuadro viviendas disponibles (texto plano)" />
           </div>
         </article>
 
         <article className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
           <h2 className="text-lg font-semibold text-[var(--ink)]">Bloques JSON</h2>
-          <p className="mt-1 text-xs text-[var(--ink-soft)]">Edita por bloques: fechas, requisitos, economia, contacto y cuotas/reservas.</p>
-          <div className="mt-3 space-y-2">
-            <textarea className="min-h-24 w-full rounded-lg border p-2 font-mono text-xs" value={form.importantDatesJson} onChange={(e) => setForm((f) => ({ ...f, importantDatesJson: e.target.value }))} />
-            <textarea className="min-h-24 w-full rounded-lg border p-2 font-mono text-xs" value={form.requirementsJson} onChange={(e) => setForm((f) => ({ ...f, requirementsJson: e.target.value }))} />
-            <textarea className="min-h-24 w-full rounded-lg border p-2 font-mono text-xs" value={form.economicInfoJson} onChange={(e) => setForm((f) => ({ ...f, economicInfoJson: e.target.value }))} />
-            <textarea className="min-h-24 w-full rounded-lg border p-2 font-mono text-xs" value={form.feesAndReservationsJson} onChange={(e) => setForm((f) => ({ ...f, feesAndReservationsJson: e.target.value }))} />
-            <textarea className="min-h-24 w-full rounded-lg border p-2 font-mono text-xs" value={form.contactInfoJson} onChange={(e) => setForm((f) => ({ ...f, contactInfoJson: e.target.value }))} />
+          <p className="mt-1 text-xs text-[var(--ink-soft)]">Pega un JSON maestro con las claves: fechas, requisitos, economia, contacto y cuotas_reservas.</p>
+          <div className="mt-3">
+            <textarea
+              className="min-h-[360px] w-full rounded-lg border p-3 font-mono text-xs"
+              value={form.masterJson}
+              onChange={(e) => setForm((f) => ({ ...f, masterJson: e.target.value }))}
+              placeholder={`{\n  "fechas": {},\n  "requisitos": {},\n  "economia": {},\n  "contacto": {},\n  "cuotas_reservas": {}\n}`}
+            />
           </div>
         </article>
       </section>
@@ -282,24 +313,38 @@ export default function AdminPromotionEditPage() {
           <table className="w-full min-w-[900px] text-sm">
             <thead>
               <tr className="border-b">
-                <th className="p-2 text-left">Unidad</th>
+                <th className="p-2 text-left">Escalera</th>
                 <th className="p-2 text-left">Planta</th>
                 <th className="p-2 text-left">Puerta</th>
-                <th className="p-2 text-left">Hab</th>
-                <th className="p-2 text-left">Alquiler</th>
+                <th className="p-2 text-left">Entrada/Comedor</th>
+                <th className="p-2 text-left">Habitaciones</th>
+                <th className="p-2 text-left">Cocina</th>
+                <th className="p-2 text-left">Baños (E/S/C)</th>
+                <th className="p-2 text-left">Otras piezas</th>
+                <th className="p-2 text-left">Ocup. maxima</th>
+                <th className="p-2 text-left">Sup. util</th>
+                <th className="p-2 text-left">Sup. comp.</th>
                 <th className="p-2 text-left">Reserva</th>
+                <th className="p-2 text-left">P.V. max.</th>
                 <th className="p-2 text-left">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {units.map((unit) => (
                 <tr key={unit.id} className="border-b align-top">
-                  <td className="p-2"><input className="w-32 rounded border p-1" defaultValue={unit.unitLabel || ''} onBlur={(e) => updateUnit(unit.id, { unitLabel: e.target.value })} /></td>
+                  <td className="p-2"><input className="w-24 rounded border p-1" defaultValue={unit.stair || ''} onBlur={(e) => updateUnit(unit.id, { stair: e.target.value })} /></td>
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={unit.floor || ''} onBlur={(e) => updateUnit(unit.id, { floor: e.target.value })} /></td>
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={unit.door || ''} onBlur={(e) => updateUnit(unit.id, { door: e.target.value })} /></td>
-                  <td className="p-2"><input className="w-16 rounded border p-1" defaultValue={unit.bedrooms || ''} onBlur={(e) => updateUnit(unit.id, { bedrooms: Number(e.target.value || 0) || undefined })} /></td>
-                  <td className="p-2"><input className="w-24 rounded border p-1" defaultValue={String(unit.monthlyRent || '')} onBlur={(e) => updateUnit(unit.id, { monthlyRent: Number(e.target.value || 0) || undefined })} /></td>
-                  <td className="p-2"><input className="w-24 rounded border p-1" defaultValue={String(unit.reservation || '')} onBlur={(e) => updateUnit(unit.id, { reservation: Number(e.target.value || 0) || undefined })} /></td>
+                  <td className="p-2"><input className="w-32 rounded border p-1" defaultValue={String(unit.extraData?.entradaComedor || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), entradaComedor: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={unit.bedrooms || ''} onBlur={(e) => updateUnit(unit.id, { bedrooms: parseNumberInput(e.target.value) })} /></td>
+                  <td className="p-2"><input className="w-24 rounded border p-1" defaultValue={String(unit.extraData?.cocina || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), cocina: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-24 rounded border p-1" defaultValue={String(unit.extraData?.banosEntradaSalonCocina || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), banosEntradaSalonCocina: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-28 rounded border p-1" defaultValue={String(unit.extraData?.otrasPiezas || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), otrasPiezas: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.extraData?.ocupacionMaxima || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), ocupacionMaxima: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.usefulAreaM2 || '')} onBlur={(e) => updateUnit(unit.id, { usefulAreaM2: parseNumberInput(e.target.value) })} /></td>
+                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.builtAreaM2 || '')} onBlur={(e) => updateUnit(unit.id, { builtAreaM2: parseNumberInput(e.target.value) })} /></td>
+                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.reservation || '')} onBlur={(e) => updateUnit(unit.id, { reservation: parseNumberInput(e.target.value) })} /></td>
+                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.priceSale || '')} onBlur={(e) => updateUnit(unit.id, { priceSale: parseNumberInput(e.target.value) })} /></td>
                   <td className="p-2">
                     <div className="flex flex-wrap gap-1">
                       <button className="rounded border px-2 py-1 text-xs" onClick={() => moveUnit(unit.id, -1)}>Subir</button>

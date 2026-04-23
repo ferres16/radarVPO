@@ -68,6 +68,24 @@ export default async function PromotionDetailPage({
               {printJson(promotion.requirements)}
             </pre>
           </div>
+          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Economia</h2>
+            <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
+              {printJson(promotion.economicInfo)}
+            </pre>
+          </div>
+          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Contacto</h2>
+            <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
+              {printJson(promotion.contactInfo)}
+            </pre>
+          </div>
+          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 md:col-span-2">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Cuotas y reservas</h2>
+            <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
+              {printJson(promotion.feesAndReservations)}
+            </pre>
+          </div>
         </div>
 
         <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
@@ -79,39 +97,42 @@ export default async function PromotionDetailPage({
               <table className="w-full min-w-[760px] text-sm">
                 <thead>
                   <tr className="border-b border-[var(--stroke)]">
-                    <th className="p-2 text-left">Unidad</th>
+                    <th className="p-2 text-left">Escalera</th>
                     <th className="p-2 text-left">Planta</th>
                     <th className="p-2 text-left">Puerta</th>
-                    <th className="p-2 text-left">Hab.</th>
-                    <th className="p-2 text-left">Alquiler</th>
+                    <th className="p-2 text-left">Entrada/Comedor</th>
+                    <th className="p-2 text-left">Habitaciones</th>
+                    <th className="p-2 text-left">Cocina</th>
+                    <th className="p-2 text-left">Baños (E/S/C)</th>
+                    <th className="p-2 text-left">Otras piezas</th>
+                    <th className="p-2 text-left">Ocup. max.</th>
+                    <th className="p-2 text-left">Sup. útil</th>
+                    <th className="p-2 text-left">Sup. comp.</th>
                     <th className="p-2 text-left">Reserva</th>
+                    <th className="p-2 text-left">P.V. max.</th>
                   </tr>
                 </thead>
                 <tbody>
                   {promotion.units.map((row) => (
                     <tr key={row.id} className="border-b border-[var(--stroke)]">
-                      <td className="p-2">{row.unitLabel || 'n/d'}</td>
+                      <td className="p-2">{row.stair || 'n/d'}</td>
                       <td className="p-2">{row.floor || 'n/d'}</td>
                       <td className="p-2">{row.door || 'n/d'}</td>
+                      <td className="p-2">{String(row.extraData?.entradaComedor || 'n/d')}</td>
                       <td className="p-2">{row.bedrooms ?? 'n/d'}</td>
-                      <td className="p-2">{row.monthlyRent ?? 'n/d'}</td>
+                      <td className="p-2">{String(row.extraData?.cocina || 'n/d')}</td>
+                      <td className="p-2">{String(row.extraData?.banosEntradaSalonCocina || row.bathrooms || 'n/d')}</td>
+                      <td className="p-2">{String(row.extraData?.otrasPiezas || row.notes || 'n/d')}</td>
+                      <td className="p-2">{String(row.extraData?.ocupacionMaxima || 'n/d')}</td>
+                      <td className="p-2">{row.usefulAreaM2 ?? 'n/d'}</td>
+                      <td className="p-2">{row.builtAreaM2 ?? 'n/d'}</td>
                       <td className="p-2">{row.reservation ?? 'n/d'}</td>
+                      <td className="p-2">{row.priceSale ?? 'n/d'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          )}
-        </div>
-
-        <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Viviendas disponibles (texto plano)</h2>
-          {promotion.availableUnitsText ? (
-            <pre className="mt-2 whitespace-pre-wrap text-sm text-[var(--ink)]">
-              {promotion.availableUnitsText}
-            </pre>
-          ) : (
-            <p className="mt-2 text-sm text-[var(--ink-soft)]">Aun no hay bloque de texto manual cargado.</p>
           )}
         </div>
 

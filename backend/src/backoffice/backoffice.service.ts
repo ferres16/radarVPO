@@ -379,17 +379,28 @@ export class BackofficeService {
     }
 
     const delimiter = lines[0].includes('\t') ? '\t' : ',';
-    const headers = lines[0].split(delimiter).map((value) => value.trim().toLowerCase());
+    const normalizeHeader = (value: string) =>
+      value
+        .trim()
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '');
+    const headers = lines[0].split(delimiter).map((value) => normalizeHeader(value));
     const rows = lines.slice(1).map((line) =>
       line.split(delimiter).map((value) => value.trim()),
     );
 
     const created = await this.prisma.$transaction(
       rows.map((cells, index) => {
-        const get = (name: string) => {
-          const position = headers.indexOf(name);
-          if (position < 0) return undefined;
-          return cells[position];
+        const get = (...names: string[]) => {
+          for (const name of names) {
+            const position = headers.indexOf(name);
+            if (position >= 0) {
+              return cells[position];
+            }
+          }
+          return undefined;
         };
 
         const parseNumber = (value?: string) => {
@@ -399,23 +410,38 @@ export class BackofficeService {
           return Number.isNaN(parsed) ? undefined : parsed;
         };
 
+        const rawExtraData = {
+          entradaComedor: get('entradacomedor', 'em', 'entrada', 'comedor'),
+          cocina: get('cocina', 'cuina', 'c'),
+          banosEntradaSalonCocina: get('banosentradasaloncocina', 'ch', 'emc'),
+          otrasPiezas: get('otraspiezas', 'altrespeces'),
+          ocupacionMaxima: get('ocupacionmaxima', 'ocupmaxima', 'ocupmax', 'ocupaciomaxima'),
+        };
+        const cleanedExtraData = Object.fromEntries(
+          Object.entries(rawExtraData).filter(([, value]) => value !== undefined && value !== ''),
+        );
+
         return this.prisma.promotionUnit.create({
           data: {
             promotionId,
             rowOrder: index,
-            unitLabel: get('unitlabel') || get('unidad') || get('label'),
-            building: get('building') || get('bloque'),
-            stair: get('stair') || get('escalera'),
-            floor: get('floor') || get('planta'),
-            door: get('door') || get('puerta'),
-            bedrooms: parseNumber(get('bedrooms') || get('habitaciones')),
-            bathrooms: parseNumber(get('bathrooms') || get('banos')),
-            usefulAreaM2: parseNumber(get('usefulaream2') || get('m2utiles')),
-            builtAreaM2: parseNumber(get('builtaream2') || get('m2construidos')),
-            priceSale: parseNumber(get('pricesale') || get('precioventa')),
-            monthlyRent: parseNumber(get('monthlyrent') || get('alquilermensual')),
-            reservation: parseNumber(get('reservation') || get('reserva')),
-            notes: get('notes') || get('observaciones'),
+            unitLabel: get('unitlabel', 'unidad', 'label', 'ord', 'ordre'),
+            building: get('building', 'bloque', 'edificio'),
+            stair: get('stair', 'escalera', 'esc'),
+            floor: get('floor', 'planta', 'pla'),
+            door: get('door', 'puerta', 'por'),
+            bedrooms: parseNumber(get('bedrooms', 'habitaciones', 'hab', 'h')),
+            bathrooms: parseNumber(get('bathrooms', 'banos', 'banys')),
+            usefulAreaM2: parseNumber(get('usefulaream2', 'm2utiles', 'suputilinterior')),
+            builtAreaM2: parseNumber(get('builtaream2', 'm2construidos', 'supcompres')),
+            priceSale: parseNumber(get('pricesale', 'precioventa', 'pvmaxim', 'pvmax')), 
+            monthlyRent: parseNumber(get('monthlyrent', 'alquilermensual', 'lloguermensual')),
+            reservation: parseNumber(get('reservation', 'reserva')),
+            notes: get('notes', 'observaciones', 'altrespeces'),
+            extraData:
+              Object.keys(cleanedExtraData).length > 0
+                ? (cleanedExtraData as Prisma.InputJsonValue)
+                : undefined,
           },
         });
       }),
