@@ -8,6 +8,7 @@ type NewsEntry = {
   detailUrl: string;
   publishedAt?: Date;
   isAlertEntry: boolean;
+  alertLeadDays?: number;
   isAnnouncement: boolean;
 };
 
@@ -79,9 +80,8 @@ export class RegistreScraperService {
       const alertDate = publicationDate ?? new Date();
       const isAlertEntry = entry.isAlertEntry;
       const nextStatus = isAlertEntry ? 'pending_review' : 'published_unreviewed';
-      const estimatedFromAlert = publicationDate
-        ? this.addDays(publicationDate, 60)
-        : null;
+      const alertLeadDays = entry.alertLeadDays ?? 60;
+      const estimatedFromAlert = this.addDays(alertDate, alertLeadDays + 7);
       const inferredMunicipality = this.inferMunicipality(`${entry.title}\n${rawText}`);
       const inferredPromoter = this.inferPromoter(rawText);
       const inferredType = this.guessPromotionType(`${entry.title}\n${rawText}`);
@@ -108,7 +108,7 @@ export class RegistreScraperService {
               : publicationDate,
             statusMessage:
               isAlertEntry
-                ? 'Alerta detectada. Esta promoción puede publicarse próximamente.'
+                ? `Alerta detectada. Se prevé publicación en ${alertLeadDays} días con 7 días de margen.`
                 : 'Anuncio publicado. Estamos completando la información detallada.',
           },
           select: { id: true },
@@ -136,7 +136,7 @@ export class RegistreScraperService {
                 : nextStatus,
             statusMessage:
               isAlertEntry
-                ? 'Alerta detectada. Esta promoción puede publicarse próximamente.'
+                ? `Alerta detectada. Se prevé publicación en ${alertLeadDays} días con 7 días de margen.`
                 : 'Anuncio publicado. Estamos completando la información detallada.',
           },
         });
@@ -249,6 +249,7 @@ export class RegistreScraperService {
           detailUrl,
           publishedAt,
           isAlertEntry: this.looksLikeAlertEntry(contextText),
+          alertLeadDays: this.extractAlertLeadDays(contextText),
           isAnnouncement: this.looksLikeAnnouncement(contextText),
         });
         seenUrls.add(canonicalUrl);
@@ -289,6 +290,7 @@ export class RegistreScraperService {
         detailUrl,
         publishedAt,
         isAlertEntry: this.looksLikeAlertEntry(`${title}\n${containerText}`),
+        alertLeadDays: this.extractAlertLeadDays(`${title}\n${containerText}`),
         isAnnouncement: this.looksLikeAnnouncement(`${title}\n${containerText}`),
       });
       seenUrls.add(canonicalUrl);
@@ -449,6 +451,14 @@ export class RegistreScraperService {
       /en el termini de \d+\s*dies es publicar[àa] l['’]anunci/.test(normalized) ||
       /60\s*d[ií]as|60\s*dies|seixanta\s*dies/.test(normalized)
     );
+  }
+
+  private extractAlertLeadDays(text: string): number | undefined {
+    const normalized = text.toLowerCase();
+    const match = normalized.match(/en el termini de\s*(\d+)\s*dies|en el plazo de\s*(\d+)\s*d[ií]as/);
+    const value = Number(match?.[1] ?? match?.[2]);
+
+    return Number.isFinite(value) && value > 0 ? value : undefined;
   }
 
   private looksLikeAnnouncement(text: string): boolean {
