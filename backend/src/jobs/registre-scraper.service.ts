@@ -77,7 +77,9 @@ export class RegistreScraperService {
       const publicationDate =
         entry.publishedAt ??
         this.extractDate(rawText);
-      const alertDate = publicationDate ?? new Date();
+      const alertDate = publicationDate && publicationDate.getTime() > Date.now()
+        ? new Date()
+        : publicationDate ?? new Date();
       const isAlertEntry = entry.isAlertEntry;
       const nextStatus = isAlertEntry ? 'pending_review' : 'published_unreviewed';
       const alertLeadDays = entry.alertLeadDays ?? 60;
@@ -402,7 +404,8 @@ export class RegistreScraperService {
       return undefined;
     }
 
-    const parsed = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+    // Use start-of-day UTC to avoid creating future timestamps for same-day notices.
+    const parsed = new Date(Date.UTC(year, month - 1, day, 0, 0, 0));
     return Number.isNaN(parsed.getTime()) ? undefined : parsed;
   }
 
