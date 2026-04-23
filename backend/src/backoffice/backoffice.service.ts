@@ -411,11 +411,17 @@ export class BackofficeService {
         };
 
         const rawExtraData = {
-          entradaComedor: get('entradacomedor', 'em', 'entrada', 'comedor'),
-          cocina: get('cocina', 'cuina', 'c'),
-          banosEntradaSalonCocina: get('banosentradasaloncocina', 'ch', 'emc'),
+          regUs: get('regus', 'regimus', 'regimenuso', 'regimus'),
+          tip: get('tip', 'tipologia', 'tipus'),
+          em: get('em', 'entradacomedor', 'entrada', 'comedor'),
+          h6sh8: get('6sh8', 'h6sh8'),
+          h8sh12: get('8sh12', 'h8sh12'),
+          hgt12: get('h12', 'hgt12'),
+          c: get('c', 'cocina', 'cuina'),
+          ch: get('ch'),
+          emc: get('emc', 'emc'),
           otrasPiezas: get('otraspiezas', 'altrespeces'),
-          ocupacionMaxima: get('ocupacionmaxima', 'ocupmaxima', 'ocupmax', 'ocupaciomaxima'),
+          ocupacionMaxima: get('ocupacionmaxima', 'ocupmaxima', 'ocupmax', 'ocupaciomaxima', 'ocupmaxima'),
         };
         const cleanedExtraData = Object.fromEntries(
           Object.entries(rawExtraData).filter(([, value]) => value !== undefined && value !== ''),

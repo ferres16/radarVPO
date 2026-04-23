@@ -94,34 +94,46 @@ export default async function PromotionDetailPage({
             <p className="mt-2 text-sm text-[var(--ink-soft)]">Pendiente de revision manual.</p>
           ) : (
             <div className="mt-3 overflow-x-auto">
-              <table className="w-full min-w-[760px] text-sm">
+              <table className="w-full min-w-[1500px] text-sm">
                 <thead>
                   <tr className="border-b border-[var(--stroke)]">
+                    <th className="p-2 text-left">Ord.</th>
+                    <th className="p-2 text-left">Règ. us</th>
+                    <th className="p-2 text-left">Tip.</th>
                     <th className="p-2 text-left">Escalera</th>
                     <th className="p-2 text-left">Planta</th>
                     <th className="p-2 text-left">Puerta</th>
-                    <th className="p-2 text-left">Entrada/Comedor</th>
-                    <th className="p-2 text-left">Habitaciones</th>
-                    <th className="p-2 text-left">Cocina</th>
-                    <th className="p-2 text-left">Baños (E/S/C)</th>
+                    <th className="p-2 text-left">E-M</th>
+                    <th className="p-2 text-left">6sH &lt; 8</th>
+                    <th className="p-2 text-left">8sH &lt; 12</th>
+                    <th className="p-2 text-left">H &gt; 12</th>
+                    <th className="p-2 text-left">C</th>
+                    <th className="p-2 text-left">CH</th>
+                    <th className="p-2 text-left">E-M-C</th>
                     <th className="p-2 text-left">Otras piezas</th>
                     <th className="p-2 text-left">Ocup. max.</th>
-                    <th className="p-2 text-left">Sup. útil</th>
+                    <th className="p-2 text-left">Sup. útil interior</th>
                     <th className="p-2 text-left">Sup. comp.</th>
-                    <th className="p-2 text-left">Reserva</th>
+                    <th className="p-2 text-left">Res</th>
                     <th className="p-2 text-left">P.V. max.</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {promotion.units.map((row) => (
+                  {promotion.units.map((row, index) => (
                     <tr key={row.id} className="border-b border-[var(--stroke)]">
+                      <td className="p-2">{index + 1}</td>
+                      <td className="p-2">{String(row.extraData?.regUs || row.extraData?.regimenUso || 'n/d')}</td>
+                      <td className="p-2">{String(row.extraData?.tip || row.extraData?.tipologia || 'n/d')}</td>
                       <td className="p-2">{row.stair || 'n/d'}</td>
                       <td className="p-2">{row.floor || 'n/d'}</td>
                       <td className="p-2">{row.door || 'n/d'}</td>
-                      <td className="p-2">{String(row.extraData?.entradaComedor || 'n/d')}</td>
-                      <td className="p-2">{row.bedrooms ?? 'n/d'}</td>
-                      <td className="p-2">{String(row.extraData?.cocina || 'n/d')}</td>
-                      <td className="p-2">{String(row.extraData?.banosEntradaSalonCocina || row.bathrooms || 'n/d')}</td>
+                      <td className="p-2">{String(row.extraData?.em || row.extraData?.entradaComedor || 'n/d')}</td>
+                      <td className="p-2">{String(row.extraData?.h6sh8 || row.extraData?.h6sHlt8 || 'n/d')}</td>
+                      <td className="p-2">{String(row.extraData?.h8sh12 || row.extraData?.h8sHlt12 || 'n/d')}</td>
+                      <td className="p-2">{String(row.extraData?.hgt12 || row.extraData?.hGt12 || 'n/d')}</td>
+                      <td className="p-2">{String(row.extraData?.c || row.extraData?.cocina || 'n/d')}</td>
+                      <td className="p-2">{String(row.extraData?.ch || 'n/d')}</td>
+                      <td className="p-2">{String(row.extraData?.emc || row.extraData?.banosEntradaSalonCocina || row.bathrooms || 'n/d')}</td>
                       <td className="p-2">{String(row.extraData?.otrasPiezas || row.notes || 'n/d')}</td>
                       <td className="p-2">{String(row.extraData?.ocupacionMaxima || 'n/d')}</td>
                       <td className="p-2">{row.usefulAreaM2 ?? 'n/d'}</td>

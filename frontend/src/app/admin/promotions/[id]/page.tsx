@@ -310,49 +310,52 @@ export default function AdminPromotionEditPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-sm">
+          <table className="w-full min-w-[1500px] text-sm">
             <thead>
               <tr className="border-b">
+                <th className="p-2 text-left">Ord.</th>
+                <th className="p-2 text-left">Règ. us</th>
+                <th className="p-2 text-left">Tip.</th>
                 <th className="p-2 text-left">Escalera</th>
                 <th className="p-2 text-left">Planta</th>
                 <th className="p-2 text-left">Puerta</th>
-                <th className="p-2 text-left">Entrada/Comedor</th>
-                <th className="p-2 text-left">Habitaciones</th>
-                <th className="p-2 text-left">Cocina</th>
-                <th className="p-2 text-left">Baños (E/S/C)</th>
+                <th className="p-2 text-left">E-M</th>
+                <th className="p-2 text-left">6sH &lt; 8</th>
+                <th className="p-2 text-left">8sH &lt; 12</th>
+                <th className="p-2 text-left">H &gt; 12</th>
+                <th className="p-2 text-left">C</th>
+                <th className="p-2 text-left">CH</th>
+                <th className="p-2 text-left">E-M-C</th>
                 <th className="p-2 text-left">Otras piezas</th>
                 <th className="p-2 text-left">Ocup. maxima</th>
-                <th className="p-2 text-left">Sup. util</th>
+                <th className="p-2 text-left">Sup. util interior</th>
                 <th className="p-2 text-left">Sup. comp.</th>
-                <th className="p-2 text-left">Reserva</th>
+                <th className="p-2 text-left">Res</th>
                 <th className="p-2 text-left">P.V. max.</th>
-                <th className="p-2 text-left">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {units.map((unit) => (
+              {units.map((unit, index) => (
                 <tr key={unit.id} className="border-b align-top">
+                  <td className="p-2 text-xs font-semibold">{index + 1}</td>
+                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.extraData?.regUs || unit.extraData?.regimenUso || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), regUs: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-14 rounded border p-1" defaultValue={String(unit.extraData?.tip || unit.extraData?.tipologia || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), tip: e.target.value } })} /></td>
                   <td className="p-2"><input className="w-24 rounded border p-1" defaultValue={unit.stair || ''} onBlur={(e) => updateUnit(unit.id, { stair: e.target.value })} /></td>
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={unit.floor || ''} onBlur={(e) => updateUnit(unit.id, { floor: e.target.value })} /></td>
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={unit.door || ''} onBlur={(e) => updateUnit(unit.id, { door: e.target.value })} /></td>
-                  <td className="p-2"><input className="w-32 rounded border p-1" defaultValue={String(unit.extraData?.entradaComedor || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), entradaComedor: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={unit.bedrooms || ''} onBlur={(e) => updateUnit(unit.id, { bedrooms: parseNumberInput(e.target.value) })} /></td>
-                  <td className="p-2"><input className="w-24 rounded border p-1" defaultValue={String(unit.extraData?.cocina || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), cocina: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-24 rounded border p-1" defaultValue={String(unit.extraData?.banosEntradaSalonCocina || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), banosEntradaSalonCocina: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.em || unit.extraData?.entradaComedor || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), em: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.h6sh8 || unit.extraData?.h6sHlt8 || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), h6sh8: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.h8sh12 || unit.extraData?.h8sHlt12 || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), h8sh12: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.hgt12 || unit.extraData?.hGt12 || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), hgt12: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.c || unit.extraData?.cocina || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), c: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.ch || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), ch: e.target.value } })} /></td>
+                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.emc || unit.extraData?.banosEntradaSalonCocina || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), emc: e.target.value } })} /></td>
                   <td className="p-2"><input className="w-28 rounded border p-1" defaultValue={String(unit.extraData?.otrasPiezas || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), otrasPiezas: e.target.value } })} /></td>
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.extraData?.ocupacionMaxima || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), ocupacionMaxima: e.target.value } })} /></td>
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.usefulAreaM2 || '')} onBlur={(e) => updateUnit(unit.id, { usefulAreaM2: parseNumberInput(e.target.value) })} /></td>
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.builtAreaM2 || '')} onBlur={(e) => updateUnit(unit.id, { builtAreaM2: parseNumberInput(e.target.value) })} /></td>
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.reservation || '')} onBlur={(e) => updateUnit(unit.id, { reservation: parseNumberInput(e.target.value) })} /></td>
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.priceSale || '')} onBlur={(e) => updateUnit(unit.id, { priceSale: parseNumberInput(e.target.value) })} /></td>
-                  <td className="p-2">
-                    <div className="flex flex-wrap gap-1">
-                      <button className="rounded border px-2 py-1 text-xs" onClick={() => moveUnit(unit.id, -1)}>Subir</button>
-                      <button className="rounded border px-2 py-1 text-xs" onClick={() => moveUnit(unit.id, 1)}>Bajar</button>
-                      <button className="rounded border px-2 py-1 text-xs" onClick={() => duplicateUnit(unit.id)}>Duplicar</button>
-                      <button className="rounded border px-2 py-1 text-xs text-red-700" onClick={() => removeUnit(unit.id)}>Eliminar</button>
-                    </div>
-                  </td>
                 </tr>
               ))}
             </tbody>
