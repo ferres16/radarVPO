@@ -5,7 +5,7 @@ const services = [
     eyebrow: 'Servicio 01',
     title: 'Asesoria personalizada',
     copy:
-      'Te ayudamos a leer bases, validar requisitos y preparar la solicitud correcta antes de que se cierre el plazo.',
+      'Te acompañamos de principio a fin: revisamos bases, resolvemos tus dudas y te ayudamos a preparar la solicitud correcta antes de que se cierre el plazo.',
     cta: 'Contactar ahora',
     href: 'mailto:soporte@radarvpo.com?subject=Asesoria%20Radar%20VPO',
     accent: 'from-emerald-50 to-lime-50',
@@ -28,6 +28,15 @@ const services = [
     href: '/register',
     accent: 'from-lime-50 to-white',
   },
+  {
+    eyebrow: 'Servicio 04',
+    title: 'Extraccion de PDF o texto a JSON',
+    copy:
+      'Analizamos tu documento y devolvemos un unico JSON valido con informacion de fechas, contacto, economia, requisitos y cuotas o reservas, sin bloques vacios.',
+    cta: 'Solicitar extraccion',
+    href: 'mailto:soporte@radarvpo.com?subject=Extraccion%20PDF%20a%20JSON',
+    accent: 'from-emerald-50 to-white',
+  },
 ];
 
 export default function ServicesPage() {
@@ -41,11 +50,11 @@ export default function ServicesPage() {
           Servicios pensados para moverte antes que nadie en vivienda publica.
         </h1>
         <p className="mt-4 max-w-2xl text-base text-[var(--ink-soft)]">
-          Asesoria, guia PDF y alertas Pro por SMS en una misma experiencia. Un enfoque directo para personas que quieren ir al grano.
+          Asesoria, resolucion de dudas, acompanamiento del proceso, guia PDF, extraccion de datos y alertas Pro por SMS en una misma experiencia.
         </p>
       </section>
 
-      <section className="mt-6 grid gap-4 lg:grid-cols-3">
+      <section className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
         {services.map((service) => (
           <article
             key={service.title}
@@ -70,8 +79,8 @@ export default function ServicesPage() {
           <h3 className="text-lg font-bold text-[var(--ink)]">Proceso rápido</h3>
           <ol className="mt-3 space-y-2 text-sm text-[var(--ink-soft)]">
             <li>1. Nos escribes con tu caso o tu convocatoria objetivo.</li>
-            <li>2. Revisamos requisitos, plazos y el estado real de la promoción.</li>
-            <li>3. Te devolvemos un plan claro y accionable.</li>
+            <li>2. Revisamos requisitos, plazos, documentos y respondemos tus dudas en claro.</li>
+            <li>3. Te devolvemos un plan accionable y te acompanamos durante todo el proceso.</li>
           </ol>
         </article>
         <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card">
@@ -83,6 +92,23 @@ export default function ServicesPage() {
             Activar interés
           </Link>
         </article>
+      </section>
+
+      <section className="mt-6 rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card">
+        <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Formato de salida para extraccion</p>
+        <h2 className="mt-2 text-xl font-black text-[var(--ink)]">JSON unico, limpio y listo para usar</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--ink-soft)]">
+          A partir de un PDF o texto, devolvemos un unico JSON valido. Si una seccion no tiene datos, se elimina. No se inventa informacion ni se repiten estructuras.
+        </p>
+        <pre className="mt-4 overflow-x-auto rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-xs leading-6 text-[var(--ink)]">
+{`{
+  "fechas": {},
+  "contacto": {},
+  "economia": {},
+  "requisitos": {},
+  "cuotas_reservas": {}
+}`}
+        </pre>
       </section>
     </main>
   );

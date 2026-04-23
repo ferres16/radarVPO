@@ -23,6 +23,9 @@ export default async function Home() {
 
   const serviceTags = [
     'Asesoria personalizada',
+    'Respuestas a dudas 1:1',
+    'Acompañamiento durante todo el proceso',
+    'Extraccion PDF o texto a JSON',
     'Guia PDF de compra',
     'Radar VPO Pro SMS',
     'Alertas por cambios de estado',
@@ -94,6 +97,9 @@ export default async function Home() {
                     </span>
                   ))}
                 </div>
+                <p className="mt-3 text-sm leading-6 text-(--ink-soft)">
+                  Ademas de alertas, resolvemos dudas reales y te guiamos paso a paso para que no te quedes fuera por un detalle de requisitos o plazos.
+                </p>
               </div>
             </div>
           </article>
@@ -137,6 +143,24 @@ export default async function Home() {
               </div>
             </div>
           </aside>
+        </section>
+
+        <section className="surface-card p-4 animate-fade-up-delay-2">
+          <div className="rounded-3xl border border-[rgba(78,143,58,0.24)] bg-[linear-gradient(140deg,rgba(78,143,58,0.09),rgba(255,255,255,0.98))] p-5">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--green-700)">Nuevo servicio</p>
+            <h2 className="mt-2 text-xl font-black text-(--ink)">Extraccion de datos de PDF o texto a JSON unico</h2>
+            <p className="mt-2 text-sm leading-6 text-(--ink-soft)">
+              Convertimos documentos en un JSON limpio y util con las claves que mas importan: fechas, contacto, economia, requisitos y cuotas o reservas.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/services" className="rounded-full bg-(--green-500) px-4 py-2 text-sm font-semibold text-white transition hover:bg-(--green-700)">
+                Solicitar extraccion
+              </Link>
+              <Link href="mailto:soporte@radarvpo.com?subject=Extraccion%20PDF%20a%20JSON" className="rounded-full border border-(--stroke) bg-white px-4 py-2 text-sm font-semibold text-(--ink) transition hover:bg-(--bg-eco)">
+                Enviar documento
+              </Link>
+            </div>
+          </div>
         </section>
 
         <section className="surface-card p-4 animate-fade-up-delay-2">
