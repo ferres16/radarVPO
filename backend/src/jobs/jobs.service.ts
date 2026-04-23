@@ -18,12 +18,14 @@ export class JobsService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
+    await this.checkPromotions();
+
     if ((process.env.NEWS_ENABLED ?? 'true') === 'true') {
       await this.generateDailyHousingNews();
     }
   }
 
-  @Cron(process.env.CRON_CHECK_PROMOTIONS || CronExpression.EVERY_30_MINUTES, {
+  @Cron(process.env.CRON_CHECK_PROMOTIONS || CronExpression.EVERY_5_MINUTES, {
     timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
   })
   async checkPromotions() {

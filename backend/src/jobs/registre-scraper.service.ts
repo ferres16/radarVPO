@@ -7,7 +7,7 @@ type NewsEntry = {
   title: string;
   detailUrl: string;
   publishedAt?: Date;
-  isSixtyDayAlert: boolean;
+  isAlertEntry: boolean;
   isAnnouncement: boolean;
 };
 
@@ -77,7 +77,7 @@ export class RegistreScraperService {
         entry.publishedAt ??
         this.extractDate(rawText);
       const alertDate = publicationDate ?? new Date();
-      const isAlertEntry = entry.isSixtyDayAlert;
+      const isAlertEntry = entry.isAlertEntry;
       const nextStatus = isAlertEntry ? 'pending_review' : 'published_unreviewed';
       const estimatedFromAlert = publicationDate
         ? this.addDays(publicationDate, 60)
@@ -248,7 +248,7 @@ export class RegistreScraperService {
           title,
           detailUrl,
           publishedAt,
-          isSixtyDayAlert: this.looksLikeSixtyDayAlert(contextText),
+          isAlertEntry: this.looksLikeAlertEntry(contextText),
           isAnnouncement: this.looksLikeAnnouncement(contextText),
         });
         seenUrls.add(canonicalUrl);
@@ -288,7 +288,7 @@ export class RegistreScraperService {
         title,
         detailUrl,
         publishedAt,
-        isSixtyDayAlert: this.looksLikeSixtyDayAlert(`${title}\n${containerText}`),
+        isAlertEntry: this.looksLikeAlertEntry(`${title}\n${containerText}`),
         isAnnouncement: this.looksLikeAnnouncement(`${title}\n${containerText}`),
       });
       seenUrls.add(canonicalUrl);
@@ -442,9 +442,13 @@ export class RegistreScraperService {
     }
   }
 
-  private looksLikeSixtyDayAlert(text: string): boolean {
+  private looksLikeAlertEntry(text: string): boolean {
     const normalized = text.toLowerCase();
-    return /60\s*d[ií]as|60\s*dies|seixanta\s*dies/.test(normalized);
+    return (
+      /\balerta\b/.test(normalized) ||
+      /en el termini de \d+\s*dies es publicar[àa] l['’]anunci/.test(normalized) ||
+      /60\s*d[ií]as|60\s*dies|seixanta\s*dies/.test(normalized)
+    );
   }
 
   private looksLikeAnnouncement(text: string): boolean {
