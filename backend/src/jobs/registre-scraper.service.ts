@@ -131,9 +131,11 @@ export class RegistreScraperService {
               ? estimatedFromAlert
               : publicationDate,
             status:
-              existing && ['published_reviewed', 'archived'].includes((existing as { status?: string }).status || '')
-                ? undefined
-                : nextStatus,
+              isAlertEntry
+                ? 'pending_review'
+                : existing && ['published_reviewed', 'archived'].includes((existing as { status?: string }).status || '')
+                  ? undefined
+                  : nextStatus,
             statusMessage:
               isAlertEntry
                 ? `Alerta detectada. Se prevé publicación en ${alertLeadDays} días con 7 días de margen.`
