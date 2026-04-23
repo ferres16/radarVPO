@@ -10,7 +10,6 @@ on:
 jobs:
   deploy-backend-railway:
     runs-on: ubuntu-latest
-    if: ${{ secrets.RAILWAY_TOKEN != '' && secrets.RAILWAY_SERVICE_ID != '' }}
 
     steps:
       - name: Checkout
@@ -25,7 +24,6 @@ jobs:
 
   deploy-frontend-vercel:
     runs-on: ubuntu-latest
-    if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
 
     steps:
       - name: Checkout
