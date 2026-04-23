@@ -36,7 +36,7 @@ export class PromotionsService {
 
     const items = await this.prisma.promotion.findMany({
       where,
-      orderBy: [{ alertDetectedAt: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
       take: 10,
       include: {
         documents: {
