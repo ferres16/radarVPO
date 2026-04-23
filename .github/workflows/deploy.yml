@@ -10,20 +10,39 @@ on:
 jobs:
   deploy-backend-railway:
     runs-on: ubuntu-latest
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate Railway secrets
+        id: railway_secrets
+        run: |
+          if [ -z "${RAILWAY_TOKEN}" ] || [ -z "${RAILWAY_SERVICE_ID}" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping Railway deploy: missing RAILWAY_TOKEN or RAILWAY_SERVICE_ID"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install Railway CLI
+        if: steps.railway_secrets.outputs.enabled == 'true'
+        run: npm i -g @railway/cli
+
       - name: Deploy backend to Railway
-        uses: bervProject/railway-deploy@v1.3.0
-        with:
-          railway_token: ${{ secrets.RAILWAY_TOKEN }}
-          service: ${{ secrets.RAILWAY_SERVICE_ID }}
-          detach: true
+        if: steps.railway_secrets.outputs.enabled == 'true'
+        run: railway up --service "$RAILWAY_SERVICE_ID" --detach
+        working-directory: backend
 
   deploy-frontend-vercel:
     runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
     steps:
       - name: Checkout
@@ -37,23 +56,27 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
+      - name: Validate Vercel secrets
+        id: vercel_secrets
+        run: |
+          if [ -z "${VERCEL_TOKEN}" ] || [ -z "${VERCEL_ORG_ID}" ] || [ -z "${VERCEL_PROJECT_ID}" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping Vercel deploy: missing VERCEL_TOKEN or VERCEL_ORG_ID or VERCEL_PROJECT_ID"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Pull Vercel environment
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.vercel_secrets.outputs.enabled == 'true'
+        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
         working-directory: frontend
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Build frontend
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.vercel_secrets.outputs.enabled == 'true'
+        run: vercel build --prod --token=$VERCEL_TOKEN
         working-directory: frontend
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: Deploy frontend
-        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        if: steps.vercel_secrets.outputs.enabled == 'true'
+        run: vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
         working-directory: frontend
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
