@@ -10,6 +10,7 @@ const STATUSES = ['pending_review', 'published_unreviewed', 'published_reviewed'
 export default function AdminPage() {
   const [overview, setOverview] = useState<BackofficeOverview | null>(null);
   const [promotions, setPromotions] = useState<PromotionDetail[]>([]);
+  const [publicPromotionIds, setPublicPromotionIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -18,13 +19,15 @@ export default function AdminPage() {
 
     (async () => {
       try {
-        const [nextOverview, nextPromotions] = await Promise.all([
+        const [nextOverview, nextPromotions, publicPromotions] = await Promise.all([
           api.getBackofficeOverview(),
           api.getBackofficePromotions(),
+          api.getPromotions(),
         ]);
         if (!active) return;
         setOverview(nextOverview);
         setPromotions(nextPromotions);
+        setPublicPromotionIds(new Set(publicPromotions.map((promotion) => promotion.id)));
       } catch (err) {
         if (!active) return;
         setError(err instanceof Error ? err.message : 'No se pudo cargar el panel de admin');
@@ -64,7 +67,9 @@ export default function AdminPage() {
 
   const grouped = {
     pending_review: promotions.filter((p) => p.status === 'pending_review'),
-    published_unreviewed: promotions.filter((p) => p.status === 'published_unreviewed'),
+    published_unreviewed: promotions.filter(
+      (p) => p.status === 'published_unreviewed' && publicPromotionIds.has(p.id),
+    ),
     published_reviewed: promotions.filter((p) => p.status === 'published_reviewed'),
     archived: promotions.filter((p) => p.status === 'archived'),
   };
@@ -122,6 +127,9 @@ export default function AdminPage() {
                   </Link>
                 </div>
               ))}
+              {grouped[status].length === 0 ? (
+                <p className="text-sm text-[var(--ink-soft)]">Sin promociones en este estado.</p>
+              ) : null}
             </div>
           </article>
         ))}
