@@ -105,7 +105,7 @@ export default function AdminPage() {
               {status.replace('_', ' ')} ({grouped[status].length})
             </h2>
             <div className="mt-3 space-y-2">
-              {grouped[status].slice(0, 8).map((promotion) => (
+              {grouped[status].map((promotion) => (
                 <div key={promotion.id} className="rounded-xl border border-[var(--stroke)] p-3 text-sm">
                   <p className="font-semibold text-[var(--ink)]">{promotion.title}</p>
                   <p className="text-[var(--ink-soft)]">
@@ -122,9 +122,6 @@ export default function AdminPage() {
                   </Link>
                 </div>
               ))}
-              {grouped[status].length === 0 ? (
-                <p className="text-sm text-[var(--ink-soft)]">Sin promociones en este estado.</p>
-              ) : null}
             </div>
           </article>
         ))}
