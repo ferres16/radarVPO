@@ -197,6 +197,14 @@ export default function AdminPromotionEditPage() {
     await refresh();
   }
 
+  async function removeAllUnits() {
+    const accepted = window.confirm('Se eliminaran todas las filas de la tabla de viviendas. ¿Continuar?');
+    if (!accepted) return;
+
+    await api.deleteAllBackofficeUnits(id);
+    await refresh();
+  }
+
   async function duplicateUnit(unitId: string) {
     await api.duplicateBackofficeUnit(id, unitId);
     await refresh();
@@ -306,7 +314,16 @@ export default function AdminPromotionEditPage() {
       <section className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[var(--ink)]">Tabla de viviendas</h2>
-          <button className="rounded-lg bg-[var(--green-500)] px-3 py-2 text-xs font-semibold text-white" onClick={createUnit}>Anadir fila</button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100"
+              onClick={removeAllUnits}
+            >
+              Eliminar todas
+            </button>
+            <button className="rounded-lg bg-[var(--green-500)] px-3 py-2 text-xs font-semibold text-white" onClick={createUnit}>Anadir fila</button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -332,6 +349,7 @@ export default function AdminPromotionEditPage() {
                 <th className="p-2 text-left">Sup. comp.</th>
                 <th className="p-2 text-left">Res</th>
                 <th className="p-2 text-left">P.V. max.</th>
+                <th className="p-2 text-left">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -356,6 +374,19 @@ export default function AdminPromotionEditPage() {
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.builtAreaM2 || '')} onBlur={(e) => updateUnit(unit.id, { builtAreaM2: parseNumberInput(e.target.value) })} /></td>
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.reservation || '')} onBlur={(e) => updateUnit(unit.id, { reservation: parseNumberInput(e.target.value) })} /></td>
                   <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.priceSale || '')} onBlur={(e) => updateUnit(unit.id, { priceSale: parseNumberInput(e.target.value) })} /></td>
+                  <td className="p-2">
+                    <button
+                      type="button"
+                      className="rounded-md border border-red-300 bg-red-50 px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-100"
+                      onClick={() => {
+                        const accepted = window.confirm('¿Eliminar esta fila?');
+                        if (!accepted) return;
+                        void removeUnit(unit.id);
+                      }}
+                    >
+                      Eliminar
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

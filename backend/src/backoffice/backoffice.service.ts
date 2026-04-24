@@ -306,6 +306,14 @@ export class BackofficeService {
     return { deleted: true };
   }
 
+  async deleteAllUnits(promotionId: string) {
+    await this.ensurePromotion(promotionId);
+    const deleted = await this.prisma.promotionUnit.deleteMany({
+      where: { promotionId },
+    });
+    return { deleted: true, count: deleted.count };
+  }
+
   async duplicateUnit(promotionId: string, unitId: string) {
     const existing = await this.ensureUnit(promotionId, unitId);
     const maxOrder = await this.prisma.promotionUnit.aggregate({

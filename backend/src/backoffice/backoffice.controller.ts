@@ -130,6 +130,11 @@ export class BackofficeController {
     return this.backofficeService.deleteUnit(promotionId, unitId);
   }
 
+  @Delete('promotions/:id/units')
+  deleteAllUnits(@Param('id') promotionId: string) {
+    return this.backofficeService.deleteAllUnits(promotionId);
+  }
+
   @Post('promotions/:id/units/:unitId/duplicate')
   duplicateUnit(
     @Param('id') promotionId: string,

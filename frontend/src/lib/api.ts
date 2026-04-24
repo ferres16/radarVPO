@@ -145,6 +145,10 @@ export const api = {
     request<{ deleted: boolean }>(`/backoffice/promotions/${id}/units/${unitId}`, {
       method: 'DELETE',
     }),
+  deleteAllBackofficeUnits: (id: string) =>
+    request<{ deleted: boolean; count: number }>(`/backoffice/promotions/${id}/units`, {
+      method: 'DELETE',
+    }),
   duplicateBackofficeUnit: (id: string, unitId: string) =>
     request<PromotionUnit>(`/backoffice/promotions/${id}/units/${unitId}/duplicate`, {
       method: 'POST',

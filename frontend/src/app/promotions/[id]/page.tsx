@@ -1,13 +1,92 @@
 import { notFound } from 'next/navigation';
 import { api } from '@/lib/api';
 
-function printJson(value: unknown) {
-  if (!value) return 'n/d';
+type JsonMap = Record<string, unknown>;
+
+function isJsonMap(value: unknown): value is JsonMap {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function stringifyValue(value: unknown) {
+  if (value === null || value === undefined || value === '') return 'n/d';
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 'n/d';
+    const allPrimitive = value.every(
+      (item) => item === null || ['string', 'number', 'boolean'].includes(typeof item),
+    );
+
+    if (allPrimitive) {
+      return value.map((item) => (item === null ? 'n/d' : String(item))).join(' · ');
+    }
+  }
+
   try {
     return JSON.stringify(value, null, 2);
   } catch {
     return 'n/d';
   }
+}
+
+function prettyLabel(key: string) {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function DataBlock({
+  title,
+  payload,
+  wide,
+}: {
+  title: string;
+  payload: unknown;
+  wide?: boolean;
+}) {
+  const isMap = isJsonMap(payload);
+  const entries = isMap ? Object.entries(payload) : [];
+
+  return (
+    <section
+      className={`rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 ${wide ? 'md:col-span-2' : ''}`}
+    >
+      <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">{title}</h2>
+
+      {!isMap || entries.length === 0 ? (
+        <p className="mt-2 text-sm text-[var(--ink-soft)]">Sin datos disponibles.</p>
+      ) : (
+        <dl className="mt-3 space-y-2">
+          {entries.map(([key, value]) => {
+            const printable = stringifyValue(value);
+            const formattedKey = prettyLabel(key);
+            const isComplex = typeof value === 'object' && value !== null;
+
+            return (
+              <div
+                key={key}
+                className="rounded-xl border border-[var(--stroke)] bg-white/80 px-3 py-2"
+              >
+                <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--green-700)]">
+                  {formattedKey}
+                </dt>
+                {isComplex ? (
+                  <dd className="mt-1 overflow-x-auto rounded-lg bg-[var(--bg-app)] p-2 font-mono text-xs text-[var(--ink)]">
+                    <pre className="whitespace-pre-wrap">{printable}</pre>
+                  </dd>
+                ) : (
+                  <dd className="mt-1 text-sm text-[var(--ink)]">{printable}</dd>
+                )}
+              </div>
+            );
+          })}
+        </dl>
+      )}
+    </section>
+  );
 }
 
 export default async function PromotionDetailPage({
@@ -56,36 +135,11 @@ export default async function PromotionDetailPage({
         </div>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Fechas</h2>
-            <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
-              {printJson(promotion.importantDates)}
-            </pre>
-          </div>
-          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Requisitos</h2>
-            <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
-              {printJson(promotion.requirements)}
-            </pre>
-          </div>
-          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Economia</h2>
-            <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
-              {printJson(promotion.economicInfo)}
-            </pre>
-          </div>
-          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Contacto</h2>
-            <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
-              {printJson(promotion.contactInfo)}
-            </pre>
-          </div>
-          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 md:col-span-2">
-            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Cuotas y reservas</h2>
-            <pre className="mt-2 whitespace-pre-wrap text-xs text-[var(--ink)]">
-              {printJson(promotion.feesAndReservations)}
-            </pre>
-          </div>
+          <DataBlock title="Fechas" payload={promotion.importantDates} />
+          <DataBlock title="Requisitos" payload={promotion.requirements} />
+          <DataBlock title="Economia" payload={promotion.economicInfo} />
+          <DataBlock title="Contacto" payload={promotion.contactInfo} />
+          <DataBlock title="Cuotas y reservas" payload={promotion.feesAndReservations} wide />
         </div>
 
         <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
