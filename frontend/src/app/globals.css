@@ -1,15 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --green-500: #4E8F3A;
-  --green-700: #2F6B24;
-  --green-100: #EDF6E8;
-  --bg-eco: #EAF4E4;
-  --bg-app: #F7F8F5;
+  --green-500: #2f9b75;
+  --green-700: #167055;
+  --green-100: #e7f7f0;
+  --cyan-500: #36bdf8;
+  --cyan-700: #0f7497;
+  --bg-eco: #e8f6f1;
+  --bg-app: #f4f8fb;
   --surface: #FFFFFF;
-  --stroke: #E3E7DE;
-  --ink: #1E1F1C;
-  --ink-soft: #5E6558;
+  --stroke: #dbe5ea;
+  --ink: #101828;
+  --ink-soft: #55606c;
   --background: var(--bg-app);
   --foreground: var(--ink);
 }
@@ -20,12 +22,24 @@
   --font-sans: var(--font-inter);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background:
-    radial-gradient(circle at top, rgba(78, 143, 58, 0.08), transparent 30%),
-    linear-gradient(180deg, #fbfcfa 0%, var(--background) 100%);
+    radial-gradient(circle at top left, rgba(54, 189, 248, 0.10), transparent 28%),
+    radial-gradient(circle at top right, rgba(78, 143, 58, 0.10), transparent 30%),
+    linear-gradient(180deg, #f9fcfe 0%, var(--background) 100%);
   color: var(--foreground);
   font-family: var(--font-inter), sans-serif;
+}
+
+h1,
+h2,
+h3,
+.display-type {
+  font-family: var(--font-display), var(--font-inter), sans-serif;
 }
 
 .shell {
@@ -38,9 +52,9 @@ body {
 
 .hero-bg {
   background:
-    radial-gradient(circle at 18% 20%, rgba(78, 143, 58, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at 78% 0%, rgba(47, 107, 36, 0.08) 0%, transparent 32%),
-    linear-gradient(180deg, #f8faf6 0%, #eef5ea 100%);
+    radial-gradient(circle at 18% 20%, rgba(54, 189, 248, 0.12) 0%, transparent 36%),
+    radial-gradient(circle at 78% 0%, rgba(47, 107, 36, 0.10) 0%, transparent 32%),
+    linear-gradient(180deg, #f7fbfe 0%, #eef5f8 100%);
 }
 
 .chip {
@@ -54,15 +68,15 @@ body {
 }
 
 .shadow-card {
-  box-shadow: 0 10px 30px rgba(30, 31, 28, 0.07);
+  box-shadow: 0 10px 30px rgba(16, 24, 40, 0.08);
 }
 
 .surface-card {
   border: 1px solid var(--stroke);
   border-radius: 1.5rem;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 10px 30px rgba(30, 31, 28, 0.07);
-  backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 16px 36px rgba(16, 24, 40, 0.08);
+  backdrop-filter: blur(16px);
 }
 
 @keyframes fade-up {
@@ -129,4 +143,9 @@ body {
 
 .animate-float-slow-delay {
   animation: float-slow 12s ease-in-out infinite 1s;
+}
+
+::selection {
+  background: rgba(54, 189, 248, 0.22);
+  color: var(--ink);
 }

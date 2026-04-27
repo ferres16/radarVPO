@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Space_Grotesk } from "next/font/google";
 import { TopNav } from "@/components/top-nav";
 import "./globals.css";
 
@@ -8,9 +9,14 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-display",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "Radar VPO",
-  description: "Promociones VPO/HPO y alertas en Catalunya y Espana",
+  description: "Asesoria personalizada, seguimiento individualizado y noticias de vivienda en Catalunya y Espana",
 };
 
 export default function RootLayout({
@@ -19,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${inter.variable} h-full antialiased`}>
+    <html lang="es" className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col pt-16 md:pt-20">
         <TopNav />
         {children}

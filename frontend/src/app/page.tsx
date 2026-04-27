@@ -1,17 +1,16 @@
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { EmptyState } from '@/components/empty-state';
-import { PromotionCard } from '@/components/promotion-card';
+import { NewsCard } from '@/components/news-card';
 import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
 import { getDaysRemaining, shouldShowAlert } from '@/lib/alert-countdown';
 
 export default async function Home() {
-  const [promotions, alerts] = await Promise.all([
-    api.getPromotions().catch(() => []),
+  const [alerts, news] = await Promise.all([
     api.getUpcomingAlerts().catch(() => []),
+    api.getNews().catch(() => []),
   ]);
 
-  const recentPromotions = promotions.slice(0, 10);
+  const latestNews = news.slice(0, 3);
   const activeAlerts = alerts
     .filter((promotion) => promotion.type === 'alert')
     .map((promotion) => {
@@ -23,26 +22,26 @@ export default async function Home() {
 
   const serviceTags = [
     'Asesoria personalizada',
+    'Seguimiento individualizado',
     'Respuestas a dudas 1:1',
     'Acompañamiento durante todo el proceso',
-    'Extraccion PDF o texto a JSON',
-    'Guia PDF de compra',
+    'Prioridad en plazos y cambios',
     'Radar VPO Pro SMS',
-    'Alertas por cambios de estado',
+    'Noticias diarias relevantes',
     'Checklist de documentacion',
     'Seguimiento de plazos',
   ];
 
   const stats = [
-    { value: `${promotions.length}+`, label: 'Promociones publicadas' },
-    { value: `${alerts.length}+`, label: 'Alertas seguidas' },
-    { value: '24/7', label: 'Monitorización' },
+    { value: '1:1', label: 'Asesoría personalizada' },
+    { value: 'Diaria', label: 'Actualidad y noticias' },
+    { value: '24/7', label: 'Seguimiento activo' },
   ];
 
   const proBenefits = [
-    'Alertas antes que nadie en promociones nuevas y cambios de estado.',
-    'Seguimiento priorizado de VPO, vivienda pública y alquiler asequible.',
-    'Avisos preparados para WhatsApp y notificaciones rápidas.',
+    'Te ayudamos a interpretar requisitos, plazos y documentación sin ruido.',
+    'Seguimiento individualizado para no depender solo de la alerta genérica.',
+    'Noticias y cambios clave para actuar antes en vivienda protegida.',
   ];
 
   return (
@@ -50,26 +49,24 @@ export default async function Home() {
       <main className="shell space-y-5 py-3 md:py-6">
         <section className="grid items-stretch gap-5 lg:grid-cols-[1.15fr_0.85fr]">
           <article className="surface-card relative overflow-hidden p-5 md:h-full md:p-6 animate-fade-up">
-            <div className="absolute right-0 top-0 h-40 w-40 rounded-full bg-[rgba(78,143,58,0.12)] blur-3xl" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.14),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(78,143,58,0.12),transparent_35%)]" />
+            <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-[rgba(56,189,248,0.12)] blur-3xl" />
             <div className="absolute -bottom-10 left-1/2 h-32 w-32 rounded-full bg-[rgba(47,107,36,0.08)] blur-2xl" />
 
             <div className="relative max-w-2xl">
-              <span className="inline-flex rounded-full border border-[rgba(78,143,58,0.18)] bg-[rgba(78,143,58,0.08)] px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-(--green-700)">
+              <span className="inline-flex rounded-full border border-[rgba(56,189,248,0.20)] bg-[rgba(56,189,248,0.10)] px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-(--cyan-700)">
                 Radar VPO Catalunya
               </span>
-              <h1 className="mt-3 text-3xl font-black leading-[0.96] tracking-tight text-(--ink) md:text-5xl">
-                Encuentra VPO antes que nadie.
+              <h1 className="mt-3 text-3xl font-black leading-[0.96] tracking-tight text-(--ink) md:text-5xl display-type">
+                Asesoría y seguimiento individualizado para vivienda protegida.
               </h1>
               <p className="mt-3 max-w-xl text-sm leading-6 text-(--ink-soft) md:text-base">
-                Centralizamos promociones, alertas y comunidad de vivienda en Catalunya para que puedas reaccionar antes y preparar mejor cada solicitud.
+                Centralizamos asesoría, noticias y seguimiento activo en Catalunya para que tomes decisiones con más criterio, menos ruido y mejores tiempos.
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3">
                 <Link href="/register" className="rounded-full bg-(--green-500) px-5 py-2.5 text-sm font-semibold text-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-(--green-700)">
-                  Activar alertas
-                </Link>
-                <Link href="/promotions" className="rounded-full border border-(--stroke) bg-white px-5 py-2.5 text-sm font-semibold text-(--ink) shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-(--bg-eco)">
-                  Explorar promociones
+                  Pedir seguimiento
                 </Link>
                 <Link href="/services" className="rounded-full border border-(--stroke) bg-white px-5 py-2.5 text-sm font-semibold text-(--ink) shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-(--bg-eco)">
                   Ver servicios
@@ -78,27 +75,27 @@ export default async function Home() {
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
                 {stats.map((stat) => (
-                  <div key={stat.label} className="rounded-2xl border border-(--stroke) bg-white/80 p-3.5 shadow-card backdrop-blur animate-fade-up">
-                    <p className="text-xl font-black text-(--ink)">{stat.value}</p>
+                  <div key={stat.label} className="rounded-2xl border border-[rgba(56,189,248,0.14)] bg-white/82 p-3.5 shadow-card backdrop-blur animate-fade-up">
+                    <p className="text-xl font-black text-(--ink) display-type">{stat.value}</p>
                     <p className="mt-1 text-xs text-(--ink-soft)">{stat.label}</p>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-5 min-h-36 rounded-3xl border border-(--stroke) bg-[linear-gradient(135deg,rgba(78,143,58,0.10),rgba(255,255,255,0.96))] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--green-700)">Servicios</p>
+              <div className="mt-5 min-h-36 rounded-3xl border border-[rgba(56,189,248,0.14)] bg-[linear-gradient(135deg,rgba(9,14,24,0.04),rgba(255,255,255,0.96))] p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--cyan-700)">Servicios</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {serviceTags.map((tag) => (
                     <span
                       key={tag}
-                      className="rounded-full border border-[rgba(78,143,58,0.24)] bg-white/90 px-3 py-1 text-xs font-semibold text-(--green-700) shadow-sm"
+                      className="rounded-full border border-[rgba(56,189,248,0.18)] bg-white/90 px-3 py-1 text-xs font-semibold text-(--cyan-700) shadow-sm"
                     >
                       {tag}
                     </span>
                   ))}
                 </div>
                 <p className="mt-3 text-sm leading-6 text-(--ink-soft)">
-                  Ademas de alertas, resolvemos dudas reales y te guiamos paso a paso para que no te quedes fuera por un detalle de requisitos o plazos.
+                  Además de avisos, resolvemos dudas reales y te guiamos paso a paso para que no te quedes fuera por un detalle de requisitos o plazos.
                 </p>
               </div>
             </div>
@@ -106,10 +103,10 @@ export default async function Home() {
 
           <aside className="animate-fade-up-delay-1">
             <div className="surface-card flex h-full flex-col p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--green-700)">Sección PRO</p>
-              <h2 className="mt-2 text-xl font-black tracking-tight text-(--ink)">Más rápido, más útil, más cerca de la oportunidad</h2>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--cyan-700)">Seguimiento PRO</p>
+              <h2 className="mt-2 text-xl font-black tracking-tight text-(--ink) display-type">Más cerca de cada convocatoria, con menos fricción</h2>
               <p className="mt-2 text-sm leading-6 text-(--ink-soft)">
-                Radar VPO PRO está pensado para quien quiere llegar antes, filtrar mejor y no perder convocatorias por exceso de ruido.
+                Radar VPO PRO está pensado para quien necesita acompañamiento real: entender, priorizar y ejecutar sin perder tiempo en pasos innecesarios.
               </p>
               <div className="mt-3 space-y-2.5">
                 {proBenefits.map((benefit) => (
@@ -127,11 +124,11 @@ export default async function Home() {
                   Empezar gratis
                 </Link>
               </div>
-              <div className="mt-4 rounded-2xl bg-[linear-gradient(135deg,#1e1f1c,#325b26)] p-4 text-white shadow-card">
+              <div className="mt-4 rounded-2xl bg-[linear-gradient(135deg,#0e1726,#123024_58%,#1f4a39)] p-4 text-white shadow-card">
                 <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/70">Radar VPO PRO</p>
-                <p className="mt-2 text-base font-black leading-tight">Alertas, seguimiento y foco en una sola pantalla.</p>
+                <p className="mt-2 text-base font-black leading-tight display-type">Seguimiento, contexto y decisiones en una sola pantalla.</p>
                 <p className="mt-2 text-sm text-white/75">
-                  Activa el plan PRO para priorizar avisos y reducir el ruido al mínimo.
+                  Activa el plan PRO para priorizar avisos, filtrar ruido y tener una vista diaria mucho más útil.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2 text-xs">
                   {serviceTags.slice(4).map((tag) => (
@@ -146,37 +143,44 @@ export default async function Home() {
         </section>
 
         <section className="surface-card p-4 animate-fade-up-delay-2">
-          <div className="rounded-3xl border border-[rgba(78,143,58,0.24)] bg-[linear-gradient(140deg,rgba(78,143,58,0.09),rgba(255,255,255,0.98))] p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--green-700)">Nuevo servicio</p>
-            <h2 className="mt-2 text-xl font-black text-(--ink)">Extraccion de datos de PDF o texto a JSON unico</h2>
-            <p className="mt-2 text-sm leading-6 text-(--ink-soft)">
-              Convertimos documentos en un JSON limpio y util con las claves que mas importan: fechas, contacto, economia, requisitos y cuotas o reservas.
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/services" className="rounded-full bg-(--green-500) px-4 py-2 text-sm font-semibold text-white transition hover:bg-(--green-700)">
-                Solicitar extraccion
-              </Link>
-              <Link href="mailto:soporte@radarvpo.com?subject=Extraccion%20PDF%20a%20JSON" className="rounded-full border border-(--stroke) bg-white px-4 py-2 text-sm font-semibold text-(--ink) transition hover:bg-(--bg-eco)">
-                Enviar documento
-              </Link>
+          <div className="mb-4 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--cyan-700)">Noticias diarias</p>
+              <h2 className="mt-1 text-xl font-black text-(--ink) display-type">Actualidad útil para decidir mejor cada día</h2>
             </div>
+            <Link href="/news" className="text-sm font-semibold text-(--cyan-700)">
+              Ver más
+            </Link>
           </div>
+
+          {latestNews.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-(--stroke) bg-(--bg-app) p-5 text-center">
+              <p className="text-base font-semibold text-(--ink)">No hay noticias publicadas ahora mismo</p>
+              <p className="mt-2 text-sm text-(--ink-soft)">Cuando publiquemos novedades relevantes de vivienda aparecerán aquí.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {latestNews.map((item) => (
+                <NewsCard key={item.id} item={item} />
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="surface-card p-4 animate-fade-up-delay-2">
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--green-700)">Alertas próximas</p>
-              <h2 className="mt-1 text-xl font-black text-(--ink)">Próximas viviendas por salir</h2>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--green-700)">Seguimiento activo</p>
+              <h2 className="mt-1 text-xl font-black text-(--ink) display-type">Próximas viviendas por salir</h2>
             </div>
             <Link href="/alerts" className="text-sm font-semibold text-(--green-700)">
-              Ver más
+              Ver seguimiento
             </Link>
           </div>
 
           {activeAlerts.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-(--stroke) bg-(--bg-app) p-5 text-center">
-              <p className="text-base font-semibold text-(--ink)">No hay alertas activas ahora mismo</p>
+              <p className="text-base font-semibold text-(--ink)">No hay seguimientos activos ahora mismo</p>
               <p className="mt-2 text-sm text-(--ink-soft)">Cuando aparezca una nueva promoción te la mostraremos aquí con antelación.</p>
             </div>
           ) : (
@@ -191,29 +195,6 @@ export default async function Home() {
             </div>
           )}
         </section>
-
-        <section className="surface-card p-4 animate-fade-up-delay-2">
-          <div className="mb-4 flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--green-700)">Promociones recientes</p>
-              <h2 className="mt-1 text-xl font-black text-(--ink)">Últimas 10 publicadas</h2>
-            </div>
-            <Link href="/promotions" className="text-sm font-semibold text-(--green-700)">
-              Ver todas
-            </Link>
-          </div>
-
-          {recentPromotions.length === 0 ? (
-            <EmptyState title="Sin promociones publicadas" description="Aún no hay promociones publicadas." />
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {recentPromotions.map((promotion) => (
-                <PromotionCard key={promotion.id} promotion={promotion} />
-              ))}
-            </div>
-          )}
-        </section>
-
       </main>
     </div>
   );

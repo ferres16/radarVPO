@@ -8,49 +8,49 @@ const services = [
       'Te acompañamos de principio a fin: revisamos bases, resolvemos tus dudas y te ayudamos a preparar la solicitud correcta antes de que se cierre el plazo.',
     cta: 'Contactar ahora',
     href: 'mailto:soporte@radarvpo.com?subject=Asesoria%20Radar%20VPO',
-    accent: 'from-emerald-50 to-lime-50',
+    accent: 'from-cyan-50 to-emerald-50',
   },
   {
     eyebrow: 'Servicio 02',
-    title: 'Guia PDF de compra',
+    title: 'Seguimiento individualizado',
     copy:
-      'Una guia descargable y comprable con pasos claros, checklist y errores frecuentes para no perder convocatorias.',
-    cta: 'Pedir la guia',
-    href: 'mailto:soporte@radarvpo.com?subject=Compra%20guia%20PDF%20Radar%20VPO',
-    accent: 'from-white to-emerald-50',
+      'Analizamos tu situación concreta y marcamos los siguientes pasos para que no dependas solo de avisos genéricos.',
+    cta: 'Quiero seguimiento',
+    href: '/register',
+    accent: 'from-white to-cyan-50',
   },
   {
     eyebrow: 'Servicio 03',
     title: 'Radar VPO Pro con SMS',
     copy:
-      'Alertas por SMS para enterarte antes que nadie de nuevas promociones, cambios de estado y plazos clave.',
+      'Alertas por SMS para enterarte antes que nadie de nuevas promociones, cambios relevantes y plazos clave.',
     cta: 'Quiero acceso Pro',
     href: '/register',
-    accent: 'from-lime-50 to-white',
+    accent: 'from-emerald-50 to-white',
   },
   {
     eyebrow: 'Servicio 04',
-    title: 'Extraccion de PDF o texto a JSON',
+    title: 'Prioridad en requisitos y plazos',
     copy:
-      'Analizamos tu documento y devolvemos un unico JSON valido con informacion de fechas, contacto, economia, requisitos y cuotas o reservas, sin bloques vacios.',
-    cta: 'Solicitar extraccion',
-    href: 'mailto:soporte@radarvpo.com?subject=Extraccion%20PDF%20a%20JSON',
-    accent: 'from-emerald-50 to-white',
+      'Ordenamos la información importante para que sepas qué necesitas, cuándo moverte y cómo preparar cada fase con menos fricción.',
+    cta: 'Ver servicio',
+    href: '/register',
+    accent: 'from-slate-50 to-emerald-50',
   },
 ];
 
 export default function ServicesPage() {
   return (
     <main className="shell pb-16">
-      <section className="relative overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-[linear-gradient(135deg,#f7f8f5_0%,#eef6ea_45%,#fff_100%)] p-6 shadow-card md:p-8">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[rgba(78,143,58,0.12)] blur-3xl animate-float-slow" />
+      <section className="relative overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-[linear-gradient(135deg,#f7fbff_0%,#eef4f8_45%,#ffffff_100%)] p-6 shadow-card md:p-8">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[rgba(56,189,248,0.12)] blur-3xl animate-float-slow" />
         <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[rgba(47,107,36,0.10)] blur-3xl animate-float-slow-delay" />
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--green-700)]">Servicios</p>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-[var(--ink)] md:text-6xl">
-          Servicios pensados para moverte antes que nadie en vivienda publica.
+        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-[var(--ink)] md:text-6xl display-type">
+          Servicios pensados para moverte con criterio en vivienda publica.
         </h1>
         <p className="mt-4 max-w-2xl text-base text-[var(--ink-soft)]">
-          Asesoria, resolucion de dudas, acompanamiento del proceso, guia PDF, extraccion de datos y alertas Pro por SMS en una misma experiencia.
+          Asesoria, resolucion de dudas, acompanamiento del proceso, seguimiento individualizado y alertas Pro por SMS en una misma experiencia.
         </p>
       </section>
 
@@ -95,20 +95,11 @@ export default function ServicesPage() {
       </section>
 
       <section className="mt-6 rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card">
-        <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Formato de salida para extraccion</p>
-        <h2 className="mt-2 text-xl font-black text-[var(--ink)]">JSON unico, limpio y listo para usar</h2>
+        <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Enfoque</p>
+        <h2 className="mt-2 text-xl font-black text-[var(--ink)] display-type">Acompañamiento real, sin servicios que distraen</h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--ink-soft)]">
-          A partir de un PDF o texto, devolvemos un unico JSON valido. Si una seccion no tiene datos, se elimina. No se inventa informacion ni se repiten estructuras.
+          El foco está en asesoría, seguimiento individualizado y contexto útil para actuar antes. Si necesitas entender una convocatoria, priorizar pasos o no perder una fecha clave, este es el espacio.
         </p>
-        <pre className="mt-4 overflow-x-auto rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-xs leading-6 text-[var(--ink)]">
-{`{
-  "fechas": {},
-  "contacto": {},
-  "economia": {},
-  "requisitos": {},
-  "cuotas_reservas": {}
-}`}
-        </pre>
       </section>
     </main>
   );
