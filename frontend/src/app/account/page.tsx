@@ -208,7 +208,7 @@ export default function AccountPage() {
             statusTone={hasBasicGuide ? 'active' : 'locked'}
             cta={
               hasBasicGuide
-                ? { label: 'Ver guia', href: '/services', variant: 'ghost' }
+                ? { label: 'Ver guia', href: '/curso/guia-vpo-esencial', variant: 'ghost' }
                 : { label: 'Comprar guia', href: '/services' }
             }
           >
