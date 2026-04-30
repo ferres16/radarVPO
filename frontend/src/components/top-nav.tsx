@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import type { UserProfile } from '@/types';
 
@@ -19,6 +19,7 @@ export function TopNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [me, setMe] = useState<UserProfile | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     let active = true;
@@ -39,7 +40,7 @@ export function TopNav() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [pathname]);
 
   const initials = useMemo(() => {
     if (!me?.fullName) return me?.email?.slice(0, 2).toUpperCase() || 'RV';
