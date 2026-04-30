@@ -178,6 +178,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     }),
+  logout: () =>
+    request<{ success: boolean }>('/auth/logout', {
+      method: 'POST',
+    }),
   register: (email: string, password: string, fullName: string) =>
     request<{ user: { id: string; email: string } }>('/auth/register', {
       method: 'POST',
