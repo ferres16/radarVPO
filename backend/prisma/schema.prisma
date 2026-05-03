@@ -60,6 +60,7 @@ model User {
   id            String              @id @default(cuid())
   email         String              @unique
   fullName      String              @map("full_name")
+  phone         String              @map("phone")
   passwordHash  String              @map("password_hash")
   role          UserRole            @default(user)
   plan          UserPlan            @default(free)
@@ -258,6 +259,7 @@ model SystemSetting {
 
 model EducationalTopic {
   id          String   @id @default(cuid())
+  slug        String   @unique
   title       String
   description String?
   active      Boolean  @default(true)
@@ -270,13 +272,32 @@ model EducationalTopic {
 model EducationalPost {
   id          String   @id @default(cuid())
   topicId     String   @map("topic_id")
+  slug        String   @unique
   title       String
   body        String
+  summary     String?
+  position    Int      @default(0)
   publishedAt DateTime? @map("published_at")
   createdAt   DateTime @default(now()) @map("created_at")
   topic       EducationalTopic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  assets      EducationalAsset[]
 
   @@map("educational_posts")
+}
+
+model EducationalAsset {
+  id          String   @id @default(cuid())
+  postId      String   @map("post_id")
+  kind        String
+  fileType    String   @map("file_type")
+  originalName String? @map("original_name")
+  storagePath String   @map("storage_path")
+  publicUrl   String   @map("public_url")
+  createdAt   DateTime @default(now()) @map("created_at")
+  post        EducationalPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@map("educational_assets")
 }
 
 model PublishedPost {

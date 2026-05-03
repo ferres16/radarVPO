@@ -131,6 +131,8 @@ export default function AdminUsersPage() {
                 <div className="md:col-span-2">
                   <p className="text-xs uppercase tracking-wide text-[var(--ink-soft)]">Email</p>
                   <p className="text-sm font-semibold text-[var(--ink)]">{user.email}</p>
+                  <p className="mt-2 text-xs uppercase tracking-wide text-[var(--ink-soft)]">Telefono</p>
+                  <p className="text-sm font-semibold text-[var(--ink)]">{user.phone || '-'}</p>
                 </div>
                 <label className="text-sm">
                   <span className="text-xs uppercase tracking-wide text-[var(--ink-soft)]">Nombre</span>

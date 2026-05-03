@@ -2,6 +2,9 @@ import {
   BackofficeNewsItem,
   BackofficeOverview,
   BackofficeUser,
+  Course,
+  CourseModule,
+  CourseModuleAsset,
   NewsItem,
   Promotion,
   PromotionDetail,
@@ -173,6 +176,55 @@ export const api = {
     form.append('file', file);
     return requestForm(`/backoffice/promotions/${id}/documents/upload`, form);
   },
+  listCourses: () => request<Course[]>('/courses'),
+  getCourse: (slug: string) => request<Course>(`/courses/${slug}`),
+  getCourseModule: (slug: string, moduleSlug: string) =>
+    request<{ course: Course; module: CourseModule }>(`/courses/${slug}/modules/${moduleSlug}`),
+  getBackofficeCourses: () => request<Course[]>('/backoffice/courses'),
+  createBackofficeCourse: (payload: Pick<Course, 'title' | 'slug' | 'description' | 'active'>) =>
+    request<Course>('/backoffice/courses', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateBackofficeCourse: (id: string, payload: Partial<Pick<Course, 'title' | 'slug' | 'description' | 'active'>>) =>
+    request<Course>(`/backoffice/courses/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteBackofficeCourse: (id: string) =>
+    request<{ deleted: boolean }>(`/backoffice/courses/${id}`, {
+      method: 'DELETE',
+    }),
+  createBackofficeCourseModule: (
+    courseId: string,
+    payload: Pick<CourseModule, 'title' | 'slug' | 'summary' | 'body' | 'position' | 'publishedAt'>,
+  ) =>
+    request<CourseModule>(`/backoffice/courses/${courseId}/modules`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateBackofficeCourseModule: (
+    moduleId: string,
+    payload: Partial<Pick<CourseModule, 'title' | 'slug' | 'summary' | 'body' | 'position' | 'publishedAt'>>,
+  ) =>
+    request<CourseModule>(`/backoffice/courses/modules/${moduleId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteBackofficeCourseModule: (moduleId: string) =>
+    request<{ deleted: boolean }>(`/backoffice/courses/modules/${moduleId}`, {
+      method: 'DELETE',
+    }),
+  uploadBackofficeCourseAsset: (
+    moduleId: string,
+    kind: CourseModuleAsset['kind'],
+    file: File,
+  ) => {
+    const form = new FormData();
+    form.append('kind', kind);
+    form.append('file', file);
+    return requestForm(`/backoffice/courses/modules/${moduleId}/assets/upload`, form);
+  },
   login: (email: string, password: string) =>
     request<{ user: { id: string; email: string } }>('/auth/login', {
       method: 'POST',
@@ -182,9 +234,14 @@ export const api = {
     request<{ success: boolean }>('/auth/logout', {
       method: 'POST',
     }),
-  register: (email: string, password: string, fullName: string) =>
+  register: (email: string, password: string, fullName: string, phone: string) =>
     request<{ user: { id: string; email: string } }>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, fullName }),
+      body: JSON.stringify({ email, password, fullName, phone }),
+    }),
+  updateMe: (payload: Pick<UserProfile, 'fullName'>) =>
+    request<UserProfile>('/users/me', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     }),
 };

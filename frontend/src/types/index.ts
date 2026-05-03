@@ -25,6 +25,7 @@ export type UserProfile = {
   id: string;
   email: string;
   fullName?: string | null;
+  phone?: string | null;
   role: string;
   plan: string;
 };
@@ -99,9 +100,42 @@ export type BackofficeUser = {
   id: string;
   email: string;
   fullName?: string | null;
+  phone?: string | null;
   role: 'user' | 'admin';
   plan: 'free' | 'pro';
   createdAt: string;
+};
+
+export type CourseModuleAsset = {
+  id: string;
+  kind: 'image' | 'video' | 'file';
+  fileType: string;
+  originalName?: string | null;
+  storagePath: string;
+  publicUrl: string;
+  createdAt: string;
+};
+
+export type CourseModule = {
+  id: string;
+  slug: string;
+  title: string;
+  summary?: string | null;
+  body: string;
+  position: number;
+  publishedAt?: string | null;
+  createdAt: string;
+  assets?: CourseModuleAsset[];
+};
+
+export type Course = {
+  id: string;
+  slug: string;
+  title: string;
+  description?: string | null;
+  active: boolean;
+  createdAt: string;
+  posts?: CourseModule[];
 };
 
 export type BackofficeNewsItem = {

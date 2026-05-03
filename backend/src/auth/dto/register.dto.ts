@@ -8,6 +8,11 @@ export class RegisterDto {
 
   @ApiProperty()
   @IsString()
+  @MinLength(7)
+  phone!: string;
+
+  @ApiProperty()
+  @IsString()
   @MinLength(8)
   password!: string;
 

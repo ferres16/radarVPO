@@ -114,15 +114,7 @@ export function TopNav() {
                     onClick={() => setMenuOpen(false)}
                     role="menuitem"
                   >
-                    Perfil
-                  </Link>
-                  <Link
-                    href="/account#mis-servicios"
-                    className="block rounded-xl px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)]"
-                    onClick={() => setMenuOpen(false)}
-                    role="menuitem"
-                  >
-                    Mis servicios
+                    Ver perfil
                   </Link>
                   <button
                     type="button"
@@ -130,7 +122,7 @@ export function TopNav() {
                     onClick={handleLogout}
                     role="menuitem"
                   >
-                    Logout
+                    Cerrar sesion
                   </button>
                 </div>
               ) : null}
@@ -166,8 +158,22 @@ export function TopNav() {
                   className="block rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm font-semibold text-[var(--ink)]"
                   onClick={() => setMobileOpen(false)}
                 >
-                  Perfil
+                  Ver perfil
                 </Link>
+              </li>
+            ) : null}
+            {me ? (
+              <li>
+                <button
+                  type="button"
+                  className="block w-full rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-semibold text-[var(--ink)]"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    void handleLogout();
+                  }}
+                >
+                  Cerrar sesion
+                </button>
               </li>
             ) : (
               <li>

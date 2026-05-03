@@ -33,6 +33,7 @@ export class AuthService {
       data: {
         email: dto.email.toLowerCase(),
         fullName: dto.fullName,
+        phone: dto.phone,
         passwordHash,
         role: 'user',
         plan: 'free',

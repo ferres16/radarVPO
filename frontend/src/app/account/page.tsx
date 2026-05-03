@@ -8,45 +8,20 @@ import { ProfileCard } from '@/components/profile-card';
 import { StatusPill } from '@/components/status-pill';
 import { ServiceCard } from '@/components/service-card';
 
-const courseModules = [
-  {
-    title: 'Modulo 1 - Como funciona la VPO',
-    lessons: ['Tipos de promocion y requisitos base', 'Calendario realista de una convocatoria', 'Documentacion que siempre piden'],
-  },
-  {
-    title: 'Modulo 2 - Registro paso a paso',
-    lessons: ['Alta en registros y comprobaciones previas', 'Errores al rellenar formularios', 'Checklist para no perder plazos'],
-  },
-  {
-    title: 'Modulo 3 - Errores comunes',
-    lessons: ['Motivos de exclusion mas habituales', 'Documentos caducados y como evitarlos', 'Cambios de normativa en Catalunya'],
-  },
-];
-
-const faqItems = [
-  'Compatibilidades con otras ayudas',
-  'Que hacer si te quedas fuera',
-  'Como preparar un recurso',
-  'Renuncias y nuevas convocatorias',
-];
-
 const proBenefits = [
   'Alertas antes que nadie con SMS y WhatsApp.',
   'Guia completa en formato curso, sin descargar PDF.',
   'Seguimiento individualizado con asesoria real.',
 ];
 
-const moduleId = (title: string) =>
-  title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-
 export default function AccountPage() {
   const [me, setMe] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [proAlertsEnabled, setProAlertsEnabled] = useState(false);
+  const [fullNameDraft, setFullNameDraft] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileMessage, setProfileMessage] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -56,6 +31,7 @@ export default function AccountPage() {
         const profile = await api.getMe();
         if (active) {
           setMe(profile);
+          setFullNameDraft(profile.fullName || '');
         }
       } catch {
         if (active) {
@@ -79,6 +55,21 @@ export default function AccountPage() {
     if (me.fullName) return me.fullName;
     return me.email.split('@')[0] || 'Usuario';
   }, [me]);
+
+  async function saveProfile() {
+    if (!me) return;
+    setSavingProfile(true);
+    setProfileMessage('');
+    try {
+      const updated = await api.updateMe({ fullName: fullNameDraft.trim() || '' });
+      setMe(updated);
+      setProfileMessage('Nombre actualizado correctamente.');
+    } catch (err) {
+      setProfileMessage(err instanceof Error ? err.message : 'No se pudo actualizar el nombre');
+    } finally {
+      setSavingProfile(false);
+    }
+  }
 
   useEffect(() => {
     if (me) {
@@ -154,6 +145,49 @@ export default function AccountPage() {
               <p className="mt-1 text-lg font-semibold text-[var(--ink)]">Hoy, 08:30</p>
             </div>
           </div>
+
+          <div className="mt-6 grid gap-3 md:grid-cols-3">
+            <label className="text-sm">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Nombre</span>
+              <input
+                value={fullNameDraft}
+                onChange={(e) => setFullNameDraft(e.target.value)}
+                className="mt-1 w-full rounded-xl border border-[var(--stroke)] bg-white px-3 py-2"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Email</span>
+              <input
+                value={me.email}
+                readOnly
+                className="mt-1 w-full rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-[var(--ink-soft)]"
+              />
+            </label>
+            <label className="text-sm">
+              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Telefono</span>
+              <input
+                value={me.phone || ''}
+                readOnly
+                className="mt-1 w-full rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-[var(--ink-soft)]"
+              />
+            </label>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => void saveProfile()}
+              disabled={savingProfile}
+              className="inline-flex items-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)] disabled:opacity-60"
+            >
+              {savingProfile ? 'Guardando...' : 'Guardar nombre'}
+            </button>
+            <p className="text-xs text-[var(--ink-soft)]">
+              Para cambiar email o telefono, contacta por WhatsApp.
+            </p>
+          </div>
+          {profileMessage ? (
+            <p className="mt-2 text-xs text-[var(--ink-soft)]">{profileMessage}</p>
+          ) : null}
         </div>
       </ProfileCard>
 
@@ -226,7 +260,7 @@ export default function AccountPage() {
             statusTone={hasProGuide ? 'active' : 'locked'}
             cta={
               hasProGuide
-                ? { label: 'Acceder', href: '#guia-pro', variant: 'ghost' }
+                ? { label: 'Acceder', href: '/curso/guia-pro', variant: 'ghost' }
                 : { label: 'Activar seguimiento', href: '/services' }
             }
           >
@@ -295,53 +329,23 @@ export default function AccountPage() {
         </div>
 
         {hasProGuide ? (
-          <div className="grid gap-4 lg:grid-cols-[260px,1fr]">
-            <ProfileCard className="sticky top-24 h-fit space-y-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Navegacion</p>
-              <nav className="space-y-2">
-                {courseModules.map((module) => (
-                  <a
-                    key={module.title}
-                    href={`#${moduleId(module.title)}`}
-                    className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
-                  >
-                    {module.title}
-                  </a>
-                ))}
-              </nav>
-              <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3 text-xs text-[var(--ink-soft)]">
-                Progreso sugerido: 35% completado.
+          <ProfileCard className="border-[rgba(47,107,36,0.25)] bg-[linear-gradient(130deg,rgba(47,107,36,0.08),rgba(255,255,255,0.96))]">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Indice del curso</p>
+                <h3 className="mt-2 text-xl font-bold text-[var(--ink)]">Accede a todos los modulos en una sola pagina.</h3>
+                <p className="mt-2 text-sm text-[var(--ink-soft)]">
+                  Cada modulo tiene su propia pagina con contenido, recursos y multimedia.
+                </p>
               </div>
-            </ProfileCard>
-
-            <div className="space-y-4">
-              {courseModules.map((module) => (
-                <ProfileCard key={module.title} className="space-y-3">
-                  <div id={moduleId(module.title)}>
-                    <h3 className="text-lg font-bold text-[var(--ink)]">{module.title}</h3>
-                    <ul className="mt-2 space-y-2 text-sm text-[var(--ink-soft)]">
-                      {module.lessons.map((lesson) => (
-                        <li key={lesson} className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2">
-                          {lesson}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </ProfileCard>
-              ))}
-
-              <ProfileCard className="space-y-3">
-                <h3 className="text-lg font-bold text-[var(--ink)]">FAQ avanzada</h3>
-                <div className="grid gap-2 md:grid-cols-2">
-                  {faqItems.map((item) => (
-                    <div key={item} className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm text-[var(--ink-soft)]">
-                      {item}
-                    </div>
-                  ))}
-                </div>
-              </ProfileCard>
+              <Link
+                href="/curso/guia-pro"
+                className="inline-flex items-center justify-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]"
+              >
+                Ver guia PRO
+              </Link>
             </div>
-          </div>
+          </ProfileCard>
         ) : (
           <ProfileCard className="border-[rgba(47,107,36,0.25)] bg-[linear-gradient(130deg,rgba(47,107,36,0.10),rgba(255,255,255,0.96))]">
             <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">

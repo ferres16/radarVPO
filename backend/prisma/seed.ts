@@ -13,6 +13,7 @@ async function main() {
     create: {
       email: 'admin@radarvpo.com',
       fullName: 'Radar Admin',
+      phone: '+34 600 111 222',
       passwordHash: adminPassword,
       role: 'admin',
       plan: 'pro',
@@ -25,6 +26,7 @@ async function main() {
     create: {
       email: 'user@radarvpo.com',
       fullName: 'Usuario Demo',
+      phone: '+34 600 222 333',
       passwordHash: userPassword,
       role: 'user',
       plan: 'free',
@@ -118,10 +120,55 @@ async function main() {
 
   await prisma.educationalTopic.create({
     data: {
+      slug: 'documentacion-vpo',
       title: 'Como preparar documentacion VPO',
       description: 'Checklist para expedientes de inscripcion',
       active: true,
     },
+  });
+
+  const proCourse = await prisma.educationalTopic.upsert({
+    where: { slug: 'guia-pro' },
+    update: {},
+    create: {
+      slug: 'guia-pro',
+      title: 'Guia PRO Radar VPO',
+      description: 'Curso avanzado con modulos y recursos actualizados.',
+      active: true,
+    },
+  });
+
+  await prisma.educationalPost.createMany({
+    data: [
+      {
+        topicId: proCourse.id,
+        slug: 'modulo-1-como-funciona-vpo',
+        title: 'Modulo 1 - Como funciona la VPO',
+        summary: 'Base legal, requisitos clave y calendario realista.',
+        position: 1,
+        body: 'Contenido introductorio del modulo 1. Aqui explicamos la estructura de la VPO y el flujo base.',
+        publishedAt: new Date('2026-04-01'),
+      },
+      {
+        topicId: proCourse.id,
+        slug: 'modulo-2-registro-paso-a-paso',
+        title: 'Modulo 2 - Registro paso a paso',
+        summary: 'Alta correcta en registros y checklist de errores.',
+        position: 2,
+        body: 'Contenido del modulo 2 con pasos detallados y recomendaciones para el registro.',
+        publishedAt: new Date('2026-04-02'),
+      },
+      {
+        topicId: proCourse.id,
+        slug: 'modulo-3-errores-comunes',
+        title: 'Modulo 3 - Errores comunes',
+        summary: 'Motivos de exclusion y como evitarlos.',
+        position: 3,
+        body: 'Contenido del modulo 3 con ejemplos reales y alertas de error comunes.',
+        publishedAt: new Date('2026-04-03'),
+      },
+    ],
+    skipDuplicates: true,
   });
 
   await prisma.savedSearch.create({

@@ -14,6 +14,15 @@ import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 
 const isProduction = process.env.NODE_ENV === 'production';
+const cookieDomain = process.env.COOKIE_DOMAIN;
+
+const resolveSameSite = () => {
+  const raw = process.env.COOKIE_SAMESITE?.toLowerCase();
+  if (raw === 'none' || raw === 'lax' || raw === 'strict') {
+    return raw;
+  }
+  return isProduction ? 'none' : 'lax';
+};
 
 type RequestWithCookies = Request & {
   cookies?: {
@@ -85,9 +94,14 @@ export class AuthController {
     const sessionId = req.cookies?.session_id;
     await this.authService.logout(sessionId);
 
-    res.clearCookie('access_token');
-    res.clearCookie('refresh_token');
-    res.clearCookie('session_id');
+    const clearOptions = {
+      path: '/',
+      domain: cookieDomain || undefined,
+    };
+
+    res.clearCookie('access_token', clearOptions);
+    res.clearCookie('refresh_token', clearOptions);
+    res.clearCookie('session_id', clearOptions);
     return { success: true };
   }
 
@@ -99,9 +113,10 @@ export class AuthController {
   ) {
     const cookieOptions = {
       httpOnly: true,
-      sameSite: (isProduction ? 'none' : 'lax') as 'none' | 'lax',
-      secure: isProduction,
+      sameSite: resolveSameSite() as 'none' | 'lax' | 'strict',
+      secure: process.env.COOKIE_SECURE === 'true' || isProduction,
       path: '/',
+      domain: cookieDomain || undefined,
     };
 
     res.cookie('access_token', accessToken, {

@@ -26,22 +26,15 @@ export default async function Home() {
     'Respuestas a dudas 1:1',
     'Acompañamiento durante todo el proceso',
     'Prioridad en plazos y cambios',
-    'Radar VPO Pro SMS',
-    'Noticias diarias relevantes',
+    'Curso de iniciacion VPO',
     'Checklist de documentacion',
-    'Seguimiento de plazos',
+    'Preparacion de carpeta VPO',
   ];
 
   const stats = [
     { value: '1:1', label: 'Asesoría personalizada' },
     { value: 'Diaria', label: 'Actualidad y noticias' },
     { value: '24/7', label: 'Seguimiento activo' },
-  ];
-
-  const proBenefits = [
-    'Te ayudamos a interpretar requisitos, plazos y documentación sin ruido.',
-    'Seguimiento individualizado para no depender solo de la alerta genérica.',
-    'Noticias y cambios clave para actuar antes en vivienda protegida.',
   ];
 
   return (
@@ -102,41 +95,32 @@ export default async function Home() {
           </article>
 
           <aside className="animate-fade-up-delay-1">
-            <div className="surface-card flex h-full flex-col p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--cyan-700)">Seguimiento PRO</p>
-              <h2 className="mt-2 text-xl font-black tracking-tight text-(--ink) display-type">Más cerca de cada convocatoria, con menos fricción</h2>
-              <p className="mt-2 text-sm leading-6 text-(--ink-soft)">
-                Radar VPO PRO está pensado para quien necesita acompañamiento real: entender, priorizar y ejecutar sin perder tiempo en pasos innecesarios.
-              </p>
-              <div className="mt-3 space-y-2.5">
-                {proBenefits.map((benefit) => (
-                  <div key={benefit} className="flex items-start gap-3 rounded-2xl bg-(--bg-app) p-2.5">
-                    <span className="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-[rgba(78,143,58,0.14)] text-xs font-black text-(--green-700)">✓</span>
-                    <p className="text-sm text-(--ink)">{benefit}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <Link href="/services" className="rounded-full bg-(--ink) px-4 py-2 text-sm font-semibold text-white transition hover:bg-black">
-                  Ver PRO
-                </Link>
-                <Link href="/register" className="rounded-full border border-(--stroke) bg-white px-4 py-2 text-sm font-semibold text-(--ink) transition hover:bg-(--bg-eco)">
-                  Empezar gratis
-                </Link>
-              </div>
-              <div className="mt-4 rounded-2xl bg-[linear-gradient(135deg,#0e1726,#123024_58%,#1f4a39)] p-4 text-white shadow-card">
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-white/70">Radar VPO PRO</p>
-                <p className="mt-2 text-base font-black leading-tight display-type">Seguimiento, contexto y decisiones en una sola pantalla.</p>
-                <p className="mt-2 text-sm text-white/75">
-                  Activa el plan PRO para priorizar avisos, filtrar ruido y tener una vista diaria mucho más útil.
+            <div className="surface-card flex h-full flex-col gap-4 p-4">
+              <div className="rounded-2xl border border-[rgba(78,143,58,0.25)] bg-[linear-gradient(135deg,rgba(78,143,58,0.12),rgba(255,255,255,0.96))] p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--green-700)">Curso de iniciacion</p>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-(--ink) display-type">Arranca con una guia clara y modular</h2>
+                <p className="mt-2 text-sm leading-6 text-(--ink-soft)">
+                  Modulos breves, ejemplos reales y recursos descargables para entender la VPO desde el primer dia.
                 </p>
-                <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                  {serviceTags.slice(4).map((tag) => (
-                    <span key={tag} className="rounded-full bg-white/10 px-3 py-1 font-semibold">
-                      {tag}
-                    </span>
-                  ))}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Link href="/curso/guia-vpo-esencial" className="rounded-full bg-(--ink) px-4 py-2 text-sm font-semibold text-white transition hover:bg-black">
+                    Ver curso de iniciacion
+                  </Link>
+                  <Link href="/register" className="rounded-full border border-(--stroke) bg-white px-4 py-2 text-sm font-semibold text-(--ink) transition hover:bg-(--bg-eco)">
+                    Crear cuenta
+                  </Link>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-[rgba(56,189,248,0.22)] bg-[linear-gradient(135deg,rgba(56,189,248,0.10),rgba(255,255,255,0.96))] p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--cyan-700)">Asesoria 1:1</p>
+                <h3 className="mt-2 text-lg font-black text-(--ink) display-type">Acompañamiento individualizado</h3>
+                <p className="mt-2 text-sm text-(--ink-soft)">
+                  Revisamos tu caso, requisitos y plazos con seguimiento directo para que no pierdas oportunidades.
+                </p>
+                <Link href="/services" className="mt-3 inline-flex rounded-full border border-(--stroke) bg-white px-4 py-2 text-sm font-semibold text-(--ink) shadow-card transition hover:bg-(--bg-eco)">
+                  Ver asesorias
+                </Link>
               </div>
             </div>
           </aside>

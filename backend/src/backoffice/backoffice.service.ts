@@ -7,10 +7,15 @@ import { Prisma, PromotionStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3StorageService } from '../storage/s3-storage.service';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
+import { CreateCourseDto } from './dto/create-course.dto';
+import { CreateCourseModuleDto } from './dto/create-course-module.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
+import { UpdateCourseDto } from './dto/update-course.dto';
+import { UpdateCourseModuleDto } from './dto/update-course-module.dto';
 import { UpdatePromotionStatusDto } from './dto/update-promotion-status.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpsertUnitDto } from './dto/upsert-unit.dto';
 
@@ -64,6 +69,7 @@ export class BackofficeService {
         id: true,
         email: true,
         fullName: true,
+        phone: true,
         role: true,
         plan: true,
         createdAt: true,
@@ -114,6 +120,103 @@ export class BackofficeService {
     return this.prisma.newsItem.findMany({
       orderBy: { publishedAt: 'desc' },
       take: 300,
+    });
+  }
+
+  async listCourses() {
+    return this.prisma.educationalTopic.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        posts: {
+          orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
+          include: { assets: { orderBy: { createdAt: 'asc' } } },
+        },
+      },
+    });
+  }
+
+  async createCourse(dto: CreateCourseDto) {
+    return this.prisma.educationalTopic.create({
+      data: {
+        slug: dto.slug,
+        title: dto.title,
+        description: dto.description,
+        active: dto.active ?? true,
+      },
+    });
+  }
+
+  async updateCourse(courseId: string, dto: UpdateCourseDto) {
+    return this.prisma.educationalTopic.update({
+      where: { id: courseId },
+      data: {
+        slug: dto.slug,
+        title: dto.title,
+        description: dto.description,
+        active: dto.active,
+      },
+    });
+  }
+
+  async deleteCourse(courseId: string) {
+    await this.prisma.educationalTopic.delete({ where: { id: courseId } });
+    return { deleted: true };
+  }
+
+  async createCourseModule(courseId: string, dto: CreateCourseModuleDto) {
+    return this.prisma.educationalPost.create({
+      data: {
+        topicId: courseId,
+        slug: dto.slug,
+        title: dto.title,
+        summary: dto.summary,
+        body: dto.body,
+        position: dto.position ?? 0,
+        publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : null,
+      },
+    });
+  }
+
+  async updateCourseModule(moduleId: string, dto: UpdateCourseModuleDto) {
+    return this.prisma.educationalPost.update({
+      where: { id: moduleId },
+      data: {
+        slug: dto.slug,
+        title: dto.title,
+        summary: dto.summary,
+        body: dto.body,
+        position: dto.position,
+        publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
+      },
+    });
+  }
+
+  async deleteCourseModule(moduleId: string) {
+    await this.prisma.educationalPost.delete({ where: { id: moduleId } });
+    return { deleted: true };
+  }
+
+  async uploadCourseAsset(moduleId: string, dto: UploadCourseAssetDto, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    const upload = await this.storage.upload({
+      folder: `courses/${moduleId}`,
+      fileName: file.originalname,
+      contentType: file.mimetype,
+      content: file.buffer,
+    });
+
+    return this.prisma.educationalAsset.create({
+      data: {
+        postId: moduleId,
+        kind: dto.kind,
+        fileType: file.mimetype,
+        originalName: file.originalname,
+        storagePath: upload.key,
+        publicUrl: upload.url,
+      },
     });
   }
 

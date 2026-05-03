@@ -9,6 +9,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,7 @@ export default function RegisterPage() {
     setError('');
 
     try {
-      await api.register(email, password, fullName);
+      await api.register(email, password, fullName, phone);
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta');
@@ -42,6 +43,10 @@ export default function RegisterPage() {
           <div>
             <label htmlFor="email" className="text-sm font-medium text-[var(--ink)]">Email</label>
             <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
+          </div>
+          <div>
+            <label htmlFor="phone" className="text-sm font-medium text-[var(--ink)]">Telefono</label>
+            <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
           </div>
           <div>
             <label htmlFor="password" className="text-sm font-medium text-[var(--ink)]">Contrasena</label>
