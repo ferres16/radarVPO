@@ -85,10 +85,18 @@ export class JobsService implements OnApplicationBootstrap {
         return { published: 0 };
       }
 
+      const title = `Guia: ${topic.title}`;
+      const slugBase = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      const slug = `${slugBase}-${Date.now()}`;
+
       await this.prisma.educationalPost.create({
         data: {
           topicId: topic.id,
-          title: `Guia: ${topic.title}`,
+          title,
+          slug,
           body: 'Consejos practicos para inscripcion en VPO y lectura de bases.',
           publishedAt: new Date(),
         },
