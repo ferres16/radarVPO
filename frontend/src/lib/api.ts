@@ -223,7 +223,7 @@ export const api = {
     const form = new FormData();
     form.append('kind', kind);
     form.append('file', file);
-    return requestForm(`/backoffice/courses/modules/${moduleId}/assets/upload`, form);
+    return requestForm<CourseModuleAsset>(`/backoffice/courses/modules/${moduleId}/assets/upload`, form);
   },
   login: (email: string, password: string) =>
     request<{ user: { id: string; email: string } }>('/auth/login', {
