@@ -1,13 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
+const allowedCourseSlugs = ['guia-vpo-esencial', 'guia-pro'];
+
 @Injectable()
 export class CoursesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listCourses() {
     return this.prisma.educationalTopic.findMany({
-      where: { active: true },
+      where: {
+        active: true,
+        slug: { in: allowedCourseSlugs },
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         posts: {
@@ -19,6 +24,10 @@ export class CoursesService {
   }
 
   async getCourseBySlug(slug: string) {
+    if (!allowedCourseSlugs.includes(slug)) {
+      throw new NotFoundException('Course not found');
+    }
+
     const course = await this.prisma.educationalTopic.findUnique({
       where: { slug },
       include: {
@@ -37,6 +46,10 @@ export class CoursesService {
   }
 
   async getModuleBySlug(courseSlug: string, moduleSlug: string) {
+    if (!allowedCourseSlugs.includes(courseSlug)) {
+      throw new NotFoundException('Module not found');
+    }
+
     const course = await this.prisma.educationalTopic.findUnique({
       where: { slug: courseSlug },
       include: {
