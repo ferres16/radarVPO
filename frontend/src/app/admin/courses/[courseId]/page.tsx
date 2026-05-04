@@ -28,6 +28,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
   const [modules, setModules] = useState<CourseModule[]>([]);
   const [drafts, setDrafts] = useState<Record<string, Partial<CourseModule>>>({});
   const [newModule, setNewModule] = useState<Partial<CourseModule>>(emptyModule);
+  const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [savingId, setSavingId] = useState('');
@@ -273,156 +274,194 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
       <section className="space-y-4">
         {modules.map((module) => {
           const draft = drafts[module.id] || {};
+          const isExpanded = expandedModuleId === module.id;
+          const assetCount = module.assets?.length || 0;
+          const previewText = (module.body || '').trim().replace(/\s+/g, ' ');
+          const preview = previewText.length > 180 ? `${previewText.slice(0, 180)}...` : previewText;
           return (
             <article key={module.id} className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
-              <div className="grid gap-3 md:grid-cols-2">
-                <input
-                  value={draft.title || ''}
-                  onChange={(e) =>
-                    setDrafts((prev) => ({
-                      ...prev,
-                      [module.id]: { ...draft, title: e.target.value },
-                    }))
-                  }
-                  className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
-                />
-                <input
-                  value={draft.slug || ''}
-                  onChange={(e) =>
-                    setDrafts((prev) => ({
-                      ...prev,
-                      [module.id]: { ...draft, slug: e.target.value },
-                    }))
-                  }
-                  className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
-                />
-                <input
-                  value={draft.summary || ''}
-                  onChange={(e) =>
-                    setDrafts((prev) => ({
-                      ...prev,
-                      [module.id]: { ...draft, summary: e.target.value },
-                    }))
-                  }
-                  className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
-                />
-                <textarea
-                  value={draft.body || ''}
-                  onChange={(e) =>
-                    setDrafts((prev) => ({
-                      ...prev,
-                      [module.id]: { ...draft, body: e.target.value },
-                    }))
-                  }
-                  className="min-h-[140px] rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
-                />
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                <label className="text-sm text-[var(--ink)]">
-                  Orden
-                  <input
-                    type="number"
-                    value={draft.position ?? 0}
-                    onChange={(e) =>
-                      setDrafts((prev) => ({
-                        ...prev,
-                        [module.id]: { ...draft, position: Number(e.target.value) },
-                      }))
-                    }
-                    className="ml-2 w-20 rounded-xl border border-[var(--stroke)] px-2 py-1 text-sm"
-                  />
-                </label>
-                <label className="text-sm text-[var(--ink)]">
-                  Publicado
-                  <input
-                    type="date"
-                    value={formatDateInput(draft.publishedAt as string)}
-                    onChange={(e) =>
-                      setDrafts((prev) => ({
-                        ...prev,
-                        [module.id]: { ...draft, publishedAt: e.target.value },
-                      }))
-                    }
-                    className="ml-2 rounded-xl border border-[var(--stroke)] px-2 py-1 text-sm"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => void saveModule(module.id)}
-                  disabled={savingId === module.id}
-                  className="rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)] disabled:opacity-60"
-                >
-                  {savingId === module.id ? 'Guardando...' : 'Guardar'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void deleteModule(module.id)}
-                  disabled={savingId === module.id}
-                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700"
-                >
-                  Borrar
-                </button>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-[var(--ink)]">{draft.title || 'Modulo sin titulo'}</p>
+                    <span className="rounded-full bg-[var(--bg-app)] px-2 py-1 text-[11px] font-semibold text-[var(--ink-soft)]">
+                      Orden {draft.position ?? 0}
+                    </span>
+                    <span className="rounded-full bg-[var(--bg-app)] px-2 py-1 text-[11px] font-semibold text-[var(--ink-soft)]">
+                      {assetCount} archivos
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                    {module.slug} · {formatDateInput(draft.publishedAt as string) || 'sin fecha'}
+                  </p>
+                  {draft.summary ? <p className="mt-2 text-sm text-[var(--ink-soft)]">{draft.summary}</p> : null}
+                  <p className="mt-2 text-xs leading-5 text-[var(--ink-soft)]">
+                    {preview || 'Sin contenido todavía.'}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedModuleId(isExpanded ? null : module.id)}
+                    className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)]"
+                  >
+                    {isExpanded ? 'Cerrar edición' : 'Editar contenido'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void saveModule(module.id)}
+                    disabled={savingId === module.id}
+                    className="rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)] disabled:opacity-60"
+                  >
+                    {savingId === module.id ? 'Guardando...' : 'Guardar'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void deleteModule(module.id)}
+                    disabled={savingId === module.id}
+                    className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700"
+                  >
+                    Borrar
+                  </button>
+                </div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Multimedia</p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <label className="text-xs font-semibold text-[var(--ink)]">
+              {isExpanded ? (
+                <>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
                     <input
-                      type="file"
-                      className="hidden"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          void uploadAsset(module.id, 'image', file);
-                        }
-                      }}
+                      value={draft.title || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [module.id]: { ...draft, title: e.target.value },
+                        }))
+                      }
+                      className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
                     />
-                    <span className="cursor-pointer rounded-full border border-[var(--stroke)] bg-white px-3 py-1">Subir imagen</span>
-                  </label>
-                  <label className="text-xs font-semibold text-[var(--ink)]">
                     <input
-                      type="file"
-                      className="hidden"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          void uploadAsset(module.id, 'video', file);
-                        }
-                      }}
+                      value={draft.slug || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [module.id]: { ...draft, slug: e.target.value },
+                        }))
+                      }
+                      className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
                     />
-                    <span className="cursor-pointer rounded-full border border-[var(--stroke)] bg-white px-3 py-1">Subir video</span>
-                  </label>
-                  <label className="text-xs font-semibold text-[var(--ink)]">
                     <input
-                      type="file"
-                      className="hidden"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) {
-                          void uploadAsset(module.id, 'file', file);
-                        }
-                      }}
+                      value={draft.summary || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [module.id]: { ...draft, summary: e.target.value },
+                        }))
+                      }
+                      className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
                     />
-                    <span className="cursor-pointer rounded-full border border-[var(--stroke)] bg-white px-3 py-1">Subir archivo</span>
-                  </label>
-                  {savingId === `${module.id}-upload` ? (
-                    <span className="text-xs text-[var(--ink-soft)]">Subiendo...</span>
-                  ) : null}
-                </div>
-                {module.assets && module.assets.length > 0 ? (
-                  <div className="mt-3 space-y-2">
-                    {module.assets.map((asset) => (
-                      <div key={asset.id} className="flex items-center justify-between rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-xs">
-                        <span>{asset.originalName || asset.publicUrl}</span>
-                        <a href={asset.publicUrl} className="font-semibold text-[var(--green-700)]">Ver</a>
-                      </div>
-                    ))}
+                    <textarea
+                      value={draft.body || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [module.id]: { ...draft, body: e.target.value },
+                        }))
+                      }
+                      className="min-h-[140px] rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
+                    />
                   </div>
-                ) : (
-                  <p className="mt-3 text-xs text-[var(--ink-soft)]">Sin archivos subidos.</p>
-                )}
-              </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-3">
+                    <label className="text-sm text-[var(--ink)]">
+                      Orden
+                      <input
+                        type="number"
+                        value={draft.position ?? 0}
+                        onChange={(e) =>
+                          setDrafts((prev) => ({
+                            ...prev,
+                            [module.id]: { ...draft, position: Number(e.target.value) },
+                          }))
+                        }
+                        className="ml-2 w-20 rounded-xl border border-[var(--stroke)] px-2 py-1 text-sm"
+                      />
+                    </label>
+                    <label className="text-sm text-[var(--ink)]">
+                      Publicado
+                      <input
+                        type="date"
+                        value={formatDateInput(draft.publishedAt as string)}
+                        onChange={(e) =>
+                          setDrafts((prev) => ({
+                            ...prev,
+                            [module.id]: { ...draft, publishedAt: e.target.value },
+                          }))
+                        }
+                        className="ml-2 rounded-xl border border-[var(--stroke)] px-2 py-1 text-sm"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Multimedia</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <label className="text-xs font-semibold text-[var(--ink)]">
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) {
+                              void uploadAsset(module.id, 'image', file);
+                            }
+                          }}
+                        />
+                        <span className="cursor-pointer rounded-full border border-[var(--stroke)] bg-white px-3 py-1">Subir imagen</span>
+                      </label>
+                      <label className="text-xs font-semibold text-[var(--ink)]">
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) {
+                              void uploadAsset(module.id, 'video', file);
+                            }
+                          }}
+                        />
+                        <span className="cursor-pointer rounded-full border border-[var(--stroke)] bg-white px-3 py-1">Subir video</span>
+                      </label>
+                      <label className="text-xs font-semibold text-[var(--ink)]">
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) {
+                              void uploadAsset(module.id, 'file', file);
+                            }
+                          }}
+                        />
+                        <span className="cursor-pointer rounded-full border border-[var(--stroke)] bg-white px-3 py-1">Subir archivo</span>
+                      </label>
+                      {savingId === `${module.id}-upload` ? (
+                        <span className="text-xs text-[var(--ink-soft)]">Subiendo...</span>
+                      ) : null}
+                    </div>
+                    {module.assets && module.assets.length > 0 ? (
+                      <div className="mt-3 space-y-2">
+                        {module.assets.map((asset) => (
+                          <div key={asset.id} className="flex items-center justify-between rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-xs">
+                            <span>{asset.originalName || asset.publicUrl}</span>
+                            <a href={asset.publicUrl} className="font-semibold text-[var(--green-700)]">Ver</a>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="mt-3 text-xs text-[var(--ink-soft)]">Sin archivos subidos.</p>
+                    )}
+                  </div>
+                </>
+              ) : null}
             </article>
           );
         })}
