@@ -118,8 +118,14 @@ async function main() {
     },
   });
 
-  await prisma.educationalTopic.create({
-    data: {
+  await prisma.educationalTopic.upsert({
+    where: { slug: 'documentacion-vpo' },
+    update: {
+      title: 'Como preparar documentacion VPO',
+      description: 'Checklist para expedientes de inscripcion',
+      active: true,
+    },
+    create: {
       slug: 'documentacion-vpo',
       title: 'Como preparar documentacion VPO',
       description: 'Checklist para expedientes de inscripcion',

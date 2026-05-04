@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import type { Course, CourseModule, CourseModuleAsset, UserProfile } from '@/types';
@@ -23,6 +24,8 @@ type PageProps = {
 };
 
 export default function AdminCourseModulesPage({ params }: PageProps) {
+  const routeParams = useParams<{ courseId?: string }>();
+  const courseId = typeof routeParams.courseId === 'string' ? routeParams.courseId : params.courseId;
   const [me, setMe] = useState<UserProfile | null>(null);
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<CourseModule[]>([]);
@@ -48,7 +51,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
 
         const courses = await api.getBackofficeCourses();
         if (!active) return;
-        const selected = courses.find((item) => item.id === params.courseId) || null;
+        const selected = courses.find((item) => item.id === courseId || item.slug === courseId) || null;
         setCourse(selected);
         setModules(selected?.posts || []);
         setDrafts(
@@ -77,7 +80,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     return () => {
       active = false;
     };
-  }, [params.courseId]);
+  }, [courseId]);
 
   async function createModule() {
     if (!newModule.title || !newModule.slug || !course) {

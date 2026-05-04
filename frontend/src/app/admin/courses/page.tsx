@@ -23,6 +23,17 @@ export default function AdminCoursesPage() {
   const [error, setError] = useState('');
   const [savingId, setSavingId] = useState('');
 
+  const visibleCourses = [...courses]
+    .sort((a, b) => Number(b.active) - Number(a.active) || b.createdAt.localeCompare(a.createdAt))
+    .filter((course) => {
+      if (!query.trim()) return true;
+      const term = query.trim().toLowerCase();
+      return course.title.toLowerCase().includes(term) || course.slug.toLowerCase().includes(term);
+    });
+
+  const activeCount = courses.filter((course) => course.active).length;
+  const moduleCount = courses.reduce((total, course) => total + (course.posts?.length || 0), 0);
+
   useEffect(() => {
     let active = true;
 
@@ -150,11 +161,31 @@ export default function AdminCoursesPage() {
 
   return (
     <main className="shell space-y-4">
-      <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-        <h1 className="text-2xl font-bold text-[var(--ink)]">Administrar cursos</h1>
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">
-          Crea cursos, activa o desactiva y entra en cada uno para gestionar modulos.
-        </p>
+      <header className="overflow-hidden rounded-3xl border border-[var(--stroke)] bg-white shadow-card">
+        <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="p-6">
+            <h1 className="text-2xl font-bold text-[var(--ink)]">Administrar cursos</h1>
+            <p className="mt-1 text-sm text-[var(--ink-soft)]">
+              Crea cursos, activa o desactiva y entra en cada uno para gestionar modulos.
+            </p>
+          </div>
+          <div className="border-t border-[var(--stroke)] bg-[var(--bg-app)] p-6 lg:border-l lg:border-t-0">
+            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+              <div className="rounded-2xl border border-[var(--stroke)] bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Cursos</p>
+                <p className="mt-2 text-2xl font-black text-[var(--ink)]">{courses.length}</p>
+              </div>
+              <div className="rounded-2xl border border-[var(--stroke)] bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Activos</p>
+                <p className="mt-2 text-2xl font-black text-[var(--ink)]">{activeCount}</p>
+              </div>
+              <div className="rounded-2xl border border-[var(--stroke)] bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Modulos</p>
+                <p className="mt-2 text-2xl font-black text-[var(--ink)]">{moduleCount}</p>
+              </div>
+            </div>
+          </div>
+        </div>
       </header>
 
       {error ? (
@@ -218,16 +249,7 @@ export default function AdminCoursesPage() {
       </section>
 
       <section className="space-y-3">
-        {courses
-          .filter((course) => {
-            if (!query.trim()) return true;
-            const term = query.trim().toLowerCase();
-            return (
-              course.title.toLowerCase().includes(term) ||
-              course.slug.toLowerCase().includes(term)
-            );
-          })
-          .map((course) => {
+        {visibleCourses.map((course) => {
           const draft = drafts[course.id] || {};
           const isExpanded = expandedId === course.id;
           const moduleCount = course.posts?.length || 0;
