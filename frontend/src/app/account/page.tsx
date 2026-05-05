@@ -8,6 +8,11 @@ import { ProfileCard } from '@/components/profile-card';
 import { StatusPill } from '@/components/status-pill';
 import { ServiceCard } from '@/components/service-card';
 
+const stripeCheckoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || '/register';
+const whatsappContactUrl =
+  process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
+  'https://wa.me/34600111222?text=Hola%2C%20quiero%20activar%20el%20seguimiento%20individualizado%20de%20Radar%20VPO.';
+
 const proBenefits = [
   'Alertas antes que nadie con SMS y WhatsApp.',
   'Guia completa en formato curso, sin descargar PDF.',
@@ -209,10 +214,10 @@ export default function AccountPage() {
                 </div>
               ))}
               <Link
-                href="/services"
+                href={stripeCheckoutUrl}
                 className="mt-3 inline-flex items-center justify-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]"
               >
-                Activar PRO
+                Ir a Stripe Checkout
               </Link>
             </div>
           </div>
@@ -243,7 +248,7 @@ export default function AccountPage() {
             cta={
               hasBasicGuide
                 ? { label: 'Ver guia', href: '/curso/guia-vpo-esencial', variant: 'ghost' }
-                : { label: 'Comprar guia', href: '/services' }
+                : { label: 'Comprar guia', href: stripeCheckoutUrl }
             }
           >
             <div className="flex items-center justify-between text-xs text-[var(--ink-soft)]">
@@ -261,7 +266,7 @@ export default function AccountPage() {
             cta={
               hasProGuide
                 ? { label: 'Acceder', href: '/curso/guia-pro', variant: 'ghost' }
-                : { label: 'Activar seguimiento', href: '/services' }
+                : { label: 'Activar seguimiento', href: whatsappContactUrl }
             }
           >
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">
@@ -311,7 +316,7 @@ export default function AccountPage() {
             cta={
               hasTracking
                 ? { label: 'Ver plan de seguimiento', href: '/services', variant: 'ghost' }
-                : { label: 'Activar seguimiento', href: '/services' }
+                : { label: 'Activar seguimiento', href: whatsappContactUrl }
             }
           >
             <p className="text-xs text-[var(--ink-soft)]">Ideal si necesitas un plan personalizado para tu caso.</p>
@@ -358,16 +363,16 @@ export default function AccountPage() {
               </div>
               <div className="flex flex-col gap-2">
                 <Link
-                  href="/services"
+                    href={stripeCheckoutUrl}
                   className="inline-flex items-center justify-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]"
                 >
-                  Activar PRO
+                    Ir a Stripe Checkout
                 </Link>
                 <Link
-                  href="/services"
+                    href={whatsappContactUrl}
                   className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
                 >
-                  Acceder seguimiento
+                    Pedir seguimiento por WhatsApp
                 </Link>
               </div>
             </div>

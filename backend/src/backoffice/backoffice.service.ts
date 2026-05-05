@@ -19,8 +19,6 @@ import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpsertUnitDto } from './dto/upsert-unit.dto';
 
-const allowedCourseSlugs = ['guia-vpo-esencial', 'guia-pro'];
-
 @Injectable()
 export class BackofficeService {
   constructor(
@@ -127,7 +125,6 @@ export class BackofficeService {
 
   async listCourses() {
     return this.prisma.educationalTopic.findMany({
-      where: { slug: { in: allowedCourseSlugs } },
       orderBy: { createdAt: 'desc' },
       include: {
         posts: {
@@ -139,10 +136,6 @@ export class BackofficeService {
   }
 
   async createCourse(dto: CreateCourseDto) {
-    if (!allowedCourseSlugs.includes(dto.slug)) {
-      throw new BadRequestException('Solo se permiten los cursos oficiales de la plataforma.');
-    }
-
     return this.prisma.educationalTopic.create({
       data: {
         slug: dto.slug,
@@ -154,10 +147,6 @@ export class BackofficeService {
   }
 
   async updateCourse(courseId: string, dto: UpdateCourseDto) {
-    if (dto.slug && !allowedCourseSlugs.includes(dto.slug)) {
-      throw new BadRequestException('Solo se permiten los cursos oficiales de la plataforma.');
-    }
-
     return this.prisma.educationalTopic.update({
       where: { id: courseId },
       data: {

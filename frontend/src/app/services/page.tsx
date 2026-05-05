@@ -1,5 +1,10 @@
 import Link from 'next/link';
 
+const stripeCheckoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || '/register';
+const whatsappContactUrl =
+  process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
+  'https://wa.me/34600111222?text=Hola%2C%20quiero%20activar%20el%20seguimiento%20individualizado%20de%20Radar%20VPO.';
+
 const services = [
   {
     eyebrow: 'Servicio 01',
@@ -14,27 +19,27 @@ const services = [
     eyebrow: 'Servicio 02',
     title: 'Seguimiento individualizado',
     copy:
-      'Analizamos tu situación concreta y marcamos los siguientes pasos para que no dependas solo de avisos genéricos.',
+      'Analizamos tu situación concreta y activamos todo el paquete tras contacto previo por WhatsApp.',
     cta: 'Quiero seguimiento',
-    href: '/register',
+    href: whatsappContactUrl,
     accent: 'from-white to-cyan-50',
   },
   {
     eyebrow: 'Servicio 03',
     title: 'Radar VPO Pro con SMS',
     copy:
-      'Alertas por SMS para enterarte antes que nadie de nuevas promociones, cambios relevantes y plazos clave.',
+      'Acceso a la guia por Stripe Checkout y activacion de la subscripcion SMS Pro desde la compra.',
     cta: 'Quiero acceso Pro',
-    href: '/register',
+    href: stripeCheckoutUrl,
     accent: 'from-emerald-50 to-white',
   },
   {
     eyebrow: 'Servicio 04',
     title: 'Prioridad en requisitos y plazos',
     copy:
-      'Ordenamos la información importante para que sepas qué necesitas, cuándo moverte y cómo preparar cada fase con menos fricción.',
+      'Si activas seguimiento individualizado, este servicio queda incluido automáticamente con el resto del acompañamiento.',
     cta: 'Ver servicio',
-    href: '/register',
+    href: whatsappContactUrl,
     accent: 'from-slate-50 to-emerald-50',
   },
 ];
@@ -86,10 +91,13 @@ export default function ServicesPage() {
         <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card">
           <h3 className="text-lg font-bold text-[var(--ink)]">Radar VPO Pro</h3>
           <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
-            Recibe avisos por SMS y entra en modo vigilancia total para que no se te escape una salida nueva.
+            Compra la guia por Stripe Checkout y activa la subscripcion SMS Pro para recibir avisos y cambios clave.
           </p>
-          <Link href="/register" className="mt-4 inline-flex rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
-            Activar interés
+          <Link href={stripeCheckoutUrl} className="mt-4 inline-flex rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
+            Ir a checkout
+          </Link>
+          <Link href={whatsappContactUrl} className="mt-3 inline-flex rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
+            Pedir seguimiento por WhatsApp
           </Link>
         </article>
       </section>
