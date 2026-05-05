@@ -21,14 +21,13 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Install root dependencies
+      - name: Install backend dependencies
+        working-directory: backend
         run: npm ci
 
-      - name: Install backend dependencies
-        run: npm --workspace backend ci
-
       - name: Install frontend dependencies
-        run: npm --workspace frontend ci
+        working-directory: frontend
+        run: npm ci
 
       - name: Backend lint
         run: npm --workspace backend run lint
