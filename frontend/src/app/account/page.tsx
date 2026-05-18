@@ -247,7 +247,7 @@ export default function AccountPage() {
             statusTone={hasBasicGuide ? 'active' : 'locked'}
             cta={
               hasBasicGuide
-                ? { label: 'Ver guia', href: '/curso/guia-vpo-esencial', variant: 'ghost' }
+                ? { label: 'Ver cursos', href: '/cursos', variant: 'ghost' }
                 : { label: 'Comprar guia', href: stripeCheckoutUrl }
             }
           >
@@ -265,7 +265,7 @@ export default function AccountPage() {
             statusTone={hasProGuide ? 'active' : 'locked'}
             cta={
               hasProGuide
-                ? { label: 'Acceder', href: '/curso/guia-pro', variant: 'ghost' }
+                ? { label: 'Acceder', href: '/cursos', variant: 'ghost' }
                 : { label: 'Activar seguimiento', href: whatsappContactUrl }
             }
           >
@@ -344,10 +344,10 @@ export default function AccountPage() {
                 </p>
               </div>
               <Link
-                href="/curso/guia-pro"
+                href="/cursos"
                 className="inline-flex items-center justify-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]"
               >
-                Ver guia PRO
+                Ver cursos
               </Link>
             </div>
           </ProfileCard>

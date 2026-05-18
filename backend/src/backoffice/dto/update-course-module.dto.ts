@@ -1,5 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { CourseModuleVisibility } from '@prisma/client';
+import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class UpdateCourseModuleDto {
   @ApiPropertyOptional()
@@ -11,28 +12,17 @@ export class UpdateCourseModuleDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  @MaxLength(160)
-  slug?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
   @MaxLength(240)
-  summary?: string;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  body?: string;
+  description?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsInt()
   @Min(0)
-  position?: number;
+  order?: number;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ enum: CourseModuleVisibility })
   @IsOptional()
-  @IsDateString()
-  publishedAt?: string;
+  @IsEnum(CourseModuleVisibility)
+  visibility?: CourseModuleVisibility;
 }

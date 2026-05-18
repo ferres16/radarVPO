@@ -68,44 +68,6 @@ export class JobsService implements OnApplicationBootstrap {
     });
   }
 
-  @Cron(
-    process.env.CRON_PUBLISH_EDUCATIONAL_POST ||
-      CronExpression.EVERY_DAY_AT_7AM,
-    {
-      timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
-    },
-  )
-  async publishEducationalPost() {
-    await this.runWithLock('publish_educational_post', async () => {
-      const topic = await this.prisma.educationalTopic.findFirst({
-        where: { active: true },
-      });
-
-      if (!topic) {
-        return { published: 0 };
-      }
-
-      const title = `Guia: ${topic.title}`;
-      const slugBase = title
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-      const slug = `${slugBase}-${Date.now()}`;
-
-      await this.prisma.educationalPost.create({
-        data: {
-          topicId: topic.id,
-          title,
-          slug,
-          body: 'Consejos practicos para inscripcion en VPO y lectura de bases.',
-          publishedAt: new Date(),
-        },
-      });
-
-      return { published: 1 };
-    });
-  }
-
   private async runWithLock(
     jobName: string,
     execute: () => Promise<Record<string, unknown>>,

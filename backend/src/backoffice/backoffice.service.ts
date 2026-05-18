@@ -6,11 +6,15 @@ import {
 import { Prisma, PromotionStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3StorageService } from '../storage/s3-storage.service';
-import { CreateNewsItemDto } from './dto/create-news-item.dto';
+import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
+import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
+import { CreateNewsItemDto } from './dto/create-news-item.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
+import { UpdateCourseAccessRuleDto } from './dto/update-course-access-rule.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { UpdateCourseLessonDto } from './dto/update-course-lesson.dto';
 import { UpdateCourseModuleDto } from './dto/update-course-module.dto';
 import { UpdatePromotionStatusDto } from './dto/update-promotion-status.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
@@ -124,93 +128,210 @@ export class BackofficeService {
   }
 
   async listCourses() {
-    return this.prisma.educationalTopic.findMany({
-      orderBy: { createdAt: 'desc' },
+    return this.prisma.course.findMany({
+      orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
       include: {
-        posts: {
-          orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
-          include: { assets: { orderBy: { createdAt: 'asc' } } },
+        modules: {
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            lessons: {
+              orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+            },
+          },
         },
+        accessRules: { orderBy: { createdAt: 'asc' } },
       },
     });
   }
 
   async createCourse(dto: CreateCourseDto) {
-    return this.prisma.educationalTopic.create({
+    return this.prisma.course.create({
       data: {
         slug: dto.slug,
         title: dto.title,
-        description: dto.description,
-        active: dto.active ?? true,
+        shortDescription: dto.shortDescription,
+        longDescription: dto.longDescription,
+        coverImage: dto.coverImage,
+        status: dto.status,
+        accessType: dto.accessType,
+        order: dto.order ?? 0,
       },
     });
   }
 
   async updateCourse(courseId: string, dto: UpdateCourseDto) {
-    return this.prisma.educationalTopic.update({
+    return this.prisma.course.update({
       where: { id: courseId },
       data: {
         slug: dto.slug,
         title: dto.title,
-        description: dto.description,
-        active: dto.active,
+        shortDescription: dto.shortDescription,
+        longDescription: dto.longDescription,
+        coverImage: dto.coverImage,
+        status: dto.status,
+        accessType: dto.accessType,
+        order: dto.order,
       },
     });
   }
 
   async deleteCourse(courseId: string) {
-    await this.prisma.educationalTopic.delete({ where: { id: courseId } });
+    await this.prisma.course.delete({ where: { id: courseId } });
     return { deleted: true };
   }
 
   async createCourseModule(courseId: string, dto: CreateCourseModuleDto) {
-    return this.prisma.educationalPost.create({
+    await this.ensureCourse(courseId);
+
+    return this.prisma.courseModule.create({
       data: {
-        topicId: courseId,
-        slug: dto.slug,
+        courseId,
         title: dto.title,
-        summary: dto.summary,
-        body: dto.body,
-        position: dto.position ?? 0,
-        publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : null,
+        description: dto.description,
+        order: dto.order ?? 0,
+        visibility: dto.visibility,
       },
     });
   }
 
+  async reorderCourseModules(courseId: string, moduleIds: string[]) {
+    const modules = await this.prisma.courseModule.findMany({
+      where: { id: { in: moduleIds }, courseId },
+      select: { id: true },
+    });
+
+    if (modules.length !== moduleIds.length) {
+      throw new BadRequestException('Some modules do not belong to this course');
+    }
+
+    await this.prisma.$transaction(
+      moduleIds.map((id, index) =>
+        this.prisma.courseModule.update({
+          where: { id },
+          data: { order: index },
+        }),
+      ),
+    );
+
+    return this.prisma.courseModule.findMany({
+      where: { courseId },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
   async updateCourseModule(moduleId: string, dto: UpdateCourseModuleDto) {
-    return this.prisma.educationalPost.update({
+    return this.prisma.courseModule.update({
       where: { id: moduleId },
       data: {
-        slug: dto.slug,
         title: dto.title,
-        summary: dto.summary,
-        body: dto.body,
-        position: dto.position,
-        publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
+        description: dto.description,
+        order: dto.order,
+        visibility: dto.visibility,
       },
     });
   }
 
   async deleteCourseModule(moduleId: string) {
-    await this.prisma.educationalPost.delete({ where: { id: moduleId } });
+    await this.prisma.courseModule.delete({ where: { id: moduleId } });
     return { deleted: true };
   }
 
-  async uploadCourseAsset(moduleId: string, dto: UploadCourseAssetDto, file: Express.Multer.File) {
+  async createCourseLesson(moduleId: string, dto: CreateCourseLessonDto) {
+    const module = await this.prisma.courseModule.findUnique({
+      where: { id: moduleId },
+      select: { id: true, courseId: true },
+    });
+
+    if (!module) {
+      throw new NotFoundException('Module not found');
+    }
+
+    return this.prisma.courseLesson.create({
+      data: {
+        courseId: module.courseId,
+        moduleId: module.id,
+        title: dto.title,
+        slug: dto.slug,
+        contentJson: dto.contentJson,
+        order: dto.order ?? 0,
+        durationMinutes: dto.durationMinutes,
+        status: dto.status,
+        type: dto.type,
+      },
+    });
+  }
+
+  async reorderCourseLessons(moduleId: string, lessonIds: string[]) {
+    const lessons = await this.prisma.courseLesson.findMany({
+      where: { id: { in: lessonIds }, moduleId },
+      select: { id: true },
+    });
+
+    if (lessons.length !== lessonIds.length) {
+      throw new BadRequestException('Some lessons do not belong to this module');
+    }
+
+    await this.prisma.$transaction(
+      lessonIds.map((id, index) =>
+        this.prisma.courseLesson.update({
+          where: { id },
+          data: { order: index },
+        }),
+      ),
+    );
+
+    return this.prisma.courseLesson.findMany({
+      where: { moduleId },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  async updateCourseLesson(lessonId: string, dto: UpdateCourseLessonDto) {
+    return this.prisma.courseLesson.update({
+      where: { id: lessonId },
+      data: {
+        title: dto.title,
+        slug: dto.slug,
+        contentJson: dto.contentJson,
+        order: dto.order,
+        durationMinutes: dto.durationMinutes,
+        status: dto.status,
+        type: dto.type,
+      },
+    });
+  }
+
+  async deleteCourseLesson(lessonId: string) {
+    await this.prisma.courseLesson.delete({ where: { id: lessonId } });
+    return { deleted: true };
+  }
+
+  async uploadCourseResource(lessonId: string, dto: UploadCourseAssetDto, file: Express.Multer.File) {
     if (!file) {
       throw new BadRequestException('File is required');
     }
 
+    const lesson = await this.prisma.courseLesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true, courseId: true, moduleId: true },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
     const upload = await this.storage.upload({
-      folder: `courses/${moduleId}`,
+      folder: `courses/${lesson.courseId}/${lessonId}`,
       fileName: file.originalname,
       contentType: file.mimetype,
       content: file.buffer,
     });
 
-    return this.prisma.educationalAsset.create({
+    return this.prisma.courseResource.create({
       data: {
-        postId: moduleId,
+        courseId: lesson.courseId,
+        moduleId: lesson.moduleId,
+        lessonId: lesson.id,
         kind: dto.kind,
         fileType: file.mimetype,
         originalName: file.originalname,
@@ -218,6 +339,32 @@ export class BackofficeService {
         publicUrl: upload.url,
       },
     });
+  }
+
+  async createCourseAccessRule(courseId: string, dto: CreateCourseAccessRuleDto) {
+    await this.ensureCourse(courseId);
+    return this.prisma.courseAccessRule.create({
+      data: {
+        courseId,
+        ruleType: dto.ruleType,
+        configJson: dto.configJson,
+      },
+    });
+  }
+
+  async updateCourseAccessRule(ruleId: string, dto: UpdateCourseAccessRuleDto) {
+    return this.prisma.courseAccessRule.update({
+      where: { id: ruleId },
+      data: {
+        ruleType: dto.ruleType,
+        configJson: dto.configJson,
+      },
+    });
+  }
+
+  async deleteCourseAccessRule(ruleId: string) {
+    await this.prisma.courseAccessRule.delete({ where: { id: ruleId } });
+    return { deleted: true };
   }
 
   async createNews(dto: CreateNewsItemDto) {
@@ -669,6 +816,19 @@ export class BackofficeService {
     }
 
     return promotion;
+  }
+
+  private async ensureCourse(courseId: string) {
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: { id: true },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    return course;
   }
 
   private async ensureUnit(promotionId: string, unitId: string) {

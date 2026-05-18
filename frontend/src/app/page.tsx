@@ -103,8 +103,8 @@ export default async function Home() {
                   Modulos breves, ejemplos reales y recursos descargables para entender la VPO desde el primer dia.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Link href="/curso/guia-vpo-esencial" className="rounded-full bg-(--ink) px-4 py-2 text-sm font-semibold text-white transition hover:bg-black">
-                    Ver curso de iniciacion
+                  <Link href="/cursos" className="rounded-full bg-(--ink) px-4 py-2 text-sm font-semibold text-white transition hover:bg-black">
+                    Ver cursos
                   </Link>
                   <Link href="/register" className="rounded-full border border-(--stroke) bg-white px-4 py-2 text-sm font-semibold text-(--ink) transition hover:bg-(--bg-eco)">
                     Crear cuenta

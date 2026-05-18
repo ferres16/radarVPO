@@ -13,7 +13,13 @@
   "dependencies": {
     "next": "16.2.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "@tiptap/react": "^2.11.4",
+    "@tiptap/starter-kit": "^2.11.4",
+    "@tiptap/extension-link": "^2.11.4",
+    "@tiptap/extension-task-list": "^2.11.4",
+    "@tiptap/extension-task-item": "^2.11.4",
+    "@tiptap/extension-highlight": "^2.11.4"
   },
   "optionalDependencies": {
     "lightningcss-linux-x64-gnu": "1.32.0",

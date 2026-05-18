@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { CourseAccessType, CourseStatus } from '@prisma/client';
 
 export class CreateCourseDto {
   @ApiProperty()
@@ -16,10 +17,29 @@ export class CreateCourseDto {
   @IsOptional()
   @IsString()
   @MaxLength(300)
-  description?: string;
+  shortDescription?: string;
 
-  @ApiProperty({ required: false, default: true })
+  @ApiProperty({ required: false })
   @IsOptional()
-  @IsBoolean()
-  active?: boolean;
+  @IsString()
+  longDescription?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  coverImage?: string;
+
+  @ApiProperty({ enum: CourseStatus, default: CourseStatus.draft })
+  @IsEnum(CourseStatus)
+  status!: CourseStatus;
+
+  @ApiProperty({ enum: CourseAccessType, default: CourseAccessType.free })
+  @IsEnum(CourseAccessType)
+  accessType!: CourseAccessType;
+
+  @ApiProperty({ required: false, default: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  order?: number;
 }

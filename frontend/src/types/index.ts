@@ -106,7 +106,19 @@ export type BackofficeUser = {
   createdAt: string;
 };
 
-export type CourseModuleAsset = {
+export type CourseStatus = 'draft' | 'published' | 'archived';
+export type CourseAccessType = 'free' | 'paid' | 'pro' | 'seguimiento';
+export type CourseModuleVisibility = 'visible' | 'hidden';
+export type LessonStatus = 'draft' | 'published';
+export type LessonType = 'text' | 'video' | 'downloadable' | 'faq';
+export type CourseAccessRuleType = 'plan' | 'entitlement' | 'purchase' | 'subscription';
+
+export type CourseAccessDecision = {
+  canAccess: boolean;
+  reason: 'free' | 'plan' | 'entitlement' | 'purchase' | 'subscription' | 'locked';
+};
+
+export type CourseResource = {
   id: string;
   kind: 'image' | 'video' | 'file';
   fileType: string;
@@ -116,26 +128,77 @@ export type CourseModuleAsset = {
   createdAt: string;
 };
 
+export type CourseLesson = {
+  id: string;
+  courseId: string;
+  moduleId: string;
+  title: string;
+  slug: string;
+  contentJson?: Record<string, unknown> | null;
+  order: number;
+  durationMinutes?: number | null;
+  status: LessonStatus;
+  type: LessonType;
+  createdAt?: string;
+  updatedAt?: string;
+  resources?: CourseResource[];
+};
+
 export type CourseModule = {
   id: string;
-  slug: string;
+  courseId?: string;
   title: string;
-  summary?: string | null;
-  body: string;
-  position: number;
-  publishedAt?: string | null;
+  description?: string | null;
+  order: number;
+  visibility: CourseModuleVisibility;
+  createdAt?: string;
+  updatedAt?: string;
+  lessons?: CourseLesson[];
+};
+
+export type CourseAccessRule = {
+  id: string;
+  courseId: string;
+  ruleType: CourseAccessRuleType;
+  configJson: Record<string, unknown>;
   createdAt: string;
-  assets?: CourseModuleAsset[];
 };
 
 export type Course = {
   id: string;
   slug: string;
   title: string;
-  description?: string | null;
-  active: boolean;
+  shortDescription?: string | null;
+  longDescription?: string | null;
+  coverImage?: string | null;
+  status: CourseStatus;
+  accessType: CourseAccessType;
+  order: number;
   createdAt: string;
-  posts?: CourseModule[];
+  updatedAt?: string;
+  modules?: CourseModule[];
+  accessRules?: CourseAccessRule[];
+  access?: CourseAccessDecision;
+};
+
+export type LessonProgress = {
+  id: string;
+  lessonId: string;
+  courseId: string;
+  moduleId: string;
+  status: 'not_started' | 'in_progress' | 'completed';
+  completedAt?: string | null;
+  updatedAt?: string;
+};
+
+export type CourseProgress = {
+  id: string;
+  courseId: string;
+  progressPercent: number;
+  completedLessons: number;
+  totalLessons: number;
+  lastLessonId?: string | null;
+  updatedAt?: string;
 };
 
 export type BackofficeNewsItem = {

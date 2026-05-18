@@ -1,16 +1,23 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
-import type { Course, UserProfile } from '@/types';
+import type { Course, CourseAccessType, CourseStatus, UserProfile } from '@/types';
 
 const emptyCourse: Partial<Course> = {
   title: '',
   slug: '',
-  description: '',
-  active: true,
+  shortDescription: '',
+  longDescription: '',
+  coverImage: '',
+  status: 'draft',
+  accessType: 'free',
+  order: 0,
 };
+
+const statusOptions: CourseStatus[] = ['draft', 'published', 'archived'];
+const accessOptions: CourseAccessType[] = ['free', 'paid', 'pro', 'seguimiento'];
 
 export default function AdminCoursesPage() {
   const [me, setMe] = useState<UserProfile | null>(null);
@@ -22,17 +29,6 @@ export default function AdminCoursesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [savingId, setSavingId] = useState('');
-
-  const visibleCourses = [...courses]
-    .sort((a, b) => Number(b.active) - Number(a.active) || b.createdAt.localeCompare(a.createdAt))
-    .filter((course) => {
-      if (!query.trim()) return true;
-      const term = query.trim().toLowerCase();
-      return course.title.toLowerCase().includes(term) || course.slug.toLowerCase().includes(term);
-    });
-
-  const activeCount = courses.filter((course) => course.active).length;
-  const moduleCount = courses.reduce((total, course) => total + (course.posts?.length || 0), 0);
 
   useEffect(() => {
     let active = true;
@@ -56,8 +52,12 @@ export default function AdminCoursesPage() {
               {
                 title: course.title,
                 slug: course.slug,
-                description: course.description || '',
-                active: course.active,
+                shortDescription: course.shortDescription || '',
+                longDescription: course.longDescription || '',
+                coverImage: course.coverImage || '',
+                status: course.status,
+                accessType: course.accessType,
+                order: course.order,
               },
             ]),
           ),
@@ -74,6 +74,16 @@ export default function AdminCoursesPage() {
       active = false;
     };
   }, []);
+
+  const visibleCourses = useMemo(() => {
+    const term = query.trim().toLowerCase();
+    return [...courses]
+      .filter((course) => {
+        if (!term) return true;
+        return course.title.toLowerCase().includes(term) || course.slug.toLowerCase().includes(term);
+      })
+      .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
+  }, [courses, query]);
 
   async function saveCourse(courseId: string) {
     const payload = drafts[courseId];
@@ -101,8 +111,12 @@ export default function AdminCoursesPage() {
       const created = await api.createBackofficeCourse({
         title: newCourse.title,
         slug: newCourse.slug,
-        description: newCourse.description || undefined,
-        active: newCourse.active ?? true,
+        shortDescription: newCourse.shortDescription || undefined,
+        longDescription: newCourse.longDescription || undefined,
+        coverImage: newCourse.coverImage || undefined,
+        status: (newCourse.status as CourseStatus) || 'draft',
+        accessType: (newCourse.accessType as CourseAccessType) || 'free',
+        order: newCourse.order ?? 0,
       });
       setCourses((prev) => [created, ...prev]);
       setDrafts((prev) => ({
@@ -110,8 +124,12 @@ export default function AdminCoursesPage() {
         [created.id]: {
           title: created.title,
           slug: created.slug,
-          description: created.description || '',
-          active: created.active,
+          shortDescription: created.shortDescription || '',
+          longDescription: created.longDescription || '',
+          coverImage: created.coverImage || '',
+          status: created.status,
+          accessType: created.accessType,
+          order: created.order,
         },
       }));
       setNewCourse(emptyCourse);
@@ -166,7 +184,7 @@ export default function AdminCoursesPage() {
           <div className="p-6">
             <h1 className="text-2xl font-bold text-[var(--ink)]">Administrar cursos</h1>
             <p className="mt-1 text-sm text-[var(--ink-soft)]">
-              Crea cursos, activa o desactiva y entra en cada uno para gestionar modulos.
+              Crea cursos, organiza el contenido y define acceso desde este panel.
             </p>
           </div>
           <div className="border-t border-[var(--stroke)] bg-[var(--bg-app)] p-6 lg:border-l lg:border-t-0">
@@ -176,12 +194,16 @@ export default function AdminCoursesPage() {
                 <p className="mt-2 text-2xl font-black text-[var(--ink)]">{courses.length}</p>
               </div>
               <div className="rounded-2xl border border-[var(--stroke)] bg-white p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Activos</p>
-                <p className="mt-2 text-2xl font-black text-[var(--ink)]">{activeCount}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Publicados</p>
+                <p className="mt-2 text-2xl font-black text-[var(--ink)]">
+                  {courses.filter((course) => course.status === 'published').length}
+                </p>
               </div>
               <div className="rounded-2xl border border-[var(--stroke)] bg-white p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Modulos</p>
-                <p className="mt-2 text-2xl font-black text-[var(--ink)]">{moduleCount}</p>
+                <p className="mt-2 text-2xl font-black text-[var(--ink)]">
+                  {courses.reduce((total, course) => total + (course.modules?.length || 0), 0)}
+                </p>
               </div>
             </div>
           </div>
@@ -218,25 +240,50 @@ export default function AdminCoursesPage() {
           <input
             value={newCourse.slug || ''}
             onChange={(e) => setNewCourse((prev) => ({ ...prev, slug: e.target.value }))}
-            placeholder="slug-guia-pro"
+            placeholder="slug-curso"
             className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
           />
           <input
-            value={newCourse.description || ''}
-            onChange={(e) => setNewCourse((prev) => ({ ...prev, description: e.target.value }))}
+            value={newCourse.shortDescription || ''}
+            onChange={(e) => setNewCourse((prev) => ({ ...prev, shortDescription: e.target.value }))}
             placeholder="Descripcion corta"
             className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
           />
         </div>
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-3 grid gap-3 md:grid-cols-4">
+          <select
+            value={newCourse.status || 'draft'}
+            onChange={(e) => setNewCourse((prev) => ({ ...prev, status: e.target.value as CourseStatus }))}
+            className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+          >
+            {statusOptions.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
+          <select
+            value={newCourse.accessType || 'free'}
+            onChange={(e) => setNewCourse((prev) => ({ ...prev, accessType: e.target.value as CourseAccessType }))}
+            className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+          >
+            {accessOptions.map((access) => (
+              <option key={access} value={access}>
+                {access}
+              </option>
+            ))}
+          </select>
           <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
+            Orden
             <input
-              type="checkbox"
-              checked={newCourse.active ?? true}
-              onChange={(e) => setNewCourse((prev) => ({ ...prev, active: e.target.checked }))}
+              type="number"
+              value={newCourse.order ?? 0}
+              onChange={(e) => setNewCourse((prev) => ({ ...prev, order: Number(e.target.value) }))}
+              className="w-20 rounded-xl border border-[var(--stroke)] px-2 py-1 text-sm"
             />
-            Activo
           </label>
+        </div>
+        <div className="mt-3 flex items-center gap-3">
           <button
             type="button"
             onClick={() => void createCourse()}
@@ -252,97 +299,171 @@ export default function AdminCoursesPage() {
         {visibleCourses.map((course) => {
           const draft = drafts[course.id] || {};
           const isExpanded = expandedId === course.id;
-          const moduleCount = course.posts?.length || 0;
           return (
             <article key={course.id} className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-[var(--ink)]">{course.title}</p>
-                  <p className="text-xs text-[var(--ink-soft)]">{course.slug} · {moduleCount} modulos</p>
+                  <p className="text-xs text-[var(--ink-soft)]">{course.slug}</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={`rounded-full px-2 py-1 text-xs font-semibold ${course.active ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
-                    {course.active ? 'Activo' : 'Inactivo'}
-                  </span>
                   <Link
                     href={`/admin/courses/${course.id}`}
-                    className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)]"
+                    className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)]"
                   >
-                    Gestionar modulos
+                    Gestionar contenido
                   </Link>
                   <button
                     type="button"
                     onClick={() => setExpandedId(isExpanded ? null : course.id)}
-                    className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)]"
+                    className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)]"
                   >
                     {isExpanded ? 'Cerrar' : 'Editar'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void saveCourse(course.id)}
+                    disabled={savingId === course.id}
+                    className="rounded-xl bg-[var(--green-500)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)] disabled:opacity-60"
+                  >
+                    {savingId === course.id ? 'Guardando...' : 'Guardar'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void deleteCourse(course.id)}
+                    disabled={savingId === course.id}
+                    className="rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-600 disabled:opacity-60"
+                  >
+                    Borrar
                   </button>
                 </div>
               </div>
 
+              <div className="mt-3 flex flex-wrap gap-3 text-xs text-[var(--ink-soft)]">
+                <span>{course.status}</span>
+                <span>{course.accessType}</span>
+                <span>Orden {course.order}</span>
+              </div>
+
               {isExpanded ? (
-                <div className="mt-4 grid gap-3 md:grid-cols-4">
-                  <input
-                    value={draft.title || ''}
-                    onChange={(e) =>
-                      setDrafts((prev) => ({
-                        ...prev,
-                        [course.id]: { ...draft, title: e.target.value },
-                      }))
-                    }
-                    className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
-                  />
-                  <input
-                    value={draft.slug || ''}
-                    onChange={(e) =>
-                      setDrafts((prev) => ({
-                        ...prev,
-                        [course.id]: { ...draft, slug: e.target.value },
-                      }))
-                    }
-                    className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
-                  />
-                  <input
-                    value={draft.description || ''}
-                    onChange={(e) =>
-                      setDrafts((prev) => ({
-                        ...prev,
-                        [course.id]: { ...draft, description: e.target.value },
-                      }))
-                    }
-                    className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
-                  />
-                  <div className="flex flex-wrap items-center gap-3 md:col-span-4">
-                    <label className="flex items-center gap-2 text-sm text-[var(--ink)]">
-                      <input
-                        type="checkbox"
-                        checked={draft.active ?? false}
-                        onChange={(e) =>
-                          setDrafts((prev) => ({
-                            ...prev,
-                            [course.id]: { ...draft, active: e.target.checked },
-                          }))
-                        }
-                      />
-                      Activo
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => void saveCourse(course.id)}
-                      disabled={savingId === course.id}
-                      className="rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)] disabled:opacity-60"
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <label className="text-sm text-[var(--ink)]">
+                    Titulo
+                    <input
+                      value={draft.title || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, title: e.target.value },
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm text-[var(--ink)]">
+                    Slug
+                    <input
+                      value={draft.slug || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, slug: e.target.value },
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm text-[var(--ink)] md:col-span-2">
+                    Descripcion corta
+                    <textarea
+                      value={draft.shortDescription || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, shortDescription: e.target.value },
+                        }))
+                      }
+                      className="mt-1 min-h-[80px] w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm text-[var(--ink)] md:col-span-2">
+                    Descripcion larga
+                    <textarea
+                      value={draft.longDescription || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, longDescription: e.target.value },
+                        }))
+                      }
+                      className="mt-1 min-h-[120px] w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm text-[var(--ink)] md:col-span-2">
+                    URL cover
+                    <input
+                      value={draft.coverImage || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, coverImage: e.target.value },
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm text-[var(--ink)]">
+                    Estado
+                    <select
+                      value={draft.status || 'draft'}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, status: e.target.value as CourseStatus },
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
                     >
-                      {savingId === course.id ? 'Guardando...' : 'Guardar'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void deleteCourse(course.id)}
-                      disabled={savingId === course.id}
-                      className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700"
+                      {statusOptions.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="text-sm text-[var(--ink)]">
+                    Acceso
+                    <select
+                      value={draft.accessType || 'free'}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, accessType: e.target.value as CourseAccessType },
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
                     >
-                      Borrar
-                    </button>
-                  </div>
+                      {accessOptions.map((access) => (
+                        <option key={access} value={access}>
+                          {access}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="text-sm text-[var(--ink)]">
+                    Orden
+                    <input
+                      type="number"
+                      value={draft.order ?? 0}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, order: Number(e.target.value) },
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                    />
+                  </label>
                 </div>
               ) : null}
             </article>

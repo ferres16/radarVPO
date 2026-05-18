@@ -3,8 +3,11 @@ import {
   BackofficeOverview,
   BackofficeUser,
   Course,
+  CourseAccessRule,
+  CourseAccessRuleType,
+  CourseLesson,
   CourseModule,
-  CourseModuleAsset,
+  CourseResource,
   NewsItem,
   Promotion,
   PromotionDetail,
@@ -177,16 +180,37 @@ export const api = {
     return requestForm(`/backoffice/promotions/${id}/documents/upload`, form);
   },
   listCourses: () => request<Course[]>('/courses'),
+  listCoursesForUser: () => request<Array<Course & { access: { canAccess: boolean; reason: string } }>>('/courses/access'),
   getCourse: (slug: string) => request<Course>(`/courses/${slug}`),
-  getCourseModule: (slug: string, moduleSlug: string) =>
-    request<{ course: Course; module: CourseModule }>(`/courses/${slug}/modules/${moduleSlug}`),
+  getCourseForUser: (slug: string) => request<Course & { access: { canAccess: boolean; reason: string } }>(`/courses/${slug}/access`),
+  getCourseLesson: (slug: string, lessonSlug: string) =>
+    request<{ course: Course; lesson: CourseLesson; access: { canAccess: boolean; reason: string } }>(
+      `/courses/${slug}/lessons/${lessonSlug}`,
+    ),
+  markLessonCompleted: (slug: string, lessonSlug: string) =>
+    request<{ progressPercent: number }>(`/courses/${slug}/lessons/${lessonSlug}/progress`, {
+      method: 'POST',
+    }),
   getBackofficeCourses: () => request<Course[]>('/backoffice/courses'),
-  createBackofficeCourse: (payload: Pick<Course, 'title' | 'slug' | 'description' | 'active'>) =>
+  createBackofficeCourse: (
+    payload: Pick<
+      Course,
+      'title' | 'slug' | 'shortDescription' | 'longDescription' | 'coverImage' | 'status' | 'accessType' | 'order'
+    >,
+  ) =>
     request<Course>('/backoffice/courses', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
-  updateBackofficeCourse: (id: string, payload: Partial<Pick<Course, 'title' | 'slug' | 'description' | 'active'>>) =>
+  updateBackofficeCourse: (
+    id: string,
+    payload: Partial<
+      Pick<
+        Course,
+        'title' | 'slug' | 'shortDescription' | 'longDescription' | 'coverImage' | 'status' | 'accessType' | 'order'
+      >
+    >,
+  ) =>
     request<Course>(`/backoffice/courses/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
@@ -197,15 +221,20 @@ export const api = {
     }),
   createBackofficeCourseModule: (
     courseId: string,
-    payload: Pick<CourseModule, 'title' | 'slug' | 'summary' | 'body' | 'position' | 'publishedAt'>,
+    payload: Pick<CourseModule, 'title' | 'description' | 'order' | 'visibility'>,
   ) =>
     request<CourseModule>(`/backoffice/courses/${courseId}/modules`, {
       method: 'POST',
       body: JSON.stringify(payload),
     }),
+  reorderBackofficeCourseModules: (courseId: string, ids: string[]) =>
+    request<CourseModule[]>(`/backoffice/courses/${courseId}/modules/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
   updateBackofficeCourseModule: (
     moduleId: string,
-    payload: Partial<Pick<CourseModule, 'title' | 'slug' | 'summary' | 'body' | 'position' | 'publishedAt'>>,
+    payload: Partial<Pick<CourseModule, 'title' | 'description' | 'order' | 'visibility'>>,
   ) =>
     request<CourseModule>(`/backoffice/courses/modules/${moduleId}`, {
       method: 'PATCH',
@@ -215,16 +244,61 @@ export const api = {
     request<{ deleted: boolean }>(`/backoffice/courses/modules/${moduleId}`, {
       method: 'DELETE',
     }),
-  uploadBackofficeCourseAsset: (
+  createBackofficeCourseLesson: (
     moduleId: string,
-    kind: CourseModuleAsset['kind'],
+    payload: Pick<CourseLesson, 'title' | 'slug' | 'contentJson' | 'order' | 'durationMinutes' | 'status' | 'type'>,
+  ) =>
+    request<CourseLesson>(`/backoffice/courses/modules/${moduleId}/lessons`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  reorderBackofficeCourseLessons: (moduleId: string, ids: string[]) =>
+    request<CourseLesson[]>(`/backoffice/courses/modules/${moduleId}/lessons/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
+  updateBackofficeCourseLesson: (
+    lessonId: string,
+    payload: Partial<Pick<CourseLesson, 'title' | 'slug' | 'contentJson' | 'order' | 'durationMinutes' | 'status' | 'type'>>,
+  ) =>
+    request<CourseLesson>(`/backoffice/courses/lessons/${lessonId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteBackofficeCourseLesson: (lessonId: string) =>
+    request<{ deleted: boolean }>(`/backoffice/courses/lessons/${lessonId}`, {
+      method: 'DELETE',
+    }),
+  uploadBackofficeCourseResource: (
+    lessonId: string,
+    kind: CourseResource['kind'],
     file: File,
   ) => {
     const form = new FormData();
     form.append('kind', kind);
     form.append('file', file);
-    return requestForm<CourseModuleAsset>(`/backoffice/courses/modules/${moduleId}/assets/upload`, form);
+    return requestForm<CourseResource>(`/backoffice/courses/lessons/${lessonId}/resources/upload`, form);
   },
+  createBackofficeCourseAccessRule: (
+    courseId: string,
+    payload: { ruleType: CourseAccessRuleType; configJson: Record<string, unknown> },
+  ) =>
+    request<CourseAccessRule>(`/backoffice/courses/${courseId}/access-rules`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateBackofficeCourseAccessRule: (
+    ruleId: string,
+    payload: Partial<{ ruleType: CourseAccessRuleType; configJson: Record<string, unknown> }>,
+  ) =>
+    request<CourseAccessRule>(`/backoffice/courses/access-rules/${ruleId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteBackofficeCourseAccessRule: (ruleId: string) =>
+    request<{ deleted: boolean }>(`/backoffice/courses/access-rules/${ruleId}`, {
+      method: 'DELETE',
+    }),
   login: (email: string, password: string) =>
     request<{ user: { id: string; email: string } }>('/auth/login', {
       method: 'POST',

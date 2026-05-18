@@ -87,10 +87,6 @@ class EnvironmentVariables {
   NEWS_ENABLED?: string;
 
   @IsOptional()
-  @IsBooleanString()
-  EDUCATIONAL_ENABLED?: string;
-
-  @IsOptional()
   @IsInt()
   @Min(1)
   DAILY_NEWS_MAX_ITEMS?: number;

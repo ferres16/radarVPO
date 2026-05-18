@@ -1,72 +1,319 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  CourseAccessRuleType,
+  CourseAccessType,
+  CourseStatus,
+  LessonProgressStatus,
+  SubscriptionStatus,
+} from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
-const allowedCourseSlugs = ['guia-vpo-esencial', 'guia-pro'];
+type AccessDecision = {
+  canAccess: boolean;
+  reason: 'free' | 'plan' | 'entitlement' | 'purchase' | 'subscription' | 'locked';
+};
 
 @Injectable()
 export class CoursesService {
   constructor(private readonly prisma: PrismaService) {}
 
   async listCourses() {
-    return this.prisma.educationalTopic.findMany({
-      where: {
-        active: true,
-        slug: { in: allowedCourseSlugs },
-      },
-      orderBy: { createdAt: 'desc' },
+    return this.prisma.course.findMany({
+      where: { status: CourseStatus.published },
+      orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
       include: {
-        posts: {
-          where: { publishedAt: { not: null } },
-          orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
+        modules: {
+          where: { visibility: 'visible' },
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            lessons: {
+              where: { status: 'published' },
+              orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                order: true,
+                durationMinutes: true,
+                status: true,
+                type: true,
+              },
+            },
+          },
         },
       },
     });
   }
 
-  async getCourseBySlug(slug: string) {
-    if (!allowedCourseSlugs.includes(slug)) {
-      throw new NotFoundException('Course not found');
-    }
+  async listCoursesForUser(userId: string) {
+    const [courses, profile] = await Promise.all([
+      this.prisma.course.findMany({
+        where: { status: CourseStatus.published },
+        orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+        include: {
+          modules: {
+            where: { visibility: 'visible' },
+            orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+            include: {
+              lessons: {
+                where: { status: 'published' },
+                orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+                select: {
+                  id: true,
+                  title: true,
+                  slug: true,
+                  order: true,
+                  durationMinutes: true,
+                  status: true,
+                  type: true,
+                },
+              },
+            },
+          },
+          accessRules: { orderBy: { createdAt: 'asc' } },
+        },
+      }),
+      this.getAccessProfile(userId),
+    ]);
 
-    const course = await this.prisma.educationalTopic.findUnique({
+    return courses.map((course) => ({
+      ...course,
+      access: this.evaluateAccess(course, profile),
+    }));
+  }
+
+  async getCourseBySlug(slug: string) {
+    const course = await this.prisma.course.findUnique({
       where: { slug },
       include: {
-        posts: {
-          where: { publishedAt: { not: null } },
-          orderBy: [{ position: 'asc' }, { createdAt: 'asc' }],
+        modules: {
+          where: { visibility: 'visible' },
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            lessons: {
+              where: { status: 'published' },
+              orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                order: true,
+                durationMinutes: true,
+                status: true,
+                type: true,
+              },
+            },
+          },
         },
+        accessRules: { orderBy: { createdAt: 'asc' } },
       },
     });
 
-    if (!course || !course.active) {
+    if (!course || course.status !== CourseStatus.published) {
       throw new NotFoundException('Course not found');
     }
 
     return course;
   }
 
-  async getModuleBySlug(courseSlug: string, moduleSlug: string) {
-    if (!allowedCourseSlugs.includes(courseSlug)) {
-      throw new NotFoundException('Module not found');
-    }
+  async getCourseBySlugForUser(slug: string, userId: string) {
+    const [course, profile] = await Promise.all([
+      this.getCourseBySlug(slug),
+      this.getAccessProfile(userId),
+    ]);
 
-    const course = await this.prisma.educationalTopic.findUnique({
-      where: { slug: courseSlug },
+    return {
+      ...course,
+      access: this.evaluateAccess(course, profile),
+    };
+  }
+
+  async getLessonBySlug(courseSlug: string, lessonSlug: string, userId: string) {
+    const course = await this.getCourseBySlug(courseSlug);
+    const profile = await this.getAccessProfile(userId);
+    const access = this.evaluateAccess(course, profile);
+
+    const lesson = await this.prisma.courseLesson.findFirst({
+      where: { courseId: course.id, slug: lessonSlug, status: 'published' },
       include: {
-        posts: {
-          where: { slug: moduleSlug, publishedAt: { not: null } },
-          include: { assets: { orderBy: { createdAt: 'asc' } } },
-        },
+        module: true,
+        resources: { orderBy: { createdAt: 'asc' } },
       },
     });
 
-    if (!course || !course.active || course.posts.length === 0) {
-      throw new NotFoundException('Module not found');
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    if (!access.canAccess) {
+      return {
+        course,
+        access,
+        lesson: {
+          ...lesson,
+          contentJson: null,
+          resources: [],
+        },
+      };
     }
 
     return {
       course,
-      module: course.posts[0],
+      access,
+      lesson,
     };
+  }
+
+  async markLessonCompletedBySlug(userId: string, courseSlug: string, lessonSlug: string) {
+    const [course, profile] = await Promise.all([
+      this.getCourseBySlug(courseSlug),
+      this.getAccessProfile(userId),
+    ]);
+    const access = this.evaluateAccess(course, profile);
+
+    if (!access.canAccess) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    const lesson = await this.prisma.courseLesson.findFirst({
+      where: { slug: lessonSlug, course: { slug: courseSlug } },
+      select: { id: true, courseId: true, moduleId: true },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    await this.prisma.lessonProgress.upsert({
+      where: { userId_lessonId: { userId, lessonId: lesson.id } },
+      update: {
+        status: LessonProgressStatus.completed,
+        completedAt: new Date(),
+      },
+      create: {
+        userId,
+        courseId: lesson.courseId,
+        moduleId: lesson.moduleId,
+        lessonId: lesson.id,
+        status: LessonProgressStatus.completed,
+        completedAt: new Date(),
+      },
+    });
+
+    return this.recalculateCourseProgress(userId, lesson.courseId, lesson.id);
+  }
+
+  private async recalculateCourseProgress(userId: string, courseId: string, lastLessonId?: string) {
+    const [totalLessons, completedLessons] = await Promise.all([
+      this.prisma.courseLesson.count({
+        where: { courseId, status: 'published' },
+      }),
+      this.prisma.lessonProgress.count({
+        where: { userId, courseId, status: LessonProgressStatus.completed },
+      }),
+    ]);
+
+    const progressPercent = totalLessons === 0
+      ? 0
+      : Math.min(100, Math.round((completedLessons / totalLessons) * 100));
+
+    return this.prisma.courseProgress.upsert({
+      where: { userId_courseId: { userId, courseId } },
+      update: {
+        progressPercent,
+        completedLessons,
+        totalLessons,
+        lastLessonId: lastLessonId ?? undefined,
+      },
+      create: {
+        userId,
+        courseId,
+        progressPercent,
+        completedLessons,
+        totalLessons,
+        lastLessonId,
+      },
+    });
+  }
+
+  private async getAccessProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        plan: true,
+        entitlements: true,
+        purchases: { where: { status: 'paid' } },
+        subscriptions: {
+          where: {
+            status: { in: [SubscriptionStatus.active, SubscriptionStatus.trialing] },
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  private evaluateAccess(
+    course: { accessType: CourseAccessType; accessRules?: Array<{ ruleType: CourseAccessRuleType; configJson: Prisma.JsonValue }> },
+    profile: { plan: string; entitlements: Array<{ key: string }>; purchases: Array<{ productKey: string; courseId: string | null }>; subscriptions: Array<{ planKey: string }> },
+  ): AccessDecision {
+    if (course.accessType === CourseAccessType.free) {
+      return { canAccess: true, reason: 'free' };
+    }
+
+    const rules = course.accessRules ?? [];
+
+    for (const rule of rules) {
+      if (!rule.configJson || typeof rule.configJson !== 'object') {
+        continue;
+      }
+      const config = rule.configJson as Record<string, unknown>;
+
+      if (rule.ruleType === CourseAccessRuleType.plan) {
+        const requiredPlan = typeof config.plan === 'string' ? config.plan : undefined;
+        if (requiredPlan && profile.plan === requiredPlan) {
+          return { canAccess: true, reason: 'plan' };
+        }
+      }
+
+      if (rule.ruleType === CourseAccessRuleType.entitlement) {
+        const key = typeof config.key === 'string' ? config.key : undefined;
+        if (key && profile.entitlements.some((entitlement) => entitlement.key === key)) {
+          return { canAccess: true, reason: 'entitlement' };
+        }
+      }
+
+      if (rule.ruleType === CourseAccessRuleType.purchase) {
+        const productKey = typeof config.productKey === 'string' ? config.productKey : undefined;
+        const courseId = typeof config.courseId === 'string' ? config.courseId : undefined;
+        const match = profile.purchases.some((purchase) =>
+          (productKey && purchase.productKey === productKey) ||
+          (courseId && purchase.courseId === courseId),
+        );
+        if (match) {
+          return { canAccess: true, reason: 'purchase' };
+        }
+      }
+
+      if (rule.ruleType === CourseAccessRuleType.subscription) {
+        const planKey = typeof config.planKey === 'string' ? config.planKey : undefined;
+        if (planKey && profile.subscriptions.some((subscription) => subscription.planKey === planKey)) {
+          return { canAccess: true, reason: 'subscription' };
+        }
+      }
+    }
+
+    if (course.accessType === CourseAccessType.pro && profile.plan === 'pro') {
+      return { canAccess: true, reason: 'plan' };
+    }
+
+    return { canAccess: false, reason: 'locked' };
   }
 }

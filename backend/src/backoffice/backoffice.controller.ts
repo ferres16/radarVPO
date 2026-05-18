@@ -17,13 +17,18 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { BackofficeService } from './backoffice.service';
+import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
+import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
 import { ImportUnitsFromPasteDto } from './dto/import-units-from-paste.dto';
+import { ReorderCourseItemsDto } from './dto/reorder-course-items.dto';
 import { ReorderUnitsDto } from './dto/reorder-units.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
+import { UpdateCourseAccessRuleDto } from './dto/update-course-access-rule.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
+import { UpdateCourseLessonDto } from './dto/update-course-lesson.dto';
 import { UpdateCourseModuleDto } from './dto/update-course-module.dto';
 import { UpdatePromotionStatusDto } from './dto/update-promotion-status.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
@@ -98,6 +103,14 @@ export class BackofficeController {
     return this.backofficeService.createCourseModule(courseId, dto);
   }
 
+  @Post('courses/:id/modules/reorder')
+  reorderCourseModules(
+    @Param('id') courseId: string,
+    @Body() dto: ReorderCourseItemsDto,
+  ) {
+    return this.backofficeService.reorderCourseModules(courseId, dto.ids);
+  }
+
   @Patch('courses/modules/:moduleId')
   updateCourseModule(
     @Param('moduleId') moduleId: string,
@@ -111,15 +124,65 @@ export class BackofficeController {
     return this.backofficeService.deleteCourseModule(moduleId);
   }
 
-  @Post('courses/modules/:moduleId/assets/upload')
+  @Post('courses/modules/:moduleId/lessons')
+  createCourseLesson(
+    @Param('moduleId') moduleId: string,
+    @Body() dto: CreateCourseLessonDto,
+  ) {
+    return this.backofficeService.createCourseLesson(moduleId, dto);
+  }
+
+  @Post('courses/modules/:moduleId/lessons/reorder')
+  reorderCourseLessons(
+    @Param('moduleId') moduleId: string,
+    @Body() dto: ReorderCourseItemsDto,
+  ) {
+    return this.backofficeService.reorderCourseLessons(moduleId, dto.ids);
+  }
+
+  @Patch('courses/lessons/:lessonId')
+  updateCourseLesson(
+    @Param('lessonId') lessonId: string,
+    @Body() dto: UpdateCourseLessonDto,
+  ) {
+    return this.backofficeService.updateCourseLesson(lessonId, dto);
+  }
+
+  @Delete('courses/lessons/:lessonId')
+  deleteCourseLesson(@Param('lessonId') lessonId: string) {
+    return this.backofficeService.deleteCourseLesson(lessonId);
+  }
+
+  @Post('courses/lessons/:lessonId/resources/upload')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FileInterceptor('file'))
-  uploadCourseAsset(
-    @Param('moduleId') moduleId: string,
+  uploadCourseResource(
+    @Param('lessonId') lessonId: string,
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: UploadCourseAssetDto,
   ) {
-    return this.backofficeService.uploadCourseAsset(moduleId, dto, file);
+    return this.backofficeService.uploadCourseResource(lessonId, dto, file);
+  }
+
+  @Post('courses/:id/access-rules')
+  createCourseAccessRule(
+    @Param('id') courseId: string,
+    @Body() dto: CreateCourseAccessRuleDto,
+  ) {
+    return this.backofficeService.createCourseAccessRule(courseId, dto);
+  }
+
+  @Patch('courses/access-rules/:ruleId')
+  updateCourseAccessRule(
+    @Param('ruleId') ruleId: string,
+    @Body() dto: UpdateCourseAccessRuleDto,
+  ) {
+    return this.backofficeService.updateCourseAccessRule(ruleId, dto);
+  }
+
+  @Delete('courses/access-rules/:ruleId')
+  deleteCourseAccessRule(@Param('ruleId') ruleId: string) {
+    return this.backofficeService.deleteCourseAccessRule(ruleId);
   }
 
   @Post('news')
