@@ -252,7 +252,7 @@ export class BackofficeService {
         moduleId: module.id,
         title: dto.title,
         slug: dto.slug,
-        contentJson: dto.contentJson,
+        contentJson: this.coerceJsonValue(dto.contentJson),
         order: dto.order ?? 0,
         durationMinutes: dto.durationMinutes,
         status: dto.status,
@@ -292,7 +292,7 @@ export class BackofficeService {
       data: {
         title: dto.title,
         slug: dto.slug,
-        contentJson: dto.contentJson,
+        contentJson: this.coerceJsonValue(dto.contentJson),
         order: dto.order,
         durationMinutes: dto.durationMinutes,
         status: dto.status,
@@ -347,7 +347,7 @@ export class BackofficeService {
       data: {
         courseId,
         ruleType: dto.ruleType,
-        configJson: dto.configJson,
+        configJson: this.coerceRequiredJsonValue(dto.configJson),
       },
     });
   }
@@ -357,7 +357,7 @@ export class BackofficeService {
       where: { id: ruleId },
       data: {
         ruleType: dto.ruleType,
-        configJson: dto.configJson,
+        configJson: this.coerceJsonValue(dto.configJson),
       },
     });
   }
@@ -759,6 +759,18 @@ export class BackofficeService {
     } catch {
       throw new BadRequestException('Invalid JSON block in request body');
     }
+  }
+
+  private coerceJsonValue(
+    value?: Record<string, unknown>,
+  ): Prisma.InputJsonValue | undefined {
+    return value ? (value as Prisma.InputJsonValue) : undefined;
+  }
+
+  private coerceRequiredJsonValue(
+    value: Record<string, unknown>,
+  ): Prisma.InputJsonValue {
+    return value as Prisma.InputJsonValue;
   }
 
   private mapUnitPayload(dto: UpsertUnitDto): Prisma.PromotionUnitUpdateInput {
