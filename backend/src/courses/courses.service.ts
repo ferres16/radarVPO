@@ -214,6 +214,28 @@ export class CoursesService {
     return this.recalculateCourseProgress(userId, lesson.courseId, lesson.id);
   }
 
+  async getCourseProgressBySlug(userId: string, courseSlug: string) {
+    const [course, profile] = await Promise.all([
+      this.getCourseBySlug(courseSlug),
+      this.getAccessProfile(userId),
+    ]);
+
+    const access = this.evaluateAccess(course, profile);
+    if (!access.canAccess) {
+      return {
+        courseId: course.id,
+        progressPercent: 0,
+        completedLessons: 0,
+        totalLessons: await this.prisma.courseLesson.count({
+          where: { courseId: course.id, status: 'published' },
+        }),
+        lastLessonId: null,
+      };
+    }
+
+    return this.recalculateCourseProgress(userId, course.id);
+  }
+
   private async recalculateCourseProgress(userId: string, courseId: string, lastLessonId?: string) {
     const [totalLessons, completedLessons] = await Promise.all([
       this.prisma.courseLesson.count({

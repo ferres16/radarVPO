@@ -187,6 +187,14 @@ export const api = {
     request<{ course: Course; lesson: CourseLesson; access: { canAccess: boolean; reason: string } }>(
       `/courses/${slug}/lessons/${lessonSlug}`,
     ),
+  getCourseProgress: (slug: string) =>
+    request<{
+      courseId: string;
+      progressPercent: number;
+      completedLessons: number;
+      totalLessons: number;
+      lastLessonId?: string | null;
+    }>(`/courses/${slug}/progress`),
   markLessonCompleted: (slug: string, lessonSlug: string) =>
     request<{ progressPercent: number }>(`/courses/${slug}/lessons/${lessonSlug}/progress`, {
       method: 'POST',

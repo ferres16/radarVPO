@@ -46,6 +46,15 @@ export class CoursesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get(':slug/progress')
+  getCourseProgress(
+    @Param('slug') slug: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.coursesService.getCourseProgressBySlug(user.sub, slug);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post(':slug/lessons/:lessonSlug/progress')
   markLessonCompleted(
     @Param('slug') slug: string,

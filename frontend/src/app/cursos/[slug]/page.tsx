@@ -11,6 +11,11 @@ export default function CourseDetailPage() {
   const slug = typeof params.slug === 'string' ? params.slug : '';
   const [course, setCourse] = useState<Course | null>(null);
   const [access, setAccess] = useState<CourseAccessDecision | null>(null);
+  const [progress, setProgress] = useState<{
+    progressPercent: number;
+    completedLessons: number;
+    totalLessons: number;
+  } | null>(null);
   const [authStatus, setAuthStatus] = useState<'loading' | 'authed' | 'guest'>('loading');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -48,6 +53,13 @@ export default function CourseDetailPage() {
         const data = await api.getCourseForUser(slug);
         if (!active) return;
         setAccess(data.access || null);
+        const courseProgress = await api.getCourseProgress(slug);
+        if (!active) return;
+        setProgress({
+          progressPercent: courseProgress.progressPercent,
+          completedLessons: courseProgress.completedLessons,
+          totalLessons: courseProgress.totalLessons,
+        });
       } catch {
         if (!active) return;
         setAccess(null);
@@ -62,6 +74,7 @@ export default function CourseDetailPage() {
 
   const modules = useMemo(() => course?.modules || [], [course]);
   const locked = access ? !access.canAccess : course?.accessType !== 'free';
+  const progressPercent = progress?.progressPercent ?? 0;
 
   if (authStatus === 'loading') {
     return (
@@ -216,9 +229,15 @@ export default function CourseDetailPage() {
         <aside className="space-y-4">
           <div className="rounded-3xl border border-[var(--stroke)] bg-[linear-gradient(135deg,#eef2ff,white)] p-6 shadow-card">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Progreso</p>
-            <h3 className="mt-2 text-2xl font-black text-[var(--ink)] display-type">Progreso sincronizado</h3>
+            <h3 className="mt-2 text-2xl font-black text-[var(--ink)] display-type">{progressPercent}% completado</h3>
+            <div className="mt-3 h-2 w-full rounded-full bg-white">
+              <div
+                className="h-2 rounded-full bg-[var(--green-500)] transition-all"
+                style={{ width: `${Math.min(100, progressPercent)}%` }}
+              />
+            </div>
             <p className="mt-2 text-sm text-[var(--ink-soft)]">
-              Cada leccion completada se guarda automaticamente. Reanuda donde lo dejaste.
+              {progress ? `${progress.completedLessons} de ${progress.totalLessons} lecciones completadas.` : 'Sin progreso registrado.'}
             </p>
           </div>
           <div className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">

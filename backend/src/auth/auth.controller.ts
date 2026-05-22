@@ -95,6 +95,9 @@ export class AuthController {
     await this.authService.logout(sessionId);
 
     const clearOptions = {
+      httpOnly: true,
+      sameSite: resolveSameSite() as 'none' | 'lax' | 'strict',
+      secure: process.env.COOKIE_SECURE === 'true' || isProduction,
       path: '/',
       domain: cookieDomain || undefined,
     };
