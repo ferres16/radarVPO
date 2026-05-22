@@ -135,7 +135,11 @@ export class CoursesService {
     const access = this.evaluateAccess(course, profile);
 
     const lesson = await this.prisma.courseLesson.findFirst({
-      where: { courseId: course.id, slug: lessonSlug, status: 'published' },
+      where: {
+        courseId: course.id,
+        slug: { in: this.normalizeLessonSlugs(lessonSlug) },
+        status: 'published',
+      },
       include: {
         module: true,
         resources: { orderBy: { createdAt: 'asc' } },
@@ -158,6 +162,8 @@ export class CoursesService {
       };
     }
 
+    await this.trackLessonProgress(userId, lesson.courseId, lesson.moduleId, lesson.id);
+
     return {
       course,
       access,
@@ -177,7 +183,11 @@ export class CoursesService {
     }
 
     const lesson = await this.prisma.courseLesson.findFirst({
-      where: { slug: lessonSlug, course: { slug: courseSlug } },
+      where: {
+        courseId: course.id,
+        slug: { in: this.normalizeLessonSlugs(lessonSlug) },
+        status: 'published',
+      },
       select: { id: true, courseId: true, moduleId: true },
     });
 
@@ -235,6 +245,52 @@ export class CoursesService {
         lastLessonId,
       },
     });
+  }
+
+  private normalizeLessonSlugs(raw: string) {
+    const normalized = this.slugify(raw);
+    return normalized && normalized !== raw ? [raw, normalized] : [raw];
+  }
+
+  private slugify(input: string) {
+    return input
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80);
+  }
+
+  private async trackLessonProgress(
+    userId: string,
+    courseId: string,
+    moduleId: string,
+    lessonId: string,
+  ) {
+    const existing = await this.prisma.lessonProgress.findUnique({
+      where: { userId_lessonId: { userId, lessonId } },
+      select: { status: true },
+    });
+
+    if (!existing) {
+      await this.prisma.lessonProgress.create({
+        data: {
+          userId,
+          courseId,
+          moduleId,
+          lessonId,
+          status: LessonProgressStatus.in_progress,
+        },
+      });
+    } else if (existing.status !== LessonProgressStatus.completed) {
+      await this.prisma.lessonProgress.update({
+        where: { userId_lessonId: { userId, lessonId } },
+        data: { status: LessonProgressStatus.in_progress },
+      });
+    }
+
+    await this.recalculateCourseProgress(userId, courseId, lessonId);
   }
 
   private async getAccessProfile(userId: string) {
