@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { NewsCard } from '@/components/news-card';
 import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
+import { FollowupButton } from '@/components/followup-button';
 import { getDaysRemaining, shouldShowAlert } from '@/lib/alert-countdown';
 
 export default async function Home() {
@@ -20,13 +21,17 @@ export default async function Home() {
     .filter((entry): entry is { promotion: (typeof alerts)[number]; daysRemaining: number } => shouldShowAlert(entry.daysRemaining))
     .slice(0, 3);
 
+  const whatsappContactUrl =
+    process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
+    'https://wa.me/34600111222?text=Hola%2C%20quiero%20activar%20el%20seguimiento%20individualizado%20de%20Radar%20VPO.';
+
   const serviceTags = [
     'Asesoria personalizada',
     'Seguimiento individualizado',
     'Respuestas a dudas 1:1',
     'Acompañamiento durante todo el proceso',
-    'Prioridad en plazos y cambios',
-    'Curso de iniciacion VPO',
+    'Alertas Pro por WhatsApp',
+    'Cursos y formaciones',
     'Checklist de documentacion',
     'Preparacion de carpeta VPO',
   ];
@@ -58,9 +63,7 @@ export default async function Home() {
               </p>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                <Link href="/register" className="rounded-full bg-(--green-500) px-5 py-2.5 text-sm font-semibold text-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-(--green-700)">
-                  Pedir seguimiento
-                </Link>
+                <FollowupButton className="rounded-full bg-(--green-500) px-5 py-2.5 text-sm font-semibold text-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-(--green-700) disabled:opacity-60" />
                 <Link href="/services" className="rounded-full border border-(--stroke) bg-white px-5 py-2.5 text-sm font-semibold text-(--ink) shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-(--bg-eco)">
                   Ver servicios
                 </Link>
@@ -96,20 +99,42 @@ export default async function Home() {
 
           <aside className="animate-fade-up-delay-1">
             <div className="surface-card flex h-full flex-col gap-4 p-4">
-              <div className="rounded-2xl border border-[rgba(78,143,58,0.25)] bg-[linear-gradient(135deg,rgba(78,143,58,0.12),rgba(255,255,255,0.96))] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--green-700)">Curso de iniciacion</p>
-                <h2 className="mt-2 text-xl font-black tracking-tight text-(--ink) display-type">Arranca con una guia clara y modular</h2>
+              <div className="rounded-2xl border border-[rgba(15,118,110,0.18)] bg-[linear-gradient(135deg,rgba(15,118,110,0.12),rgba(255,255,255,0.96))] p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[rgba(15,118,110,0.9)]">El curso que necesitas</p>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-(--ink) display-type">Guia base para desbloquear tu VPO</h2>
                 <p className="mt-2 text-sm leading-6 text-(--ink-soft)">
-                  Modulos breves, ejemplos reales y recursos descargables para entender la VPO desde el primer dia.
+                  Estamos preparando el curso con recursos descargables, casos reales y plan de accion.
+                </p>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[rgba(15,118,110,0.9)]">Proximamente</span>
+                  <Link href="/cursos" className="rounded-full bg-(--ink) px-4 py-2 text-sm font-semibold text-white transition hover:bg-black">
+                    Ir al curso
+                  </Link>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-[rgba(78,143,58,0.25)] bg-[linear-gradient(135deg,rgba(78,143,58,0.12),rgba(255,255,255,0.96))] p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-(--green-700)">Tambien hay otros cursos</p>
+                <h2 className="mt-2 text-xl font-black tracking-tight text-(--ink) display-type">Explora rutas de aprendizaje modernas</h2>
+                <p className="mt-2 text-sm leading-6 text-(--ink-soft)">
+                  Aprende por bloques visuales, avances guardados y contenido que se actualiza con cada convocatoria.
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   <Link href="/cursos" className="rounded-full bg-(--ink) px-4 py-2 text-sm font-semibold text-white transition hover:bg-black">
-                    Ver cursos
-                  </Link>
-                  <Link href="/register" className="rounded-full border border-(--stroke) bg-white px-4 py-2 text-sm font-semibold text-(--ink) transition hover:bg-(--bg-eco)">
-                    Crear cuenta
+                    Ver mas cursos
                   </Link>
                 </div>
+              </div>
+
+              <div className="rounded-2xl border border-[rgba(16,185,129,0.22)] bg-[linear-gradient(135deg,rgba(16,185,129,0.12),rgba(255,255,255,0.96))] p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Alertas Pro en WhatsApp</p>
+                <h3 className="mt-2 text-lg font-black text-(--ink) display-type">Activa avisos premium en tiempo real</h3>
+                <p className="mt-2 text-sm text-(--ink-soft)">
+                  Recibe cambios clave, nuevas promociones y recordatorios de fechas criticas directamente en tu WhatsApp.
+                </p>
+                <Link href={whatsappContactUrl} className="mt-3 inline-flex rounded-full border border-(--stroke) bg-white px-4 py-2 text-sm font-semibold text-(--ink) shadow-card transition hover:bg-(--bg-eco)">
+                  Activar alertas Pro
+                </Link>
               </div>
 
               <div className="rounded-2xl border border-[rgba(56,189,248,0.22)] bg-[linear-gradient(135deg,rgba(56,189,248,0.10),rgba(255,255,255,0.96))] p-4">

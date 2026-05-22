@@ -7,59 +7,50 @@ const whatsappContactUrl =
 
 const services = [
   {
-    eyebrow: 'Servicio 01',
-    title: 'Asesoria personalizada',
+    eyebrow: '01 · Cursos y formaciones',
+    title: 'Cursos y formaciones activas',
     copy:
-      'Te acompañamos de principio a fin: revisamos bases, resolvemos tus dudas y te ayudamos a preparar la solicitud correcta antes de que se cierre el plazo.',
-    cta: 'Contactar ahora',
-    href: 'mailto:soporte@radarvpo.com?subject=Asesoria%20Radar%20VPO',
-    accent: 'from-cyan-50 to-emerald-50',
+      'Microlecciones, guias vivas y recursos descargables para entender requisitos, plazos y estrategias reales.',
+    cta: 'Ver cursos',
+    href: '/cursos',
+    accent: 'from-cyan-50 to-white',
   },
   {
-    eyebrow: 'Servicio 02',
-    title: 'Seguimiento individualizado',
+    eyebrow: '02 · Alertas Pro',
+    title: 'Alertas de promociones Pro',
     copy:
-      'Analizamos tu situación concreta y activamos todo el paquete tras contacto previo por WhatsApp.',
-    cta: 'Quiero seguimiento',
+      'Avisos de nuevas promociones, cambios en bases y recordatorios de fechas criticas directamente en WhatsApp.',
+    cta: 'Activar alertas Pro',
     href: whatsappContactUrl,
-    accent: 'from-white to-cyan-50',
-  },
-  {
-    eyebrow: 'Servicio 03',
-    title: 'Radar VPO Pro con SMS',
-    copy:
-      'Acceso a la guia por Stripe Checkout y activacion de la subscripcion SMS Pro desde la compra.',
-    cta: 'Quiero acceso Pro',
-    href: stripeCheckoutUrl,
     accent: 'from-emerald-50 to-white',
   },
   {
-    eyebrow: 'Servicio 04',
-    title: 'Prioridad en requisitos y plazos',
+    eyebrow: '03 · Asesoria personalizada',
+    title: 'Asesoria personalizada integral',
     copy:
-      'Si activas seguimiento individualizado, este servicio queda incluido automáticamente con el resto del acompañamiento.',
-    cta: 'Ver servicio',
+      'Incluye acceso a todos los servicios: cursos, alertas Pro y acompañamiento 1:1 para cada convocatoria.',
+    cta: 'Quiero asesoria',
     href: whatsappContactUrl,
-    accent: 'from-slate-50 to-emerald-50',
+    accent: 'from-white to-cyan-50',
   },
 ];
 
 export default function ServicesPage() {
   return (
     <main className="shell pb-16">
-      <section className="relative overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-[linear-gradient(135deg,#f7fbff_0%,#eef4f8_45%,#ffffff_100%)] p-6 shadow-card md:p-8">
+      <section className="relative overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-[linear-gradient(135deg,#f4fbff_0%,#eef7f1_55%,#ffffff_100%)] p-6 shadow-card md:p-8">
         <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[rgba(56,189,248,0.12)] blur-3xl animate-float-slow" />
         <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[rgba(47,107,36,0.10)] blur-3xl animate-float-slow-delay" />
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--green-700)]">Servicios</p>
         <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-[var(--ink)] md:text-6xl display-type">
-          Servicios pensados para moverte con criterio en vivienda publica.
+          Tres puertas para avanzar con seguridad en VPO.
         </h1>
         <p className="mt-4 max-w-2xl text-base text-[var(--ink-soft)]">
-          Asesoria, resolucion de dudas, acompanamiento del proceso, seguimiento individualizado y alertas Pro por SMS en una misma experiencia.
+          Cursos y formaciones, alertas Pro en WhatsApp y asesoria personalizada con acceso total a todo el ecosistema Radar VPO.
         </p>
       </section>
 
-      <section className="mt-6 grid gap-4 lg:grid-cols-2 xl:grid-cols-4">
+      <section className="mt-6 grid gap-4 lg:grid-cols-3">
         {services.map((service) => (
           <article
             key={service.title}
@@ -79,35 +70,32 @@ export default function ServicesPage() {
         ))}
       </section>
 
-      <section className="mt-6 grid gap-4 md:grid-cols-2">
-        <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card">
-          <h3 className="text-lg font-bold text-[var(--ink)]">Proceso rápido</h3>
-          <ol className="mt-3 space-y-2 text-sm text-[var(--ink-soft)]">
-            <li>1. Nos escribes con tu caso o tu convocatoria objetivo.</li>
-            <li>2. Revisamos requisitos, plazos, documentos y respondemos tus dudas en claro.</li>
-            <li>3. Te devolvemos un plan accionable y te acompanamos durante todo el proceso.</li>
-          </ol>
-        </article>
-        <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card">
-          <h3 className="text-lg font-bold text-[var(--ink)]">Radar VPO Pro</h3>
-          <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
-            Compra la guia por Stripe Checkout y activa la subscripcion SMS Pro para recibir avisos y cambios clave.
-          </p>
-          <Link href={stripeCheckoutUrl} className="mt-4 inline-flex rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
-            Ir a checkout
-          </Link>
-          <Link href={whatsappContactUrl} className="mt-3 inline-flex rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
-            Pedir seguimiento por WhatsApp
-          </Link>
-        </article>
-      </section>
-
       <section className="mt-6 rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card">
-        <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Enfoque</p>
-        <h2 className="mt-2 text-xl font-black text-[var(--ink)] display-type">Acompañamiento real, sin servicios que distraen</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--ink-soft)]">
-          El foco está en asesoría, seguimiento individualizado y contexto útil para actuar antes. Si necesitas entender una convocatoria, priorizar pasos o no perder una fecha clave, este es el espacio.
-        </p>
+        <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Metodo Radar VPO</p>
+            <h2 className="mt-2 text-2xl font-black text-[var(--ink)] display-type">Entra, entiende y actua sin perder oportunidades</h2>
+            <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--ink-soft)]">
+              La asesoria incluye el acceso completo: cursos activos, alertas Pro y acompañamiento 1:1. Un solo lugar para avanzar con seguridad.
+            </p>
+          </div>
+          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Ruta rapida</p>
+            <ol className="mt-3 space-y-2 text-sm text-[var(--ink-soft)]">
+              <li>1. Elige el servicio que necesitas hoy.</li>
+              <li>2. Recibe guia clara y respuestas directas.</li>
+              <li>3. Acompañamiento continuo hasta el cierre.</li>
+            </ol>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href={stripeCheckoutUrl} className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
+                Ir a checkout
+              </Link>
+              <Link href={whatsappContactUrl} className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
+                Hablar por WhatsApp
+              </Link>
+            </div>
+          </div>
+        </div>
       </section>
     </main>
   );

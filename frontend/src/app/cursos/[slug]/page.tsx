@@ -11,6 +11,7 @@ export default function CourseDetailPage() {
   const slug = typeof params.slug === 'string' ? params.slug : '';
   const [course, setCourse] = useState<Course | null>(null);
   const [access, setAccess] = useState<CourseAccessDecision | null>(null);
+  const [authStatus, setAuthStatus] = useState<'loading' | 'authed' | 'guest'>('loading');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -41,12 +42,16 @@ export default function CourseDetailPage() {
 
     (async () => {
       try {
+        await api.getMe();
+        if (!active) return;
+        setAuthStatus('authed');
         const data = await api.getCourseForUser(slug);
         if (!active) return;
         setAccess(data.access || null);
       } catch {
         if (!active) return;
         setAccess(null);
+        setAuthStatus('guest');
       }
     })();
 
@@ -57,6 +62,43 @@ export default function CourseDetailPage() {
 
   const modules = useMemo(() => course?.modules || [], [course]);
   const locked = access ? !access.canAccess : course?.accessType !== 'free';
+
+  if (authStatus === 'loading') {
+    return (
+      <main className="shell">
+        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
+          <p className="text-sm text-[var(--ink-soft)]">Comprobando sesion...</p>
+        </article>
+      </main>
+    );
+  }
+
+  if (authStatus === 'guest') {
+    return (
+      <main className="shell">
+        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
+          <h1 className="text-2xl font-bold text-[var(--ink)]">Inicia sesion para entrar al curso</h1>
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">
+            Puedes ver el catalogo sin registrarte, pero para acceder al contenido necesitas una sesion activa.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/login"
+              className="rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white"
+            >
+              Iniciar sesion
+            </Link>
+            <Link
+              href="/cursos"
+              className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)]"
+            >
+              Volver a cursos
+            </Link>
+          </div>
+        </article>
+      </main>
+    );
+  }
 
   if (loading) {
     return (

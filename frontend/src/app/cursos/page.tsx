@@ -22,6 +22,7 @@ const accessTone: Record<string, string> = {
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [accessMap, setAccessMap] = useState<Record<string, CourseAccessDecision>>({});
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -59,9 +60,11 @@ export default function CoursesPage() {
             list.map((course) => [course.id, course.access || { canAccess: false, reason: 'locked' }]),
           ),
         );
+        setIsAuthed(true);
       } catch {
         if (!active) return;
         setAccessMap({});
+        setIsAuthed(false);
       }
     })();
 
@@ -112,11 +115,18 @@ export default function CoursesPage() {
         </article>
       ) : null}
 
+      {isAuthed === false ? (
+        <article className="rounded-2xl border border-[var(--stroke)] bg-white p-4 text-sm text-[var(--ink-soft)]">
+          Para entrar en cualquier curso necesitas iniciar sesion. Puedes ver el catalogo sin registrarte.
+        </article>
+      ) : null}
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {visibleCourses.map((course) => {
           const access = accessMap[course.id];
           const badge = accessLabels[course.accessType] || 'Acceso';
-          const isLocked = access ? !access.canAccess : course.accessType !== 'free';
+          const hasSession = isAuthed === true;
+          const isLocked = !hasSession || (access ? !access.canAccess : course.accessType !== 'free');
           return (
             <article key={course.id} className="group relative overflow-hidden rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card transition hover:-translate-y-1">
               <div className="absolute -right-10 top-6 h-24 w-24 rounded-full bg-[rgba(14,116,144,0.08)] blur-2xl" />
@@ -126,7 +136,7 @@ export default function CoursesPage() {
                     {badge}
                   </span>
                   <span className={`text-xs font-semibold ${isLocked ? 'text-rose-600' : 'text-emerald-600'}`}>
-                    {isLocked ? 'Bloqueado' : 'Disponible'}
+                    {isLocked ? 'Sesion requerida' : 'Disponible'}
                   </span>
                 </div>
                 <div>
@@ -142,10 +152,10 @@ export default function CoursesPage() {
                     {course.modules?.length ?? 0} modulos
                   </span>
                   <Link
-                    href={`/cursos/${course.slug}`}
+                    href={hasSession ? `/cursos/${course.slug}` : '/login'}
                     className="rounded-full bg-[var(--green-500)] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[var(--green-700)]"
                   >
-                    Ver curso
+                    {hasSession ? 'Ver curso' : 'Inicia sesion'}
                   </Link>
                 </div>
               </div>
