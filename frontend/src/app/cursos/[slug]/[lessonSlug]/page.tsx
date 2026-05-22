@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import type { JSX as ReactJSX } from 'react';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import type { Course, CourseLesson, CourseModule } from '@/types';
@@ -26,7 +27,7 @@ function renderNodes(nodes?: Array<Record<string, any>>) {
 
     if (node.type === 'heading') {
       const level = Math.min(Math.max(node.attrs?.level || 2, 2), 4);
-      const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+      const Tag = `h${level}` as keyof ReactJSX.IntrinsicElements;
       return (
         <Tag key={key} className="mt-6 text-xl font-bold text-[var(--ink)]">
           {inline}
