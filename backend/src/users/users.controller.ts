@@ -23,6 +23,7 @@ export class UsersController {
       phone: found.phone,
       role: found.role,
       plan: found.plan,
+      lastLoginAt: found.lastLoginAt,
     };
   }
 
@@ -41,6 +42,7 @@ export class UsersController {
       phone: updated.phone,
       role: updated.role,
       plan: updated.plan,
+      lastLoginAt: updated.lastLoginAt,
     };
   }
 }

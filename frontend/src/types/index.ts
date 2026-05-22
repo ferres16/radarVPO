@@ -28,6 +28,7 @@ export type UserProfile = {
   phone?: string | null;
   role: string;
   plan: string;
+  lastLoginAt?: string | null;
 };
 
 export type PromotionDocument = {

@@ -9,6 +9,7 @@ import type { UserProfile } from '@/types';
 const links = [
   { href: '/', label: 'Inicio' },
   { href: '/alerts', label: 'Alertas' },
+  { href: '/cursos', label: 'Cursos', highlight: true },
   { href: '/promotions', label: 'Todas las promociones' },
   { href: '/news', label: 'Noticias' },
   { href: '/services', label: 'Servicios' },
@@ -84,7 +85,11 @@ export function TopNav() {
             <Link
               key={link.href}
               href={link.href}
-              className="rounded-full px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
+              className={
+                link.highlight
+                  ? 'rounded-full bg-[var(--green-500)] px-3 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-[var(--green-700)]'
+                  : 'rounded-full px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]'
+              }
             >
               {link.label}
             </Link>
@@ -144,7 +149,11 @@ export function TopNav() {
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className="block rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm font-semibold text-[var(--ink)]"
+                  className={
+                    link.highlight
+                      ? 'block rounded-xl bg-[var(--green-500)] px-3 py-2 text-sm font-semibold text-white shadow-card'
+                      : 'block rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm font-semibold text-[var(--ink)]'
+                  }
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}

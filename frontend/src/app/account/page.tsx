@@ -6,27 +6,16 @@ import { api } from '@/lib/api';
 import type { UserProfile } from '@/types';
 import { ProfileCard } from '@/components/profile-card';
 import { StatusPill } from '@/components/status-pill';
-import { ServiceCard } from '@/components/service-card';
-
-const stripeCheckoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || '/register';
-const whatsappContactUrl =
-  process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
-  'https://wa.me/34600111222?text=Hola%2C%20quiero%20activar%20el%20seguimiento%20individualizado%20de%20Radar%20VPO.';
-
-const proBenefits = [
-  'Alertas antes que nadie con SMS y WhatsApp.',
-  'Guia completa en formato curso, sin descargar PDF.',
-  'Seguimiento individualizado con asesoria real.',
-];
 
 export default function AccountPage() {
   const [me, setMe] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [proAlertsEnabled, setProAlertsEnabled] = useState(false);
   const [fullNameDraft, setFullNameDraft] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
+  const [purchasedCoursesCount, setPurchasedCoursesCount] = useState(0);
+  const [coursesError, setCoursesError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -77,9 +66,24 @@ export default function AccountPage() {
   }
 
   useEffect(() => {
-    if (me) {
-      setProAlertsEnabled(me.plan === 'pro');
-    }
+    if (!me) return;
+    let active = true;
+
+    (async () => {
+      try {
+        const list = await api.listCoursesForUser();
+        if (!active) return;
+        const purchased = list.filter((course) => course.access?.reason === 'purchase');
+        setPurchasedCoursesCount(purchased.length);
+      } catch {
+        if (!active) return;
+        setCoursesError('No se pudieron cargar los cursos comprados.');
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
   }, [me]);
 
   if (loading) {
@@ -110,10 +114,11 @@ export default function AccountPage() {
 
   const hasPro = me.plan === 'pro';
   const hasTracking = me.plan === 'pro';
-  const hasBasicGuide = true;
-  const hasProGuide = hasTracking;
   const hasProAlerts = hasPro;
-  const activeServices = [hasBasicGuide, hasProGuide, hasProAlerts, hasTracking].filter(Boolean).length;
+  const lastLogin = me.lastLoginAt ? new Date(me.lastLoginAt) : null;
+  const lastLoginLabel = lastLogin
+    ? new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(lastLogin)
+    : 'Sin registro';
 
   return (
     <main className="shell space-y-6 pb-16">
@@ -138,17 +143,27 @@ export default function AccountPage() {
 
           <div className="mt-6 grid gap-3 md:grid-cols-3">
             <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Servicios activos</p>
-              <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{activeServices} / 4</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Notificaciones Pro</p>
+              <div className="mt-2">
+                <StatusPill label={hasProAlerts ? 'Activas' : 'No activas'} tone={hasProAlerts ? 'active' : 'warning'} />
+              </div>
             </div>
             <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Canal preferido</p>
-              <p className="mt-1 text-lg font-semibold text-[var(--ink)]">WhatsApp + SMS</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Seguimiento actualizado</p>
+              <div className="mt-2">
+                <StatusPill label={hasTracking ? 'Activo' : 'No activo'} tone={hasTracking ? 'active' : 'warning'} />
+              </div>
             </div>
             <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Ultima revision</p>
-              <p className="mt-1 text-lg font-semibold text-[var(--ink)]">Hoy, 08:30</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Cursos comprados</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{purchasedCoursesCount}</p>
+              {coursesError ? <p className="mt-1 text-xs text-amber-700">{coursesError}</p> : null}
             </div>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Ultimo inicio de sesion</p>
+            <p className="mt-1 text-lg font-semibold text-[var(--ink)]">{lastLoginLabel}</p>
           </div>
 
           <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -184,135 +199,6 @@ export default function AccountPage() {
               disabled={savingProfile}
               className="inline-flex items-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)] disabled:opacity-60"
             >
-              {savingProfile ? 'Guardando...' : 'Guardar nombre'}
-            </button>
-            <p className="text-xs text-[var(--ink-soft)]">
-              Para cambiar email o telefono, contacta por WhatsApp.
-            </p>
-          </div>
-          {profileMessage ? (
-            <p className="mt-2 text-xs text-[var(--ink-soft)]">{profileMessage}</p>
-          ) : null}
-        </div>
-      </ProfileCard>
-
-      {!hasPro ? (
-        <ProfileCard className="border-[rgba(54,189,248,0.4)] bg-[linear-gradient(140deg,rgba(54,189,248,0.12),rgba(255,255,255,0.96))]">
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Upgrade PRO</p>
-              <h2 className="mt-2 text-2xl font-black text-[var(--ink)] display-type">Activa Radar VPO PRO y recibe alertas antes que nadie.</h2>
-              <p className="mt-2 text-sm text-[var(--ink-soft)]">
-                Guia avanzada, alertas pro y seguimiento individualizado para no perder oportunidades.
-              </p>
-            </div>
-            <div className="flex flex-col gap-2 text-sm text-[var(--ink)]">
-              {proBenefits.map((benefit) => (
-                <div key={benefit} className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-[var(--green-500)]" />
-                  <span>{benefit}</span>
-                </div>
-              ))}
-              <Link
-                href={stripeCheckoutUrl}
-                className="mt-3 inline-flex items-center justify-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]"
-              >
-                Ir a Stripe Checkout
-              </Link>
-            </div>
-          </div>
-        </ProfileCard>
-      ) : null}
-
-      <section id="mis-servicios" className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Mis servicios</p>
-            <h2 className="mt-2 text-2xl font-black text-[var(--ink)] display-type">Tu paquete activo y lo que te falta.</h2>
-          </div>
-          <Link
-            href="/services"
-            className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
-          >
-            Ver planes
-          </Link>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <ServiceCard
-            eyebrow="Guia basica"
-            title="Guia VPO esencial"
-            description="Resumen claro en PDF con conceptos clave, requisitos y calendario general."
-            statusLabel={hasBasicGuide ? 'Activa' : 'Bloqueada'}
-            statusTone={hasBasicGuide ? 'active' : 'locked'}
-            cta={
-              hasBasicGuide
-                ? { label: 'Ver cursos', href: '/cursos', variant: 'ghost' }
-                : { label: 'Comprar guia', href: stripeCheckoutUrl }
-            }
-          >
-            <div className="flex items-center justify-between text-xs text-[var(--ink-soft)]">
-              <span>Formato PDF</span>
-              <span>Actualizada 2026</span>
-            </div>
-          </ServiceCard>
-
-          <ServiceCard
-            eyebrow="Guia PRO"
-            title="Curso avanzado Radar VPO"
-            description="Contenido modular y progresivo con explicaciones, checklist y FAQ avanzada."
-            statusLabel={hasProGuide ? 'Desbloqueada' : 'Bloqueada'}
-            statusTone={hasProGuide ? 'active' : 'locked'}
-            cta={
-              hasProGuide
-                ? { label: 'Acceder', href: '/cursos', variant: 'ghost' }
-                : { label: 'Activar seguimiento', href: whatsappContactUrl }
-            }
-          >
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">
-              Desbloqueada con seguimiento
-            </p>
-          </ServiceCard>
-
-          <ServiceCard
-            eyebrow="Alertas PRO"
-            title="Alertas instantaneas"
-            description="Notificaciones prioritarias via WhatsApp y SMS con cambios clave."
-            statusLabel={hasProAlerts ? 'Activas' : 'Bloqueadas'}
-            statusTone={hasProAlerts ? 'active' : 'locked'}
-          >
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-semibold text-[var(--ink-soft)]">
-                WhatsApp / SMS
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={proAlertsEnabled}
-                disabled={!hasProAlerts}
-                onClick={() => setProAlertsEnabled((value) => !value)}
-                className={`relative inline-flex h-6 w-12 items-center rounded-full border transition ${
-                  proAlertsEnabled ? 'border-emerald-300 bg-emerald-100' : 'border-[var(--stroke)] bg-white'
-                } ${hasProAlerts ? '' : 'cursor-not-allowed opacity-60'}`}
-              >
-                <span
-                  className={`h-5 w-5 rounded-full bg-white shadow transition ${
-                    proAlertsEnabled ? 'translate-x-6' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-            <p className="mt-2 text-xs text-[var(--ink-soft)]">
-              {hasProAlerts ? 'Plan PRO activo.' : 'Necesitas PRO para activar canales.'}
-            </p>
-          </ServiceCard>
-
-          <ServiceCard
-            eyebrow="Seguimiento"
-            title="Seguimiento individualizado"
-            description="Asesoria premium con pasos concretos, revision de requisitos y soporte directo."
-            statusLabel={hasTracking ? 'Activo' : 'No activo'}
-            statusTone={hasTracking ? 'active' : 'warning'}
             cta={
               hasTracking
                 ? { label: 'Ver plan de seguimiento', href: '/services', variant: 'ghost' }

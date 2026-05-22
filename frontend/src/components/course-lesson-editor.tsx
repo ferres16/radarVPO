@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -19,6 +19,7 @@ const emptyDoc = {
 };
 
 export function CourseLessonEditor({ value, onChange }: CourseLessonEditorProps) {
+  const [copyMessage, setCopyMessage] = useState('');
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -52,6 +53,26 @@ export function CourseLessonEditor({ value, onChange }: CourseLessonEditorProps)
   if (!editor) {
     return <div className="rounded-2xl border border-[var(--stroke)] bg-white p-4 text-sm text-[var(--ink-soft)]">Cargando editor...</div>;
   }
+
+  const handleCopyFormatted = async () => {
+    const html = editor.getHTML();
+    const text = editor.getText();
+
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([text], { type: 'text/plain' }),
+        }),
+      ]);
+      setCopyMessage('Copiado con formato.');
+    } catch {
+      await navigator.clipboard.writeText(text);
+      setCopyMessage('Copiado sin formato.');
+    }
+
+    window.setTimeout(() => setCopyMessage(''), 2000);
+  };
 
   return (
     <div className="space-y-3">
@@ -119,7 +140,15 @@ export function CourseLessonEditor({ value, onChange }: CourseLessonEditorProps)
         >
           Limpiar
         </button>
+        <button
+          type="button"
+          onClick={handleCopyFormatted}
+          className="rounded-full border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-1 text-xs font-semibold text-[var(--ink)]"
+        >
+          Copiar con formato
+        </button>
       </div>
+      {copyMessage ? <p className="text-xs text-[var(--ink-soft)]">{copyMessage}</p> : null}
       <EditorContent editor={editor} />
     </div>
   );

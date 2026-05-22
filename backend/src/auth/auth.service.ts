@@ -40,7 +40,7 @@ export class AuthService {
       },
     });
 
-    return this.issueTokens(user.id, user.email, user.role, user.plan);
+    return this.issueTokens(user.id, user.email, user.role, user.plan, true);
   }
 
   async login(dto: LoginDto) {
@@ -54,7 +54,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return this.issueTokens(user.id, user.email, user.role, user.plan);
+    return this.issueTokens(user.id, user.email, user.role, user.plan, true);
   }
 
   async refresh(refreshToken: string) {
@@ -89,6 +89,7 @@ export class AuthService {
       session.user.email,
       session.user.role,
       session.user.plan,
+      false,
       session.id,
     );
   }
@@ -109,6 +110,7 @@ export class AuthService {
     email: string,
     role: 'user' | 'admin',
     plan: 'free' | 'pro',
+    updateLastLogin: boolean,
     existingSessionId?: string,
   ) {
     const sessionId = existingSessionId ?? crypto.randomUUID();
@@ -146,6 +148,13 @@ export class AuthService {
         revokedAt: null,
       },
     });
+
+    if (updateLastLogin) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { lastLoginAt: new Date() },
+      });
+    }
 
     return {
       accessToken,

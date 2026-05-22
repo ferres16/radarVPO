@@ -8,27 +8,27 @@ const whatsappContactUrl =
 const services = [
   {
     eyebrow: '01 · Cursos y formaciones',
-    title: 'Cursos y formaciones activas',
+    title: 'Cursos vivos y guias accionables',
     copy:
-      'Microlecciones, guias vivas y recursos descargables para entender requisitos, plazos y estrategias reales.',
+      'Microlecciones, checklists y recursos claros para entender requisitos, plazos y estrategias reales.',
     cta: 'Ver cursos',
     href: '/cursos',
     accent: 'from-cyan-50 to-white',
   },
   {
     eyebrow: '02 · Alertas Pro',
-    title: 'Alertas de promociones Pro',
+    title: 'Alertas proactivas en WhatsApp',
     copy:
-      'Avisos de nuevas promociones, cambios en bases y recordatorios de fechas criticas directamente en WhatsApp.',
+      'Nuevas promociones, cambios en bases y recordatorios criticos, sin que tengas que estar revisando.',
     cta: 'Activar alertas Pro',
     href: whatsappContactUrl,
     accent: 'from-emerald-50 to-white',
   },
   {
     eyebrow: '03 · Asesoria personalizada',
-    title: 'Asesoria personalizada integral',
+    title: 'Asesoria personalizada (TODO incluido)',
     copy:
-      'Incluye acceso a todos los servicios: cursos, alertas Pro y acompañamiento 1:1 para cada convocatoria.',
+      'Incluye cursos + alertas Pro + acompañamiento 1:1 para preparar cada convocatoria sin perder pasos.',
     cta: 'Quiero asesoria',
     href: whatsappContactUrl,
     accent: 'from-white to-cyan-50',
@@ -43,11 +43,16 @@ export default function ServicesPage() {
         <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[rgba(47,107,36,0.10)] blur-3xl animate-float-slow-delay" />
         <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--green-700)]">Servicios</p>
         <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-[var(--ink)] md:text-6xl display-type">
-          Tres puertas para avanzar con seguridad en VPO.
+          Acelera tu acceso a VPO con un plan claro y accionable.
         </h1>
         <p className="mt-4 max-w-2xl text-base text-[var(--ink-soft)]">
-          Cursos y formaciones, alertas Pro en WhatsApp y asesoria personalizada con acceso total a todo el ecosistema Radar VPO.
+          Elige cursos, activa alertas Pro o contrata asesoria personalizada. En asesoria, todo esta incluido.
         </p>
+        <div className="mt-5 flex flex-wrap gap-2">
+          <span className="rounded-full bg-[var(--ink)] px-3 py-1 text-xs font-semibold text-white">Acceso total en asesoria</span>
+          <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">WhatsApp Pro</span>
+          <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">Cursos vivos</span>
+        </div>
       </section>
 
       <section className="mt-6 grid gap-4 lg:grid-cols-3">
@@ -70,32 +75,38 @@ export default function ServicesPage() {
         ))}
       </section>
 
-      <section className="mt-6 rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card">
-        <div className="grid gap-4 md:grid-cols-[1.1fr_0.9fr]">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Metodo Radar VPO</p>
-            <h2 className="mt-2 text-2xl font-black text-[var(--ink)] display-type">Entra, entiende y actua sin perder oportunidades</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--ink-soft)]">
-              La asesoria incluye el acceso completo: cursos activos, alertas Pro y acompañamiento 1:1. Un solo lugar para avanzar con seguridad.
-            </p>
+      <section className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+        <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Metodo Radar VPO</p>
+          <h2 className="mt-2 text-2xl font-black text-[var(--ink)] display-type">
+            Claridad, velocidad y acompañamiento real.
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--ink-soft)]">
+            La asesoria personalizada incluye TODO: cursos activos, alertas Pro y un plan 1:1 para revisar requisitos,
+            preparar documentacion y mantener el seguimiento hasta el cierre.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-1 text-xs font-semibold text-[var(--ink)]">Cursos + alertas Pro</span>
+            <span className="rounded-full border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-1 text-xs font-semibold text-[var(--ink)]">Asesoria 1:1</span>
+            <span className="rounded-full border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-1 text-xs font-semibold text-[var(--ink)]">Checklist de requisitos</span>
           </div>
-          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Ruta rapida</p>
-            <ol className="mt-3 space-y-2 text-sm text-[var(--ink-soft)]">
-              <li>1. Elige el servicio que necesitas hoy.</li>
-              <li>2. Recibe guia clara y respuestas directas.</li>
-              <li>3. Acompañamiento continuo hasta el cierre.</li>
-            </ol>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href={stripeCheckoutUrl} className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
-                Ir a checkout
-              </Link>
-              <Link href={whatsappContactUrl} className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
-                Hablar por WhatsApp
-              </Link>
-            </div>
+        </article>
+        <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-[var(--bg-app)] p-5 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Ruta rapida</p>
+          <ol className="mt-3 space-y-2 text-sm text-[var(--ink-soft)]">
+            <li>1. Elige el servicio que necesitas hoy.</li>
+            <li>2. Recibe guia clara y respuestas directas.</li>
+            <li>3. Te acompañamos hasta la resolucion.</li>
+          </ol>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href={stripeCheckoutUrl} className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
+              Ir a checkout
+            </Link>
+            <Link href={whatsappContactUrl} className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
+              Hablar por WhatsApp
+            </Link>
           </div>
-        </div>
+        </article>
       </section>
     </main>
   );
