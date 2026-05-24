@@ -44,7 +44,9 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.usersService.findByEmail(dto.email.toLowerCase());
+    const user = await this.usersService.findByEmailWithHash(
+      dto.email.toLowerCase(),
+    );
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }

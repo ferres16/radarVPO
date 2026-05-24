@@ -27,17 +27,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getResponse()
         : { message: 'Internal server error' };
 
-    this.logger.error(
-      JSON.stringify({
-        path: request.url,
-        method: request.method,
-        status,
-        error:
-          exception instanceof Error
-            ? exception.message
-            : 'Unknown internal exception',
-      }),
-    );
+    const logPayload: any = {
+      path: request.url,
+      method: request.method,
+      status,
+    };
+
+    if (process.env.NODE_ENV !== 'production') {
+      // In non-prod include error name and stack for debugging
+      if (exception instanceof Error) {
+        logPayload.error = exception.name;
+        logPayload.stack = exception.stack;
+      } else {
+        logPayload.error = 'Unknown internal exception';
+      }
+    } else {
+      // In production avoid logging exception messages or stacks (may contain sensitive data)
+      logPayload.error = exception instanceof Error ? exception.name : 'InternalException';
+      logPayload.message = 'redacted';
+    }
+
+    this.logger.error(JSON.stringify(logPayload));
 
     response.status(status).json({
       success: false,
