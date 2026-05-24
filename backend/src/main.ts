@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import type { Request, Response, NextFunction } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import helmet from 'helmet';
@@ -39,7 +40,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  app.use((req, res, next) => {
+  app.use((req: Request, res: Response, next: NextFunction) => {
     if (isSafeMethod(req.method) || allowedOriginSet.size === 0) {
       return next();
     }

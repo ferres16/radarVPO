@@ -37,7 +37,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  @Throttle(3, 3600)
+  @Throttle({ limit: 3, ttl: 3600 } as any)
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
@@ -53,7 +53,7 @@ export class AuthController {
   }
 
   @Post('login')
-  @Throttle(5, 60)
+  @Throttle({ limit: 5, ttl: 60 } as any)
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -69,7 +69,7 @@ export class AuthController {
   }
 
   @Post('refresh')
-  @Throttle(30, 60)
+  @Throttle({ limit: 30, ttl: 60 } as any)
   async refresh(
     @Req() req: RequestWithCookies,
     @Res({ passthrough: true }) res: Response,
