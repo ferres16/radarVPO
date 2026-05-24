@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -23,6 +24,7 @@ import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
 import { ImportUnitsFromPasteDto } from './dto/import-units-from-paste.dto';
+import { BackofficeListDto, BackofficeListPromotionsDto } from './dto/list-backoffice.dto';
 import { ReorderCourseItemsDto } from './dto/reorder-course-items.dto';
 import { ReorderUnitsDto } from './dto/reorder-units.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
@@ -36,6 +38,25 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpsertUnitDto } from './dto/upsert-unit.dto';
+
+const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024;
+const MAX_COURSE_ASSET_SIZE = 25 * 1024 * 1024;
+const ALLOWED_DOCUMENT_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+const ALLOWED_COURSE_ASSET_MIME_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'video/mp4',
+  'video/webm',
+];
+
+const createMimeFilter = (allowed: string[]) =>
+  (req: unknown, file: Express.Multer.File, cb: (error: Error | null, acceptFile: boolean) => void) => {
+    if (!file?.mimetype || !allowed.includes(file.mimetype)) {
+      return cb(new BadRequestException('Unsupported file type'), false);
+    }
+    return cb(null, true);
+  };
 
 @ApiTags('backoffice')
 @Controller('backoffice')
@@ -51,18 +72,18 @@ export class BackofficeController {
   }
 
   @Get('jobs')
-  jobs() {
-    return this.backofficeService.jobs();
+  jobs(@Query() query: BackofficeListDto) {
+    return this.backofficeService.jobs(query);
   }
 
   @Get('failures')
-  failures() {
-    return this.backofficeService.failures();
+  failures(@Query() query: BackofficeListDto) {
+    return this.backofficeService.failures(query);
   }
 
   @Get('users')
-  listUsers() {
-    return this.backofficeService.listUsers();
+  listUsers(@Query() query: BackofficeListDto) {
+    return this.backofficeService.listUsers(query);
   }
 
   @Patch('users/:id')
@@ -71,13 +92,13 @@ export class BackofficeController {
   }
 
   @Get('news')
-  listNews() {
-    return this.backofficeService.listNews();
+  listNews(@Query() query: BackofficeListDto) {
+    return this.backofficeService.listNews(query);
   }
 
   @Get('courses')
-  listCourses() {
-    return this.backofficeService.listCourses();
+  listCourses(@Query() query: BackofficeListDto) {
+    return this.backofficeService.listCourses(query);
   }
 
   @Post('courses')
@@ -155,7 +176,12 @@ export class BackofficeController {
 
   @Post('courses/lessons/:lessonId/resources/upload')
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_COURSE_ASSET_SIZE },
+      fileFilter: createMimeFilter(ALLOWED_COURSE_ASSET_MIME_TYPES),
+    }),
+  )
   uploadCourseResource(
     @Param('lessonId') lessonId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -201,8 +227,8 @@ export class BackofficeController {
   }
 
   @Get('promotions')
-  listPromotions(@Query('status') status?: string) {
-    return this.backofficeService.listPromotions(status);
+  listPromotions(@Query() query: BackofficeListPromotionsDto) {
+    return this.backofficeService.listPromotions(query);
   }
 
   @Get('promotions/:id')
@@ -281,7 +307,12 @@ export class BackofficeController {
 
   @Post('promotions/:id/documents/upload')
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_DOCUMENT_SIZE },
+      fileFilter: createMimeFilter(ALLOWED_DOCUMENT_MIME_TYPES),
+    }),
+  )
   uploadDocument(
     @Param('id') promotionId: string,
     @UploadedFile() file: Express.Multer.File,

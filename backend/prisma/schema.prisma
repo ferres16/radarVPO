@@ -212,6 +212,8 @@ model Promotion {
   favorites                PromotionFavorite[]
 
   @@index([municipality, province, status])
+  @@index([status, publishedAt])
+  @@index([status, estimatedPublicationDate])
   @@map("promotions")
 }
 
@@ -290,6 +292,8 @@ model NewsItem {
   contentHash String   @unique @map("content_hash")
   publishedAt DateTime @map("published_at")
   createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([publishedAt])
 
   @@map("news_items")
 }

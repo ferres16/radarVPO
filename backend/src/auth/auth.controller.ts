@@ -7,10 +7,10 @@ import {
   Res,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { RefreshDto } from './dto/refresh.dto';
 import { RegisterDto } from './dto/register.dto';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -37,6 +37,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
+  @Throttle(3, 3600)
   async register(
     @Body() dto: RegisterDto,
     @Res({ passthrough: true }) res: Response,
@@ -52,6 +53,7 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle(5, 60)
   async login(
     @Body() dto: LoginDto,
     @Res({ passthrough: true }) res: Response,
@@ -67,12 +69,12 @@ export class AuthController {
   }
 
   @Post('refresh')
+  @Throttle(30, 60)
   async refresh(
-    @Body() dto: RefreshDto,
     @Req() req: RequestWithCookies,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const token = dto.refreshToken ?? req.cookies?.refresh_token;
+    const token = req.cookies?.refresh_token;
     if (!token) {
       throw new BadRequestException('Refresh token required');
     }

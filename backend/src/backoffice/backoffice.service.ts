@@ -11,6 +11,7 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
+import { BackofficeListDto, BackofficeListPromotionsDto } from './dto/list-backoffice.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
 import { UpdateCourseAccessRuleDto } from './dto/update-course-access-rule.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -53,21 +54,29 @@ export class BackofficeService {
     };
   }
 
-  async jobs() {
+  async jobs(query: BackofficeListDto) {
+    const limit = Math.min(query.limit ?? 100, 500);
+    const offset = query.offset ?? 0;
     return this.prisma.jobRun.findMany({
       orderBy: { startedAt: 'desc' },
-      take: 100,
+      take: limit,
+      skip: offset,
     });
   }
 
-  async failures() {
+  async failures(query: BackofficeListDto) {
+    const limit = Math.min(query.limit ?? 100, 500);
+    const offset = query.offset ?? 0;
     return this.prisma.deliveryFailure.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 100,
+      take: limit,
+      skip: offset,
     });
   }
 
-  async listUsers() {
+  async listUsers(query: BackofficeListDto) {
+    const limit = Math.min(query.limit ?? 100, 500);
+    const offset = query.offset ?? 0;
     return this.prisma.user.findMany({
       select: {
         id: true,
@@ -79,7 +88,8 @@ export class BackofficeService {
         createdAt: true,
       },
       orderBy: { createdAt: 'desc' },
-      take: 500,
+      take: limit,
+      skip: offset,
     });
   }
 
@@ -120,16 +130,23 @@ export class BackofficeService {
     });
   }
 
-  async listNews() {
+  async listNews(query: BackofficeListDto) {
+    const limit = Math.min(query.limit ?? 100, 500);
+    const offset = query.offset ?? 0;
     return this.prisma.newsItem.findMany({
       orderBy: { publishedAt: 'desc' },
-      take: 300,
+      take: limit,
+      skip: offset,
     });
   }
 
-  async listCourses() {
+  async listCourses(query: BackofficeListDto) {
+    const limit = Math.min(query.limit ?? 100, 500);
+    const offset = query.offset ?? 0;
     return this.prisma.course.findMany({
       orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+      take: limit,
+      skip: offset,
       include: {
         modules: {
           orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
@@ -420,10 +437,13 @@ export class BackofficeService {
     return { deleted: true };
   }
 
-  async listPromotions(status?: string) {
+  async listPromotions(query: BackofficeListPromotionsDto) {
     const where: Prisma.PromotionWhereInput = {
-      status: this.validStatus(status) ?? undefined,
+      status: this.validStatus(query.status) ?? undefined,
     };
+
+    const limit = Math.min(query.limit ?? 200, 500);
+    const offset = query.offset ?? 0;
 
     return this.prisma.promotion.findMany({
       where,
@@ -435,7 +455,8 @@ export class BackofficeService {
           take: 3,
         },
       },
-      take: 200,
+      take: limit,
+      skip: offset,
     });
   }
 

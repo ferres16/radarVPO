@@ -4,14 +4,31 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  const adminPassword = await bcrypt.hash('Admin1234!', 10);
-  const userPassword = await bcrypt.hash('User12345!', 10);
+  const shouldSeed = process.env.SEED_SAMPLE_DATA === 'true';
+  if (!shouldSeed) {
+    console.log('Seed skipped (set SEED_SAMPLE_DATA=true to enable).');
+    return;
+  }
+
+  const adminEmail = process.env.SEED_ADMIN_EMAIL;
+  const adminPasswordRaw = process.env.SEED_ADMIN_PASSWORD;
+  const userEmail = process.env.SEED_USER_EMAIL;
+  const userPasswordRaw = process.env.SEED_USER_PASSWORD;
+
+  if (!adminEmail || !adminPasswordRaw || !userEmail || !userPasswordRaw) {
+    throw new Error(
+      'Missing seed credentials. Provide SEED_ADMIN_EMAIL, SEED_ADMIN_PASSWORD, SEED_USER_EMAIL, SEED_USER_PASSWORD.',
+    );
+  }
+
+  const adminPassword = await bcrypt.hash(adminPasswordRaw, 10);
+  const userPassword = await bcrypt.hash(userPasswordRaw, 10);
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@radarvpo.com' },
+    where: { email: adminEmail },
     update: {},
     create: {
-      email: 'admin@radarvpo.com',
+      email: adminEmail,
       fullName: 'Radar Admin',
       phone: '+34 600 111 222',
       passwordHash: adminPassword,
@@ -21,10 +38,10 @@ async function main() {
   });
 
   const user = await prisma.user.upsert({
-    where: { email: 'user@radarvpo.com' },
+    where: { email: userEmail },
     update: {},
     create: {
-      email: 'user@radarvpo.com',
+      email: userEmail,
       fullName: 'Usuario Demo',
       phone: '+34 600 222 333',
       passwordHash: userPassword,

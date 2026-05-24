@@ -9,6 +9,8 @@ export class PromotionsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async list(filters: ListPromotionsDto) {
+    const limit = Math.min(filters.limit ?? 10, 50);
+    const offset = filters.offset ?? 0;
     const publishedStatuses: PromotionStatus[] = [
       'published_unreviewed',
       'published_reviewed',
@@ -37,11 +39,18 @@ export class PromotionsService {
     const items = await this.prisma.promotion.findMany({
       where,
       orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
-      take: 10,
-      include: {
-        documents: {
-          orderBy: { createdAt: 'desc' },
-        },
+      take: limit,
+      skip: offset,
+      select: {
+        id: true,
+        title: true,
+        municipality: true,
+        province: true,
+        promotionType: true,
+        status: true,
+        publishedAt: true,
+        estimatedPublicationDate: true,
+        alertDetectedAt: true,
       },
     });
 

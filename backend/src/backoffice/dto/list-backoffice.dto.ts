@@ -1,17 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
-export class ListNewsDto {
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  q?: string;
-
+export class BackofficeListDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(500)
   limit?: number;
 
   @ApiPropertyOptional()
@@ -19,4 +14,11 @@ export class ListNewsDto {
   @IsInt()
   @Min(0)
   offset?: number;
+}
+
+export class BackofficeListPromotionsDto extends BackofficeListDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  status?: string;
 }

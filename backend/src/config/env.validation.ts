@@ -36,6 +36,18 @@ class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  COOKIE_DOMAIN?: string;
+
+  @IsOptional()
+  @IsString()
+  COOKIE_SAMESITE?: string;
+
+  @IsOptional()
+  @IsBooleanString()
+  COOKIE_SECURE?: string;
+
+  @IsOptional()
+  @IsString()
   TZ?: string;
 
   @IsOptional()

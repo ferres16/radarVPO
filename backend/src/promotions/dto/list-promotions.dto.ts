@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class ListPromotionsDto {
   @ApiPropertyOptional()
@@ -21,4 +21,17 @@ export class ListPromotionsDto {
   @IsOptional()
   @IsIn(['pending_review', 'published_unreviewed', 'published_reviewed', 'archived'])
   status?: 'pending_review' | 'published_unreviewed' | 'published_reviewed' | 'archived';
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  limit?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  offset?: number;
 }

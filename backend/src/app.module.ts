@@ -25,8 +25,8 @@ import { RequestLoggingInterceptor } from './common/interceptors/request-logging
     }),
     ThrottlerModule.forRoot([
       {
-        ttl: 60_000,
-        limit: 120,
+        ttl: 60,
+        limit: 60,
       },
     ]),
     ScheduleModule.forRoot(),
