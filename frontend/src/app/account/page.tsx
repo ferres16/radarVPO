@@ -115,6 +115,11 @@ export default function AccountPage() {
   const hasPro = me.plan === 'pro';
   const hasTracking = me.plan === 'pro';
   const hasProAlerts = hasPro;
+  const stripeCheckoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || '/register';
+  const whatsappContactUrl =
+    process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
+    'https://wa.me/34600111222?text=Hola%2C%20quiero%20activar%20el%20seguimiento%20individualizado%20de%20Radar%20VPO.';
+  const hasProGuide = hasPro;
   const lastLogin = me.lastLoginAt ? new Date(me.lastLoginAt) : null;
   const lastLoginLabel = lastLogin
     ? new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(lastLogin)
@@ -132,22 +137,7 @@ export default function AccountPage() {
               <h1 className="mt-2 text-3xl font-black text-[var(--ink)] md:text-4xl display-type">{displayName}</h1>
               <p className="mt-1 text-sm text-[var(--ink-soft)]">{me.email}</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <StatusPill label={hasPro ? 'Plan PRO' : 'Plan Free'} tone={hasPro ? 'active' : 'neutral'} />
-              <StatusPill
-                label={hasTracking ? 'Seguimiento activo' : 'Seguimiento no activo'}
-                tone={hasTracking ? 'active' : 'warning'}
-              />
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Notificaciones Pro</p>
-              <div className="mt-2">
-                <StatusPill label={hasProAlerts ? 'Activas' : 'No activas'} tone={hasProAlerts ? 'active' : 'warning'} />
-              </div>
-            </div>
+            
             <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Seguimiento actualizado</p>
               <div className="mt-2">
@@ -199,16 +189,27 @@ export default function AccountPage() {
               disabled={savingProfile}
               className="inline-flex items-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)] disabled:opacity-60"
             >
-            cta={
-              hasTracking
-                ? { label: 'Ver plan de seguimiento', href: '/services', variant: 'ghost' }
-                : { label: 'Activar seguimiento', href: whatsappContactUrl }
-            }
-          >
-            <p className="text-xs text-[var(--ink-soft)]">Ideal si necesitas un plan personalizado para tu caso.</p>
-          </ServiceCard>
+              Guardar nombre
+            </button>
+            {hasTracking ? (
+              <Link
+                href="/services"
+                className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
+              >
+                Ver plan de seguimiento
+              </Link>
+            ) : (
+              <Link
+                href={whatsappContactUrl}
+                className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
+              >
+                Activar seguimiento
+              </Link>
+            )}
+            <p className="w-full text-xs text-[var(--ink-soft)]">Ideal si necesitas un plan personalizado para tu caso.</p>
+          </div>
         </div>
-      </section>
+      </ProfileCard>
 
       <section id="guia-pro" className="space-y-4">
         <div>
