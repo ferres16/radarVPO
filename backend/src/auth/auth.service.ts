@@ -71,7 +71,11 @@ export class AuthService {
 
     const session = await this.prisma.session.findUnique({
       where: { id: payload.sessionId },
-      include: { user: true },
+      include: {
+        user: {
+          select: { id: true, email: true, role: true, plan: true },
+        },
+      },
     });
 
     if (!session || session.revokedAt || session.expiresAt < new Date()) {

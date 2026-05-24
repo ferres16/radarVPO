@@ -53,6 +53,16 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data: { fullName: fullName ?? undefined },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        role: true,
+        plan: true,
+        createdAt: true,
+        lastLoginAt: true,
+      },
     });
   }
 }
