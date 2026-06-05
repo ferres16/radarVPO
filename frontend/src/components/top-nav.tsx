@@ -6,13 +6,12 @@ import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import type { UserProfile } from '@/types';
 
-const links = [
-  { href: '/', label: 'Inicio' },
-  { href: '/alerts', label: 'Alertas' },
-  { href: '/cursos', label: 'Cursos', highlight: true },
-  { href: '/promotions', label: 'Todas las promociones' },
-  { href: '/news', label: 'Noticias' },
-  { href: '/services', label: 'Servicios' },
+const primaryLinks = [
+  { href: '/promotions', label: 'Buscar Vivienda' },
+  { href: '/services', label: 'Ayudas' },
+  { href: '/cursos', label: 'Requisitos' },
+  { href: '/alerts', label: 'Municipios' },
+  { href: '/news', label: 'Preguntas Frecuentes' },
 ];
 
 export function TopNav() {
@@ -53,6 +52,11 @@ export function TopNav() {
       .join('');
   }, [me]);
 
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/';
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   const handleLogout = async () => {
     try {
       await api.logout();
@@ -66,65 +70,92 @@ export function TopNav() {
   };
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-50 border-b border-[var(--stroke)] bg-white/95 backdrop-blur">
-      <div className="mx-auto flex w-full max-w-[1120px] items-center justify-between px-4 py-3">
-        <Link href="/" className="text-sm font-extrabold uppercase tracking-wide text-[var(--green-700)]">
-          Radar VPO
+    <header className="fixed left-0 right-0 top-0 z-50 px-3 pt-3">
+      <div className="mx-auto flex w-full max-w-[1180px] items-center justify-between rounded-[1.5rem] border border-white/70 bg-white/78 px-3 py-2 shadow-[0_18px_50px_rgba(16,24,40,0.12)] backdrop-blur-xl md:px-4">
+        <Link
+          href="/"
+          className="group flex items-center gap-2 rounded-full px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+          aria-label="Radar VPO, ir al inicio"
+        >
+          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--green-700),var(--accent-red))] text-sm font-black text-white shadow-sm transition duration-200 group-hover:scale-105">
+            RV
+          </span>
+          <span className="leading-tight">
+            <span className="block text-sm font-black tracking-tight text-[var(--ink)]">Radar VPO</span>
+            <span className="block text-[11px] font-semibold text-[var(--ink-soft)]">Habitatge públic</span>
+          </span>
         </Link>
+
         <button
           type="button"
-          className="rounded-full border border-[var(--stroke)] px-3 py-1.5 text-xs font-bold uppercase tracking-wide text-[var(--ink)] md:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--stroke)] bg-white/90 text-[var(--ink)] shadow-sm transition hover:bg-[var(--bg-eco)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] md:hidden"
           onClick={() => setMobileOpen((value) => !value)}
           aria-expanded={mobileOpen}
-          aria-label="Abrir menú"
+          aria-controls="mobile-navigation"
+          aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
         >
-          Menú
+          <span className="sr-only">{mobileOpen ? 'Cerrar menú' : 'Abrir menú'}</span>
+          <span className="flex flex-col gap-1.5">
+            <span className={`block h-0.5 w-5 rounded-full bg-current transition ${mobileOpen ? 'translate-y-2 rotate-45' : ''}`} />
+            <span className={`block h-0.5 w-5 rounded-full bg-current transition ${mobileOpen ? 'opacity-0' : ''}`} />
+            <span className={`block h-0.5 w-5 rounded-full bg-current transition ${mobileOpen ? '-translate-y-2 -rotate-45' : ''}`} />
+          </span>
         </button>
-        <nav className="hidden items-center gap-2 md:flex">
-          {links.map((link) => (
+
+        <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegación principal">
+          {primaryLinks.map((link) => {
+            const active = isActive(link.href);
+            return (
             <Link
               key={link.href}
               href={link.href}
-              className={
-                link.highlight
-                  ? 'rounded-full bg-[var(--green-500)] px-3 py-2 text-sm font-semibold text-white shadow-card transition hover:bg-[var(--green-700)]'
-                  : 'rounded-full px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]'
-              }
+              aria-current={active ? 'page' : undefined}
+              className={`relative rounded-full px-3 py-2 text-sm font-semibold transition duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] ${
+                active
+                  ? 'bg-[var(--bg-eco)] text-[var(--green-700)]'
+                  : 'text-[var(--ink)] hover:-translate-y-0.5 hover:bg-white'
+              }`}
             >
               {link.label}
+              {active ? <span className="absolute inset-x-4 -bottom-0.5 h-0.5 rounded-full bg-[var(--accent-red)]" /> : null}
             </Link>
-          ))}
+            );
+          })}
+        </nav>
+
+        <nav className="hidden items-center gap-2 md:flex" aria-label="Acceso de usuario">
           {me ? (
             <div className="relative">
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-full border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)] shadow-sm"
+                className="flex items-center gap-2 rounded-full border border-[var(--stroke)] bg-white/90 px-2 py-1.5 text-sm font-semibold text-[var(--ink)] shadow-sm transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
                 onClick={() => setMenuOpen((value) => !value)}
                 aria-expanded={menuOpen}
                 aria-haspopup="menu"
               >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bg-eco)] text-xs font-bold text-[var(--green-700)]">
+                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bg-eco)] text-xs font-bold text-[var(--green-700)] ring-1 ring-white">
                   {initials}
                 </span>
-                <span className="hidden text-sm md:inline">{me.fullName || 'Perfil'}</span>
+                <span className="hidden max-w-32 truncate text-sm md:inline">{me.fullName || 'Perfil'}</span>
+                <span aria-hidden="true" className={`text-xs transition ${menuOpen ? 'rotate-180' : ''}`}>v</span>
               </button>
               {menuOpen ? (
                 <div
-                  className="absolute right-0 mt-2 w-48 rounded-2xl border border-[var(--stroke)] bg-white p-2 shadow-card"
+                  className="absolute right-0 mt-3 w-56 rounded-3xl border border-[var(--stroke)] bg-white p-2 shadow-card animate-fade-up"
                   role="menu"
                 >
                   <Link
                     href="/account"
-                    className="block rounded-xl px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)]"
+                    className="block rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
                     onClick={() => setMenuOpen(false)}
                     role="menuitem"
                   >
-                    Ver perfil
+                    Dashboard de usuario
                   </Link>
                   {me.role === 'admin' ? (
                     <Link
                       href="/admin"
-                      className="block rounded-xl px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)]"
+                      className="block rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
                       onClick={() => setMenuOpen(false)}
                       role="menuitem"
                     >
@@ -133,37 +164,54 @@ export function TopNav() {
                   ) : null}
                   <button
                     type="button"
-                    className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)]"
+                    className="block w-full rounded-2xl px-3 py-2 text-left text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
                     onClick={handleLogout}
                     role="menuitem"
                   >
-                    Cerrar sesion
+                    Cerrar sesión
                   </button>
                 </div>
               ) : null}
             </div>
           ) : (
-            <Link
-              href="/login"
-              className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
-            >
-              Iniciar sesion
-            </Link>
+            <>
+              <Link
+                href="/login"
+                className="rounded-full border border-[var(--stroke)] bg-white/90 px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-sm transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+              >
+                Iniciar Sesión
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+              >
+                Registrarse
+              </Link>
+            </>
           )}
         </nav>
       </div>
+
       {mobileOpen ? (
-        <nav className="border-t border-[var(--stroke)] bg-white px-4 py-3 md:hidden">
+        <div className="fixed inset-0 top-0 z-[-1] bg-[rgba(16,24,40,0.32)] backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} />
+      ) : null}
+
+      {mobileOpen ? (
+        <nav
+          id="mobile-navigation"
+          className="mx-auto mt-3 max-w-[1180px] rounded-[1.75rem] border border-white/70 bg-white p-3 shadow-[0_18px_50px_rgba(16,24,40,0.18)] animate-slide-down md:hidden"
+          aria-label="Navegación móvil"
+        >
           <ul className="space-y-2">
-            {links.map((link) => (
+            {primaryLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={
-                    link.highlight
-                      ? 'block rounded-xl bg-[var(--green-500)] px-3 py-2 text-sm font-semibold text-white shadow-card'
-                      : 'block rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm font-semibold text-[var(--ink)]'
-                  }
+                  className={`block rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
+                    isActive(link.href)
+                      ? 'border-[rgba(167,28,32,0.22)] bg-[rgba(167,28,32,0.08)] text-[var(--accent-red)]'
+                      : 'border-[var(--stroke)] bg-[var(--bg-app)] text-[var(--ink)]'
+                  }`}
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.label}
@@ -174,10 +222,10 @@ export function TopNav() {
               <li>
                 <Link
                   href="/account"
-                  className="block rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm font-semibold text-[var(--ink)]"
+                  className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
                   onClick={() => setMobileOpen(false)}
                 >
-                  Ver perfil
+                  Dashboard de usuario
                 </Link>
               </li>
             ) : null}
@@ -185,7 +233,7 @@ export function TopNav() {
               <li>
                 <Link
                   href="/admin"
-                  className="block rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm font-semibold text-[var(--ink)]"
+                  className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
                   onClick={() => setMobileOpen(false)}
                 >
                   Panel admin
@@ -196,23 +244,30 @@ export function TopNav() {
               <li>
                 <button
                   type="button"
-                  className="block w-full rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-left text-sm font-semibold text-[var(--ink)]"
+                  className="block w-full rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-left text-sm font-semibold text-[var(--ink)]"
                   onClick={() => {
                     setMobileOpen(false);
                     void handleLogout();
                   }}
                 >
-                  Cerrar sesion
+                  Cerrar sesión
                 </button>
               </li>
             ) : (
-              <li>
+              <li className="grid grid-cols-2 gap-2">
                 <Link
                   href="/login"
-                  className="block rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm font-semibold text-[var(--ink)]"
+                  className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-center text-sm font-semibold text-[var(--ink)]"
                   onClick={() => setMobileOpen(false)}
                 >
-                  Iniciar sesion
+                  Iniciar Sesión
+                </Link>
+                <Link
+                  href="/register"
+                  className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-semibold text-white"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Registrarse
                 </Link>
               </li>
             )}

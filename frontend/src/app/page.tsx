@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { NewsCard } from '@/components/news-card';
 import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
-import { FollowupButton } from '@/components/followup-button';
 import { getDaysRemaining, shouldShowAlert } from '@/lib/alert-countdown';
 
 export default async function Home() {
@@ -21,131 +20,80 @@ export default async function Home() {
     .filter((entry): entry is { promotion: (typeof alerts)[number]; daysRemaining: number } => shouldShowAlert(entry.daysRemaining))
     .slice(0, 3);
 
-  const whatsappContactUrl =
-    process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
-    'https://wa.me/34600111222?text=Hola%2C%20quiero%20activar%20el%20seguimiento%20individualizado%20de%20Radar%20VPO.';
-
-  const serviceTags = [
-    'Asesoria personalizada',
-    'Seguimiento individualizado',
-    'Respuestas a dudas 1:1',
-    'Acompañamiento durante todo el proceso',
-    'Alertas Pro por WhatsApp',
-    'Cursos y formaciones',
-    'Checklist de documentacion',
-    'Preparacion de carpeta VPO',
+  const stats = [
+    { value: '10', label: 'Últimas promociones verificables' },
+    { value: '24/7', label: 'Alertas y seguimiento activo' },
+    { value: 'AA', label: 'Interfaz pensada para accesibilidad' },
   ];
 
-  const stats = [
-    { value: '1:1', label: 'Asesoría personalizada' },
-    { value: 'Diaria', label: 'Actualidad y noticias' },
-    { value: '24/7', label: 'Seguimiento activo' },
+  const quickActions = [
+    { href: '/promotions', title: 'Buscar por municipio', description: 'Filtra promociones publicadas y compara oportunidades rápidamente.' },
+    { href: '/services', title: 'Entender ayudas', description: 'Revisa acompañamiento, documentación y servicios de orientación.' },
+    { href: '/cursos', title: 'Validar requisitos', description: 'Prepara tu candidatura con criterios claros antes de iniciar trámites.' },
   ];
 
   return (
-    <div className="hero-bg min-h-screen pb-20 md:pb-0">
-      <main className="shell space-y-5 py-3 md:py-6">
-        <section className="grid items-stretch gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-          <article className="surface-card relative overflow-hidden p-5 md:h-full md:p-6 animate-fade-up">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.14),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(78,143,58,0.12),transparent_35%)]" />
-            <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-[rgba(56,189,248,0.12)] blur-3xl" />
-            <div className="absolute -bottom-10 left-1/2 h-32 w-32 rounded-full bg-[rgba(47,107,36,0.08)] blur-2xl" />
+    <div className="hero-bg min-h-screen pb-16">
+      <main className="shell space-y-6 py-3 md:py-8">
+        <section className="grid items-stretch gap-5 lg:grid-cols-[1.08fr_0.92fr]">
+          <article className="surface-card relative overflow-hidden p-5 md:p-8 animate-fade-up">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(167,28,32,0.12),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(22,112,85,0.14),transparent_35%)]" />
+            <div className="absolute right-8 top-8 h-44 w-44 rounded-full bg-[rgba(244,197,66,0.20)] blur-3xl animate-float-slow" />
+            <div className="absolute -bottom-10 left-1/2 h-36 w-36 rounded-full bg-[rgba(54,189,248,0.12)] blur-2xl animate-float-slow-delay" />
 
             <div className="relative max-w-2xl">
-              <span className="inline-flex rounded-full border border-[rgba(56,189,248,0.20)] bg-[rgba(56,189,248,0.10)] px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-[var(--cyan-700)]">
-                Radar VPO Catalunya
+              <span className="inline-flex rounded-full border border-[rgba(167,28,32,0.18)] bg-[rgba(167,28,32,0.08)] px-3 py-1 text-xs font-bold uppercase tracking-[0.24em] text-[var(--accent-red)]">
+                Portal de vivienda pública
               </span>
-              <h1 className="display-type mt-3 text-3xl font-black leading-[0.96] tracking-tight text-[var(--ink)] md:text-5xl">
-                Asesoría y seguimiento individualizado para vivienda protegida.
+              <h1 className="display-type mt-4 text-4xl font-black leading-[0.95] tracking-tight text-[var(--ink)] md:text-6xl">
+                Troba la teva vivenda pública a Catalunya
               </h1>
-              <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--ink-soft)] md:text-base">
-                Centralizamos asesoría, noticias y seguimiento activo en Catalunya para que tomes decisiones con más criterio, menos ruido y mejores tiempos.
+              <p className="mt-4 max-w-xl text-base leading-7 text-[var(--ink-soft)] md:text-lg">
+                Consulta promocions, requisits, ajudes i oportunitats d&apos;habitatge públic en un únic lloc.
               </p>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                <FollowupButton className="rounded-full bg-[var(--green-500)] px-5 py-2.5 text-sm font-semibold text-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-700)] disabled:opacity-60" />
-                <Link href="/services" className="rounded-full border border-[var(--stroke)] bg-white px-5 py-2.5 text-sm font-semibold text-[var(--ink)] shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--bg-eco)]">
-                  Ver servicios
+              <div className="mt-6 flex flex-wrap gap-3">
+                <Link href="/promotions" className="rounded-full bg-[var(--green-700)] px-6 py-3 text-sm font-bold text-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-900)]">
+                  Buscar vivienda
+                </Link>
+                <Link href="/services" className="rounded-full border border-[var(--stroke)] bg-white/90 px-6 py-3 text-sm font-bold text-[var(--ink)] shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-white">
+                  Ver ayudas
                 </Link>
               </div>
 
               <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                {stats.map((stat) => (
-                  <div key={stat.label} className="rounded-2xl border border-[rgba(56,189,248,0.14)] bg-white/82 p-3.5 shadow-card backdrop-blur animate-fade-up">
-                    <p className="display-type text-xl font-black text-[var(--ink)]">{stat.value}</p>
+                {stats.map((stat, index) => (
+                  <div key={stat.label} className={`rounded-2xl border border-white/70 bg-white/82 p-3.5 shadow-card backdrop-blur animate-fade-up-delay-${index === 0 ? '1' : '2'}`}>
+                    <p className="display-type text-2xl font-black text-[var(--ink)]">{stat.value}</p>
                     <p className="mt-1 text-xs text-[var(--ink-soft)]">{stat.label}</p>
                   </div>
                 ))}
-              </div>
-
-              <div className="mt-5 min-h-36 rounded-3xl border border-[rgba(56,189,248,0.14)] bg-[linear-gradient(135deg,rgba(9,14,24,0.04),rgba(255,255,255,0.96))] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--cyan-700)]">Servicios</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {serviceTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-[rgba(56,189,248,0.18)] bg-white/90 px-3 py-1 text-xs font-semibold text-[var(--cyan-700)] shadow-sm"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-                <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
-                  Además de avisos, resolvemos dudas reales y te guiamos paso a paso para que no te quedes fuera por un detalle de requisitos o plazos.
-                </p>
               </div>
             </div>
           </article>
 
           <aside className="animate-fade-up-delay-1">
             <div className="surface-card flex h-full flex-col gap-4 p-4">
-              <div className="rounded-2xl border border-[rgba(15,118,110,0.18)] bg-[linear-gradient(135deg,rgba(15,118,110,0.12),rgba(255,255,255,0.96))] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[rgba(15,118,110,0.9)]">El curso que necesitas</p>
-                <h2 className="display-type mt-2 text-xl font-black tracking-tight text-[var(--ink)]">Guia base para desbloquear tu VPO</h2>
-                <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
-                  Estamos preparando el curso con recursos descargables, casos reales y plan de accion.
-                </p>
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-[rgba(15,118,110,0.9)]">Proximamente</span>
-                  <Link href="/cursos" className="rounded-full bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-black">
-                    Ir al curso
+              <div className="rounded-[1.5rem] border border-[rgba(22,112,85,0.20)] bg-[linear-gradient(135deg,rgba(22,112,85,0.12),rgba(255,255,255,0.96))] p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Cómo funciona</p>
+                <ol className="mt-4 space-y-3">
+                  {['Busca promociones por municipio', 'Comprueba requisitos y fechas', 'Guarda oportunidades y prepara documentación'].map((step, index) => (
+                    <li key={step} className="flex gap-3 rounded-2xl bg-white/78 p-3">
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--green-700)] text-sm font-black text-white">{index + 1}</span>
+                      <span className="text-sm font-semibold text-[var(--ink)]">{step}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                {quickActions.map((action) => (
+                  <Link key={action.href} href={action.href} className="group rounded-2xl border border-[var(--stroke)] bg-white/86 p-4 shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-card">
+                    <h2 className="display-type text-lg font-black text-[var(--ink)]">{action.title}</h2>
+                    <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{action.description}</p>
+                    <span className="mt-3 inline-flex text-sm font-bold text-[var(--green-700)] transition group-hover:translate-x-1">Ver más</span>
                   </Link>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-[rgba(78,143,58,0.25)] bg-[linear-gradient(135deg,rgba(78,143,58,0.12),rgba(255,255,255,0.96))] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Tambien hay otros cursos</p>
-                <h2 className="display-type mt-2 text-xl font-black tracking-tight text-[var(--ink)]">Explora rutas de aprendizaje modernas</h2>
-                <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
-                  Aprende por bloques visuales, avances guardados y contenido que se actualiza con cada convocatoria.
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Link href="/cursos" className="rounded-full bg-[var(--ink)] px-4 py-2 text-sm font-semibold text-white transition hover:bg-black">
-                    Ver mas cursos
-                  </Link>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-[rgba(16,185,129,0.22)] bg-[linear-gradient(135deg,rgba(16,185,129,0.12),rgba(255,255,255,0.96))] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Alertas Pro en WhatsApp</p>
-                <h3 className="display-type mt-2 text-lg font-black text-[var(--ink)]">Activa avisos premium en tiempo real</h3>
-                <p className="mt-2 text-sm text-[var(--ink-soft)]">
-                  Recibe cambios clave, nuevas promociones y recordatorios de fechas criticas directamente en tu WhatsApp.
-                </p>
-                <Link href={whatsappContactUrl} className="mt-3 inline-flex rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-card transition hover:bg-[var(--bg-eco)]">
-                  Activar alertas Pro
-                </Link>
-              </div>
-
-              <div className="rounded-2xl border border-[rgba(56,189,248,0.22)] bg-[linear-gradient(135deg,rgba(56,189,248,0.10),rgba(255,255,255,0.96))] p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--cyan-700)]">Asesoria 1:1</p>
-                <h3 className="display-type mt-2 text-lg font-black text-[var(--ink)]">Acompañamiento individualizado</h3>
-                <p className="mt-2 text-sm text-[var(--ink-soft)]">
-                  Revisamos tu caso, requisitos y plazos con seguimiento directo para que no pierdas oportunidades.
-                </p>
-                <Link href="/services" className="mt-3 inline-flex rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-card transition hover:bg-[var(--bg-eco)]">
-                  Ver asesorias
-                </Link>
+                ))}
               </div>
             </div>
           </aside>
@@ -154,8 +102,8 @@ export default async function Home() {
         <section className="surface-card p-4 animate-fade-up-delay-2">
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--cyan-700)]">Noticias diarias</p>
-              <h2 className="display-type mt-1 text-xl font-black text-[var(--ink)]">Actualidad útil para decidir mejor cada día</h2>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--cyan-700)]">Información útil</p>
+              <h2 className="display-type mt-1 text-xl font-black text-[var(--ink)]">Noticias y cambios que pueden afectar tu solicitud</h2>
             </div>
             <Link href="/news" className="text-sm font-semibold text-[var(--cyan-700)]">
               Ver más
@@ -179,7 +127,7 @@ export default async function Home() {
         <section className="surface-card p-4 animate-fade-up-delay-2">
           <div className="mb-4 flex items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Seguimiento activo</p>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Oportunidades próximas</p>
               <h2 className="display-type mt-1 text-xl font-black text-[var(--ink)]">Próximas viviendas por salir</h2>
             </div>
             <Link href="/alerts" className="text-sm font-semibold text-[var(--green-700)]">

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import type { UserProfile } from '@/types';
+import type { Promotion, UserAccessSummary, UserProfile } from '@/types';
 import { ProfileCard } from '@/components/profile-card';
 import { StatusPill } from '@/components/status-pill';
 
@@ -16,6 +16,8 @@ export default function AccountPage() {
   const [profileMessage, setProfileMessage] = useState('');
   const [purchasedCoursesCount, setPurchasedCoursesCount] = useState(0);
   const [coursesError, setCoursesError] = useState('');
+  const [favorites, setFavorites] = useState<Promotion[]>([]);
+  const [accessSummary, setAccessSummary] = useState<UserAccessSummary | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -71,13 +73,19 @@ export default function AccountPage() {
 
     (async () => {
       try {
-        const list = await api.listCoursesForUser();
+        const [list, favoriteList, access] = await Promise.all([
+          api.listCoursesForUser(),
+          api.getFavorites().catch(() => []),
+          api.getMyAccess().catch(() => null),
+        ]);
         if (!active) return;
         const purchased = list.filter((course) => course.access?.reason === 'purchase');
         setPurchasedCoursesCount(purchased.length);
+        setFavorites(favoriteList.map((item) => item.promotion).slice(0, 3));
+        setAccessSummary(access);
       } catch {
         if (!active) return;
-        setCoursesError('No se pudieron cargar los cursos comprados.');
+        setCoursesError('No se pudieron cargar todos los datos del dashboard.');
       }
     })();
 
@@ -123,6 +131,14 @@ export default function AccountPage() {
   const lastLoginLabel = lastLogin
     ? new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(lastLogin)
     : 'Sin registro';
+  const activeServices = accessSummary?.services.length ?? 0;
+  const activeCourses = accessSummary?.courses.length ?? purchasedCoursesCount;
+  const dashboardCards = [
+    { label: 'Solicitudes', value: '0', detail: 'Preparado para conectar con expediente cuando exista endpoint.' },
+    { label: 'Favoritos', value: String(favorites.length), detail: 'Viviendas guardadas para seguimiento rápido.' },
+    { label: 'Documentación', value: hasTracking ? 'En revisión' : 'Pendiente', detail: 'Bloque reservado para carpeta ciudadana.' },
+    { label: 'Notificaciones', value: hasTracking ? 'Activas' : 'Básicas', detail: 'Alertas por municipio, régimen y fechas clave.' },
+  ];
 
   return (
     <main className="shell space-y-6 pb-16">
@@ -150,9 +166,19 @@ export default function AccountPage() {
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Ultimo inicio de sesion</p>
-            <p className="mt-1 text-lg font-semibold text-[var(--ink)]">{lastLoginLabel}</p>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Último inicio de sesión</p>
+              <p className="mt-1 text-lg font-semibold text-[var(--ink)]">{lastLoginLabel}</p>
+            </div>
+            <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Servicios activos</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{activeServices}</p>
+            </div>
+            <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Cursos y guías</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{activeCourses}</p>
+            </div>
           </div>
 
           <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -212,6 +238,54 @@ export default function AccountPage() {
           </div>
         </div>
       </ProfileCard>
+
+      <section className="grid gap-4 md:grid-cols-4">
+        {dashboardCards.map((card) => (
+          <ProfileCard key={card.label} className="bg-white/88 transition hover:-translate-y-1">
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">{card.label}</p>
+            <p className="display-type mt-3 text-2xl font-black text-[var(--ink)]">{card.value}</p>
+            <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{card.detail}</p>
+          </ProfileCard>
+        ))}
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+        <ProfileCard>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Viviendas guardadas</p>
+              <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Favoritos para comparar</h2>
+            </div>
+            <Link href="/promotions" className="inline-flex rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
+              Buscar vivienda
+            </Link>
+          </div>
+          {favorites.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-dashed border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm text-[var(--ink-soft)]">
+              Aún no tienes viviendas favoritas. Guarda promociones para tener una comparación rápida desde tu perfil.
+            </p>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {favorites.map((promotion) => (
+                <Link key={promotion.id} href={`/promotions/${promotion.id}`} className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 transition hover:-translate-y-0.5 hover:bg-white">
+                  <p className="font-semibold text-[var(--ink)]">{promotion.title}</p>
+                  <p className="mt-1 text-sm text-[var(--ink-soft)]">{promotion.municipality || 'Catalunya'} {promotion.province ? `, ${promotion.province}` : ''}</p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </ProfileCard>
+
+        <ProfileCard className="bg-[linear-gradient(135deg,rgba(167,28,32,0.06),rgba(255,255,255,0.96))]">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--accent-red)]">Roles y permisos</p>
+          <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Arquitectura preparada para escalar</h2>
+          <div className="mt-4 space-y-3 text-sm text-[var(--ink-soft)]">
+            <p><strong className="text-[var(--ink)]">Ciudadano:</strong> favoritos, alertas, documentación y seguimiento propio.</p>
+            <p><strong className="text-[var(--ink)]">Gestor:</strong> revisión de expedientes y soporte operativo.</p>
+            <p><strong className="text-[var(--ink)]">Administrador:</strong> backoffice completo, accesos y contenido.</p>
+          </div>
+        </ProfileCard>
+      </section>
 
       <section id="guia-pro" className="space-y-4">
         <div>
