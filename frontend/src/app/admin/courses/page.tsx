@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { AdminNav } from '@/components/admin-nav';
+import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { api } from '@/lib/api';
 import type { Course, CourseAccessType, CourseStatus, UserProfile } from '@/types';
 
@@ -193,7 +195,37 @@ export default function AdminCoursesPage() {
   }
 
   return (
-    <main className="shell space-y-4">
+    <main className="shell pb-16">
+      <div className="admin-shell">
+        <AdminNav />
+        <div className="space-y-4">
+      <PageHero
+        eyebrow="Cursos CMS"
+        title="Editor de cursos preparado para contenido por bloques"
+        description="Crea cursos, organiza módulos, gestiona acceso y prepara una experiencia editorial tipo Notion/Gutenberg con multimedia reutilizable."
+        actions={
+          <>
+            <ButtonLink href="/admin/access">Compras y activaciones</ButtonLink>
+            <ButtonLink href="/admin/services" variant="secondary">Servicios</ButtonLink>
+          </>
+        }
+      />
+
+      <SurfaceCard className="p-5">
+        <SectionHeader
+          eyebrow="Editor visual"
+          title="Bloques disponibles para cursos"
+          description="Base visual para evolucionar el editor actual hacia bloques arrastrables con multimedia, citas, tablas y CTAs."
+        />
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {['Texto enriquecido', 'Imagen / galería', 'Vídeo', 'PDF descargable', 'Cita destacada', 'Tabla', 'Botón CTA', 'Formulario'].map((block) => (
+            <div key={block} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm font-semibold text-[var(--ink)]">
+              {block}
+            </div>
+          ))}
+        </div>
+      </SurfaceCard>
+
       <header className="overflow-hidden rounded-3xl border border-[var(--stroke)] bg-white shadow-card">
         <div className="grid gap-0 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="p-6">
@@ -569,6 +601,8 @@ export default function AdminCoursesPage() {
           );
         })}
       </section>
+        </div>
+      </div>
     </main>
   );
 }

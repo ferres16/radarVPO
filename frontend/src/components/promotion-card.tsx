@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Promotion } from '@/types';
+import { MotionCard } from './motion-primitives';
 
 function displayDate(promotion: Promotion) {
   if (promotion.status === 'published_reviewed' || promotion.status === 'published_unreviewed') {
@@ -40,7 +41,7 @@ export function PromotionCard({
   titleOverride?: string;
 }) {
   return (
-    <article className="group flex h-full flex-col rounded-[1.5rem] border border-[var(--stroke)] bg-white p-4 shadow-card transition duration-300 hover:-translate-y-1 hover:border-[rgba(22,112,85,0.30)] hover:shadow-[0_18px_40px_rgba(30,31,28,0.10)]">
+    <MotionCard className="group flex h-full flex-col rounded-[1.5rem] border border-[var(--stroke)] bg-white p-4 shadow-card transition duration-300 hover:border-[rgba(22,112,85,0.30)] hover:shadow-[0_18px_40px_rgba(30,31,28,0.10)]">
       <div className="mb-3 flex items-start justify-between gap-2">
         <h3 className="text-base font-bold leading-6 text-[var(--ink)]">{titleOverride || promotion.title}</h3>
         {!hideStatus ? (
@@ -67,6 +68,6 @@ export function PromotionCard({
           Ver ficha
         </Link>
       ) : null}
-    </article>
+    </MotionCard>
   );
 }

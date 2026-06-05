@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation';
 import { api } from '@/lib/api';
+import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { Reveal } from '@/components/motion-primitives';
 
 type JsonMap = Record<string, unknown>;
 
@@ -101,22 +103,70 @@ export default async function PromotionDetailPage({
     return notFound();
   }
 
-  return (
-    <main className="shell pb-10">
-      <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-white p-6 shadow-card animate-fade-up">
-        <h1 className="text-2xl font-bold tracking-tight text-[var(--ink)] md:text-3xl">{promotion.title}</h1>
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">
-          {promotion.municipality || 'Catalunya'}
-          {promotion.province ? `, ${promotion.province}` : ''}
-        </p>
+  const documentsByType = {
+    images: promotion.documents.filter((doc) => doc.fileType?.startsWith('image/')),
+    videos: promotion.documents.filter((doc) => doc.fileType?.startsWith('video/')),
+    pdfs: promotion.documents.filter((doc) => doc.fileType?.includes('pdf') || doc.documentKind === 'pdf_original'),
+    plans: promotion.documents.filter((doc) => /plano|plan/i.test(doc.originalName || doc.documentKind)),
+  };
+  const heroImage = documentsByType.images[0]?.publicUrl;
+  const keyFacts = [
+    { label: 'Municipio', value: promotion.municipality || 'Catalunya' },
+    { label: 'Régimen', value: promotion.promotionType },
+    { label: 'Viviendas', value: promotion.totalHomes ?? 'n/d' },
+    { label: 'Promotor', value: promotion.promoter || 'n/d' },
+  ];
 
-        <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[linear-gradient(135deg,rgba(78,143,58,0.08),rgba(255,255,255,0.92))] p-4 text-sm">
-          <p className="font-semibold text-[var(--ink)]">Estado: {promotion.status}</p>
-          <p className="mt-1 text-[var(--ink-soft)]">
-            {promotion.statusMessage ||
-              'Estamos analizando esta promocion y actualizando la informacion'}
-          </p>
-        </div>
+  return (
+    <main className="shell space-y-6 pb-10">
+      <Reveal>
+        <section className="grid overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-white shadow-card lg:grid-cols-[1.1fr_0.9fr]">
+          <div className="relative min-h-[280px] bg-[linear-gradient(135deg,rgba(22,112,85,0.16),rgba(244,197,66,0.14),rgba(255,255,255,0.96))] p-6 md:p-8">
+            {heroImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-85" />
+            ) : null}
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(16,24,40,0.08),rgba(16,24,40,0.52))]" />
+            <div className="relative flex h-full min-h-[240px] flex-col justify-end">
+              <span className="w-fit rounded-full bg-white/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">
+                {promotion.status === 'published_reviewed' ? 'Ficha revisada' : 'Información en actualización'}
+              </span>
+              <h1 className="display-type mt-4 max-w-3xl text-4xl font-black leading-tight text-white md:text-5xl">{promotion.title}</h1>
+              <p className="mt-2 text-sm font-semibold text-white/86">
+                {promotion.municipality || 'Catalunya'}{promotion.province ? `, ${promotion.province}` : ''}
+              </p>
+            </div>
+          </div>
+          <aside className="p-5 md:p-6">
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Resumen de la promoción</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {keyFacts.map((fact) => (
+                <div key={fact.label} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">{fact.label}</p>
+                  <p className="mt-1 text-lg font-black text-[var(--ink)]">{fact.value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-white p-4">
+              <p className="font-semibold text-[var(--ink)]">Estado: {promotion.status}</p>
+              <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
+                {promotion.statusMessage || 'Estamos analizando esta promoción y actualizando la información.'}
+              </p>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <ButtonLink href={promotion.sourceUrl} variant="primary">Fuente oficial</ButtonLink>
+              <ButtonLink href="#documentos" variant="secondary">Ver documentos</ButtonLink>
+            </div>
+          </aside>
+        </section>
+      </Reveal>
+
+      <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card md:p-6">
+        <SectionHeader
+          eyebrow="Ficha estructurada"
+          title="Información, requisitos, ubicación y documentación"
+          description={promotion.publicDescription || 'Estamos completando esta ficha para ofrecerte la información más útil posible.'}
+        />
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 transition hover:-translate-y-0.5">
@@ -133,6 +183,25 @@ export default async function PromotionDetailPage({
             </p>
           </div>
         </div>
+
+        <section className="mt-4 grid gap-3 md:grid-cols-4" aria-label="Galería multimedia">
+          <SurfaceCard className="p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">Imágenes</p>
+            <p className="mt-2 text-2xl font-black text-[var(--ink)]">{documentsByType.images.length}</p>
+          </SurfaceCard>
+          <SurfaceCard className="p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">Vídeos</p>
+            <p className="mt-2 text-2xl font-black text-[var(--ink)]">{documentsByType.videos.length}</p>
+          </SurfaceCard>
+          <SurfaceCard className="p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">Planos</p>
+            <p className="mt-2 text-2xl font-black text-[var(--ink)]">{documentsByType.plans.length}</p>
+          </SurfaceCard>
+          <SurfaceCard className="p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">PDFs</p>
+            <p className="mt-2 text-2xl font-black text-[var(--ink)]">{documentsByType.pdfs.length}</p>
+          </SurfaceCard>
+        </section>
 
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <DataBlock title="Fechas" payload={promotion.importantDates} />
@@ -202,21 +271,21 @@ export default async function PromotionDetailPage({
           )}
         </div>
 
-        <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+        <div id="documentos" className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Documentos de referencia</h2>
           {promotion.documents.length === 0 ? (
             <p className="mt-2 text-sm text-[var(--ink-soft)]">Sin documentos adjuntos.</p>
           ) : (
-            <div className="mt-2 space-y-2">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {promotion.documents.map((doc) => (
                 <a
                   key={doc.id}
                   href={doc.publicUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center rounded-full bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-700)]"
+                  className="rounded-2xl border border-[var(--stroke)] bg-white px-4 py-3 text-sm font-semibold text-[var(--ink)] shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--bg-eco)]"
                 >
-                  Ver PDF
+                  {doc.originalName || doc.documentKind}
                 </a>
               ))}
             </div>

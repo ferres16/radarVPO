@@ -36,3 +36,26 @@ Las mejoras implementadas priorizan claridad institucional, búsqueda más rápi
 - Implementar recuperación de contraseña completa en backend y frontend.
 - Medir Lighthouse en entorno desplegado y revisar imágenes reales cuando existan assets finales.
 - Añadir tests de navegación y formularios críticos con Playwright o Testing Library.
+
+## Fase 2: Sistema visual y CMS
+
+Se amplió la modernización con una base más consistente para toda la plataforma:
+
+- Se añadió Framer Motion con primitivos reutilizables (`Reveal`, `MotionCard`, `Stagger`, `StaggerItem`) y respeto a `prefers-reduced-motion`.
+- Se creó un Design System reutilizable (`PageHero`, `SectionHeader`, `SurfaceCard`, `MetricCard`, `ButtonLink`, `Eyebrow`) para reducir estilos duplicados.
+- La navbar se reorientó a la arquitectura solicitada: Servicios, Cursos, Promociones, Alertas, Ayudas y Contacto, con buscador global.
+- La home se reorganizó para dar protagonismo a servicios, promociones activas, alertas, cursos y novedades.
+- La página de detalle de promoción se transformó hacia una experiencia de portal inmobiliario con hero visual, resumen estructurado, contadores multimedia, documentos, requisitos, fechas y unidades.
+- Alertas se rediseñó como centro de notificaciones con filtros visuales, tipos y estado leído/no leído preparado para persistencia.
+- Backoffice incorpora navegación lateral, dashboard CMS, gestor de promociones y cabeceras de editor para cursos/promociones.
+
+### Auditoría técnica detectada
+
+| Área | Hallazgo | Riesgo | Mejora aplicada |
+| --- | --- | --- | --- |
+| Componentes | Muchas páginas repetían headers, botones y cards con clases distintas. | Inconsistencia visual y mantenimiento lento. | Design System compartido. |
+| Animación | Animaciones CSS dispersas y sin patrón de entrada por scroll. | Experiencia poco consistente. | Primitivos Framer Motion centralizados. |
+| Admin | El panel mezclaba dashboard y gestión operativa. | Baja productividad editorial. | Sidebar CMS y página específica de promociones. |
+| Cursos | El editor era funcional pero no comunicaba una arquitectura de bloques. | Dificulta evolución a CMS avanzado. | Módulos visuales de editor por bloques. |
+| Promociones | La edición y el detalle público no reflejaban galería/multimedia/estructura inmobiliaria. | Menor confianza y menor escalabilidad. | Hero inmobiliario, contadores multimedia y módulos CMS. |
+| Mobile-first | Algunos layouts eran desktop-first y dependían de grids anchos. | Peor lectura en móvil. | Componentes y secciones parten de una columna y escalan a grid. |

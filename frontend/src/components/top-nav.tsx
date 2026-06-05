@@ -1,22 +1,25 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
+import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import type { UserProfile } from '@/types';
 
 const primaryLinks = [
-  { href: '/promotions', label: 'Buscar Vivienda' },
-  { href: '/services', label: 'Ayudas' },
-  { href: '/cursos', label: 'Requisitos' },
-  { href: '/alerts', label: 'Municipios' },
-  { href: '/news', label: 'Preguntas Frecuentes' },
+  { href: '/services', label: 'Servicios' },
+  { href: '/cursos', label: 'Cursos' },
+  { href: '/promotions', label: 'Promociones' },
+  { href: '/alerts', label: 'Alertas' },
+  { href: '/news?topic=ayudas', label: 'Ayudas' },
+  { href: '/services#contacto', label: 'Contacto' },
 ];
 
 export function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [globalQuery, setGlobalQuery] = useState('');
   const [me, setMe] = useState<UserProfile | null>(null);
   const router = useRouter();
   const pathname = usePathname();
@@ -53,8 +56,16 @@ export function TopNav() {
   }, [me]);
 
   const isActive = (href: string) => {
+    const normalizedHref = href.split('?')[0].split('#')[0];
     if (href === '/') return pathname === '/';
-    return pathname === href || pathname.startsWith(`${href}/`);
+    return pathname === normalizedHref || pathname.startsWith(`${normalizedHref}/`);
+  };
+
+  const submitGlobalSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = globalQuery.trim();
+    router.push(query ? `/promotions?q=${encodeURIComponent(query)}` : '/promotions');
+    setMobileOpen(false);
   };
 
   const handleLogout = async () => {
@@ -71,7 +82,7 @@ export function TopNav() {
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 px-3 pt-3">
-      <div className="mx-auto flex w-full max-w-[1180px] items-center justify-between rounded-[1.5rem] border border-white/70 bg-white/78 px-3 py-2 shadow-[0_18px_50px_rgba(16,24,40,0.12)] backdrop-blur-xl md:px-4">
+      <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between rounded-[1.5rem] border border-white/70 bg-white/78 px-3 py-2 shadow-[0_18px_50px_rgba(16,24,40,0.12)] backdrop-blur-xl md:px-4">
         <Link
           href="/"
           className="group flex items-center gap-2 rounded-full px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
@@ -102,7 +113,7 @@ export function TopNav() {
           </span>
         </button>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegación principal">
+        <nav className="hidden items-center gap-1 xl:flex" aria-label="Navegación principal">
           {primaryLinks.map((link) => {
             const active = isActive(link.href);
             return (
@@ -122,6 +133,17 @@ export function TopNav() {
             );
           })}
         </nav>
+
+        <form onSubmit={submitGlobalSearch} className="hidden min-w-0 max-w-[240px] flex-1 items-center lg:flex" role="search" aria-label="Buscador global">
+          <label className="sr-only" htmlFor="global-search">Buscar promociones, servicios o municipios</label>
+          <input
+            id="global-search"
+            value={globalQuery}
+            onChange={(event) => setGlobalQuery(event.target.value)}
+            placeholder="Buscar vivienda..."
+            className="w-full rounded-full border border-[var(--stroke)] bg-white/86 px-4 py-2 text-sm text-[var(--ink)] shadow-sm outline-none transition focus:border-[var(--green-700)] focus:ring-2 focus:ring-[rgba(22,112,85,0.12)]"
+          />
+        </form>
 
         <nav className="hidden items-center gap-2 md:flex" aria-label="Acceso de usuario">
           {me ? (
@@ -203,6 +225,18 @@ export function TopNav() {
           aria-label="Navegación móvil"
         >
           <ul className="space-y-2">
+            <li>
+              <form onSubmit={submitGlobalSearch} role="search" aria-label="Buscador global móvil">
+                <label className="sr-only" htmlFor="mobile-global-search">Buscar promociones, servicios o municipios</label>
+                <input
+                  id="mobile-global-search"
+                  value={globalQuery}
+                  onChange={(event) => setGlobalQuery(event.target.value)}
+                  placeholder="Buscar vivienda, municipio..."
+                  className="w-full rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm font-semibold text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--green-700)]"
+                />
+              </form>
+            </li>
             {primaryLinks.map((link) => (
               <li key={link.href}>
                 <Link

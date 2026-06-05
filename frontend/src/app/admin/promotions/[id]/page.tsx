@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { AdminNav } from '@/components/admin-nav';
+import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { api } from '@/lib/api';
 import { PromotionDetail, PromotionUnit } from '@/types';
 
@@ -232,7 +234,37 @@ export default function AdminPromotionEditPage() {
   }
 
   return (
-    <main className="shell space-y-5 pb-12">
+    <main className="shell pb-16">
+      <div className="admin-shell">
+        <AdminNav />
+        <div className="space-y-5">
+      <PageHero
+        eyebrow="Editor visual de promoción"
+        title="Ficha inmobiliaria estructurada y multimedia"
+        description={promotion.title}
+        actions={
+          <>
+            <ButtonLink href={`/promotions/${promotion.id}`}>Ver ficha pública</ButtonLink>
+            <ButtonLink href="/admin/promotions" variant="secondary">Volver a promociones</ButtonLink>
+          </>
+        }
+      />
+
+      <SurfaceCard className="p-5">
+        <SectionHeader
+          eyebrow="Módulos CMS"
+          title="Contenido editable de la promoción"
+          description="Base visual para galería, vídeos, planos, PDFs, requisitos, FAQ, publicación programada e historial de cambios."
+        />
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {['Galería', 'Vídeos', 'Planos', 'PDFs', 'Fechas', 'Requisitos', 'FAQ', 'Historial'].map((block) => (
+            <div key={block} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm font-semibold text-[var(--ink)]">
+              {block}
+            </div>
+          ))}
+        </div>
+      </SurfaceCard>
+
       <header className="rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card">
         <h1 className="text-2xl font-bold text-[var(--ink)]">Editor de promoción</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">{promotion.title}</p>
@@ -413,6 +445,8 @@ export default function AdminPromotionEditPage() {
       >
         {saving ? 'Guardando...' : 'Guardar cambios'}
       </button>
+        </div>
+      </div>
     </main>
   );
 }
