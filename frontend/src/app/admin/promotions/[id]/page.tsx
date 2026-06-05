@@ -286,7 +286,7 @@ export default function AdminPromotionEditPage() {
         </div>
       </header>
 
-      <section className="grid gap-4 lg:grid-cols-2">
+      <section id="contenido" className="grid gap-4 lg:grid-cols-2">
         <article className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
           <h2 className="text-lg font-semibold text-[var(--ink)]">Informacion general</h2>
           <div className="mt-3 space-y-2 text-sm">
@@ -321,7 +321,7 @@ export default function AdminPromotionEditPage() {
         </article>
       </section>
 
-      <section className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
+      <section id="unidades" className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-[var(--ink)]">Tabla de viviendas</h2>
           <div className="flex items-center gap-2">
@@ -410,7 +410,7 @@ export default function AdminPromotionEditPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
+      <section id="documentos" className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
         <h2 className="text-lg font-semibold text-[var(--ink)]">Documentos y capturas</h2>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <label className="rounded-xl border border-dashed p-3 text-sm">

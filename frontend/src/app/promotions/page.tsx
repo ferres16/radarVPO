@@ -12,23 +12,18 @@ export default async function PromotionsPage({
   const q = typeof sp.q === 'string' ? sp.q : '';
 
   const query = new URLSearchParams();
+  if (q) query.set('q', q);
   query.set('limit', '10');
 
   const promotions = await api.getPromotions(`?${query.toString()}`).catch(() => []);
-  const published = promotions
-    .filter((item) => item.status === 'published_reviewed' || item.status === 'published_unreviewed' || item.type === 'published')
-    .filter((item) => {
-      if (!q) return true;
-      const haystack = `${item.title} ${item.municipality || ''} ${item.province || ''} ${item.promotionType || ''}`.toLowerCase();
-      return haystack.includes(q.toLowerCase());
-    });
+  const visiblePromotions = promotions.filter((item) => item.status !== 'archived');
 
   return (
     <main className="shell space-y-6 pb-10">
       <PageHero
-        eyebrow="Promociones publicadas"
+        eyebrow="Oportunidades recientes"
         title="Las 10 oportunidades de vivienda pública más recientes"
-        description="Consulta promociones publicadas, revisa su estado y entra rápido en la ficha oficial. Sin filtros aplicados mostramos automáticamente las últimas 10."
+        description="Consulta las promociones y avisos de vivienda más recientes, revisa su estado y entra rápido en la ficha oficial. Sin filtros aplicados mostramos automáticamente las últimas 10."
         actions={
           <>
             <ButtonLink href="/alerts">Ver avisos</ButtonLink>
@@ -53,18 +48,18 @@ export default async function PromotionsPage({
 
       <section className="flex flex-col gap-3 rounded-[1.5rem] border border-[var(--stroke)] bg-white/82 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm font-bold text-[var(--ink)]">{published.length} promociones mostradas</p>
-          <p className="mt-1 text-sm text-[var(--ink-soft)]">{q ? 'Resultados filtrados por búsqueda general.' : 'Últimas 10 promociones publicadas automáticamente.'}</p>
+          <p className="text-sm font-bold text-[var(--ink)]">{visiblePromotions.length} promociones mostradas</p>
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">{q ? 'Resultados filtrados por búsqueda general.' : 'Últimas 10 oportunidades activas automáticamente.'}</p>
         </div>
         <Link href="/promotions" className="inline-flex rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
           Limpiar filtros
         </Link>
       </section>
 
-      {published.length === 0 ? (
+      {visiblePromotions.length === 0 ? (
         <SurfaceCard className="p-8 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Sin promociones disponibles</p>
-          <h2 className="display-type mt-3 text-3xl font-black text-[var(--ink)]">No hay promociones publicadas que mostrar ahora mismo</h2>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Sin oportunidades disponibles</p>
+          <h2 className="display-type mt-3 text-3xl font-black text-[var(--ink)]">No hay promociones o avisos que mostrar ahora mismo</h2>
           <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
             Puedes consultar avisos próximos o contratar seguimiento para que te avisemos cuando aparezcan nuevas oportunidades.
           </p>
@@ -77,7 +72,7 @@ export default async function PromotionsPage({
         <section className="space-y-4">
         <SectionHeader title="Últimas promociones" description="Fichas recientes con ubicación, estado y acceso directo al detalle." />
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Resultados de vivienda">
-          {published.map((promotion) => (
+          {visiblePromotions.map((promotion) => (
             <PromotionCard key={promotion.id} promotion={promotion} />
           ))}
         </section>

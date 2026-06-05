@@ -10,13 +10,13 @@ export default async function Home() {
     api.getUpcomingAlerts().catch(() => []),
     api.listServices().catch(() => []),
     api.listCourses().catch(() => []),
-    api.getPromotions('?limit=6').catch(() => []),
+    api.getPromotions('?limit=10').catch(() => []),
   ]);
 
   const activeServices = services.filter((service) => service.status === 'active').slice(0, 3);
   const featuredCourses = courses.filter((course) => course.status === 'published').slice(0, 3);
   const publishedPromotions = promotions
-    .filter((promotion) => promotion.status === 'published_reviewed' || promotion.status === 'published_unreviewed' || promotion.type === 'published')
+    .filter((promotion) => promotion.status !== 'archived')
     .slice(0, 4);
   const activeAlerts = alerts
     .filter((promotion) => promotion.type === 'alert')

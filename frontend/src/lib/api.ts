@@ -22,7 +22,10 @@ import {
   JobRun,
 } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.API_URL ||
+  'http://localhost:3000/api/v1';
 
 type CourseMutationPayload = Partial<
   Pick<
@@ -180,9 +183,9 @@ export const api = {
     request<{ deleted: boolean }>(`/backoffice/news/${id}`, {
       method: 'DELETE',
     }),
-  getBackofficePromotions: (status?: string) =>
+  getBackofficePromotions: (status?: string, q?: string) =>
     request<PromotionDetail[]>(
-      `/backoffice/promotions${status ? `?status=${encodeURIComponent(status)}` : ''}`,
+      `/backoffice/promotions${queryString({ status, q })}`,
     ),
   getBackofficePromotionById: (id: string) =>
     request<PromotionDetail>(`/backoffice/promotions/${id}`),

@@ -51,6 +51,7 @@ export class BackofficeService {
       pendingReview,
       publishedUnreviewed,
       publishedReviewed,
+      archived,
       news,
       jobsFailed,
     ] = await Promise.all([
@@ -61,6 +62,7 @@ export class BackofficeService {
         where: { status: 'published_unreviewed' },
       }),
       this.prisma.promotion.count({ where: { status: 'published_reviewed' } }),
+      this.prisma.promotion.count({ where: { status: 'archived' } }),
       this.prisma.newsItem.count(),
       this.prisma.jobRun.count({ where: { status: 'failed' } }),
     ]);
@@ -71,6 +73,7 @@ export class BackofficeService {
       pendingReview,
       publishedUnreviewed,
       publishedReviewed,
+      archived,
       news,
       jobsFailed,
     };
@@ -712,8 +715,18 @@ export class BackofficeService {
   }
 
   async listPromotions(query: BackofficeListPromotionsDto) {
+    const search = query.q?.trim();
     const where: Prisma.PromotionWhereInput = {
       status: this.validStatus(query.status) ?? undefined,
+      OR: search
+        ? [
+            { title: { contains: search, mode: 'insensitive' } },
+            { municipality: { contains: search, mode: 'insensitive' } },
+            { province: { contains: search, mode: 'insensitive' } },
+            { promoter: { contains: search, mode: 'insensitive' } },
+            { publicDescription: { contains: search, mode: 'insensitive' } },
+          ]
+        : undefined,
     };
 
     const limit = Math.min(query.limit ?? 200, 500);

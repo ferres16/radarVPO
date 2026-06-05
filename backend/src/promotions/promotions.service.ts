@@ -11,20 +11,22 @@ export class PromotionsService {
   async list(filters: ListPromotionsDto) {
     const limit = Math.min(filters.limit ?? 10, 50);
     const offset = filters.offset ?? 0;
-    const publishedStatuses: PromotionStatus[] = [
+    const visibleStatuses: PromotionStatus[] = [
+      'pending_review',
       'published_unreviewed',
       'published_reviewed',
     ];
     const statusFilter = filters.status
-      ? publishedStatuses.includes(filters.status as PromotionStatus)
+      ? visibleStatuses.includes(filters.status as PromotionStatus)
         ? (filters.status as PromotionStatus)
         : null
-      : { in: publishedStatuses };
+      : { in: visibleStatuses };
 
     if (statusFilter === null) {
       return [];
     }
 
+    const search = filters.q?.trim();
     const where: Prisma.PromotionWhereInput = {
       municipality: filters.municipality
         ? { contains: filters.municipality, mode: 'insensitive' }
@@ -34,11 +36,20 @@ export class PromotionsService {
         : undefined,
       promotionType: filters.promotionType,
       status: statusFilter,
+      OR: search
+        ? [
+            { title: { contains: search, mode: 'insensitive' } },
+            { municipality: { contains: search, mode: 'insensitive' } },
+            { province: { contains: search, mode: 'insensitive' } },
+            { promoter: { contains: search, mode: 'insensitive' } },
+            { publicDescription: { contains: search, mode: 'insensitive' } },
+          ]
+        : undefined,
     };
 
     const items = await this.prisma.promotion.findMany({
       where,
-      orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }],
+      orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,
       select: {
@@ -48,9 +59,14 @@ export class PromotionsService {
         province: true,
         promotionType: true,
         status: true,
+        promoter: true,
+        publicDescription: true,
+        totalHomes: true,
         publishedAt: true,
+        deadlineDate: true,
         estimatedPublicationDate: true,
         alertDetectedAt: true,
+        sourceUrl: true,
       },
     });
 
@@ -61,7 +77,7 @@ export class PromotionsService {
     const item = await this.prisma.promotion.findFirst({
       where: {
         id,
-        status: { in: ['published_unreviewed', 'published_reviewed'] },
+        status: { in: ['pending_review', 'published_unreviewed', 'published_reviewed'] },
       },
       select: {
         id: true,

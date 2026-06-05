@@ -93,6 +93,7 @@ export type BackofficeOverview = {
   pendingReview: number;
   publishedUnreviewed: number;
   publishedReviewed: number;
+  archived: number;
   news: number;
   jobsFailed: number;
 };
