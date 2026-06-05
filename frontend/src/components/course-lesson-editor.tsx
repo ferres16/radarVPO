@@ -7,6 +7,12 @@ import Link from '@tiptap/extension-link';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import Highlight from '@tiptap/extension-highlight';
+import Image from '@tiptap/extension-image';
+import Youtube from '@tiptap/extension-youtube';
+import { Table } from '@tiptap/extension-table';
+import { TableRow } from '@tiptap/extension-table-row';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
 
 type CourseLessonEditorProps = {
   value?: Record<string, unknown> | null;
@@ -31,7 +37,13 @@ export function CourseLessonEditor({ value, onChange }: CourseLessonEditorProps)
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight,
-    ],
+      Image.configure({ allowBase64: false, HTMLAttributes: { class: 'my-4 rounded-2xl border border-[var(--stroke)]' } }),
+      Youtube.configure({ controls: true, nocookie: true, HTMLAttributes: { class: 'my-4 aspect-video w-full rounded-2xl border border-[var(--stroke)]' } }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableHeader,
+      TableCell,
+    ] as never,
     content: value ?? emptyDoc,
     editorProps: {
       attributes: {
@@ -74,8 +86,71 @@ export function CourseLessonEditor({ value, onChange }: CourseLessonEditorProps)
     window.setTimeout(() => setCopyMessage(''), 2000);
   };
 
+  const askForUrl = (label: string) => {
+    const url = window.prompt(label);
+    return url?.trim() || '';
+  };
+
+  const insertImage = () => {
+    const src = askForUrl('URL de la imagen');
+    if (!src) return;
+    (editor.chain().focus() as unknown as { setImage: (attrs: { src: string; alt: string }) => { run: () => boolean } }).setImage({ src, alt: '' }).run();
+  };
+
+  const insertVideo = () => {
+    const src = askForUrl('URL de YouTube');
+    if (!src) return;
+    (editor.chain().focus() as unknown as { setYoutubeVideo: (attrs: { src: string; width: number; height: number }) => { run: () => boolean } }).setYoutubeVideo({ src, width: 960, height: 540 }).run();
+  };
+
+  const insertCta = () => {
+    const href = askForUrl('URL del botón');
+    if (!href) return;
+    const label = window.prompt('Texto del botón')?.trim() || 'Abrir enlace';
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: 'paragraph',
+        content: [
+          {
+            type: 'text',
+            text: label,
+            marks: [
+              { type: 'link', attrs: { href, target: '_blank', rel: 'noopener noreferrer nofollow', class: null } },
+              { type: 'bold' },
+            ],
+          },
+        ],
+      })
+      .run();
+  };
+
   return (
     <div className="space-y-3">
+      <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Insertar bloques</p>
+        <div className="flex flex-wrap gap-2">
+          {[
+            { label: 'Texto', action: () => editor.chain().focus().setParagraph().run() },
+            { label: 'Imagen', action: insertImage },
+            { label: 'Video', action: insertVideo },
+            { label: 'Tabla', action: () => (editor.chain().focus() as unknown as { insertTable: (attrs: { rows: number; cols: number; withHeaderRow: boolean }) => { run: () => boolean } }).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
+            { label: 'Cita', action: () => editor.chain().focus().toggleBlockquote().run() },
+            { label: 'Botón', action: insertCta },
+            { label: 'Separador', action: () => editor.chain().focus().setHorizontalRule().run() },
+          ].map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              onClick={item.action}
+              className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="flex flex-wrap gap-2">
         <button
           type="button"

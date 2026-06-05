@@ -88,7 +88,7 @@ export function TopNav() {
           className="group flex items-center gap-2 rounded-full px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
           aria-label="Radar VPO, ir al inicio"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--green-700),var(--accent-red))] text-sm font-black text-white shadow-sm transition duration-200 group-hover:scale-105">
+          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--green-700),var(--cyan-700))] text-sm font-black text-white shadow-sm transition duration-200 group-hover:scale-105">
             RV
           </span>
           <span className="leading-tight">
@@ -128,7 +128,7 @@ export function TopNav() {
               }`}
             >
               {link.label}
-              {active ? <span className="absolute inset-x-4 -bottom-0.5 h-0.5 rounded-full bg-[var(--accent-red)]" /> : null}
+              {active ? <span className="absolute inset-x-4 -bottom-0.5 h-0.5 rounded-full bg-[var(--cyan-700)]" /> : null}
             </Link>
             );
           })}
@@ -243,7 +243,7 @@ export function TopNav() {
                   href={link.href}
                   className={`block rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
                     isActive(link.href)
-                      ? 'border-[rgba(167,28,32,0.22)] bg-[rgba(167,28,32,0.08)] text-[var(--accent-red)]'
+                      ? 'border-[rgba(22,112,85,0.22)] bg-[var(--bg-eco)] text-[var(--green-700)]'
                       : 'border-[var(--stroke)] bg-[var(--bg-app)] text-[var(--ink)]'
                   }`}
                   onClick={() => setMobileOpen(false)}

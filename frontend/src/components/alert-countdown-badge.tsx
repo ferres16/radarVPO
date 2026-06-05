@@ -41,10 +41,10 @@ function toneClasses(tone: 'neutral' | 'positive' | 'today' | 'negative') {
 
   if (tone === 'negative') {
     return {
-      shell: 'border-[rgba(220,38,38,0.28)] bg-[linear-gradient(135deg,rgba(248,113,113,0.18),rgba(255,255,255,0.98))]',
-      kicker: 'text-red-700',
-      value: 'text-red-700',
-      detail: 'text-red-700/80',
+      shell: 'border-[rgba(244,197,66,0.34)] bg-[linear-gradient(135deg,rgba(244,197,66,0.20),rgba(255,255,255,0.98))]',
+      kicker: 'text-[var(--green-900)]',
+      value: 'text-[var(--green-900)]',
+      detail: 'text-[var(--ink-soft)]',
     };
   }
 

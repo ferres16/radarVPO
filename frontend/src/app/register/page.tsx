@@ -70,7 +70,7 @@ export default function RegisterPage() {
               <p className="mt-1 text-xs text-[var(--ink-soft)]">Fortaleza: {passwordLabel}. Usa 8 caracteres, mayúsculas, números y símbolos.</p>
             </div>
           </div>
-          {error ? <p className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700" role="alert" aria-live="polite">{error}</p> : null}
+          {error ? <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="alert" aria-live="polite">{error}</p> : null}
           <button type="submit" disabled={loading} className="w-full rounded-2xl bg-[var(--green-700)] px-4 py-3 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] disabled:opacity-60">
             {loading ? 'Creando...' : 'Crear cuenta'}
           </button>

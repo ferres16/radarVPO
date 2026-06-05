@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { AdminNav } from '@/components/admin-nav';
 import { api } from '@/lib/api';
 import type { BackofficeUser, UserProfile } from '@/types';
 
@@ -103,7 +104,10 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <main className="shell space-y-4">
+    <main className="shell pb-16">
+      <div className="admin-shell">
+        <AdminNav />
+        <div className="space-y-4">
       <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
         <h1 className="text-2xl font-bold text-[var(--ink)]">Administrar usuarios</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
@@ -195,6 +199,8 @@ export default function AdminUsersPage() {
           );
         })}
       </section>
+        </div>
+      </div>
     </main>
   );
 }

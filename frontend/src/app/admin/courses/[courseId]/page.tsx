@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { AdminNav } from '@/components/admin-nav';
 import { api } from '@/lib/api';
 import { CourseLessonEditor } from '@/components/course-lesson-editor';
 import type {
@@ -318,7 +319,10 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
   }
 
   return (
-    <main className="shell space-y-4">
+    <main className="shell pb-16">
+      <div className="admin-shell">
+        <AdminNav />
+        <div className="space-y-4">
       <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
         <h1 className="text-2xl font-bold text-[var(--ink)]">Contenido del curso</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
@@ -795,6 +799,8 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
           );
         })}
       </section>
+        </div>
+      </div>
     </main>
   );
 }

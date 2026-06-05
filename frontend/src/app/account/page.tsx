@@ -276,8 +276,8 @@ export default function AccountPage() {
           )}
         </ProfileCard>
 
-        <ProfileCard className="bg-[linear-gradient(135deg,rgba(167,28,32,0.06),rgba(255,255,255,0.96))]">
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--accent-red)]">Roles y permisos</p>
+        <ProfileCard className="bg-[linear-gradient(135deg,rgba(54,189,248,0.08),rgba(255,255,255,0.96))]">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--cyan-700)]">Roles y permisos</p>
           <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Arquitectura preparada para escalar</h2>
           <div className="mt-4 space-y-3 text-sm text-[var(--ink-soft)]">
             <p><strong className="text-[var(--ink)]">Ciudadano:</strong> favoritos, avisos, documentación y seguimiento propio.</p>

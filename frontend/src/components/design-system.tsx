@@ -2,11 +2,11 @@ import Link from 'next/link';
 import type { HTMLAttributes, ReactNode } from 'react';
 import { Reveal } from './motion-primitives';
 
-type Tone = 'green' | 'red' | 'cyan' | 'ink';
+type Tone = 'green' | 'gold' | 'cyan' | 'ink';
 
 const toneStyles: Record<Tone, string> = {
   green: 'text-[var(--green-700)] bg-[rgba(22,112,85,0.10)] border-[rgba(22,112,85,0.18)]',
-  red: 'text-[var(--accent-red)] bg-[rgba(167,28,32,0.08)] border-[rgba(167,28,32,0.18)]',
+  gold: 'text-[var(--green-900)] bg-[rgba(244,197,66,0.18)] border-[rgba(244,197,66,0.32)]',
   cyan: 'text-[var(--cyan-700)] bg-[rgba(54,189,248,0.10)] border-[rgba(54,189,248,0.18)]',
   ink: 'text-[var(--ink)] bg-white border-[var(--stroke)]',
 };

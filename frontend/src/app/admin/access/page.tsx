@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { AdminNav } from '@/components/admin-nav';
 import { EmptyState } from '@/components/empty-state';
 import { SkeletonCard } from '@/components/skeleton-card';
 import { StatusPill } from '@/components/status-pill';
@@ -150,7 +151,10 @@ export default function AdminAccessPage() {
   }
 
   return (
-    <main className="shell space-y-4 pb-16">
+    <main className="shell pb-16">
+      <div className="admin-shell">
+        <AdminNav />
+        <div className="space-y-4">
       <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--green-700)]">Backoffice</p>
         <h1 className="display-type mt-2 text-3xl font-black text-[var(--ink)]">Compras y Activaciones</h1>
@@ -257,6 +261,8 @@ export default function AdminAccessPage() {
           ) : null}
         </section>
       </section>
+        </div>
+      </div>
     </main>
   );
 }

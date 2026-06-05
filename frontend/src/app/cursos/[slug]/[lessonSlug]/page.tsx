@@ -71,6 +71,55 @@ function renderNodes(nodes?: RichNode[]) {
       );
     }
 
+    if (node.type === 'image') {
+      const src = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
+      const alt = typeof node.attrs?.alt === 'string' ? node.attrs.alt : '';
+      if (!src) return null;
+      return (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img key={key} src={src} alt={alt} className="my-5 w-full rounded-3xl border border-[var(--stroke)] object-cover shadow-card" />
+      );
+    }
+
+    if (node.type === 'youtube') {
+      const src = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
+      if (!src) return null;
+      return (
+        <iframe
+          key={key}
+          src={src}
+          title="Video de la lección"
+          className="my-5 aspect-video w-full rounded-3xl border border-[var(--stroke)] shadow-card"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      );
+    }
+
+    if (node.type === 'horizontalRule') {
+      return <hr key={key} className="my-6 border-[var(--stroke)]" />;
+    }
+
+    if (node.type === 'table') {
+      return (
+        <div key={key} className="my-5 overflow-x-auto rounded-2xl border border-[var(--stroke)] bg-white">
+          <table className="w-full min-w-[520px] text-sm">{content}</table>
+        </div>
+      );
+    }
+
+    if (node.type === 'tableRow') {
+      return <tr key={key} className="border-b border-[var(--stroke)] last:border-b-0">{content}</tr>;
+    }
+
+    if (node.type === 'tableHeader') {
+      return <th key={key} className="bg-[var(--bg-app)] px-3 py-2 text-left font-bold text-[var(--ink)]">{content}</th>;
+    }
+
+    if (node.type === 'tableCell') {
+      return <td key={key} className="px-3 py-2 text-[var(--ink-soft)]">{content}</td>;
+    }
+
     if (node.type === 'taskList') {
       return (
         <ul key={key} className="space-y-2">

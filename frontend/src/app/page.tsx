@@ -15,7 +15,9 @@ export default async function Home() {
 
   const activeServices = services.filter((service) => service.status === 'active').slice(0, 3);
   const featuredCourses = courses.filter((course) => course.status === 'published').slice(0, 3);
-  const publishedPromotions = promotions.filter((promotion) => promotion.type === 'published').slice(0, 4);
+  const publishedPromotions = promotions
+    .filter((promotion) => promotion.status === 'published_reviewed' || promotion.status === 'published_unreviewed' || promotion.type === 'published')
+    .slice(0, 4);
   const activeAlerts = alerts
     .filter((promotion) => promotion.type === 'alert')
     .map((promotion) => {
@@ -37,17 +39,24 @@ export default async function Home() {
         },
         {
           id: 'asesoria',
-          name: 'Asesoría 1:1',
+          name: 'Asesorías 1:1',
           description: 'Revisamos tu caso, documentación y estrategia antes de cada convocatoria.',
           serviceType: 'premium',
           stripePaymentLink: '/services',
         },
         {
           id: 'alertas',
-          name: 'Avisos prioritarios',
-          description: 'Recibe cambios relevantes y próximas aperturas sin revisar portales cada día.',
+          name: 'Alertas Pro por WhatsApp',
+          description: 'Recibe cambios relevantes por WhatsApp sin revisar portales cada día.',
           serviceType: 'premium',
           stripePaymentLink: '/services',
+        },
+        {
+          id: 'cursos',
+          name: 'Cursos prácticos',
+          description: 'Aprende requisitos y pasos para presentarte con más ventaja.',
+          serviceType: 'formación',
+          stripePaymentLink: '/cursos',
         },
       ];
 
@@ -63,7 +72,7 @@ export default async function Home() {
         eyebrow="Radar VPO Catalunya"
         title="Encuentra oportunidades de vivienda pública antes que nadie"
         description="Promociones, avisos, formación y asesoramiento especializado para acceder a vivienda protegida en Cataluña."
-        tone="red"
+        tone="green"
         actions={
           <>
             <ButtonLink href="/promotions">Ver promociones</ButtonLink>
@@ -102,7 +111,7 @@ export default async function Home() {
             {publishedPromotions.map((promotion, index) => (
               <StaggerItem key={promotion.id}>
                 <MotionCard className="ds-card h-full overflow-hidden">
-                  <div className="h-36 bg-[linear-gradient(135deg,rgba(22,112,85,0.18),rgba(244,197,66,0.18),rgba(167,28,32,0.10))] p-4">
+                  <div className="h-36 bg-[linear-gradient(135deg,rgba(22,112,85,0.18),rgba(244,197,66,0.18),rgba(54,189,248,0.12))] p-4">
                     <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-[var(--green-700)]">#{index + 1} reciente</span>
                   </div>
                   <div className="p-4">

@@ -9,6 +9,15 @@ import { api } from '@/lib/api';
 import type { BackofficeOverview, PromotionDetail } from '@/types';
 
 const STATUSES = ['pending_review', 'published_unreviewed', 'published_reviewed', 'archived'] as const;
+const overviewLabels: Record<string, string> = {
+  users: 'Usuarios',
+  promotions: 'Promociones',
+  pendingReview: 'Pendientes',
+  publishedUnreviewed: 'Publicadas sin revisar',
+  publishedReviewed: 'Publicadas revisadas',
+  news: 'Noticias',
+  jobsFailed: 'Fallos jobs',
+};
 
 export default function AdminPage() {
   const [overview, setOverview] = useState<BackofficeOverview | null>(null);
@@ -94,9 +103,9 @@ export default function AdminPage() {
             }
           />
 
-          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {Object.entries(overview).map(([key, value]) => (
-              <MetricCard key={key} label={key.replace(/([A-Z])/g, ' $1')} value={value} />
+              <MetricCard key={key} label={overviewLabels[key] || key.replace(/([A-Z])/g, ' $1')} value={value} />
             ))}
           </section>
 

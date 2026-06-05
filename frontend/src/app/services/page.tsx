@@ -5,8 +5,6 @@ import { useEffect, useState } from 'react';
 import { SkeletonCard } from '@/components/skeleton-card';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { Stagger, StaggerItem } from '@/components/motion-primitives';
-import { api } from '@/lib/api';
-import type { Service } from '@/types';
 
 const whatsappContactUrl =
   process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
@@ -14,31 +12,40 @@ const whatsappContactUrl =
 
 const fallbackServices = [
   {
-    eyebrow: '01 · Cursos y formaciones',
-    title: 'Cursos vivos y guias accionables',
+    eyebrow: '01 · Seguimiento personalizado',
+    title: 'Seguimiento personalizado',
     copy:
-      'Microlecciones, checklists y recursos claros para entender requisitos, plazos y estrategias reales.',
-    cta: 'Ver cursos',
-    href: '/cursos',
+      'Vigilamos promociones, avisos y fechas clave para que sepas cuándo actuar y qué preparar.',
+    cta: 'Activar seguimiento',
+    href: whatsappContactUrl,
     accent: 'from-cyan-50 to-white',
   },
   {
-    eyebrow: '02 · Avisos Pro',
-    title: 'Avisos proactivos en WhatsApp',
+    eyebrow: '02 · Asesorías 1:1',
+    title: 'Asesorías 1:1',
     copy:
-      'Nuevas promociones, cambios en bases y recordatorios criticos, sin que tengas que estar revisando.',
-    cta: 'Activar avisos Pro',
+      'Revisamos tu caso, requisitos y documentación para ayudarte a presentarte con más seguridad.',
+    cta: 'Pedir asesoría',
     href: whatsappContactUrl,
     accent: 'from-emerald-50 to-white',
   },
   {
-    eyebrow: '03 · Asesoria personalizada',
-    title: 'Asesoria personalizada (TODO incluido)',
+    eyebrow: '03 · Alertas Pro',
+    title: 'Alertas Pro por WhatsApp',
     copy:
-      'Incluye cursos + avisos Pro + acompañamiento 1:1 para preparar cada convocatoria sin perder pasos.',
-    cta: 'Quiero asesoria',
+      'Recibe avisos prioritarios por WhatsApp cuando haya nuevas oportunidades o cambios importantes.',
+    cta: 'Activar alertas',
     href: whatsappContactUrl,
     accent: 'from-white to-cyan-50',
+  },
+  {
+    eyebrow: '04 · Cursos',
+    title: 'Cursos prácticos',
+    copy:
+      'Formación clara para entender requisitos, documentación, errores frecuentes y estrategias de inscripción.',
+    cta: 'Ver cursos',
+    href: '/cursos',
+    accent: 'from-emerald-50 to-cyan-50',
   },
 ];
 
@@ -71,29 +78,10 @@ const faqs = [
 ];
 
 export default function ServicesPage() {
-  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   useEffect(() => {
-    let active = true;
-
-    (async () => {
-      try {
-        const rows = await api.listServices();
-        if (!active) return;
-        setServices(rows);
-      } catch (err) {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : 'No se pudieron cargar servicios');
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
+    setLoading(false);
   }, []);
 
   return (
@@ -117,10 +105,6 @@ export default function ServicesPage() {
         </SurfaceCard>
       </PageHero>
 
-      {error ? (
-        <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{error}</div>
-      ) : null}
-
       <section className="space-y-4">
         <SectionHeader eyebrow="Beneficios" title="Por qué merece la pena pagar" />
         <Stagger className="grid gap-4 md:grid-cols-3">
@@ -141,47 +125,38 @@ export default function ServicesPage() {
           <SkeletonCard />
           <SkeletonCard />
         </section>
-      ) : services.length > 0 ? (
+      ) : (
         <section className="space-y-4">
           <SectionHeader eyebrow="Qué incluye" title="Elige el nivel de ayuda que necesitas" description="Cursos para aprender, avisos para vigilar y asesoría para ir acompañado." />
         <section className="grid gap-4 lg:grid-cols-3">
-          {services.map((service) => {
-            const href = service.stripePaymentLink || whatsappContactUrl;
+          {fallbackServices.map((service) => {
+            const href = service.href;
             const external = /^https?:\/\//.test(href);
             return (
               <article
-                key={service.id}
+                key={service.title}
                 className="group relative overflow-hidden rounded-[1.75rem] border border-[var(--stroke)] bg-gradient-to-br from-emerald-50 to-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(30,31,28,0.12)]"
               >
                 <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#4E8F3A,#A7D08A,#4E8F3A)] opacity-70" />
-                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">{service.serviceType}</p>
-                <h2 className="mt-3 text-2xl font-bold text-[var(--ink)]">{service.name}</h2>
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">{service.eyebrow}</p>
+                <h2 className="mt-3 text-2xl font-bold text-[var(--ink)]">{service.title}</h2>
                 <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
-                  {service.description || 'Servicio activo gestionado desde el panel de administracion.'}
+                  {service.copy}
                 </p>
-                {service.price ? (
-                  <p className="mt-4 text-2xl font-black text-[var(--ink)]">
-                    {new Intl.NumberFormat('es-ES', {
-                      style: 'currency',
-                      currency: service.currency || 'EUR',
-                      maximumFractionDigits: 0,
-                    }).format(Number(service.price))}
-                  </p>
-                ) : null}
                 {external ? (
                   <a
                     href={href}
                     className="mt-5 inline-flex rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-300 group-hover:bg-[var(--green-900)]"
                     rel="noopener noreferrer"
                   >
-                    Activar servicio
+                    {service.cta}
                   </a>
                 ) : (
                   <Link
                     href={href}
                     className="mt-5 inline-flex rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-300 group-hover:bg-[var(--green-900)]"
                   >
-                    Activar servicio
+                    {service.cta}
                   </Link>
                 )}
               </article>
@@ -189,32 +164,7 @@ export default function ServicesPage() {
           })}
         </section>
         </section>
-      ) : (
-        <SurfaceCard className="p-6 text-center text-sm text-[var(--ink-soft)]">Servicios en preparación. Mientras tanto puedes escribirnos desde la sección Hablemos.</SurfaceCard>
       )}
-
-      <section className="space-y-4">
-        <SectionHeader eyebrow="Planes recomendados" title="Tres formas de avanzar" />
-      <section className="grid gap-4 lg:grid-cols-3">
-        {fallbackServices.map((service) => (
-          <article
-            key={service.title}
-            className={`group relative overflow-hidden rounded-[1.75rem] border border-[var(--stroke)] bg-gradient-to-br ${service.accent} p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(30,31,28,0.12)]`}
-          >
-            <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#4E8F3A,#A7D08A,#4E8F3A)] opacity-70" />
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">{service.eyebrow}</p>
-            <h2 className="mt-3 text-2xl font-bold text-[var(--ink)]">{service.title}</h2>
-            <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{service.copy}</p>
-            <Link
-              href={service.href}
-              className="mt-5 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-300 group-hover:bg-[var(--green-700)]"
-            >
-              {service.cta}
-            </Link>
-          </article>
-        ))}
-      </section>
-      </section>
 
       <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
         <SurfaceCard className="p-5">

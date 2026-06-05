@@ -7,7 +7,6 @@
   --green-100: #e7f7f0;
   --cyan-500: #36bdf8;
   --cyan-700: #0f7497;
-  --accent-red: #a71c20;
   --accent-gold: #f4c542;
   --bg-eco: #e8f6f1;
   --bg-app: #f4f8fb;
@@ -32,7 +31,7 @@ html {
 body {
   background:
     radial-gradient(circle at top left, rgba(54, 189, 248, 0.10), transparent 28%),
-    radial-gradient(circle at top right, rgba(167, 28, 32, 0.08), transparent 30%),
+    radial-gradient(circle at top right, rgba(54, 189, 248, 0.08), transparent 30%),
     linear-gradient(180deg, #f9fcfe 0%, var(--background) 100%);
   color: var(--foreground);
   font-family: var(--font-inter), sans-serif;
@@ -155,7 +154,10 @@ h3,
 
 .admin-sidebar {
   position: sticky;
-  top: 6rem;
+  top: 5.75rem;
+  z-index: 20;
+  max-height: calc(100vh - 7rem);
+  overflow: auto;
   border: 1px solid var(--stroke);
   border-radius: 1.5rem;
   background: rgba(255, 255, 255, 0.9);

@@ -411,7 +411,7 @@ export default function AdminCoursesPage() {
                     type="button"
                     onClick={() => void deleteCourse(course.id)}
                     disabled={savingId === course.id}
-                    className="rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-600 disabled:opacity-60"
+                    className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)] disabled:opacity-60"
                   >
                     Borrar
                   </button>

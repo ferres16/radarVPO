@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState } from 'react';
+import { AdminNav } from '@/components/admin-nav';
 import { api } from '@/lib/api';
 import type { BackofficeNewsItem } from '@/types';
 
@@ -112,7 +113,10 @@ export default function AdminNewsPage() {
   }
 
   return (
-    <main className="shell space-y-5">
+    <main className="shell pb-16">
+      <div className="admin-shell">
+        <AdminNav />
+        <div className="space-y-5">
       <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
         <h1 className="text-2xl font-bold text-[var(--ink)]">Administrar noticias</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
@@ -240,7 +244,7 @@ export default function AdminNewsPage() {
               <button
                 type="button"
                 onClick={() => void onDelete(item.id)}
-                className="rounded-xl border border-red-300 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
+                className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)]"
               >
                 Eliminar
               </button>
@@ -248,6 +252,8 @@ export default function AdminNewsPage() {
           </article>
         ))}
       </section>
+        </div>
+      </div>
     </main>
   );
 }

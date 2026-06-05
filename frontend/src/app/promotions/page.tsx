@@ -9,23 +9,17 @@ export default async function PromotionsPage({
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = (await searchParams) || {};
-  const municipality = typeof sp.municipality === 'string' ? sp.municipality : '';
-  const province = typeof sp.province === 'string' ? sp.province : '';
-  const promotionType = typeof sp.promotionType === 'string' ? sp.promotionType : '';
   const q = typeof sp.q === 'string' ? sp.q : '';
 
   const query = new URLSearchParams();
-  if (municipality) query.set('municipality', municipality);
-  if (province) query.set('province', province);
-  if (promotionType) query.set('promotionType', promotionType);
   query.set('limit', '10');
 
   const promotions = await api.getPromotions(`?${query.toString()}`).catch(() => []);
   const published = promotions
-    .filter((item) => item.type === 'published')
+    .filter((item) => item.status === 'published_reviewed' || item.status === 'published_unreviewed' || item.type === 'published')
     .filter((item) => {
       if (!q) return true;
-      const haystack = `${item.title} ${item.municipality || ''} ${item.province || ''}`.toLowerCase();
+      const haystack = `${item.title} ${item.municipality || ''} ${item.province || ''} ${item.promotionType || ''}`.toLowerCase();
       return haystack.includes(q.toLowerCase());
     });
 
@@ -44,27 +38,10 @@ export default async function PromotionsPage({
       />
 
       <SurfaceCard className="p-4">
-        <form className="grid gap-3 md:grid-cols-[1.2fr_1fr_1fr_1fr_auto]" action="/promotions" method="get" aria-label="Filtros de búsqueda de vivienda">
+        <form className="grid gap-3 md:grid-cols-[1fr_auto]" action="/promotions" method="get" aria-label="Buscar promociones">
           <label className="text-sm font-semibold text-[var(--ink)]">
-            Búsqueda rápida
-            <input name="q" defaultValue={q} placeholder="Título, municipio o zona" className="ds-control mt-1 w-full" />
-          </label>
-          <label className="text-sm font-semibold text-[var(--ink)]">
-            Municipio
-            <input name="municipality" defaultValue={municipality} placeholder="Barcelona, Girona..." className="ds-control mt-1 w-full" />
-          </label>
-          <label className="text-sm font-semibold text-[var(--ink)]">
-            Provincia
-            <input name="province" defaultValue={province} placeholder="Barcelona" className="ds-control mt-1 w-full" />
-          </label>
-          <label className="text-sm font-semibold text-[var(--ink)]">
-            Régimen
-            <select name="promotionType" defaultValue={promotionType} className="ds-control mt-1 w-full">
-              <option value="">Todos</option>
-              <option value="venta">Venta</option>
-              <option value="alquiler">Alquiler</option>
-              <option value="mixto">Mixto</option>
-            </select>
+            Buscar por palabras de la promoción
+            <input name="q" defaultValue={q} placeholder="Ej: Barcelona alquiler cooperativa sorteo..." className="ds-control mt-1 w-full" />
           </label>
           <div className="flex items-end gap-2">
             <button className="w-full rounded-2xl bg-[var(--green-700)] px-5 py-3 text-sm font-bold text-white shadow-card transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-900)] md:w-auto">
@@ -77,7 +54,7 @@ export default async function PromotionsPage({
       <section className="flex flex-col gap-3 rounded-[1.5rem] border border-[var(--stroke)] bg-white/82 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-bold text-[var(--ink)]">{published.length} promociones mostradas</p>
-          <p className="mt-1 text-sm text-[var(--ink-soft)]">{q || municipality || province || promotionType ? 'Resultados filtrados.' : 'Últimas 10 promociones publicadas automáticamente.'}</p>
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">{q ? 'Resultados filtrados por búsqueda general.' : 'Últimas 10 promociones publicadas automáticamente.'}</p>
         </div>
         <Link href="/promotions" className="inline-flex rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
           Limpiar filtros
