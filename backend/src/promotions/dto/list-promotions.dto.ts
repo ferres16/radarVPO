@@ -17,10 +17,26 @@ export class ListPromotionsDto {
   @IsIn(['venta', 'alquiler', 'mixto', 'desconocido'])
   promotionType?: 'venta' | 'alquiler' | 'mixto' | 'desconocido';
 
-  @ApiPropertyOptional({ enum: ['pending_review', 'published_unreviewed', 'published_reviewed', 'archived'] })
+  @ApiPropertyOptional({
+    enum: [
+      'pending_review',
+      'published_unreviewed',
+      'published_reviewed',
+      'archived',
+    ],
+  })
   @IsOptional()
-  @IsIn(['pending_review', 'published_unreviewed', 'published_reviewed', 'archived'])
-  status?: 'pending_review' | 'published_unreviewed' | 'published_reviewed' | 'archived';
+  @IsIn([
+    'pending_review',
+    'published_unreviewed',
+    'published_reviewed',
+    'archived',
+  ])
+  status?:
+    | 'pending_review'
+    | 'published_unreviewed'
+    | 'published_reviewed'
+    | 'archived';
 
   @ApiPropertyOptional()
   @IsOptional()

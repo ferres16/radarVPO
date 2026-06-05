@@ -34,7 +34,10 @@ export class UsersController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateProfileDto,
   ) {
-    const updated = await this.usersService.updateProfile(user.sub, dto.fullName ?? null);
+    const updated = await this.usersService.updateProfile(
+      user.sub,
+      dto.fullName ?? null,
+    );
     return {
       id: updated.id,
       email: updated.email,
@@ -44,5 +47,12 @@ export class UsersController {
       plan: updated.plan,
       lastLoginAt: updated.lastLoginAt,
     };
+  }
+
+  @Get('access')
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  async access(@CurrentUser() user: CurrentUserPayload) {
+    return this.usersService.getAccessSummary(user.sub);
   }
 }

@@ -1,8 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
+import { EmptyState } from '@/components/empty-state';
+import { SkeletonCard } from '@/components/skeleton-card';
+import { StatusPill } from '@/components/status-pill';
 import type { Course, CourseAccessDecision } from '@/types';
 
 const accessLabels: Record<string, string> = {
@@ -18,6 +22,19 @@ const accessTone: Record<string, string> = {
   pro: 'bg-indigo-100 text-indigo-700',
   seguimiento: 'bg-slate-900 text-white',
 };
+
+const formatPrice = (price?: string | number | null, currency?: string | null) => {
+  if (!price) return null;
+  const amount = typeof price === 'string' ? Number(price) : price;
+  if (!Number.isFinite(amount)) return null;
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: currency || 'EUR',
+    maximumFractionDigits: 0,
+  }).format(amount as number);
+};
+
+const isExternalUrl = (href: string) => /^https?:\/\//.test(href);
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -80,10 +97,10 @@ export default function CoursesPage() {
 
   if (loading) {
     return (
-      <main className="shell">
-        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-          <p className="text-sm text-[var(--ink-soft)]">Cargando cursos...</p>
-        </article>
+      <main className="shell grid gap-4 pb-16 md:grid-cols-3">
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
       </main>
     );
   }
@@ -95,11 +112,11 @@ export default function CoursesPage() {
         <div className="absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[rgba(16,185,129,0.18)] blur-3xl" />
         <div className="relative space-y-4">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--ink-soft)]">Cursos Radar VPO</p>
-          <h1 className="text-4xl font-black text-[var(--ink)] display-type sm:text-5xl">
-            Aprende, desbloquea y avanza con guias vivas.
+          <h1 className="display-type text-4xl font-black text-[var(--ink)] sm:text-5xl">
+            Cursos premium para ganar claridad antes de cada convocatoria.
           </h1>
           <p className="max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
-            Cursos estructurados por modulos, progreso guardado y acceso segun tu plan. Todo el contenido se gestiona desde admin.
+            Compra cursos puntuales con Stripe Payment Links, desbloquea contenido desde tu acceso activo y avanza por modulos con progreso guardado.
           </p>
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-[var(--ink)] px-3 py-1 text-xs font-semibold text-white">Contenido vivo</span>
@@ -121,26 +138,62 @@ export default function CoursesPage() {
         </article>
       ) : null}
 
+      {visibleCourses.length === 0 ? (
+        <EmptyState
+          title="Aun no hay cursos publicados"
+          description="El catalogo se mostrara aqui cuando el equipo publique el primer curso."
+        />
+      ) : null}
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {visibleCourses.map((course) => {
           const access = accessMap[course.id];
           const badge = accessLabels[course.accessType] || 'Acceso';
           const hasSession = isAuthed === true;
-          const isLocked = !hasSession || (access ? !access.canAccess : course.accessType !== 'free');
+          const isLocked = hasSession ? (access ? !access.canAccess : course.accessType !== 'free') : course.accessType !== 'free';
+          const priceLabel = formatPrice(course.price, course.currency);
+          const ctaHref = !hasSession
+            ? (course.accessType === 'free' ? `/cursos/${course.slug}` : course.stripePaymentLink || '/login')
+            : !isLocked
+              ? `/cursos/${course.slug}`
+              : course.stripePaymentLink || '/services';
+          const ctaLabel = !hasSession
+            ? (course.accessType === 'free' ? 'Ver curso' : course.stripePaymentLink ? 'Comprar curso' : 'Inicia sesion')
+            : !isLocked
+              ? 'Continuar'
+              : course.stripePaymentLink
+                ? 'Comprar curso'
+                : 'Solicitar acceso';
+          const external = isExternalUrl(ctaHref);
           return (
-            <article key={course.id} className="group relative overflow-hidden rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card transition hover:-translate-y-1">
+            <article key={course.id} className="group relative overflow-hidden rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(30,31,28,0.13)]">
               <div className="absolute -right-10 top-6 h-24 w-24 rounded-full bg-[rgba(14,116,144,0.08)] blur-2xl" />
               <div className="relative space-y-4">
+                {course.coverImage ? (
+                  <div className="relative h-40 overflow-hidden rounded-2xl border border-[var(--stroke)]">
+                    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.0),rgba(0,0,0,0.4))]" />
+                    <Image
+                      src={course.coverImage}
+                      alt=""
+                      fill
+                      sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
+                      className="object-cover transition duration-500 group-hover:scale-105"
+                      unoptimized
+                    />
+                  </div>
+                ) : (
+                  <div className="flex h-40 items-end rounded-2xl border border-[var(--stroke)] bg-[radial-gradient(circle_at_top,#dcfce7,#f8fafc_65%)] p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--green-700)]">Radar VPO Academy</p>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${accessTone[course.accessType] || 'bg-slate-100 text-slate-700'}`}>
                     {badge}
                   </span>
-                  <span className={`text-xs font-semibold ${isLocked ? 'text-rose-600' : 'text-emerald-600'}`}>
-                    {isLocked ? 'Sesion requerida' : 'Disponible'}
-                  </span>
+                  <StatusPill label={isLocked ? 'Bloqueado' : 'Activo'} tone={isLocked ? 'locked' : 'active'} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-[var(--ink)] display-type">
+                  <h2 className="display-type text-xl font-black text-[var(--ink)]">
                     {course.title}
                   </h2>
                   <p className="mt-2 text-sm text-[var(--ink-soft)]">
@@ -151,12 +204,27 @@ export default function CoursesPage() {
                   <span className="text-xs uppercase tracking-[0.2em] text-[var(--ink-soft)]">
                     {course.modules?.length ?? 0} modulos
                   </span>
-                  <Link
-                    href={hasSession ? `/cursos/${course.slug}` : '/login'}
-                    className="rounded-full bg-[var(--green-500)] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[var(--green-700)]"
-                  >
-                    {hasSession ? 'Ver curso' : 'Inicia sesion'}
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    {priceLabel ? (
+                      <span className="text-xs font-semibold text-[var(--ink)]">{priceLabel}</span>
+                    ) : null}
+                    {external ? (
+                      <a
+                        href={ctaHref}
+                        className="rounded-full bg-[var(--green-500)] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[var(--green-700)]"
+                        rel="noopener noreferrer"
+                      >
+                        {ctaLabel}
+                      </a>
+                    ) : (
+                      <Link
+                        href={ctaHref}
+                        className="rounded-full bg-[var(--green-500)] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[var(--green-700)]"
+                      >
+                        {ctaLabel}
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
             </article>

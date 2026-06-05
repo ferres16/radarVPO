@@ -3,7 +3,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, PromotionStatus, UserRole } from '@prisma/client';
+import {
+  CourseAccessRuleType,
+  Prisma,
+  PromotionStatus,
+  ServiceStatus,
+  ServiceType,
+  UserRole,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3StorageService } from '../storage/s3-storage.service';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
@@ -11,14 +18,20 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
-import { BackofficeListDto, BackofficeListPromotionsDto } from './dto/list-backoffice.dto';
+import { CreateServiceDto } from './dto/create-service.dto';
+import {
+  BackofficeListDto,
+  BackofficeListPromotionsDto,
+} from './dto/list-backoffice.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
+import { UpdateAccessDto } from './dto/update-access.dto';
 import { UpdateCourseAccessRuleDto } from './dto/update-course-access-rule.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { UpdateCourseLessonDto } from './dto/update-course-lesson.dto';
 import { UpdateCourseModuleDto } from './dto/update-course-module.dto';
 import { UpdatePromotionStatusDto } from './dto/update-promotion-status.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
+import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
@@ -32,16 +45,25 @@ export class BackofficeService {
   ) {}
 
   async overview() {
-    const [users, promotions, pendingReview, publishedUnreviewed, publishedReviewed, news, jobsFailed] =
-      await Promise.all([
-        this.prisma.user.count(),
-        this.prisma.promotion.count(),
-        this.prisma.promotion.count({ where: { status: 'pending_review' } }),
-        this.prisma.promotion.count({ where: { status: 'published_unreviewed' } }),
-        this.prisma.promotion.count({ where: { status: 'published_reviewed' } }),
-        this.prisma.newsItem.count(),
-        this.prisma.jobRun.count({ where: { status: 'failed' } }),
-      ]);
+    const [
+      users,
+      promotions,
+      pendingReview,
+      publishedUnreviewed,
+      publishedReviewed,
+      news,
+      jobsFailed,
+    ] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.promotion.count(),
+      this.prisma.promotion.count({ where: { status: 'pending_review' } }),
+      this.prisma.promotion.count({
+        where: { status: 'published_unreviewed' },
+      }),
+      this.prisma.promotion.count({ where: { status: 'published_reviewed' } }),
+      this.prisma.newsItem.count(),
+      this.prisma.jobRun.count({ where: { status: 'failed' } }),
+    ]);
 
     return {
       users,
@@ -77,7 +99,17 @@ export class BackofficeService {
   async listUsers(query: BackofficeListDto) {
     const limit = Math.min(query.limit ?? 100, 500);
     const offset = query.offset ?? 0;
+    const search = query.q?.trim();
     return this.prisma.user.findMany({
+      where: search
+        ? {
+            OR: [
+              { email: { contains: search, mode: 'insensitive' } },
+              { fullName: { contains: search, mode: 'insensitive' } },
+              { phone: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : undefined,
       select: {
         id: true,
         email: true,
@@ -166,9 +198,12 @@ export class BackofficeService {
       data: {
         slug: dto.slug,
         title: dto.title,
-        shortDescription: dto.shortDescription,
-        longDescription: dto.longDescription,
-        coverImage: dto.coverImage,
+        shortDescription: this.nullableText(dto.shortDescription),
+        longDescription: this.nullableText(dto.longDescription),
+        coverImage: this.nullableText(dto.coverImage),
+        price: this.nullableDecimal(dto.price),
+        currency: this.nullableText(dto.currency),
+        stripePaymentLink: this.nullableText(dto.stripePaymentLink),
         status: dto.status,
         accessType: dto.accessType,
         order: dto.order ?? 0,
@@ -182,14 +217,235 @@ export class BackofficeService {
       data: {
         slug: dto.slug,
         title: dto.title,
-        shortDescription: dto.shortDescription,
-        longDescription: dto.longDescription,
-        coverImage: dto.coverImage,
+        shortDescription: this.nullableText(dto.shortDescription),
+        longDescription: this.nullableText(dto.longDescription),
+        coverImage: this.nullableText(dto.coverImage),
+        price: this.nullableDecimal(dto.price),
+        currency: this.nullableText(dto.currency),
+        stripePaymentLink: this.nullableText(dto.stripePaymentLink),
         status: dto.status,
         accessType: dto.accessType,
         order: dto.order,
       },
     });
+  }
+
+  async listServices(query: BackofficeListDto) {
+    const limit = Math.min(query.limit ?? 100, 500);
+    const offset = query.offset ?? 0;
+    const search = query.q?.trim();
+    return this.prisma.service.findMany({
+      where: search
+        ? {
+            OR: [
+              { key: { contains: search, mode: 'insensitive' } },
+              { name: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : undefined,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    });
+  }
+
+  async createService(dto: CreateServiceDto) {
+    return this.prisma.service.create({
+      data: {
+        key: dto.key,
+        name: dto.name,
+        description: this.nullableText(dto.description),
+        price: this.nullableDecimal(dto.price),
+        currency: this.nullableText(dto.currency),
+        status: dto.status ?? ServiceStatus.active,
+        serviceType: dto.serviceType ?? ServiceType.manual,
+        stripePaymentLink: this.nullableText(dto.stripePaymentLink),
+      },
+    });
+  }
+
+  async updateService(serviceId: string, dto: UpdateServiceDto) {
+    return this.prisma.service.update({
+      where: { id: serviceId },
+      data: {
+        key: dto.key,
+        name: dto.name,
+        description: this.nullableText(dto.description),
+        price: this.nullableDecimal(dto.price),
+        currency: this.nullableText(dto.currency),
+        status: dto.status,
+        serviceType: dto.serviceType,
+        stripePaymentLink: this.nullableText(dto.stripePaymentLink),
+      },
+    });
+  }
+
+  async deleteService(serviceId: string) {
+    await this.prisma.service.delete({ where: { id: serviceId } });
+    return { deleted: true };
+  }
+
+  async listAccessUsers(query: BackofficeListDto) {
+    const limit = Math.min(query.limit ?? 100, 500);
+    const offset = query.offset ?? 0;
+    const search = query.q?.trim();
+    return this.prisma.user.findMany({
+      where: search
+        ? {
+            OR: [
+              { email: { contains: search, mode: 'insensitive' } },
+              { fullName: { contains: search, mode: 'insensitive' } },
+              { phone: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : undefined,
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        role: true,
+        plan: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    });
+  }
+
+  async getAccessUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        role: true,
+        plan: true,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const [courses, services, courseAccesses, serviceAccesses] =
+      await Promise.all([
+        this.prisma.course.findMany({
+          orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+        }),
+        this.prisma.service.findMany({ orderBy: { createdAt: 'desc' } }),
+        this.prisma.userCourseAccess.findMany({
+          where: { userId },
+          select: {
+            courseId: true,
+            isActive: true,
+            activatedAt: true,
+            activatedBy: true,
+            activatedByAdmin: true,
+            notes: true,
+          },
+        }),
+        this.prisma.userServiceAccess.findMany({
+          where: { userId },
+          select: {
+            serviceId: true,
+            isActive: true,
+            activatedAt: true,
+            activatedBy: true,
+            activatedByAdmin: true,
+            notes: true,
+          },
+        }),
+      ]);
+
+    return {
+      user,
+      courses,
+      services,
+      courseAccesses,
+      serviceAccesses,
+    };
+  }
+
+  async upsertCourseAccess(
+    userId: string,
+    courseId: string,
+    dto: UpdateAccessDto,
+    adminId?: string,
+  ) {
+    await this.ensureUserAndCourse(userId, courseId);
+    const access = await this.prisma.userCourseAccess.upsert({
+      where: { userId_courseId: { userId, courseId } },
+      create: {
+        userId,
+        courseId,
+        isActive: dto.isActive ?? true,
+        activatedBy: adminId,
+        activatedByAdmin: true,
+        notes: dto.notes,
+      },
+      update: {
+        isActive: dto.isActive,
+        activatedBy: adminId,
+        activatedByAdmin: true,
+        notes: dto.notes,
+        activatedAt: dto.isActive === true ? new Date() : undefined,
+      },
+    });
+    await this.writeAuditLog(
+      adminId,
+      'access.course.updated',
+      'UserCourseAccess',
+      access.id,
+      {
+        userId,
+        courseId,
+        isActive: access.isActive,
+      },
+    );
+    return access;
+  }
+
+  async upsertServiceAccess(
+    userId: string,
+    serviceId: string,
+    dto: UpdateAccessDto,
+    adminId?: string,
+  ) {
+    await this.ensureUserAndService(userId, serviceId);
+    const access = await this.prisma.userServiceAccess.upsert({
+      where: { userId_serviceId: { userId, serviceId } },
+      create: {
+        userId,
+        serviceId,
+        isActive: dto.isActive ?? true,
+        activatedBy: adminId,
+        activatedByAdmin: true,
+        notes: dto.notes,
+      },
+      update: {
+        isActive: dto.isActive,
+        activatedBy: adminId,
+        activatedByAdmin: true,
+        notes: dto.notes,
+        activatedAt: dto.isActive === true ? new Date() : undefined,
+      },
+    });
+    await this.writeAuditLog(
+      adminId,
+      'access.service.updated',
+      'UserServiceAccess',
+      access.id,
+      {
+        userId,
+        serviceId,
+        isActive: access.isActive,
+      },
+    );
+    return access;
   }
 
   async deleteCourse(courseId: string) {
@@ -218,7 +474,9 @@ export class BackofficeService {
     });
 
     if (modules.length !== moduleIds.length) {
-      throw new BadRequestException('Some modules do not belong to this course');
+      throw new BadRequestException(
+        'Some modules do not belong to this course',
+      );
     }
 
     await this.prisma.$transaction(
@@ -285,7 +543,9 @@ export class BackofficeService {
     });
 
     if (lessons.length !== lessonIds.length) {
-      throw new BadRequestException('Some lessons do not belong to this module');
+      throw new BadRequestException(
+        'Some lessons do not belong to this module',
+      );
     }
 
     await this.prisma.$transaction(
@@ -323,7 +583,11 @@ export class BackofficeService {
     return { deleted: true };
   }
 
-  async uploadCourseResource(lessonId: string, dto: UploadCourseAssetDto, file: Express.Multer.File) {
+  async uploadCourseResource(
+    lessonId: string,
+    dto: UploadCourseAssetDto,
+    file: Express.Multer.File,
+  ) {
     if (!file) {
       throw new BadRequestException('File is required');
     }
@@ -358,8 +622,12 @@ export class BackofficeService {
     });
   }
 
-  async createCourseAccessRule(courseId: string, dto: CreateCourseAccessRuleDto) {
+  async createCourseAccessRule(
+    courseId: string,
+    dto: CreateCourseAccessRuleDto,
+  ) {
     await this.ensureCourse(courseId);
+    this.validateCourseAccessRuleConfig(dto.ruleType, dto.configJson);
     return this.prisma.courseAccessRule.create({
       data: {
         courseId,
@@ -370,6 +638,9 @@ export class BackofficeService {
   }
 
   async updateCourseAccessRule(ruleId: string, dto: UpdateCourseAccessRuleDto) {
+    if (dto.ruleType && dto.configJson) {
+      this.validateCourseAccessRuleConfig(dto.ruleType, dto.configJson);
+    }
     return this.prisma.courseAccessRule.update({
       where: { id: ruleId },
       data: {
@@ -386,7 +657,8 @@ export class BackofficeService {
 
   async createNews(dto: CreateNewsItemDto) {
     const token = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    const itemUrl = dto.itemUrl ?? `${dto.sourceUrl.replace(/\/$/, '')}#manual-${token}`;
+    const itemUrl =
+      dto.itemUrl ?? `${dto.sourceUrl.replace(/\/$/, '')}#manual-${token}`;
     const slug = this.buildSlug(dto.title, token);
 
     return this.prisma.newsItem.create({
@@ -411,7 +683,9 @@ export class BackofficeService {
 
   async updateNews(newsId: string, dto: UpdateBackofficeNewsItemDto) {
     const existing = await this.ensureNews(newsId);
-    const nextSlug = dto.title ? this.buildSlug(dto.title, existing.slug || existing.id) : existing.slug;
+    const nextSlug = dto.title
+      ? this.buildSlug(dto.title, existing.slug || existing.id)
+      : existing.slug;
 
     return this.prisma.newsItem.update({
       where: { id: newsId },
@@ -627,7 +901,9 @@ export class BackofficeService {
     const existingIds = new Set(existing.map((item) => item.id));
 
     if (unitIds.some((id) => !existingIds.has(id))) {
-      throw new BadRequestException('Some unit ids do not belong to this promotion');
+      throw new BadRequestException(
+        'Some unit ids do not belong to this promotion',
+      );
     }
 
     await this.prisma.$transaction(
@@ -654,7 +930,9 @@ export class BackofficeService {
       .filter(Boolean);
 
     if (lines.length < 2) {
-      throw new BadRequestException('Paste must include header and at least one row');
+      throw new BadRequestException(
+        'Paste must include header and at least one row',
+      );
     }
 
     const delimiter = lines[0].includes('\t') ? '\t' : ',';
@@ -665,10 +943,12 @@ export class BackofficeService {
         .normalize('NFD')
         .replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9]/g, '');
-    const headers = lines[0].split(delimiter).map((value) => normalizeHeader(value));
-    const rows = lines.slice(1).map((line) =>
-      line.split(delimiter).map((value) => value.trim()),
-    );
+    const headers = lines[0]
+      .split(delimiter)
+      .map((value) => normalizeHeader(value));
+    const rows = lines
+      .slice(1)
+      .map((line) => line.split(delimiter).map((value) => value.trim()));
 
     const created = await this.prisma.$transaction(
       rows.map((cells, index) => {
@@ -700,10 +980,18 @@ export class BackofficeService {
           ch: get('ch'),
           emc: get('emc', 'emc'),
           otrasPiezas: get('otraspiezas', 'altrespeces'),
-          ocupacionMaxima: get('ocupacionmaxima', 'ocupmaxima', 'ocupmax', 'ocupaciomaxima', 'ocupmaxima'),
+          ocupacionMaxima: get(
+            'ocupacionmaxima',
+            'ocupmaxima',
+            'ocupmax',
+            'ocupaciomaxima',
+            'ocupmaxima',
+          ),
         };
         const cleanedExtraData = Object.fromEntries(
-          Object.entries(rawExtraData).filter(([, value]) => value !== undefined && value !== ''),
+          Object.entries(rawExtraData).filter(
+            ([, value]) => value !== undefined && value !== '',
+          ),
         );
 
         return this.prisma.promotionUnit.create({
@@ -717,10 +1005,18 @@ export class BackofficeService {
             door: get('door', 'puerta', 'por'),
             bedrooms: parseNumber(get('bedrooms', 'habitaciones', 'hab', 'h')),
             bathrooms: parseNumber(get('bathrooms', 'banos', 'banys')),
-            usefulAreaM2: parseNumber(get('usefulaream2', 'm2utiles', 'suputilinterior')),
-            builtAreaM2: parseNumber(get('builtaream2', 'm2construidos', 'supcompres')),
-            priceSale: parseNumber(get('pricesale', 'precioventa', 'pvmaxim', 'pvmax')), 
-            monthlyRent: parseNumber(get('monthlyrent', 'alquilermensual', 'lloguermensual')),
+            usefulAreaM2: parseNumber(
+              get('usefulaream2', 'm2utiles', 'suputilinterior'),
+            ),
+            builtAreaM2: parseNumber(
+              get('builtaream2', 'm2construidos', 'supcompres'),
+            ),
+            priceSale: parseNumber(
+              get('pricesale', 'precioventa', 'pvmaxim', 'pvmax'),
+            ),
+            monthlyRent: parseNumber(
+              get('monthlyrent', 'alquilermensual', 'lloguermensual'),
+            ),
             reservation: parseNumber(get('reservation', 'reserva')),
             notes: get('notes', 'observaciones', 'altrespeces'),
             extraData:
@@ -794,6 +1090,42 @@ export class BackofficeService {
     return value as Prisma.InputJsonValue;
   }
 
+  private nullableText(value?: string | null) {
+    if (value === undefined) {
+      return undefined;
+    }
+    return value?.trim() ? value : null;
+  }
+
+  private nullableDecimal(value?: string | null) {
+    if (value === undefined) {
+      return undefined;
+    }
+    return value ? new Prisma.Decimal(value) : null;
+  }
+
+  private validateCourseAccessRuleConfig(
+    ruleType: CourseAccessRuleType,
+    config: Record<string, unknown>,
+  ) {
+    const hasString = (key: string) =>
+      typeof config[key] === 'string' && Boolean(config[key]);
+    const valid =
+      (ruleType === 'plan' && hasString('plan')) ||
+      (ruleType === 'entitlement' && hasString('key')) ||
+      (ruleType === 'purchase' &&
+        (hasString('productKey') || hasString('courseId'))) ||
+      (ruleType === 'subscription' && hasString('planKey')) ||
+      (ruleType === 'service' &&
+        (hasString('serviceKey') || hasString('serviceId')));
+
+    if (!valid) {
+      throw new BadRequestException(
+        `Invalid configJson for ${ruleType} access rule`,
+      );
+    }
+  }
+
   private mapUnitPayload(dto: UpsertUnitDto): Prisma.PromotionUnitUpdateInput {
     return {
       rowOrder: dto.rowOrder,
@@ -862,6 +1194,64 @@ export class BackofficeService {
     }
 
     return course;
+  }
+
+  private async ensureUserAndCourse(userId: string, courseId: string) {
+    const [user, course] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      }),
+      this.prisma.course.findUnique({
+        where: { id: courseId },
+        select: { id: true },
+      }),
+    ]);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+  }
+
+  private async ensureUserAndService(userId: string, serviceId: string) {
+    const [user, service] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      }),
+      this.prisma.service.findUnique({
+        where: { id: serviceId },
+        select: { id: true },
+      }),
+    ]);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+  }
+
+  private async writeAuditLog(
+    adminId: string | undefined,
+    action: string,
+    entity: string,
+    entityId: string,
+    metadata: Prisma.InputJsonValue,
+  ) {
+    await this.prisma.auditLog.create({
+      data: {
+        userId: adminId,
+        action,
+        entity,
+        entityId,
+        metadata,
+      },
+    });
   }
 
   private async ensureUnit(promotionId: string, unitId: string) {

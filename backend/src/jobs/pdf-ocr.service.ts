@@ -8,7 +8,9 @@ export class PdfOcrService {
     const trimmed = rawUrl.trim();
     if (!trimmed) return trimmed;
 
-    const chromeWrapped = trimmed.match(/chrome-extension:\/\/.+?(https?:\/\/.+)$/i);
+    const chromeWrapped = trimmed.match(
+      /chrome-extension:\/\/.+?(https?:\/\/.+)$/i,
+    );
     if (chromeWrapped?.[1]) return chromeWrapped[1];
 
     const viewSource = trimmed.match(/^view-source:(https?:\/\/.+)$/i);

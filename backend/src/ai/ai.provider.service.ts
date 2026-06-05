@@ -39,7 +39,8 @@ export class AiProviderService {
     }
 
     const model = process.env.OPENAI_MODEL?.trim() || 'gpt-4.1-mini';
-    const baseUrl = process.env.OPENAI_BASE_URL?.trim() || 'https://api.openai.com/v1';
+    const baseUrl =
+      process.env.OPENAI_BASE_URL?.trim() || 'https://api.openai.com/v1';
 
     const payload = {
       model,
@@ -65,7 +66,8 @@ export class AiProviderService {
           content: JSON.stringify(
             {
               maxArticles,
-              requiredFocus: 'vivienda en Catalunya, priorizando VPO, vivienda publica, alquiler asequible, ayudas y normativa',
+              requiredFocus:
+                'vivienda en Catalunya, priorizando VPO, vivienda publica, alquiler asequible, ayudas y normativa',
               candidates,
             },
             null,
@@ -86,7 +88,9 @@ export class AiProviderService {
 
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
-      this.logger.warn(`AI generation failed with ${response.status}: ${detail}`);
+      this.logger.warn(
+        `AI generation failed with ${response.status}: ${detail}`,
+      );
       throw new Error(`AI generation failed with status ${response.status}`);
     }
 
@@ -132,7 +136,12 @@ export class AiProviderService {
 
   private normalizeCategory(category?: string): GeneratedNewsDraft['category'] {
     const value = category?.toLowerCase().trim();
-    if (value === 'vpo' || value === 'alquiler' || value === 'ayudas' || value === 'normativa') {
+    if (
+      value === 'vpo' ||
+      value === 'alquiler' ||
+      value === 'ayudas' ||
+      value === 'normativa'
+    ) {
       return value;
     }
     return 'general';

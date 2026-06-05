@@ -1,6 +1,16 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { CourseAccessType, CourseStatus } from '@prisma/client';
-import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsDecimal,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Matches,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class UpdateCourseDto {
   @ApiPropertyOptional()
@@ -12,6 +22,9 @@ export class UpdateCourseDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message: 'slug must be lowercase kebab-case',
+  })
   @MaxLength(140)
   slug?: string;
 
@@ -28,8 +41,25 @@ export class UpdateCourseDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
+  @IsUrl({ require_protocol: true })
   coverImage?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsDecimal({ decimal_digits: '0,2', force_decimal: false })
+  price?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Z]{3,8}$/)
+  @MaxLength(8)
+  currency?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUrl({ require_protocol: true })
+  stripePaymentLink?: string;
 
   @ApiPropertyOptional({ enum: CourseStatus })
   @IsOptional()

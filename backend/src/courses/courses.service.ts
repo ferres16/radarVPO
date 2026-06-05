@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   CourseAccessRuleType,
   CourseAccessType,
@@ -11,12 +15,30 @@ import { PrismaService } from '../prisma/prisma.service';
 
 type AccessDecision = {
   canAccess: boolean;
-  reason: 'free' | 'plan' | 'entitlement' | 'purchase' | 'subscription' | 'locked';
+  reason:
+    | 'free'
+    | 'plan'
+    | 'entitlement'
+    | 'purchase'
+    | 'subscription'
+    | 'service'
+    | 'manual'
+    | 'locked';
 };
 
 @Injectable()
 export class CoursesService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private readonly publicLessonSelect = {
+    id: true,
+    title: true,
+    slug: true,
+    order: true,
+    durationMinutes: true,
+    status: true,
+    type: true,
+  } satisfies Prisma.CourseLessonSelect;
 
   async listCourses() {
     return this.prisma.course.findMany({
@@ -78,12 +100,15 @@ export class CoursesService {
     ]);
 
     return courses.map((course) => ({
-      ...course,
+      ...this.stripInternalCourseFields(course),
       access: this.evaluateAccess(course, profile),
     }));
   }
 
-  async getCourseBySlug(slug: string) {
+  private async getPublishedCourseBySlug(
+    slug: string,
+    includeAccessRules = false,
+  ) {
     const course = await this.prisma.course.findUnique({
       where: { slug },
       include: {
@@ -94,19 +119,13 @@ export class CoursesService {
             lessons: {
               where: { status: 'published' },
               orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
-              select: {
-                id: true,
-                title: true,
-                slug: true,
-                order: true,
-                durationMinutes: true,
-                status: true,
-                type: true,
-              },
+              select: this.publicLessonSelect,
             },
           },
         },
-        accessRules: { orderBy: { createdAt: 'asc' } },
+        accessRules: includeAccessRules
+          ? { orderBy: { createdAt: 'asc' } }
+          : false,
       },
     });
 
@@ -117,20 +136,37 @@ export class CoursesService {
     return course;
   }
 
+  private stripInternalCourseFields<T extends { accessRules?: unknown }>(
+    course: T,
+  ) {
+    const publicCourse = { ...course };
+    delete publicCourse.accessRules;
+    return publicCourse;
+  }
+
+  async getCourseBySlug(slug: string) {
+    const course = await this.getPublishedCourseBySlug(slug);
+    return this.stripInternalCourseFields(course);
+  }
+
   async getCourseBySlugForUser(slug: string, userId: string) {
     const [course, profile] = await Promise.all([
-      this.getCourseBySlug(slug),
+      this.getPublishedCourseBySlug(slug, true),
       this.getAccessProfile(userId),
     ]);
 
     return {
-      ...course,
+      ...this.stripInternalCourseFields(course),
       access: this.evaluateAccess(course, profile),
     };
   }
 
-  async getLessonBySlug(courseSlug: string, lessonSlug: string, userId: string) {
-    const course = await this.getCourseBySlug(courseSlug);
+  async getLessonBySlug(
+    courseSlug: string,
+    lessonSlug: string,
+    userId: string,
+  ) {
+    const course = await this.getPublishedCourseBySlug(courseSlug, true);
     const profile = await this.getAccessProfile(userId);
     const access = this.evaluateAccess(course, profile);
 
@@ -152,7 +188,7 @@ export class CoursesService {
 
     if (!access.canAccess) {
       return {
-        course,
+        course: this.stripInternalCourseFields(course),
         access,
         lesson: {
           ...lesson,
@@ -162,18 +198,27 @@ export class CoursesService {
       };
     }
 
-    await this.trackLessonProgress(userId, lesson.courseId, lesson.moduleId, lesson.id);
+    await this.trackLessonProgress(
+      userId,
+      lesson.courseId,
+      lesson.moduleId,
+      lesson.id,
+    );
 
     return {
-      course,
+      course: this.stripInternalCourseFields(course),
       access,
       lesson,
     };
   }
 
-  async markLessonCompletedBySlug(userId: string, courseSlug: string, lessonSlug: string) {
+  async markLessonCompletedBySlug(
+    userId: string,
+    courseSlug: string,
+    lessonSlug: string,
+  ) {
     const [course, profile] = await Promise.all([
-      this.getCourseBySlug(courseSlug),
+      this.getPublishedCourseBySlug(courseSlug, true),
       this.getAccessProfile(userId),
     ]);
     const access = this.evaluateAccess(course, profile);
@@ -216,7 +261,7 @@ export class CoursesService {
 
   async getCourseProgressBySlug(userId: string, courseSlug: string) {
     const [course, profile] = await Promise.all([
-      this.getCourseBySlug(courseSlug),
+      this.getPublishedCourseBySlug(courseSlug, true),
       this.getAccessProfile(userId),
     ]);
 
@@ -236,7 +281,11 @@ export class CoursesService {
     return this.recalculateCourseProgress(userId, course.id);
   }
 
-  private async recalculateCourseProgress(userId: string, courseId: string, lastLessonId?: string) {
+  private async recalculateCourseProgress(
+    userId: string,
+    courseId: string,
+    lastLessonId?: string,
+  ) {
     const [totalLessons, completedLessons] = await Promise.all([
       this.prisma.courseLesson.count({
         where: { courseId, status: 'published' },
@@ -246,9 +295,10 @@ export class CoursesService {
       }),
     ]);
 
-    const progressPercent = totalLessons === 0
-      ? 0
-      : Math.min(100, Math.round((completedLessons / totalLessons) * 100));
+    const progressPercent =
+      totalLessons === 0
+        ? 0
+        : Math.min(100, Math.round((completedLessons / totalLessons) * 100));
 
     return this.prisma.courseProgress.upsert({
       where: { userId_courseId: { userId, courseId } },
@@ -325,8 +375,18 @@ export class CoursesService {
         purchases: { where: { status: 'paid' } },
         subscriptions: {
           where: {
-            status: { in: [SubscriptionStatus.active, SubscriptionStatus.trialing] },
+            status: {
+              in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+            },
           },
+        },
+        courseAccesses: {
+          where: { isActive: true },
+          select: { courseId: true },
+        },
+        serviceAccesses: {
+          where: { isActive: true },
+          select: { service: { select: { id: true, key: true } } },
         },
       },
     });
@@ -339,11 +399,32 @@ export class CoursesService {
   }
 
   private evaluateAccess(
-    course: { accessType: CourseAccessType; accessRules?: Array<{ ruleType: CourseAccessRuleType; configJson: Prisma.JsonValue }> },
-    profile: { plan: string; entitlements: Array<{ key: string }>; purchases: Array<{ productKey: string; courseId: string | null }>; subscriptions: Array<{ planKey: string }> },
+    course: {
+      id?: string;
+      accessType: CourseAccessType;
+      accessRules?: Array<{
+        ruleType: CourseAccessRuleType;
+        configJson: Prisma.JsonValue;
+      }>;
+    },
+    profile: {
+      plan: string;
+      entitlements: Array<{ key: string }>;
+      purchases: Array<{ productKey: string; courseId: string | null }>;
+      subscriptions: Array<{ planKey: string }>;
+      courseAccesses: Array<{ courseId: string }>;
+      serviceAccesses: Array<{ service: { id: string; key: string } }>;
+    },
   ): AccessDecision {
     if (course.accessType === CourseAccessType.free) {
       return { canAccess: true, reason: 'free' };
+    }
+
+    if (
+      course.id &&
+      profile.courseAccesses.some((access) => access.courseId === course.id)
+    ) {
+      return { canAccess: true, reason: 'manual' };
     }
 
     const rules = course.accessRules ?? [];
@@ -355,7 +436,8 @@ export class CoursesService {
       const config = rule.configJson as Record<string, unknown>;
 
       if (rule.ruleType === CourseAccessRuleType.plan) {
-        const requiredPlan = typeof config.plan === 'string' ? config.plan : undefined;
+        const requiredPlan =
+          typeof config.plan === 'string' ? config.plan : undefined;
         if (requiredPlan && profile.plan === requiredPlan) {
           return { canAccess: true, reason: 'plan' };
         }
@@ -363,26 +445,53 @@ export class CoursesService {
 
       if (rule.ruleType === CourseAccessRuleType.entitlement) {
         const key = typeof config.key === 'string' ? config.key : undefined;
-        if (key && profile.entitlements.some((entitlement) => entitlement.key === key)) {
+        if (
+          key &&
+          profile.entitlements.some((entitlement) => entitlement.key === key)
+        ) {
           return { canAccess: true, reason: 'entitlement' };
         }
       }
 
       if (rule.ruleType === CourseAccessRuleType.purchase) {
-        const productKey = typeof config.productKey === 'string' ? config.productKey : undefined;
-        const courseId = typeof config.courseId === 'string' ? config.courseId : undefined;
-        const match = profile.purchases.some((purchase) =>
-          (productKey && purchase.productKey === productKey) ||
-          (courseId && purchase.courseId === courseId),
+        const productKey =
+          typeof config.productKey === 'string' ? config.productKey : undefined;
+        const courseId =
+          typeof config.courseId === 'string' ? config.courseId : undefined;
+        const match = profile.purchases.some(
+          (purchase) =>
+            (productKey && purchase.productKey === productKey) ||
+            (courseId && purchase.courseId === courseId),
         );
         if (match) {
           return { canAccess: true, reason: 'purchase' };
         }
       }
 
+      if (rule.ruleType === CourseAccessRuleType.service) {
+        const serviceKey =
+          typeof config.serviceKey === 'string' ? config.serviceKey : undefined;
+        const serviceId =
+          typeof config.serviceId === 'string' ? config.serviceId : undefined;
+        const match = profile.serviceAccesses.some(
+          (access) =>
+            (serviceKey && access.service.key === serviceKey) ||
+            (serviceId && access.service.id === serviceId),
+        );
+        if (match) {
+          return { canAccess: true, reason: 'service' };
+        }
+      }
+
       if (rule.ruleType === CourseAccessRuleType.subscription) {
-        const planKey = typeof config.planKey === 'string' ? config.planKey : undefined;
-        if (planKey && profile.subscriptions.some((subscription) => subscription.planKey === planKey)) {
+        const planKey =
+          typeof config.planKey === 'string' ? config.planKey : undefined;
+        if (
+          planKey &&
+          profile.subscriptions.some(
+            (subscription) => subscription.planKey === planKey,
+          )
+        ) {
           return { canAccess: true, reason: 'subscription' };
         }
       }
@@ -390,6 +499,15 @@ export class CoursesService {
 
     if (course.accessType === CourseAccessType.pro && profile.plan === 'pro') {
       return { canAccess: true, reason: 'plan' };
+    }
+
+    if (course.accessType === CourseAccessType.seguimiento) {
+      const match = profile.serviceAccesses.some(
+        (access) => access.service.key === 'seguimiento',
+      );
+      if (match) {
+        return { canAccess: true, reason: 'service' };
+      }
     }
 
     return { canAccess: false, reason: 'locked' };

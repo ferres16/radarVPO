@@ -4,6 +4,11 @@ import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 export class BackofficeListDto {
   @ApiPropertyOptional()
   @IsOptional()
+  @IsString()
+  q?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsInt()
   @Min(1)
   @Max(500)

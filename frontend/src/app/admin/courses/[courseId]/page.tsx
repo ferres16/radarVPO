@@ -170,6 +170,9 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
   }
 
   async function deleteModule(moduleId: string) {
+    if (!window.confirm('Vas a borrar este modulo y sus lecciones. ¿Quieres continuar?')) {
+      return;
+    }
     setSavingId(moduleId);
     setError('');
     try {
@@ -248,6 +251,9 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
   }
 
   async function deleteLesson(lessonId: string) {
+    if (!window.confirm('Vas a borrar esta leccion. ¿Quieres continuar?')) {
+      return;
+    }
     setSavingId(lessonId);
     setError('');
     try {

@@ -121,6 +121,16 @@ export function TopNav() {
                   >
                     Ver perfil
                   </Link>
+                  {me.role === 'admin' ? (
+                    <Link
+                      href="/admin"
+                      className="block rounded-xl px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)]"
+                      onClick={() => setMenuOpen(false)}
+                      role="menuitem"
+                    >
+                      Panel admin
+                    </Link>
+                  ) : null}
                   <button
                     type="button"
                     className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)]"
@@ -168,6 +178,17 @@ export function TopNav() {
                   onClick={() => setMobileOpen(false)}
                 >
                   Ver perfil
+                </Link>
+              </li>
+            ) : null}
+            {me?.role === 'admin' ? (
+              <li>
+                <Link
+                  href="/admin"
+                  className="block rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm font-semibold text-[var(--ink)]"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Panel admin
                 </Link>
               </li>
             ) : null}

@@ -6,6 +6,7 @@ import {
   IsString,
   IsUrl,
   Max,
+  MinLength,
   Min,
   validateSync,
 } from 'class-validator';
@@ -21,9 +22,11 @@ class EnvironmentVariables {
   DATABASE_URL!: string;
 
   @IsString()
+  @MinLength(32)
   JWT_ACCESS_SECRET!: string;
 
   @IsString()
+  @MinLength(32)
   JWT_REFRESH_SECRET!: string;
 
   @IsOptional()
@@ -164,6 +167,32 @@ export function validateEnv(config: Record<string, unknown>) {
 
   if (errors.length > 0) {
     throw new Error(errors.toString());
+  }
+
+  const stringValue = (value: unknown, fallback = '') =>
+    typeof value === 'string' ? value : fallback;
+  const nodeEnv = stringValue(config.NODE_ENV, 'development');
+  const insecurePlaceholders = new Set([
+    'replace-with-long-secret',
+    'replace-with-long-secret-2',
+    'changeme',
+    'secret',
+  ]);
+  const accessSecret = stringValue(config.JWT_ACCESS_SECRET);
+  const refreshSecret = stringValue(config.JWT_REFRESH_SECRET);
+
+  if (
+    insecurePlaceholders.has(accessSecret) ||
+    insecurePlaceholders.has(refreshSecret)
+  ) {
+    throw new Error('JWT secrets must not use example placeholders');
+  }
+
+  if (
+    nodeEnv === 'production' &&
+    (!config.CORS_ORIGIN || !config.FRONTEND_URL)
+  ) {
+    throw new Error('CORS_ORIGIN and FRONTEND_URL are required in production');
   }
 
   return validatedConfig;

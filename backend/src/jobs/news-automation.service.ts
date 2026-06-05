@@ -3,7 +3,10 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { sha256 } from './hash.util';
 import { RssNewsService, RssNewsItem } from './rss-news.service';
-import { AiProviderService, GeneratedNewsDraft } from '../ai/ai.provider.service';
+import {
+  AiProviderService,
+  GeneratedNewsDraft,
+} from '../ai/ai.provider.service';
 
 const CATEGORY_PRIORITY: Record<GeneratedNewsDraft['category'], number> = {
   vpo: 40,
@@ -70,7 +73,12 @@ export class NewsAutomationService {
     });
 
     if (this.settingDate(lastRun?.value) === today) {
-      return { inserted: 0, cached: 0, selected: 0, reason: 'already_generated_today' };
+      return {
+        inserted: 0,
+        cached: 0,
+        selected: 0,
+        reason: 'already_generated_today',
+      };
     }
 
     await this.purgeLegacyNewsOnce();
@@ -81,7 +89,12 @@ export class NewsAutomationService {
 
     const topCandidates = this.selectTopCandidates(rankedCandidates, 5);
     if (topCandidates.length === 0) {
-      return { inserted: 0, cached: cachedItems.length, selected: 0, reason: 'no_relevant_items' };
+      return {
+        inserted: 0,
+        cached: cachedItems.length,
+        selected: 0,
+        reason: 'no_relevant_items',
+      };
     }
 
     const recentNews = await this.prisma.newsItem.findMany({
@@ -93,9 +106,17 @@ export class NewsAutomationService {
       take: 50,
     });
 
-    const editorialCandidates = this.selectEditorialCandidates(topCandidates, recentNews).slice(0, 5);
+    const editorialCandidates = this.selectEditorialCandidates(
+      topCandidates,
+      recentNews,
+    ).slice(0, 5);
     if (editorialCandidates.length === 0) {
-      return { inserted: 0, cached: cachedItems.length, selected: 0, reason: 'all_recently_used' };
+      return {
+        inserted: 0,
+        cached: cachedItems.length,
+        selected: 0,
+        reason: 'all_recently_used',
+      };
     }
 
     const candidatesForAi = editorialCandidates.map((item) => ({
@@ -104,10 +125,14 @@ export class NewsAutomationService {
     }));
 
     const aiDrafts =
-      (await this.aiProvider.generateHousingNewsArticles(candidatesForAi, 2).catch((error) => {
-        this.logger.warn(`Falling back to local generation: ${error instanceof Error ? error.message : 'unknown'}`);
-        return null;
-      })) ?? this.buildFallbackDrafts(candidatesForAi, 2);
+      (await this.aiProvider
+        .generateHousingNewsArticles(candidatesForAi, 2)
+        .catch((error) => {
+          this.logger.warn(
+            `Falling back to local generation: ${error instanceof Error ? error.message : 'unknown'}`,
+          );
+          return null;
+        })) ?? this.buildFallbackDrafts(candidatesForAi, 2);
 
     const inserted = await this.persistDrafts(aiDrafts, candidatesForAi);
     return {
@@ -141,25 +166,30 @@ export class NewsAutomationService {
   }
 
   private async cacheRawItems(items: RssNewsItem[]) {
-    const cached: Array<RssNewsItem & {
-      id: string;
-      category: GeneratedNewsDraft['category'];
-      score: number;
-      matchedKeywords: string[];
-      municipality: string;
-    }> = [];
+    const cached: Array<
+      RssNewsItem & {
+        id: string;
+        category: GeneratedNewsDraft['category'];
+        score: number;
+        matchedKeywords: string[];
+        municipality: string;
+      }
+    > = [];
 
     for (const item of items) {
-      const fingerprint = sha256([
-        item.feedUrl,
-        item.sourceName,
-        item.sourceUrl,
-        item.link,
-        item.title,
-        item.publishedAt.toISOString(),
-      ].join('|'));
+      const fingerprint = sha256(
+        [
+          item.feedUrl,
+          item.sourceName,
+          item.sourceUrl,
+          item.link,
+          item.title,
+          item.publishedAt.toISOString(),
+        ].join('|'),
+      );
 
-      const { category, score, matchedKeywords, municipality } = this.scoreItem(item);
+      const { category, score, matchedKeywords, municipality } =
+        this.scoreItem(item);
 
       const row = await this.prisma.newsFeedItem.upsert({
         where: { contentHash: fingerprint },
@@ -203,27 +233,35 @@ export class NewsAutomationService {
   }
 
   private rankCandidates(
-    items: Array<RssNewsItem & {
-      id: string;
-      category: GeneratedNewsDraft['category'];
-      score: number;
-      matchedKeywords: string[];
-      municipality: string;
-    }>,
+    items: Array<
+      RssNewsItem & {
+        id: string;
+        category: GeneratedNewsDraft['category'];
+        score: number;
+        matchedKeywords: string[];
+        municipality: string;
+      }
+    >,
   ) {
     return items
       .filter((item) => item.score >= 20)
-      .sort((a, b) => b.score - a.score || b.publishedAt.getTime() - a.publishedAt.getTime());
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          b.publishedAt.getTime() - a.publishedAt.getTime(),
+      );
   }
 
   private selectTopCandidates(
-    items: Array<RssNewsItem & {
-      id: string;
-      category: GeneratedNewsDraft['category'];
-      score: number;
-      matchedKeywords: string[];
-      municipality: string;
-    }>,
+    items: Array<
+      RssNewsItem & {
+        id: string;
+        category: GeneratedNewsDraft['category'];
+        score: number;
+        matchedKeywords: string[];
+        municipality: string;
+      }
+    >,
     maxItems: number,
   ) {
     const chosen: typeof items = [];
@@ -250,17 +288,30 @@ export class NewsAutomationService {
   }
 
   private selectEditorialCandidates(
-    items: Array<RssNewsItem & {
-      id: string;
-      category: GeneratedNewsDraft['category'];
-      score: number;
-      matchedKeywords: string[];
-      municipality: string;
+    items: Array<
+      RssNewsItem & {
+        id: string;
+        category: GeneratedNewsDraft['category'];
+        score: number;
+        matchedKeywords: string[];
+        municipality: string;
+      }
+    >,
+    recentNews: Array<{
+      title: string;
+      category: string | null;
+      municipality: string | null;
+      topic: string | null;
     }>,
-    recentNews: Array<{ title: string; category: string | null; municipality: string | null; topic: string | null }>,
   ) {
     const recentFingerprints = new Set(
-      recentNews.map((news) => this.topicFingerprint(news.category || 'general', news.municipality || '', news.title)),
+      recentNews.map((news) =>
+        this.topicFingerprint(
+          news.category || 'general',
+          news.municipality || '',
+          news.title,
+        ),
+      ),
     );
 
     const chosen: typeof items = [];
@@ -271,7 +322,11 @@ export class NewsAutomationService {
         break;
       }
 
-      const fingerprint = this.topicFingerprint(item.category, item.municipality, item.title);
+      const fingerprint = this.topicFingerprint(
+        item.category,
+        item.municipality,
+        item.title,
+      );
       if (recentFingerprints.has(fingerprint)) {
         continue;
       }
@@ -288,18 +343,30 @@ export class NewsAutomationService {
   }
 
   private scoreItem(item: RssNewsItem) {
-    const combined = `${item.title}\n${item.snippet}\n${item.content}`.toLowerCase();
+    const combined =
+      `${item.title}\n${item.snippet}\n${item.content}`.toLowerCase();
     const matchedKeywords = [
       ...MANDATORY_KEYWORDS.filter((keyword) => combined.includes(keyword)),
       ...BOOST_KEYWORDS.filter((keyword) => combined.includes(keyword)),
     ];
 
-    if (!matchedKeywords.some((keyword) => MANDATORY_KEYWORDS.includes(keyword))) {
-      return { category: 'general' as const, score: 0, matchedKeywords: [], municipality: 'Catalunya' };
+    if (
+      !matchedKeywords.some((keyword) => MANDATORY_KEYWORDS.includes(keyword))
+    ) {
+      return {
+        category: 'general' as const,
+        score: 0,
+        matchedKeywords: [],
+        municipality: 'Catalunya',
+      };
     }
 
     const category = this.classifyCategory(combined);
-    const municipality = this.detectMunicipality(combined, item.sourceName, item.sourceUrl);
+    const municipality = this.detectMunicipality(
+      combined,
+      item.sourceName,
+      item.sourceUrl,
+    );
     const recencyScore = this.recencyScore(item.publishedAt);
     const baseScore = CATEGORY_PRIORITY[category];
     const keywordScore = matchedKeywords.reduce((total, keyword) => {
@@ -308,7 +375,9 @@ export class NewsAutomationService {
       }
       return total + 3;
     }, 0);
-    const cataloniaScore = this.hasCataloniaContext(item.title, item.snippet) ? 10 : 0;
+    const cataloniaScore = this.hasCataloniaContext(item.title, item.snippet)
+      ? 10
+      : 0;
 
     return {
       category,
@@ -319,38 +388,74 @@ export class NewsAutomationService {
   }
 
   private classifyCategory(text: string): GeneratedNewsDraft['category'] {
-    if (/vpo|vivienda protegida|viviendas protegidas|hpo|promoci[oó]n p[uú]blica/.test(text)) {
+    if (
+      /vpo|vivienda protegida|viviendas protegidas|hpo|promoci[oó]n p[uú]blica/.test(
+        text,
+      )
+    ) {
       return 'vpo';
     }
-    if (/alquiler|lloguer|asequible|precio alquiler|renta asequible/.test(text)) {
+    if (
+      /alquiler|lloguer|asequible|precio alquiler|renta asequible/.test(text)
+    ) {
       return 'alquiler';
     }
-    if (/ayuda|subvenci[oó]n|bono|prestaci[oó]n|irsc|registro solicitantes|registre solicitants/.test(text)) {
+    if (
+      /ayuda|subvenci[oó]n|bono|prestaci[oó]n|irsc|registro solicitantes|registre solicitants/.test(
+        text,
+      )
+    ) {
       return 'ayudas';
     }
-    if (/normativa|decreto|ley|reglamento|modificaci[oó]n|tramites?/.test(text)) {
+    if (
+      /normativa|decreto|ley|reglamento|modificaci[oó]n|tramites?/.test(text)
+    ) {
       return 'normativa';
     }
     return 'general';
   }
 
-  private detectMunicipality(text: string, sourceName: string, sourceUrl: string) {
+  private detectMunicipality(
+    text: string,
+    sourceName: string,
+    sourceUrl: string,
+  ) {
     const sourceLower = sourceName.toLowerCase();
     const urlLower = sourceUrl.toLowerCase();
 
-    if (/sant cugat/.test(text) || urlLower.includes('santcugat') || sourceLower.includes('sant cugat')) {
+    if (
+      /sant cugat/.test(text) ||
+      urlLower.includes('santcugat') ||
+      sourceLower.includes('sant cugat')
+    ) {
       return 'Sant Cugat del Vallès';
     }
-    if (/terrassa/.test(text) || urlLower.includes('terrassa') || sourceLower.includes('terrassa')) {
+    if (
+      /terrassa/.test(text) ||
+      urlLower.includes('terrassa') ||
+      sourceLower.includes('terrassa')
+    ) {
       return 'Terrassa';
     }
-    if (/sabadell/.test(text) || urlLower.includes('sabadell') || sourceLower.includes('sabadell')) {
+    if (
+      /sabadell/.test(text) ||
+      urlLower.includes('sabadell') ||
+      sourceLower.includes('sabadell')
+    ) {
       return 'Sabadell';
     }
-    if (/rubi|rubí/.test(text) || urlLower.includes('rubi') || sourceLower.includes('rubi')) {
+    if (
+      /rubi|rubí/.test(text) ||
+      urlLower.includes('rubi') ||
+      sourceLower.includes('rubi')
+    ) {
       return 'Rubí';
     }
-    if (/barcelona/.test(text) || urlLower.includes('barcelona') || sourceLower.includes('barcelona')) {
+    if (
+      /barcelona/.test(text) ||
+      urlLower.includes('barcelona') ||
+      sourceLower.includes('barcelona')
+    ) {
       return 'Barcelona';
     }
     return 'Catalunya';
@@ -362,33 +467,59 @@ export class NewsAutomationService {
   }
 
   private recencyScore(publishedAt: Date) {
-    const ageDays = Math.max(0, (Date.now() - publishedAt.getTime()) / (24 * 60 * 60 * 1000));
+    const ageDays = Math.max(
+      0,
+      (Date.now() - publishedAt.getTime()) / (24 * 60 * 60 * 1000),
+    );
     if (ageDays <= 1) return 12;
     if (ageDays <= 2) return 8;
     if (ageDays <= 3) return 4;
     return 0;
   }
 
-  private topicFingerprint(category: string, municipality: string, title: string) {
-    const normalizedTitle = title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-    const keyWords = normalizedTitle.split(' ').filter((word) => word.length > 3).slice(0, 8).join('-');
+  private topicFingerprint(
+    category: string,
+    municipality: string,
+    title: string,
+  ) {
+    const normalizedTitle = title
+      .toLowerCase()
+      .replace(/[^\p{L}\p{N}]+/gu, ' ')
+      .trim();
+    const keyWords = normalizedTitle
+      .split(' ')
+      .filter((word) => word.length > 3)
+      .slice(0, 8)
+      .join('-');
     return [category, municipality.toLowerCase(), keyWords].join('|');
   }
 
   private buildFallbackDrafts(
-    candidates: Array<RssNewsItem & {
-      id: string;
-      category: GeneratedNewsDraft['category'];
-      score: number;
-      matchedKeywords: string[];
-      municipality: string;
-    }>,
+    candidates: Array<
+      RssNewsItem & {
+        id: string;
+        category: GeneratedNewsDraft['category'];
+        score: number;
+        matchedKeywords: string[];
+        municipality: string;
+      }
+    >,
     maxArticles: number,
   ): GeneratedNewsDraft[] {
     return candidates.slice(0, maxArticles).map((candidate, index) => {
-      const intro = this.takeSentences(candidate.snippet || candidate.content || candidate.title, 2);
-      const context = this.takeSentences(candidate.content || candidate.snippet || candidate.title, 4);
-      const title = this.enhanceTitle(candidate.title, candidate.category, candidate.municipality);
+      const intro = this.takeSentences(
+        candidate.snippet || candidate.content || candidate.title,
+        2,
+      );
+      const context = this.takeSentences(
+        candidate.content || candidate.snippet || candidate.title,
+        4,
+      );
+      const title = this.enhanceTitle(
+        candidate.title,
+        candidate.category,
+        candidate.municipality,
+      );
       const summary = `${intro} Esta es la clave para quien sigue convocatorias de vivienda en Catalunya.`;
       const content = [
         `${summary}`,
@@ -417,11 +548,7 @@ export class NewsAutomationService {
     }
 
     if (currentWords > 300) {
-      return text
-        .split(/\s+/)
-        .slice(0, 300)
-        .join(' ')
-        .trim();
+      return text.split(/\s+/).slice(0, 300).join(' ').trim();
     }
 
     const padding = [
@@ -433,7 +560,11 @@ export class NewsAutomationService {
     return `${text} ${padding}`.trim();
   }
 
-  private enhanceTitle(title: string, category: GeneratedNewsDraft['category'], municipality: string) {
+  private enhanceTitle(
+    title: string,
+    category: GeneratedNewsDraft['category'],
+    municipality: string,
+  ) {
     const prefix =
       category === 'vpo'
         ? 'Nuevas VPO'
@@ -462,29 +593,37 @@ export class NewsAutomationService {
 
   private extractPracticalImpact(content: string) {
     const firstSentence = this.takeSentences(content, 1);
-    return firstSentence.length > 180 ? firstSentence.slice(0, 180).trim() : firstSentence;
+    return firstSentence.length > 180
+      ? firstSentence.slice(0, 180).trim()
+      : firstSentence;
   }
 
   private async persistDrafts(
     drafts: GeneratedNewsDraft[],
-    candidates: Array<RssNewsItem & {
-      id: string;
-      category: GeneratedNewsDraft['category'];
-      score: number;
-      matchedKeywords: string[];
-      municipality: string;
-    }>,
+    candidates: Array<
+      RssNewsItem & {
+        id: string;
+        category: GeneratedNewsDraft['category'];
+        score: number;
+        matchedKeywords: string[];
+        municipality: string;
+      }
+    >,
   ) {
     let inserted = 0;
 
     for (const draft of drafts.slice(0, 2)) {
-      const source = candidates.find((candidate) => candidate.id === draft.sourceItemId);
+      const source = candidates.find(
+        (candidate) => candidate.id === draft.sourceItemId,
+      );
       if (!source) {
         continue;
       }
 
       const slug = this.buildSlug(draft.title, source.id);
-      const contentHash = sha256([slug, draft.title, draft.summary, draft.content].join('|'));
+      const contentHash = sha256(
+        [slug, draft.title, draft.summary, draft.content].join('|'),
+      );
 
       const existing = await this.prisma.newsItem.findFirst({
         where: {
@@ -512,7 +651,8 @@ export class NewsAutomationService {
           summary: draft.summary,
           body: draft.content,
           practicalImpact: this.extractPracticalImpact(draft.content),
-          relevance: source.score >= 42 ? 'high' : source.score >= 32 ? 'medium' : 'low',
+          relevance:
+            source.score >= 42 ? 'high' : source.score >= 32 ? 'medium' : 'low',
           category: draft.category,
           topic: `${draft.category}_${source.municipality.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
           municipality: source.municipality,

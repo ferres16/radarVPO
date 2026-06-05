@@ -1,6 +1,19 @@
 import { Injectable } from '@nestjs/common';
 import Parser from 'rss-parser';
 
+type RssParserItem = {
+  title?: string;
+  link?: string;
+  contentSnippet?: string;
+  summary?: string;
+  content?: string;
+  description?: string;
+  isoDate?: string;
+  pubDate?: string;
+  published?: string;
+  date?: string | Date;
+};
+
 export type RssNewsItem = {
   feedUrl: string;
   sourceName: string;
@@ -14,7 +27,10 @@ export type RssNewsItem = {
 
 @Injectable()
 export class RssNewsService {
-  private readonly parser = new Parser();
+  private readonly parser = new Parser<
+    Record<string, unknown>,
+    RssParserItem
+  >();
 
   async fetchRecentItems(maxAgeDays = 3): Promise<RssNewsItem[]> {
     const feeds = this.resolveFeeds();
@@ -43,8 +59,17 @@ export class RssNewsService {
           continue;
         }
 
-        const snippet = this.cleanText(item.contentSnippet || item.summary || item.content || '');
-        const content = this.cleanText(item.content || item.contentSnippet || item.summary || item.description || item.title || '');
+        const snippet = this.cleanText(
+          item.contentSnippet || item.summary || item.content || '',
+        );
+        const content = this.cleanText(
+          item.content ||
+            item.contentSnippet ||
+            item.summary ||
+            item.description ||
+            item.title ||
+            '',
+        );
         allItems.push({
           feedUrl,
           sourceName,
@@ -94,7 +119,8 @@ export class RssNewsService {
     const host = new URL(feedUrl).hostname;
     if (host.includes('govern.cat')) return 'Govern de Catalunya';
     if (host.includes('habitatge.gencat.cat')) return 'Habitatge Generalitat';
-    if (host.includes('ajuntament.barcelona.cat')) return 'Ajuntament de Barcelona';
+    if (host.includes('ajuntament.barcelona.cat'))
+      return 'Ajuntament de Barcelona';
     if (host.includes('rubi.cat')) return 'Ajuntament de Rubí';
     if (host.includes('terrassa.cat')) return 'Ajuntament de Terrassa';
     if (host.includes('sabadell.cat')) return 'Ajuntament de Sabadell';
@@ -102,7 +128,7 @@ export class RssNewsService {
     return host.replace(/^www\./, '');
   }
 
-  private resolvePublishedAt(item: any) {
+  private resolvePublishedAt(item: RssParserItem) {
     const rawDate = item.isoDate || item.pubDate || item.published || item.date;
     const parsed = rawDate ? new Date(rawDate) : new Date();
     return Number.isNaN(parsed.getTime()) ? new Date() : parsed;

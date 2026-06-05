@@ -25,7 +25,13 @@ export class UsersService {
   async findByEmailWithHash(email: string) {
     return this.prisma.user.findUnique({
       where: { email },
-      select: { id: true, email: true, passwordHash: true, role: true, plan: true },
+      select: {
+        id: true,
+        email: true,
+        passwordHash: true,
+        role: true,
+        plan: true,
+      },
     });
   }
 
@@ -64,5 +70,29 @@ export class UsersService {
         lastLoginAt: true,
       },
     });
+  }
+
+  async getAccessSummary(userId: string) {
+    const [services, courses] = await Promise.all([
+      this.prisma.userServiceAccess.findMany({
+        where: { userId, isActive: true },
+        select: {
+          activatedAt: true,
+          service: { select: { id: true, key: true, name: true } },
+        },
+      }),
+      this.prisma.userCourseAccess.findMany({
+        where: { userId, isActive: true },
+        select: {
+          activatedAt: true,
+          course: { select: { id: true, slug: true, title: true } },
+        },
+      }),
+    ]);
+
+    return {
+      services,
+      courses,
+    };
   }
 }

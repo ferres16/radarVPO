@@ -1,11 +1,17 @@
-import Link from 'next/link';
+'use client';
 
-const stripeCheckoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || '/register';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
+import { EmptyState } from '@/components/empty-state';
+import { SkeletonCard } from '@/components/skeleton-card';
+import { api } from '@/lib/api';
+import type { Service } from '@/types';
+
 const whatsappContactUrl =
   process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
   'https://wa.me/34600111222?text=Hola%2C%20quiero%20activar%20el%20seguimiento%20individualizado%20de%20Radar%20VPO.';
 
-const services = [
+const fallbackServices = [
   {
     eyebrow: '01 · Cursos y formaciones',
     title: 'Cursos vivos y guias accionables',
@@ -36,6 +42,31 @@ const services = [
 ];
 
 export default function ServicesPage() {
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      try {
+        const rows = await api.listServices();
+        if (!active) return;
+        setServices(rows);
+      } catch (err) {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : 'No se pudieron cargar servicios');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <main className="shell pb-16">
       <section className="relative overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-[linear-gradient(135deg,#f4fbff_0%,#eef7f1_55%,#ffffff_100%)] p-6 shadow-card md:p-8">
@@ -55,8 +86,69 @@ export default function ServicesPage() {
         </div>
       </section>
 
+      {error ? (
+        <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{error}</div>
+      ) : null}
+
+      {loading ? (
+        <section className="mt-6 grid gap-4 lg:grid-cols-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </section>
+      ) : services.length > 0 ? (
+        <section className="mt-6 grid gap-4 lg:grid-cols-3">
+          {services.map((service) => {
+            const href = service.stripePaymentLink || whatsappContactUrl;
+            const external = /^https?:\/\//.test(href);
+            return (
+              <article
+                key={service.id}
+                className="group relative overflow-hidden rounded-[1.75rem] border border-[var(--stroke)] bg-gradient-to-br from-emerald-50 to-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(30,31,28,0.12)]"
+              >
+                <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#4E8F3A,#A7D08A,#4E8F3A)] opacity-70" />
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">{service.serviceType}</p>
+                <h2 className="mt-3 text-2xl font-bold text-[var(--ink)]">{service.name}</h2>
+                <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
+                  {service.description || 'Servicio activo gestionado desde el panel de administracion.'}
+                </p>
+                {service.price ? (
+                  <p className="mt-4 text-2xl font-black text-[var(--ink)]">
+                    {new Intl.NumberFormat('es-ES', {
+                      style: 'currency',
+                      currency: service.currency || 'EUR',
+                      maximumFractionDigits: 0,
+                    }).format(Number(service.price))}
+                  </p>
+                ) : null}
+                {external ? (
+                  <a
+                    href={href}
+                    className="mt-5 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-300 group-hover:bg-[var(--green-700)]"
+                    rel="noopener noreferrer"
+                  >
+                    Activar servicio
+                  </a>
+                ) : (
+                  <Link
+                    href={href}
+                    className="mt-5 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-300 group-hover:bg-[var(--green-700)]"
+                  >
+                    Activar servicio
+                  </Link>
+                )}
+              </article>
+            );
+          })}
+        </section>
+      ) : (
+        <section className="mt-6">
+          <EmptyState title="Servicios en preparacion" description="El equipo aun no ha publicado servicios activos desde admin." />
+        </section>
+      )}
+
       <section className="mt-6 grid gap-4 lg:grid-cols-3">
-        {services.map((service) => (
+        {fallbackServices.map((service) => (
           <article
             key={service.title}
             className={`group relative overflow-hidden rounded-[1.75rem] border border-[var(--stroke)] bg-gradient-to-br ${service.accent} p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(30,31,28,0.12)]`}
@@ -99,9 +191,6 @@ export default function ServicesPage() {
             <li>3. Te acompañamos hasta la resolucion.</li>
           </ol>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link href={stripeCheckoutUrl} className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
-              Ir a checkout
-            </Link>
             <Link href={whatsappContactUrl} className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
               Hablar por WhatsApp
             </Link>

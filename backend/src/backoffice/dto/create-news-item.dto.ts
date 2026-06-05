@@ -1,4 +1,10 @@
-import { IsDateString, IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
+import {
+  IsDateString,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+} from 'class-validator';
 
 export class CreateNewsItemDto {
   @IsString()

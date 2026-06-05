@@ -1,6 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { CourseModuleVisibility } from '@prisma/client';
-import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateCourseModuleDto {
   @ApiProperty()
@@ -20,7 +27,10 @@ export class CreateCourseModuleDto {
   @Min(0)
   order?: number;
 
-  @ApiProperty({ enum: CourseModuleVisibility, default: CourseModuleVisibility.visible })
+  @ApiProperty({
+    enum: CourseModuleVisibility,
+    default: CourseModuleVisibility.visible,
+  })
   @IsEnum(CourseModuleVisibility)
   visibility!: CourseModuleVisibility;
 }

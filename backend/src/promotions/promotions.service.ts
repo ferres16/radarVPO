@@ -58,11 +58,51 @@ export class PromotionsService {
   }
 
   async getById(id: string) {
-    const item = await this.prisma.promotion.findUnique({
-      where: { id },
-      include: {
+    const item = await this.prisma.promotion.findFirst({
+      where: {
+        id,
+        status: { in: ['published_unreviewed', 'published_reviewed'] },
+      },
+      select: {
+        id: true,
+        title: true,
+        location: true,
+        municipality: true,
+        province: true,
+        autonomousCommunity: true,
+        promotionType: true,
+        targetScope: true,
+        tenureType: true,
+        status: true,
+        publishedAt: true,
+        deadlineDate: true,
+        estimatedPublicationDate: true,
+        sourceUrl: true,
+        alertDetectedAt: true,
+        statusMessage: true,
+        promoter: true,
+        totalHomes: true,
+        generalInfo: true,
+        importantDates: true,
+        requirements: true,
+        economicInfo: true,
+        feesAndReservations: true,
+        contactInfo: true,
+        publicDescription: true,
+        availableUnitsText: true,
+        isProOnly: true,
+        createdAt: true,
+        updatedAt: true,
         documents: {
           orderBy: { createdAt: 'desc' },
+          select: {
+            id: true,
+            documentKind: true,
+            fileType: true,
+            originalName: true,
+            publicUrl: true,
+            createdAt: true,
+          },
         },
         units: {
           orderBy: { rowOrder: 'asc' },

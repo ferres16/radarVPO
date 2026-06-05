@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { estimatedPublicationVisibilityStart, withPromotionView } from '../common/promotion-view.util';
+import {
+  estimatedPublicationVisibilityStart,
+  withPromotionView,
+} from '../common/promotion-view.util';
 
 const ALERTS_CACHE_TTL = Number(process.env.ALERTS_CACHE_TTL_SECONDS ?? '30');
 const ALERTS_TAKE = Number(process.env.ALERTS_TAKE ?? '50');
@@ -11,7 +14,7 @@ type CacheEntry<T> = { value: T; expiresAt: number };
 export class AlertsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private cache = new Map<string, CacheEntry<any>>();
+  private cache = new Map<string, CacheEntry<unknown>>();
 
   private getFromCache<T>(key: string): T | undefined {
     const entry = this.cache.get(key);
@@ -27,10 +30,10 @@ export class AlertsService {
     this.cache.set(key, { value, expiresAt: Date.now() + ttl * 1000 });
   }
 
-  async upcoming() {
+  async upcoming(): Promise<unknown[]> {
     const start = estimatedPublicationVisibilityStart();
     const cacheKey = `alerts:${start.toISOString()}`;
-    const cached = this.getFromCache<any>(cacheKey);
+    const cached = this.getFromCache<unknown[]>(cacheKey);
     if (cached) return cached;
 
     const alerts = await this.prisma.promotion.findMany({

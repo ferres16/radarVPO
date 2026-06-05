@@ -15,6 +15,8 @@ import {
 import { ApiConsumes, ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { BackofficeService } from './backoffice.service';
@@ -23,10 +25,15 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
+import { CreateServiceDto } from './dto/create-service.dto';
 import { ImportUnitsFromPasteDto } from './dto/import-units-from-paste.dto';
-import { BackofficeListDto, BackofficeListPromotionsDto } from './dto/list-backoffice.dto';
+import {
+  BackofficeListDto,
+  BackofficeListPromotionsDto,
+} from './dto/list-backoffice.dto';
 import { ReorderCourseItemsDto } from './dto/reorder-course-items.dto';
 import { ReorderUnitsDto } from './dto/reorder-units.dto';
+import { UpdateAccessDto } from './dto/update-access.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
 import { UpdateCourseAccessRuleDto } from './dto/update-course-access-rule.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -34,6 +41,7 @@ import { UpdateCourseLessonDto } from './dto/update-course-lesson.dto';
 import { UpdateCourseModuleDto } from './dto/update-course-module.dto';
 import { UpdatePromotionStatusDto } from './dto/update-promotion-status.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
+import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
@@ -41,7 +49,11 @@ import { UpsertUnitDto } from './dto/upsert-unit.dto';
 
 const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024;
 const MAX_COURSE_ASSET_SIZE = 25 * 1024 * 1024;
-const ALLOWED_DOCUMENT_MIME_TYPES = ['application/pdf', 'image/jpeg', 'image/png'];
+const ALLOWED_DOCUMENT_MIME_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+];
 const ALLOWED_COURSE_ASSET_MIME_TYPES = [
   'application/pdf',
   'image/jpeg',
@@ -50,8 +62,13 @@ const ALLOWED_COURSE_ASSET_MIME_TYPES = [
   'video/webm',
 ];
 
-const createMimeFilter = (allowed: string[]) =>
-  (req: unknown, file: Express.Multer.File, cb: (error: Error | null, acceptFile: boolean) => void) => {
+const createMimeFilter =
+  (allowed: string[]) =>
+  (
+    req: unknown,
+    file: Express.Multer.File,
+    cb: (error: Error | null, acceptFile: boolean) => void,
+  ) => {
     if (!file?.mimetype || !allowed.includes(file.mimetype)) {
       return cb(new BadRequestException('Unsupported file type'), false);
     }
@@ -99,6 +116,66 @@ export class BackofficeController {
   @Get('courses')
   listCourses(@Query() query: BackofficeListDto) {
     return this.backofficeService.listCourses(query);
+  }
+
+  @Get('services')
+  listServices(@Query() query: BackofficeListDto) {
+    return this.backofficeService.listServices(query);
+  }
+
+  @Post('services')
+  createService(@Body() dto: CreateServiceDto) {
+    return this.backofficeService.createService(dto);
+  }
+
+  @Patch('services/:id')
+  updateService(@Param('id') serviceId: string, @Body() dto: UpdateServiceDto) {
+    return this.backofficeService.updateService(serviceId, dto);
+  }
+
+  @Delete('services/:id')
+  deleteService(@Param('id') serviceId: string) {
+    return this.backofficeService.deleteService(serviceId);
+  }
+
+  @Get('access/users')
+  listAccessUsers(@Query() query: BackofficeListDto) {
+    return this.backofficeService.listAccessUsers(query);
+  }
+
+  @Get('access/users/:id')
+  getAccessUser(@Param('id') userId: string) {
+    return this.backofficeService.getAccessUser(userId);
+  }
+
+  @Patch('access/users/:id/courses/:courseId')
+  updateCourseAccess(
+    @Param('id') userId: string,
+    @Param('courseId') courseId: string,
+    @Body() dto: UpdateAccessDto,
+    @CurrentUser() admin: CurrentUserPayload,
+  ) {
+    return this.backofficeService.upsertCourseAccess(
+      userId,
+      courseId,
+      dto,
+      admin.sub,
+    );
+  }
+
+  @Patch('access/users/:id/services/:serviceId')
+  updateServiceAccess(
+    @Param('id') userId: string,
+    @Param('serviceId') serviceId: string,
+    @Body() dto: UpdateAccessDto,
+    @CurrentUser() admin: CurrentUserPayload,
+  ) {
+    return this.backofficeService.upsertServiceAccess(
+      userId,
+      serviceId,
+      dto,
+      admin.sub,
+    );
   }
 
   @Post('courses')
@@ -217,7 +294,10 @@ export class BackofficeController {
   }
 
   @Patch('news/:id')
-  updateNews(@Param('id') newsId: string, @Body() dto: UpdateBackofficeNewsItemDto) {
+  updateNews(
+    @Param('id') newsId: string,
+    @Body() dto: UpdateBackofficeNewsItemDto,
+  ) {
     return this.backofficeService.updateNews(newsId, dto);
   }
 
@@ -272,7 +352,10 @@ export class BackofficeController {
   }
 
   @Delete('promotions/:id/units/:unitId')
-  deleteUnit(@Param('id') promotionId: string, @Param('unitId') unitId: string) {
+  deleteUnit(
+    @Param('id') promotionId: string,
+    @Param('unitId') unitId: string,
+  ) {
     return this.backofficeService.deleteUnit(promotionId, unitId);
   }
 
@@ -290,10 +373,7 @@ export class BackofficeController {
   }
 
   @Post('promotions/:id/units/reorder')
-  reorderUnits(
-    @Param('id') promotionId: string,
-    @Body() dto: ReorderUnitsDto,
-  ) {
+  reorderUnits(@Param('id') promotionId: string, @Body() dto: ReorderUnitsDto) {
     return this.backofficeService.reorderUnits(promotionId, dto.unitIds);
   }
 

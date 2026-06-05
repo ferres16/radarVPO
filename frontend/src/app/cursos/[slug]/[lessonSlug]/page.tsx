@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import type { JSX as ReactJSX } from 'react';
+import type { JSX as ReactJSX, ReactNode } from 'react';
 import { useParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import type { Course, CourseLesson, CourseModule } from '@/types';
@@ -13,7 +13,15 @@ type LessonPayload = {
   access: { canAccess: boolean; reason: string };
 };
 
-function renderNodes(nodes?: Array<Record<string, any>>) {
+type RichNode = {
+  type?: string;
+  text?: string;
+  attrs?: Record<string, unknown>;
+  marks?: Array<Record<string, unknown>>;
+  content?: RichNode[];
+};
+
+function renderNodes(nodes?: RichNode[]) {
   if (!nodes || nodes.length === 0) return null;
 
   return nodes.map((node, index) => {
@@ -26,7 +34,7 @@ function renderNodes(nodes?: Array<Record<string, any>>) {
     }
 
     if (node.type === 'heading') {
-      const level = Math.min(Math.max(node.attrs?.level || 2, 2), 4);
+      const level = Math.min(Math.max(Number(node.attrs?.level || 2), 2), 4);
       const Tag = `h${level}` as keyof ReactJSX.IntrinsicElements;
       return (
         <Tag key={key} className="mt-6 text-xl font-bold text-[var(--ink)]">
@@ -85,7 +93,7 @@ function renderNodes(nodes?: Array<Record<string, any>>) {
   });
 }
 
-function renderInline(nodes?: Array<Record<string, any>>) {
+function renderInline(nodes?: RichNode[]) {
   if (!nodes || nodes.length === 0) return null;
 
   return nodes.map((node, index) => {
@@ -99,12 +107,12 @@ function renderInline(nodes?: Array<Record<string, any>>) {
   });
 }
 
-function applyMarks(text: string, marks: Array<Record<string, any>>, index: number) {
+function applyMarks(text: string, marks: Array<Record<string, unknown>>, index: number) {
   if (!marks || marks.length === 0) {
     return <span key={`text-${index}`}>{text}</span>;
   }
 
-  return marks.reduce((acc: any, mark: any, markIndex: number) => {
+  return marks.reduce<ReactNode>((acc, mark, markIndex) => {
     if (mark.type === 'bold') {
       return <strong key={`${mark.type}-${index}-${markIndex}`}>{acc}</strong>;
     }
@@ -115,8 +123,18 @@ function applyMarks(text: string, marks: Array<Record<string, any>>, index: numb
       return <s key={`${mark.type}-${index}-${markIndex}`}>{acc}</s>;
     }
     if (mark.type === 'link') {
+      const attrs = mark.attrs && typeof mark.attrs === 'object'
+        ? (mark.attrs as { href?: unknown })
+        : {};
+      const href = typeof attrs.href === 'string' ? attrs.href : '#';
       return (
-        <a key={`${mark.type}-${index}-${markIndex}`} href={mark.attrs?.href} className="text-[var(--green-700)] underline">
+        <a
+          key={`${mark.type}-${index}-${markIndex}`}
+          href={href}
+          className="text-[var(--green-700)] underline"
+          rel="noopener noreferrer"
+          target={href.startsWith('http') ? '_blank' : undefined}
+        >
           {acc}
         </a>
       );
@@ -159,6 +177,13 @@ export default function LessonPage() {
   const modules = useMemo<CourseModule[]>(() => payload?.course.modules || [], [payload]);
   const lesson = payload?.lesson;
   const locked = payload ? !payload.access.canAccess : true;
+  const lessonItems = useMemo(
+    () => modules.flatMap((module) => module.lessons || []),
+    [modules],
+  );
+  const currentIndex = lessonItems.findIndex((item) => item.slug === lesson?.slug);
+  const previousLesson = currentIndex > 0 ? lessonItems[currentIndex - 1] : null;
+  const nextLesson = currentIndex >= 0 && currentIndex < lessonItems.length - 1 ? lessonItems[currentIndex + 1] : null;
 
   async function markCompleted() {
     if (!lesson) return;
@@ -245,29 +270,82 @@ export default function LessonPage() {
           ) : null}
         </header>
 
-        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-          <div className="prose max-w-none">
-            {lesson?.contentJson ? renderNodes((lesson.contentJson as Record<string, any>).content) : (
-              <p className="text-sm text-[var(--ink-soft)]">Contenido pendiente.</p>
-            )}
-          </div>
-        </article>
+        {locked ? (
+          <article className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-card">
+            <h2 className="text-xl font-black text-amber-950">Contenido bloqueado</h2>
+            <p className="mt-2 text-sm leading-6 text-amber-900">
+              Esta leccion existe, pero el contenido solo se entrega cuando el acceso del usuario esta activo en la base de datos.
+            </p>
+            <Link
+              href={`/cursos/${payload.course.slug}`}
+              className="mt-4 inline-flex rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white"
+            >
+              Ver opciones de acceso
+            </Link>
+          </article>
+        ) : (
+          <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
+            <div className="prose max-w-none">
+              {lesson?.contentJson ? renderNodes((lesson.contentJson as { content?: RichNode[] }).content) : (
+                <p className="text-sm text-[var(--ink-soft)]">Contenido pendiente.</p>
+              )}
+            </div>
+            {lesson?.resources?.length ? (
+              <div className="mt-6 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+                <h2 className="text-sm font-bold text-[var(--ink)]">Recursos adjuntos</h2>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {lesson.resources.map((resource) => (
+                    <a
+                      key={resource.id}
+                      href={resource.publicUrl}
+                      className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-white/70"
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      {resource.originalName || resource.kind}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </article>
+        )}
 
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href={`/cursos/${payload.course.slug}`}
-            className="rounded-full border border-[var(--stroke)] bg-white px-5 py-2 text-sm font-semibold text-[var(--ink)]"
-          >
-            Volver al curso
-          </Link>
-          <button
-            type="button"
-            onClick={() => void markCompleted()}
-            disabled={locked || marking}
-            className="rounded-full bg-[var(--green-500)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {marking ? 'Guardando...' : 'Marcar completada'}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href={`/cursos/${payload.course.slug}`}
+              className="rounded-full border border-[var(--stroke)] bg-white px-5 py-2 text-sm font-semibold text-[var(--ink)]"
+            >
+              Volver al curso
+            </Link>
+            {previousLesson ? (
+              <Link
+                href={`/cursos/${payload.course.slug}/${previousLesson.slug}`}
+                className="rounded-full border border-[var(--stroke)] bg-white px-5 py-2 text-sm font-semibold text-[var(--ink)]"
+              >
+                Anterior
+              </Link>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void markCompleted()}
+              disabled={locked || marking}
+              className="rounded-full bg-[var(--green-500)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
+            >
+              {marking ? 'Guardando...' : 'Marcar completada'}
+            </button>
+            {nextLesson ? (
+              <Link
+                href={`/cursos/${payload.course.slug}/${nextLesson.slug}`}
+                className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white"
+              >
+                Siguiente
+              </Link>
+            ) : null}
+          </div>
         </div>
       </section>
     </main>

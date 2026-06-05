@@ -36,7 +36,7 @@ export type PromotionDocument = {
   documentKind: 'pdf_original' | 'screenshot' | 'image' | 'support_document';
   fileType: string;
   originalName?: string | null;
-  storagePath: string;
+  storagePath?: string;
   publicUrl: string;
   uploadedBy?: string | null;
 };
@@ -112,11 +112,11 @@ export type CourseAccessType = 'free' | 'paid' | 'pro' | 'seguimiento';
 export type CourseModuleVisibility = 'visible' | 'hidden';
 export type LessonStatus = 'draft' | 'published';
 export type LessonType = 'text' | 'video' | 'downloadable' | 'faq';
-export type CourseAccessRuleType = 'plan' | 'entitlement' | 'purchase' | 'subscription';
+export type CourseAccessRuleType = 'plan' | 'entitlement' | 'purchase' | 'subscription' | 'service';
 
 export type CourseAccessDecision = {
   canAccess: boolean;
-  reason: 'free' | 'plan' | 'entitlement' | 'purchase' | 'subscription' | 'locked';
+  reason: 'free' | 'plan' | 'entitlement' | 'purchase' | 'subscription' | 'service' | 'manual' | 'locked';
 };
 
 export type CourseResource = {
@@ -172,6 +172,9 @@ export type Course = {
   shortDescription?: string | null;
   longDescription?: string | null;
   coverImage?: string | null;
+  price?: string | number | null;
+  currency?: string | null;
+  stripePaymentLink?: string | null;
   status: CourseStatus;
   accessType: CourseAccessType;
   order: number;
@@ -180,6 +183,38 @@ export type Course = {
   modules?: CourseModule[];
   accessRules?: CourseAccessRule[];
   access?: CourseAccessDecision;
+};
+
+export type ServiceStatus = 'active' | 'inactive' | 'archived';
+export type ServiceType = 'one_time' | 'subscription' | 'manual';
+
+export type Service = {
+  id: string;
+  key: string;
+  name: string;
+  description?: string | null;
+  price?: string | number | null;
+  currency?: string | null;
+  status: ServiceStatus;
+  serviceType: ServiceType;
+  stripePaymentLink?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type UserServiceAccess = {
+  activatedAt: string;
+  service: { id: string; key: string; name: string };
+};
+
+export type UserCourseAccess = {
+  activatedAt: string;
+  course: { id: string; slug: string; title: string };
+};
+
+export type UserAccessSummary = {
+  services: UserServiceAccess[];
+  courses: UserCourseAccess[];
 };
 
 export type LessonProgress = {
@@ -200,6 +235,24 @@ export type CourseProgress = {
   totalLessons: number;
   lastLessonId?: string | null;
   updatedAt?: string;
+};
+
+export type BackofficeAccessRecord = {
+  courseId?: string;
+  serviceId?: string;
+  isActive: boolean;
+  activatedAt: string;
+  activatedBy?: string | null;
+  activatedByAdmin?: boolean;
+  notes?: string | null;
+};
+
+export type BackofficeAccessDetail = {
+  user: BackofficeUser;
+  courses: Course[];
+  services: Service[];
+  courseAccesses: Array<BackofficeAccessRecord & { courseId: string }>;
+  serviceAccesses: Array<BackofficeAccessRecord & { serviceId: string }>;
 };
 
 export type BackofficeNewsItem = {

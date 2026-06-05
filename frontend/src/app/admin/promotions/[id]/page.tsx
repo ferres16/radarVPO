@@ -205,28 +205,6 @@ export default function AdminPromotionEditPage() {
     await refresh();
   }
 
-  async function duplicateUnit(unitId: string) {
-    await api.duplicateBackofficeUnit(id, unitId);
-    await refresh();
-  }
-
-  async function moveUnit(unitId: string, direction: -1 | 1) {
-    const index = units.findIndex((u) => u.id === unitId);
-    const target = index + direction;
-    if (index < 0 || target < 0 || target >= units.length) return;
-
-    const next = [...units];
-    const temp = next[index];
-    next[index] = next[target];
-    next[target] = temp;
-
-    await api.reorderBackofficeUnits(
-      id,
-      next.map((u) => u.id),
-    );
-    await refresh();
-  }
-
   async function importPaste() {
     if (!pasteBuffer.trim()) return;
     await api.importBackofficeUnits(id, pasteBuffer);

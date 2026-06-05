@@ -11,6 +11,9 @@ const emptyCourse: Partial<Course> = {
   shortDescription: '',
   longDescription: '',
   coverImage: '',
+  price: '',
+  currency: 'EUR',
+  stripePaymentLink: '',
   status: 'draft',
   accessType: 'free',
   order: 0,
@@ -58,6 +61,9 @@ export default function AdminCoursesPage() {
                 status: course.status,
                 accessType: course.accessType,
                 order: course.order,
+                price: course.price || '',
+                currency: course.currency || 'EUR',
+                stripePaymentLink: course.stripePaymentLink || '',
               },
             ]),
           ),
@@ -117,6 +123,9 @@ export default function AdminCoursesPage() {
         status: (newCourse.status as CourseStatus) || 'draft',
         accessType: (newCourse.accessType as CourseAccessType) || 'free',
         order: newCourse.order ?? 0,
+        price: newCourse.price ? String(newCourse.price) : undefined,
+        currency: newCourse.currency || undefined,
+        stripePaymentLink: newCourse.stripePaymentLink || undefined,
       });
       setCourses((prev) => [created, ...prev]);
       setDrafts((prev) => ({
@@ -130,6 +139,9 @@ export default function AdminCoursesPage() {
           status: created.status,
           accessType: created.accessType,
           order: created.order,
+          price: created.price || '',
+          currency: created.currency || 'EUR',
+          stripePaymentLink: created.stripePaymentLink || '',
         },
       }));
       setNewCourse(emptyCourse);
@@ -141,6 +153,9 @@ export default function AdminCoursesPage() {
   }
 
   async function deleteCourse(courseId: string) {
+    if (!window.confirm('Vas a borrar el curso y su contenido asociado. ¿Quieres continuar?')) {
+      return;
+    }
     setSavingId(courseId);
     setError('');
     try {
@@ -186,6 +201,14 @@ export default function AdminCoursesPage() {
             <p className="mt-1 text-sm text-[var(--ink-soft)]">
               Crea cursos, organiza el contenido y define acceso desde este panel.
             </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/admin/access" className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)]">
+                Compras y activaciones
+              </Link>
+              <Link href="/admin/services" className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)]">
+                Servicios
+              </Link>
+            </div>
           </div>
           <div className="border-t border-[var(--stroke)] bg-[var(--bg-app)] p-6 lg:border-l lg:border-t-0">
             <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
@@ -244,9 +267,33 @@ export default function AdminCoursesPage() {
             className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
           />
           <input
+            value={newCourse.price || ''}
+            onChange={(e) => setNewCourse((prev) => ({ ...prev, price: e.target.value }))}
+            placeholder="Precio"
+            className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+          />
+          <input
+            value={newCourse.currency || ''}
+            onChange={(e) => setNewCourse((prev) => ({ ...prev, currency: e.target.value }))}
+            placeholder="Moneda (EUR)"
+            className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+          />
+          <input
             value={newCourse.shortDescription || ''}
             onChange={(e) => setNewCourse((prev) => ({ ...prev, shortDescription: e.target.value }))}
             placeholder="Descripcion corta"
+            className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
+          />
+          <input
+            value={newCourse.coverImage || ''}
+            onChange={(e) => setNewCourse((prev) => ({ ...prev, coverImage: e.target.value }))}
+            placeholder="Cover image URL"
+            className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
+          />
+          <input
+            value={newCourse.stripePaymentLink || ''}
+            onChange={(e) => setNewCourse((prev) => ({ ...prev, stripePaymentLink: e.target.value }))}
+            placeholder="Stripe Payment Link"
             className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
           />
         </div>
@@ -384,6 +431,58 @@ export default function AdminCoursesPage() {
                         }))
                       }
                       className="mt-1 min-h-[80px] w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm text-[var(--ink)]">
+                    Precio
+                    <input
+                      value={draft.price || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, price: e.target.value },
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm text-[var(--ink)]">
+                    Moneda
+                    <input
+                      value={draft.currency || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, currency: e.target.value },
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm text-[var(--ink)] md:col-span-2">
+                    Cover image URL
+                    <input
+                      value={draft.coverImage || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, coverImage: e.target.value },
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm text-[var(--ink)] md:col-span-2">
+                    Stripe Payment Link
+                    <input
+                      value={draft.stripePaymentLink || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, stripePaymentLink: e.target.value },
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
                     />
                   </label>
                   <label className="text-sm text-[var(--ink)] md:col-span-2">

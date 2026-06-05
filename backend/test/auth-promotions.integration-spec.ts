@@ -52,7 +52,8 @@ describe('Auth + Promotions Integration', () => {
   });
 
   it('GET /promotions returns 200', async () => {
-    await request(app.getHttpServer()).get('/promotions').expect(200);
+    const server = app.getHttpServer() as Parameters<typeof request>[0];
+    await request(server).get('/promotions').expect(200);
   });
 
   afterAll(async () => {

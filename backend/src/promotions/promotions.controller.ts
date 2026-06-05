@@ -37,5 +37,4 @@ export class PromotionsController {
   ) {
     return this.promotionsService.toggleFavorite(user.sub, id);
   }
-
 }

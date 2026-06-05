@@ -54,7 +54,9 @@ export class UpdatePromotionDto {
   @IsString()
   economicInfoJson?: string;
 
-  @ApiPropertyOptional({ description: 'JSON string with fees/reservations block' })
+  @ApiPropertyOptional({
+    description: 'JSON string with fees/reservations block',
+  })
   @IsOptional()
   @IsString()
   feesAndReservationsJson?: string;
@@ -69,7 +71,9 @@ export class UpdatePromotionDto {
   @IsString()
   publicDescription?: string;
 
-  @ApiPropertyOptional({ description: 'Texto plano con el bloque completo de viviendas disponibles' })
+  @ApiPropertyOptional({
+    description: 'Texto plano con el bloque completo de viviendas disponibles',
+  })
   @IsOptional()
   @IsString()
   availableUnitsText?: string;

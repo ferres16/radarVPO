@@ -88,6 +88,12 @@ export default function AdminPage() {
           <Link href="/admin/courses" className="inline-flex rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-card transition hover:bg-[var(--bg-app)]">
             Administrar cursos
           </Link>
+          <Link href="/admin/services" className="inline-flex rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-card transition hover:bg-[var(--bg-app)]">
+            Administrar servicios
+          </Link>
+          <Link href="/admin/access" className="inline-flex rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-card transition hover:bg-[var(--bg-app)]">
+            Compras y activaciones
+          </Link>
           <Link href="/admin/news" className="inline-flex rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-card transition hover:bg-[var(--bg-app)]">
             Administrar noticias
           </Link>

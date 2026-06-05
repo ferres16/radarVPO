@@ -114,7 +114,6 @@ export default function AccountPage() {
 
   const hasPro = me.plan === 'pro';
   const hasTracking = me.plan === 'pro';
-  const hasProAlerts = hasPro;
   const stripeCheckoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || '/register';
   const whatsappContactUrl =
     process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
@@ -206,6 +205,9 @@ export default function AccountPage() {
                 Activar seguimiento
               </Link>
             )}
+            {profileMessage ? (
+              <p className="w-full text-xs font-semibold text-[var(--green-700)]">{profileMessage}</p>
+            ) : null}
             <p className="w-full text-xs text-[var(--ink-soft)]">Ideal si necesitas un plan personalizado para tu caso.</p>
           </div>
         </div>

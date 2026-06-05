@@ -1,6 +1,7 @@
 import {
   BackofficeNewsItem,
   BackofficeOverview,
+  BackofficeAccessDetail,
   BackofficeUser,
   Course,
   CourseAccessRule,
@@ -12,6 +13,8 @@ import {
   Promotion,
   PromotionDetail,
   PromotionUnit,
+  Service,
+  UserAccessSummary,
   UserProfile,
 } from '@/types';
 import {
@@ -20,6 +23,67 @@ import {
 } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+
+type CourseMutationPayload = Partial<
+  Pick<
+    Course,
+    | 'title'
+    | 'slug'
+    | 'shortDescription'
+    | 'longDescription'
+    | 'coverImage'
+    | 'price'
+    | 'currency'
+    | 'stripePaymentLink'
+    | 'status'
+    | 'accessType'
+    | 'order'
+  >
+>;
+
+type ServiceMutationPayload = Partial<
+  Pick<Service, 'key' | 'name' | 'description' | 'price' | 'currency' | 'status' | 'serviceType' | 'stripePaymentLink'>
+>;
+
+function queryString(params: Record<string, string | number | undefined>) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== '') {
+      query.set(key, String(value));
+    }
+  });
+  const rendered = query.toString();
+  return rendered ? `?${rendered}` : '';
+}
+
+function nullableText(value: unknown) {
+  if (value === undefined) return undefined;
+  if (value === null) return null;
+  if (typeof value === 'string' && value.trim() === '') return null;
+  return value;
+}
+
+function normalizeCoursePayload(payload: CourseMutationPayload) {
+  return {
+    ...payload,
+    shortDescription: nullableText(payload.shortDescription),
+    longDescription: nullableText(payload.longDescription),
+    coverImage: nullableText(payload.coverImage),
+    price: nullableText(payload.price),
+    currency: nullableText(payload.currency),
+    stripePaymentLink: nullableText(payload.stripePaymentLink),
+  };
+}
+
+function normalizeServicePayload(payload: ServiceMutationPayload) {
+  return {
+    ...payload,
+    description: nullableText(payload.description),
+    price: nullableText(payload.price),
+    currency: nullableText(payload.currency),
+    stripePaymentLink: nullableText(payload.stripePaymentLink),
+  };
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE_URL}${path}`, {
@@ -73,11 +137,12 @@ export const api = {
   getNews: () => request<NewsItem[]>('/news'),
   getNewsById: (id: string) => request<NewsItem & { rawText?: string }>(`/news/${id}`),
   getMe: () => request<UserProfile>('/users/me'),
+  getMyAccess: () => request<UserAccessSummary>('/users/access'),
   getFavorites: () => request<Array<{ id: string; promotion: Promotion }>>('/promotions/user/favorites'),
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
   getBackofficeJobs: () => request<JobRun[]>('/backoffice/jobs'),
   getBackofficeFailures: () => request<DeliveryFailure[]>('/backoffice/failures'),
-  getBackofficeUsers: () => request<BackofficeUser[]>('/backoffice/users'),
+  getBackofficeUsers: (q?: string) => request<BackofficeUser[]>(`/backoffice/users${queryString({ q })}`),
   updateBackofficeUser: (
     id: string,
     payload: Partial<Pick<BackofficeUser, 'fullName' | 'role' | 'plan'>>,
@@ -180,6 +245,7 @@ export const api = {
     return requestForm(`/backoffice/promotions/${id}/documents/upload`, form);
   },
   listCourses: () => request<Course[]>('/courses'),
+  listServices: () => request<Service[]>('/services'),
   listCoursesForUser: () => request<Array<Course & { access: { canAccess: boolean; reason: string } }>>('/courses/access'),
   getCourse: (slug: string) => request<Course>(`/courses/${slug}`),
   getCourseForUser: (slug: string) => request<Course & { access: { canAccess: boolean; reason: string } }>(`/courses/${slug}/access`),
@@ -201,31 +267,52 @@ export const api = {
     }),
   getBackofficeCourses: () => request<Course[]>('/backoffice/courses'),
   createBackofficeCourse: (
-    payload: Pick<
-      Course,
-      'title' | 'slug' | 'shortDescription' | 'longDescription' | 'coverImage' | 'status' | 'accessType' | 'order'
-    >,
+    payload: CourseMutationPayload,
   ) =>
     request<Course>('/backoffice/courses', {
       method: 'POST',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(normalizeCoursePayload(payload)),
     }),
   updateBackofficeCourse: (
     id: string,
-    payload: Partial<
-      Pick<
-        Course,
-        'title' | 'slug' | 'shortDescription' | 'longDescription' | 'coverImage' | 'status' | 'accessType' | 'order'
-      >
-    >,
+    payload: CourseMutationPayload,
   ) =>
     request<Course>(`/backoffice/courses/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(payload),
+      body: JSON.stringify(normalizeCoursePayload(payload)),
     }),
   deleteBackofficeCourse: (id: string) =>
     request<{ deleted: boolean }>(`/backoffice/courses/${id}`, {
       method: 'DELETE',
+    }),
+  getBackofficeServices: (q?: string) => request<Service[]>(`/backoffice/services${queryString({ q })}`),
+  createBackofficeService: (payload: ServiceMutationPayload) =>
+    request<Service>('/backoffice/services', {
+      method: 'POST',
+      body: JSON.stringify(normalizeServicePayload(payload)),
+    }),
+  updateBackofficeService: (id: string, payload: ServiceMutationPayload) =>
+    request<Service>(`/backoffice/services/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(normalizeServicePayload(payload)),
+    }),
+  deleteBackofficeService: (id: string) =>
+    request<{ deleted: boolean }>(`/backoffice/services/${id}`, {
+      method: 'DELETE',
+    }),
+  getBackofficeAccessUsers: (q?: string) =>
+    request<BackofficeUser[]>(`/backoffice/access/users${queryString({ q })}`),
+  getBackofficeAccessUser: (id: string) =>
+    request<BackofficeAccessDetail>(`/backoffice/access/users/${id}`),
+  updateBackofficeCourseAccess: (userId: string, courseId: string, payload: { isActive?: boolean; notes?: string }) =>
+    request<{ id: string; isActive: boolean }>(`/backoffice/access/users/${userId}/courses/${courseId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  updateBackofficeServiceAccess: (userId: string, serviceId: string, payload: { isActive?: boolean; notes?: string }) =>
+    request<{ id: string; isActive: boolean }>(`/backoffice/access/users/${userId}/services/${serviceId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     }),
   createBackofficeCourseModule: (
     courseId: string,

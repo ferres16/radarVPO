@@ -16,7 +16,8 @@ describe('Health (e2e)', () => {
   });
 
   it('/healthz (GET)', async () => {
-    await request(app.getHttpServer()).get('/healthz').expect(200);
+    const server = app.getHttpServer() as Parameters<typeof request>[0];
+    await request(server).get('/healthz').expect(200);
   });
 
   afterEach(async () => {

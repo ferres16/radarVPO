@@ -27,7 +27,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         ? exception.getResponse()
         : { message: 'Internal server error' };
 
-    const logPayload: any = {
+    const logPayload: Record<string, unknown> = {
       path: request.url,
       method: request.method,
       status,
@@ -43,7 +43,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
       }
     } else {
       // In production avoid logging exception messages or stacks (may contain sensitive data)
-      logPayload.error = exception instanceof Error ? exception.name : 'InternalException';
+      logPayload.error =
+        exception instanceof Error ? exception.name : 'InternalException';
       logPayload.message = 'redacted';
     }
 

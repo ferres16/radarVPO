@@ -9,10 +9,11 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, new ExpressAdapter());
+  const isProduction = process.env.NODE_ENV === 'production';
   const configuredOrigins = [
     process.env.CORS_ORIGIN,
     process.env.FRONTEND_URL,
-    'http://localhost:3001',
+    isProduction ? undefined : 'http://localhost:3001',
   ]
     .flatMap((value) => (value ? value.split(',') : []))
     .map((value) => value.trim())

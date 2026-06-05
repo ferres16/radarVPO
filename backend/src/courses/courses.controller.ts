@@ -61,6 +61,10 @@ export class CoursesController {
     @Param('lessonSlug') lessonSlug: string,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.coursesService.markLessonCompletedBySlug(user.sub, slug, lessonSlug);
+    return this.coursesService.markLessonCompletedBySlug(
+      user.sub,
+      slug,
+      lessonSlug,
+    );
   }
 }
