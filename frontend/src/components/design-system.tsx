@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { Reveal } from './motion-primitives';
 
 type Tone = 'green' | 'red' | 'cyan' | 'ink';
@@ -111,8 +111,12 @@ export function SectionHeader({
   );
 }
 
-export function SurfaceCard({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <article className={`ds-card ${className}`}>{children}</article>;
+export function SurfaceCard({
+  children,
+  className = '',
+  ...props
+}: { children: ReactNode; className?: string } & HTMLAttributes<HTMLElement>) {
+  return <article className={`ds-card ${className}`} {...props}>{children}</article>;
 }
 
 export function MetricCard({ label, value, detail }: { label: string; value: ReactNode; detail?: string }) {

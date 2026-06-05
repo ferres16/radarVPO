@@ -8,12 +8,12 @@ import { api } from '@/lib/api';
 import type { UserProfile } from '@/types';
 
 const primaryLinks = [
+  { href: '/', label: 'Inicio' },
+  { href: '/promotions', label: 'Promociones' },
   { href: '/services', label: 'Servicios' },
   { href: '/cursos', label: 'Cursos' },
-  { href: '/promotions', label: 'Promociones' },
-  { href: '/alerts', label: 'Alertas' },
-  { href: '/news?topic=ayudas', label: 'Ayudas' },
-  { href: '/services#contacto', label: 'Contacto' },
+  { href: '/alerts', label: 'Avisos' },
+  { href: '/news', label: 'Noticias' },
 ];
 
 export function TopNav() {
@@ -140,7 +140,7 @@ export function TopNav() {
             id="global-search"
             value={globalQuery}
             onChange={(event) => setGlobalQuery(event.target.value)}
-            placeholder="Buscar vivienda..."
+            placeholder="Buscar promociones..."
             className="w-full rounded-full border border-[var(--stroke)] bg-white/86 px-4 py-2 text-sm text-[var(--ink)] shadow-sm outline-none transition focus:border-[var(--green-700)] focus:ring-2 focus:ring-[rgba(22,112,85,0.12)]"
           />
         </form>
@@ -172,7 +172,7 @@ export function TopNav() {
                     onClick={() => setMenuOpen(false)}
                     role="menuitem"
                   >
-                    Dashboard de usuario
+                  Perfil
                   </Link>
                   {me.role === 'admin' ? (
                     <Link
@@ -232,7 +232,7 @@ export function TopNav() {
                   id="mobile-global-search"
                   value={globalQuery}
                   onChange={(event) => setGlobalQuery(event.target.value)}
-                  placeholder="Buscar vivienda, municipio..."
+                  placeholder="Buscar promociones, municipio..."
                   className="w-full rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm font-semibold text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--green-700)]"
                 />
               </form>
@@ -259,7 +259,7 @@ export function TopNav() {
                   className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
                   onClick={() => setMobileOpen(false)}
                 >
-                  Dashboard de usuario
+                  Perfil
                 </Link>
               </li>
             ) : null}

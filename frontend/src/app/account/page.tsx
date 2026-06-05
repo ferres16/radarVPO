@@ -137,7 +137,7 @@ export default function AccountPage() {
     { label: 'Solicitudes', value: '0', detail: 'Preparado para conectar con expediente cuando exista endpoint.' },
     { label: 'Favoritos', value: String(favorites.length), detail: 'Viviendas guardadas para seguimiento rápido.' },
     { label: 'Documentación', value: hasTracking ? 'En revisión' : 'Pendiente', detail: 'Bloque reservado para carpeta ciudadana.' },
-    { label: 'Notificaciones', value: hasTracking ? 'Activas' : 'Básicas', detail: 'Alertas por municipio, régimen y fechas clave.' },
+    { label: 'Notificaciones', value: hasTracking ? 'Activas' : 'Básicas', detail: 'Avisos por municipio, régimen y fechas clave.' },
   ];
 
   return (
@@ -280,7 +280,7 @@ export default function AccountPage() {
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--accent-red)]">Roles y permisos</p>
           <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Arquitectura preparada para escalar</h2>
           <div className="mt-4 space-y-3 text-sm text-[var(--ink-soft)]">
-            <p><strong className="text-[var(--ink)]">Ciudadano:</strong> favoritos, alertas, documentación y seguimiento propio.</p>
+            <p><strong className="text-[var(--ink)]">Ciudadano:</strong> favoritos, avisos, documentación y seguimiento propio.</p>
             <p><strong className="text-[var(--ink)]">Gestor:</strong> revisión de expedientes y soporte operativo.</p>
             <p><strong className="text-[var(--ink)]">Administrador:</strong> backoffice completo, accesos y contenido.</p>
           </div>

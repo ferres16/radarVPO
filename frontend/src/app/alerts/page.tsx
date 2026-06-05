@@ -17,18 +17,17 @@ export default async function AlertsPage() {
     .filter((entry): entry is { item: (typeof alerts)[number]; daysRemaining: number } => shouldShowAlert(entry.daysRemaining));
 
   const alertTypes = [
-    { label: 'Informativas', value: alerts.length },
-    { label: 'Nuevas promociones', value: activeAlerts.length },
-    { label: 'Apertura de solicitudes', value: activeAlerts.filter(({ daysRemaining }) => daysRemaining <= 3).length },
-    { label: 'Recordatorios', value: activeAlerts.filter(({ daysRemaining }) => daysRemaining > 3).length },
+    { label: 'Pendientes de publicación', value: activeAlerts.length },
+    { label: 'Próximas aperturas', value: activeAlerts.filter(({ daysRemaining }) => daysRemaining <= 3).length },
+    { label: 'Fechas importantes', value: activeAlerts.filter(({ daysRemaining }) => daysRemaining > 3).length },
   ];
 
   return (
     <main className="shell space-y-6 pb-10">
       <PageHero
-        eyebrow="Centro de notificaciones"
-        title="Alertas claras para no perder una oportunidad"
-        description="Historial visual de avisos, nuevas promociones, aperturas de solicitudes y recordatorios relevantes."
+        eyebrow="Avisos"
+        title="Lo que debes vigilar en los próximos días"
+        description="Promociones pendientes de publicación, próximas aperturas y fechas importantes. Nada más."
         actions={
           <>
             <ButtonLink href="/promotions">Buscar promociones</ButtonLink>
@@ -36,7 +35,7 @@ export default async function AlertsPage() {
           </>
         }
       >
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
           {alertTypes.map((type) => (
             <SurfaceCard key={type.label} className="p-4">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">{type.label}</p>
@@ -47,8 +46,8 @@ export default async function AlertsPage() {
       </PageHero>
 
       <section className="rounded-[1.5rem] border border-[var(--stroke)] bg-white/86 p-3 shadow-sm">
-        <div className="flex gap-2 overflow-x-auto" role="list" aria-label="Filtros visuales de alertas">
-          {['Todas', 'No leídas', 'Promociones', 'Solicitudes', 'Recordatorios', 'Historial'].map((filter, index) => (
+        <div className="flex gap-2 overflow-x-auto" role="list" aria-label="Filtros visuales de avisos">
+          {['Todos', 'Pendientes', 'Aperturas', 'Fechas importantes'].map((filter, index) => (
             <span
               key={filter}
               role="listitem"
@@ -61,29 +60,29 @@ export default async function AlertsPage() {
       </section>
 
       {activeAlerts.length === 0 ? (
-        <EmptyState title="Sin alertas activas" description="Ahora mismo no hay alertas dentro de la ventana de visibilidad." />
+        <EmptyState title="Sin avisos activos" description="Ahora mismo no hay avisos dentro de la ventana de visibilidad." />
       ) : (
         <section className="space-y-4">
           <SectionHeader
-            eyebrow="Alertas filtrables"
+            eyebrow="Timeline"
             title="Avisos activos"
-            description="El estado leído/no leído queda preparado visualmente para conectarlo a persistencia de usuario."
+            description="Escanea en 5 segundos qué promoción o fecha debes vigilar."
           />
           <Stagger className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {activeAlerts.map(({ item, daysRemaining }, index) => (
+            {activeAlerts.map(({ item, daysRemaining }) => (
               <StaggerItem key={item.id}>
                 <MotionCard className="ds-card h-full p-5">
                   <div className="flex items-start justify-between gap-3">
                     <AlertCountdownBadge daysRemaining={daysRemaining} size="lg" />
-                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${index < 2 ? 'bg-[rgba(167,28,32,0.08)] text-[var(--accent-red)]' : 'bg-[var(--bg-app)] text-[var(--ink-soft)]'}`}>
-                      {index < 2 ? 'No leída' : 'Leída'}
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${daysRemaining <= 3 ? 'bg-[rgba(167,28,32,0.08)] text-[var(--accent-red)]' : 'bg-[var(--bg-app)] text-[var(--ink-soft)]'}`}>
+                      {daysRemaining <= 3 ? 'Apertura próxima' : 'Fecha importante'}
                     </span>
                   </div>
                   <p className="mt-4 text-base font-bold leading-6 text-[var(--ink)]">{item.title}</p>
                   <p className="mt-2 text-sm text-[var(--ink-soft)]">{item.municipality || 'Catalunya'}</p>
                   <div className="mt-4 flex flex-wrap gap-2 text-xs font-semibold text-[var(--ink-soft)]">
-                    <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1">Nueva promoción</span>
-                    <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1">Recordatorio</span>
+                    <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1">Pendiente de publicación</span>
+                    <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1">Vigilar fecha</span>
                   </div>
                 </MotionCard>
               </StaggerItem>

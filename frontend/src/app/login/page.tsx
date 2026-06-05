@@ -32,7 +32,7 @@ export default function LoginPage() {
       <section className="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-white shadow-card md:grid-cols-[0.9fr_1.1fr] animate-fade-up">
         <aside className="bg-[linear-gradient(145deg,var(--green-900),var(--green-700))] p-6 text-white md:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/70">Área privada</p>
-          <h1 className="display-type mt-4 text-3xl font-black leading-tight md:text-4xl">Gestiona tus viviendas guardadas y alertas</h1>
+          <h1 className="display-type mt-4 text-3xl font-black leading-tight md:text-4xl">Gestiona tus viviendas guardadas y avisos</h1>
           <p className="mt-4 text-sm leading-6 text-white/78">
             Accede a tu perfil para revisar estado, documentación, favoritos y próximas oportunidades.
           </p>
@@ -44,7 +44,7 @@ export default function LoginPage() {
 
         <div className="p-6 md:p-8">
         <h2 className="text-2xl font-bold text-[var(--ink)]">Iniciar sesión</h2>
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">Accede a tu cuenta, alertas y servicios.</p>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">Accede a tu cuenta, avisos y servicios.</p>
 
         <form className="mt-5 space-y-4" onSubmit={onSubmit}>
           <div>

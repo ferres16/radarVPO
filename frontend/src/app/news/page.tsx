@@ -1,30 +1,76 @@
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
 import { NewsCard } from '@/components/news-card';
+import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { Stagger, StaggerItem } from '@/components/motion-primitives';
 
-export default async function NewsPage() {
+export default async function NewsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = (await searchParams) || {};
+  const q = typeof sp.q === 'string' ? sp.q : '';
   const news = await api.getNews().catch(() => []);
+  const filtered = news.filter((item) => {
+    if (!q) return true;
+    return `${item.title} ${item.summary || ''} ${item.topic || ''} ${item.category || ''}`.toLowerCase().includes(q.toLowerCase());
+  });
+  const featured = filtered[0];
+  const recent = filtered.slice(featured ? 1 : 0);
 
   return (
     <main className="shell space-y-6 pb-10">
-      <header className="rounded-[1.75rem] border border-[var(--stroke)] bg-[linear-gradient(135deg,rgba(78,143,58,0.10),rgba(255,255,255,0.96))] p-6 shadow-card animate-fade-up">
-        <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Noticias</p>
-        <h1 className="mt-2 text-3xl font-black tracking-tight text-[var(--ink)] md:text-4xl">
-          Actualidad de vivienda en Catalunya
-        </h1>
-        <p className="mt-3 max-w-2xl text-base text-[var(--ink-soft)]">
-          Noticias y contexto útil para entender cambios normativos, convocatorias y mercado de vivienda pública.
-        </p>
-      </header>
+      <PageHero
+        eyebrow="Noticias"
+        title="Actualidad útil para tomar mejores decisiones"
+        description="Una página editorial para entender cambios normativos, convocatorias, ayudas y oportunidades de vivienda pública sin ruido burocrático."
+        actions={<ButtonLink href="/promotions">Ver promociones</ButtonLink>}
+      />
 
-      {news.length === 0 ? (
+      <SurfaceCard className="p-4">
+        <form action="/news" method="get" role="search" aria-label="Buscar noticias">
+          <label className="text-sm font-semibold text-[var(--ink)]">
+            Buscar noticias
+            <input name="q" defaultValue={q} className="ds-control mt-2 w-full" placeholder="Ayudas, alquiler, requisitos..." />
+          </label>
+        </form>
+      </SurfaceCard>
+
+      {filtered.length === 0 ? (
         <EmptyState title="Sin noticias publicadas" description="Aún no hay noticias disponibles." />
       ) : (
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {news.map((item) => (
-            <NewsCard key={item.id} item={item} />
-          ))}
-        </section>
+        <>
+          {featured ? (
+            <SurfaceCard className="overflow-hidden">
+              <div className="grid lg:grid-cols-[0.9fr_1.1fr]">
+                <div className="min-h-56 bg-[linear-gradient(135deg,rgba(22,112,85,0.18),rgba(54,189,248,0.16),rgba(244,197,66,0.18))] p-5">
+                  <span className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">Destacada</span>
+                </div>
+                <div className="p-5 md:p-6">
+                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">{featured.category || featured.topic || featured.relevance}</p>
+                  <h2 className="display-type mt-3 text-3xl font-black text-[var(--ink)]">{featured.title}</h2>
+                  <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{featured.summary || 'Sin resumen disponible.'}</p>
+                  <p className="mt-3 text-xs font-semibold text-[var(--ink-soft)]">{featured.publishedAt.slice(0, 10)} · 3 min lectura</p>
+                  <div className="mt-5">
+                    <ButtonLink href={`/news/${featured.id}`}>Leer noticia</ButtonLink>
+                  </div>
+                </div>
+              </div>
+            </SurfaceCard>
+          ) : null}
+
+          <section className="space-y-4">
+            <SectionHeader eyebrow="Recientes" title="Últimas publicaciones" />
+            <Stagger className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {recent.map((item) => (
+                <StaggerItem key={item.id}>
+                  <NewsCard item={item} />
+                </StaggerItem>
+              ))}
+            </Stagger>
+          </section>
+        </>
       )}
     </main>
   );

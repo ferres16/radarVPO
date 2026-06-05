@@ -45,7 +45,7 @@ export default function RegisterPage() {
       <section className="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-white shadow-card md:grid-cols-[1.05fr_0.95fr] animate-fade-up">
         <div className="p-6 md:p-8">
         <h1 className="text-2xl font-bold text-[var(--ink)]">Crear cuenta</h1>
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">Guarda filtros, viviendas favoritas y recibe alertas personalizadas.</p>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">Guarda filtros, viviendas favoritas y recibe avisos personalizados.</p>
 
         <form className="mt-5 space-y-4" onSubmit={onSubmit}>
           <div>
@@ -86,7 +86,7 @@ export default function RegisterPage() {
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Perfil ciudadano</p>
           <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)]">Un espacio para seguir tus oportunidades</h2>
           <div className="mt-6 space-y-3">
-            {['Favoritos y viviendas guardadas', 'Alertas por municipio y régimen', 'Historial y documentación preparada'].map((item) => (
+            {['Favoritos y viviendas guardadas', 'Avisos por municipio y régimen', 'Historial y documentación preparada'].map((item) => (
               <div key={item} className="rounded-2xl border border-[var(--stroke)] bg-white/82 p-4 text-sm font-semibold text-[var(--ink)] shadow-sm">
                 {item}
               </div>

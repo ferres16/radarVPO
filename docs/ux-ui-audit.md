@@ -59,3 +59,17 @@ Se amplió la modernización con una base más consistente para toda la platafor
 | Cursos | El editor era funcional pero no comunicaba una arquitectura de bloques. | Dificulta evolución a CMS avanzado. | Módulos visuales de editor por bloques. |
 | Promociones | La edición y el detalle público no reflejaban galería/multimedia/estructura inmobiliaria. | Menor confianza y menor escalabilidad. | Hero inmobiliario, contadores multimedia y módulos CMS. |
 | Mobile-first | Algunos layouts eran desktop-first y dependían de grids anchos. | Peor lectura en móvil. | Componentes y secciones parten de una columna y escalan a grid. |
+
+## Fase 3: Revisión crítica de conversión
+
+Se reorientó la experiencia con mentalidad comercial:
+
+- Promociones ahora carga de forma segura las últimas 10 promociones publicadas, con filtros opcionales y estado vacío con CTAs a Avisos y Servicios.
+- Home se simplificó drásticamente: hero comercial, máximo 4 promociones destacadas, Servicios Premium, Cursos como ventaja práctica y máximo 3 avisos.
+- Se eliminaron estadísticas irrelevantes del hero porque transmitían dashboard interno y no empujaban a una acción.
+- Servicios se transformó en landing comercial con beneficios, casos prácticos, qué incluye, testimonios, FAQ y sección integrada "Hablemos".
+- Alertas se renombró visualmente a Avisos y se redujo a pendientes de publicación, próximas aperturas y fechas importantes.
+- Noticias pasa a ser una página editorial con destacado, buscador y recientes.
+- Navegación pública queda enfocada a negocio: Inicio, Promociones, Servicios, Cursos, Avisos, Noticias y Perfil.
+
+Decisión de producto: toda pantalla pública debe empujar a una de cuatro acciones: ver promociones, contratar servicios, comprar cursos o registrarse.

@@ -2,8 +2,9 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { EmptyState } from '@/components/empty-state';
 import { SkeletonCard } from '@/components/skeleton-card';
+import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { Stagger, StaggerItem } from '@/components/motion-primitives';
 import { api } from '@/lib/api';
 import type { Service } from '@/types';
 
@@ -22,11 +23,11 @@ const fallbackServices = [
     accent: 'from-cyan-50 to-white',
   },
   {
-    eyebrow: '02 · Alertas Pro',
-    title: 'Alertas proactivas en WhatsApp',
+    eyebrow: '02 · Avisos Pro',
+    title: 'Avisos proactivos en WhatsApp',
     copy:
       'Nuevas promociones, cambios en bases y recordatorios criticos, sin que tengas que estar revisando.',
-    cta: 'Activar alertas Pro',
+    cta: 'Activar avisos Pro',
     href: whatsappContactUrl,
     accent: 'from-emerald-50 to-white',
   },
@@ -34,11 +35,39 @@ const fallbackServices = [
     eyebrow: '03 · Asesoria personalizada',
     title: 'Asesoria personalizada (TODO incluido)',
     copy:
-      'Incluye cursos + alertas Pro + acompañamiento 1:1 para preparar cada convocatoria sin perder pasos.',
+      'Incluye cursos + avisos Pro + acompañamiento 1:1 para preparar cada convocatoria sin perder pasos.',
     cta: 'Quiero asesoria',
     href: whatsappContactUrl,
     accent: 'from-white to-cyan-50',
   },
+];
+
+const benefits = [
+  {
+    title: 'Vigilamos oportunidades por ti',
+    copy: 'Reducimos el tiempo que pierdes revisando portales, boletines y páginas municipales.',
+  },
+  {
+    title: 'Te ayudamos a decidir rápido',
+    copy: 'Traducimos requisitos, plazos y documentación a una ruta clara de actuación.',
+  },
+  {
+    title: 'Evitas errores caros',
+    copy: 'Una solicitud incompleta o fuera de plazo puede dejarte fuera. Nuestro foco es prevenirlo.',
+  },
+];
+
+const useCases = [
+  'No sabes si cumples requisitos económicos o familiares.',
+  'Quieres enterarte de nuevas promociones antes de que se saturen.',
+  'Necesitas preparar documentación antes de abrirse una solicitud.',
+  'Quieres aprender el proceso sin pagar una asesoría completa.',
+];
+
+const faqs = [
+  ['¿Esto garantiza conseguir una vivienda?', 'No. Te ayudamos a detectar oportunidades, entender requisitos y presentar mejor tu candidatura.'],
+  ['¿Puedo empezar solo con cursos?', 'Sí. Los cursos son la vía más ligera para ganar criterio antes de contratar seguimiento.'],
+  ['¿El contacto está integrado aquí?', 'Sí. WhatsApp, email, formulario y reserva de llamada viven en esta página.'],
 ];
 
 export default function ServicesPage() {
@@ -68,36 +97,54 @@ export default function ServicesPage() {
   }, []);
 
   return (
-    <main className="shell pb-16">
-      <section className="relative overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-[linear-gradient(135deg,#f4fbff_0%,#eef7f1_55%,#ffffff_100%)] p-6 shadow-card md:p-8">
-        <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[rgba(56,189,248,0.12)] blur-3xl animate-float-slow" />
-        <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[rgba(47,107,36,0.10)] blur-3xl animate-float-slow-delay" />
-        <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[var(--green-700)]">Servicios</p>
-        <h1 className="mt-3 max-w-2xl text-4xl font-black leading-tight text-[var(--ink)] md:text-6xl display-type">
-          Acelera tu acceso a VPO con un plan claro y accionable.
-        </h1>
-        <p className="mt-4 max-w-2xl text-base text-[var(--ink-soft)]">
-          Elige cursos, activa alertas Pro o contrata asesoria personalizada. En asesoria, todo esta incluido.
-        </p>
-        <div className="mt-5 flex flex-wrap gap-2">
-          <span className="rounded-full bg-[var(--ink)] px-3 py-1 text-xs font-semibold text-white">Acceso total en asesoria</span>
-          <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">WhatsApp Pro</span>
-          <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">Cursos vivos</span>
-        </div>
-      </section>
+    <main className="shell space-y-8 pb-16">
+      <PageHero
+        eyebrow="Servicios Premium"
+        title="Acompañamiento para llegar antes, decidir mejor y cometer menos errores"
+        description="Convertimos promociones, avisos y requisitos en una estrategia clara para acceder a vivienda protegida en Cataluña."
+        actions={
+          <>
+            <ButtonLink href="#hablemos">Hablar con Radar VPO</ButtonLink>
+            <ButtonLink href="/cursos" variant="secondary">Ver cursos</ButtonLink>
+          </>
+        }
+      >
+        <SurfaceCard className="p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Qué hacemos</p>
+          <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
+            Vigilamos oportunidades, interpretamos requisitos, priorizamos fechas y te ayudamos a preparar el proceso antes de que sea tarde.
+          </p>
+        </SurfaceCard>
+      </PageHero>
 
       {error ? (
         <div className="mt-4 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{error}</div>
       ) : null}
 
+      <section className="space-y-4">
+        <SectionHeader eyebrow="Beneficios" title="Por qué merece la pena pagar" />
+        <Stagger className="grid gap-4 md:grid-cols-3">
+          {benefits.map((benefit) => (
+            <StaggerItem key={benefit.title}>
+              <SurfaceCard className="h-full p-5">
+                <h2 className="display-type text-2xl font-black text-[var(--ink)]">{benefit.title}</h2>
+                <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{benefit.copy}</p>
+              </SurfaceCard>
+            </StaggerItem>
+          ))}
+        </Stagger>
+      </section>
+
       {loading ? (
-        <section className="mt-6 grid gap-4 lg:grid-cols-3">
+        <section className="grid gap-4 lg:grid-cols-3">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
         </section>
       ) : services.length > 0 ? (
-        <section className="mt-6 grid gap-4 lg:grid-cols-3">
+        <section className="space-y-4">
+          <SectionHeader eyebrow="Qué incluye" title="Elige el nivel de ayuda que necesitas" description="Cursos para aprender, avisos para vigilar y asesoría para ir acompañado." />
+        <section className="grid gap-4 lg:grid-cols-3">
           {services.map((service) => {
             const href = service.stripePaymentLink || whatsappContactUrl;
             const external = /^https?:\/\//.test(href);
@@ -124,7 +171,7 @@ export default function ServicesPage() {
                 {external ? (
                   <a
                     href={href}
-                    className="mt-5 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-300 group-hover:bg-[var(--green-700)]"
+                    className="mt-5 inline-flex rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-300 group-hover:bg-[var(--green-900)]"
                     rel="noopener noreferrer"
                   >
                     Activar servicio
@@ -132,7 +179,7 @@ export default function ServicesPage() {
                 ) : (
                   <Link
                     href={href}
-                    className="mt-5 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-300 group-hover:bg-[var(--green-700)]"
+                    className="mt-5 inline-flex rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-300 group-hover:bg-[var(--green-900)]"
                   >
                     Activar servicio
                   </Link>
@@ -141,13 +188,14 @@ export default function ServicesPage() {
             );
           })}
         </section>
-      ) : (
-        <section className="mt-6">
-          <EmptyState title="Servicios en preparacion" description="El equipo aun no ha publicado servicios activos desde admin." />
         </section>
+      ) : (
+        <SurfaceCard className="p-6 text-center text-sm text-[var(--ink-soft)]">Servicios en preparación. Mientras tanto puedes escribirnos desde la sección Hablemos.</SurfaceCard>
       )}
 
-      <section className="mt-6 grid gap-4 lg:grid-cols-3">
+      <section className="space-y-4">
+        <SectionHeader eyebrow="Planes recomendados" title="Tres formas de avanzar" />
+      <section className="grid gap-4 lg:grid-cols-3">
         {fallbackServices.map((service) => (
           <article
             key={service.title}
@@ -166,36 +214,55 @@ export default function ServicesPage() {
           </article>
         ))}
       </section>
+      </section>
 
-      <section className="mt-6 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Metodo Radar VPO</p>
-          <h2 className="mt-2 text-2xl font-black text-[var(--ink)] display-type">
-            Claridad, velocidad y acompañamiento real.
-          </h2>
-          <p className="mt-3 max-w-3xl text-sm leading-6 text-[var(--ink-soft)]">
-            La asesoria personalizada incluye TODO: cursos activos, alertas Pro y un plan 1:1 para revisar requisitos,
-            preparar documentacion y mantener el seguimiento hasta el cierre.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-full border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-1 text-xs font-semibold text-[var(--ink)]">Cursos + alertas Pro</span>
-            <span className="rounded-full border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-1 text-xs font-semibold text-[var(--ink)]">Asesoria 1:1</span>
-            <span className="rounded-full border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-1 text-xs font-semibold text-[var(--ink)]">Checklist de requisitos</span>
+      <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <SurfaceCard className="p-5">
+          <SectionHeader eyebrow="Casos prácticos" title="Cuándo te ayudamos" />
+          <ul className="mt-4 space-y-3 text-sm leading-6 text-[var(--ink-soft)]">
+            {useCases.map((item) => <li key={item} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">{item}</li>)}
+          </ul>
+        </SurfaceCard>
+        <SurfaceCard className="p-5">
+          <SectionHeader eyebrow="Testimonios" title="Lo que buscamos conseguir" />
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {['Me enteré de una promoción que no tenía controlada.', 'Llegué a la solicitud con documentación preparada.'].map((quote) => (
+              <blockquote key={quote} className="rounded-2xl border border-[var(--stroke)] bg-white p-4 text-sm font-semibold leading-6 text-[var(--ink)]">
+                “{quote}”
+                <footer className="mt-3 text-xs font-normal text-[var(--ink-soft)]">Usuario Radar VPO</footer>
+              </blockquote>
+            ))}
           </div>
-        </article>
-        <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-[var(--bg-app)] p-5 shadow-card">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Ruta rapida</p>
-          <ol className="mt-3 space-y-2 text-sm text-[var(--ink-soft)]">
-            <li>1. Elige el servicio que necesitas hoy.</li>
-            <li>2. Recibe guia clara y respuestas directas.</li>
-            <li>3. Te acompañamos hasta la resolucion.</li>
-          </ol>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link href={whatsappContactUrl} className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]">
-              Hablar por WhatsApp
-            </Link>
+        </SurfaceCard>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+        <SurfaceCard className="p-5">
+          <SectionHeader eyebrow="FAQ" title="Dudas habituales" />
+          <div className="mt-4 space-y-3">
+            {faqs.map(([question, answer]) => (
+              <details key={question} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+                <summary className="cursor-pointer text-sm font-bold text-[var(--ink)]">{question}</summary>
+                <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{answer}</p>
+              </details>
+            ))}
           </div>
-        </article>
+        </SurfaceCard>
+
+        <SurfaceCard id="hablemos" className="p-5">
+          <SectionHeader eyebrow="Hablemos" title="Cuéntanos qué necesitas" description="Contacto integrado: formulario, WhatsApp, email y reserva de llamada." />
+          <form action="mailto:info@radarvpo.com" method="post" encType="text/plain" className="mt-4 space-y-3">
+            <input name="nombre" className="ds-control w-full" placeholder="Nombre" />
+            <input name="email" type="email" className="ds-control w-full" placeholder="Email" />
+            <textarea name="mensaje" className="ds-control min-h-28 w-full" placeholder="Explícanos tu caso" />
+            <button className="w-full rounded-full bg-[var(--green-700)] px-5 py-3 text-sm font-bold text-white transition hover:bg-[var(--green-900)]">Enviar consulta</button>
+          </form>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <ButtonLink href={whatsappContactUrl}>WhatsApp</ButtonLink>
+            <ButtonLink href="mailto:info@radarvpo.com" variant="secondary">Email</ButtonLink>
+            <ButtonLink href={whatsappContactUrl} variant="secondary">Reservar llamada</ButtonLink>
+          </div>
+        </SurfaceCard>
       </section>
     </main>
   );
