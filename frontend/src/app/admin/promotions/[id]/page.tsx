@@ -8,17 +8,15 @@ import { api } from '@/lib/api';
 import { PromotionDetail, PromotionUnit } from '@/types';
 
 const STATUS_OPTIONS: PromotionDetail['status'][] = [
-  'pending_review',
   'published_unreviewed',
   'published_reviewed',
-  'archived',
 ];
 
 const STATUS_LABELS: Record<PromotionDetail['status'], string> = {
-  pending_review: 'Pendiente de revisión',
-  published_unreviewed: 'Publicado sin revisar',
-  published_reviewed: 'Publicado revisado',
-  archived: 'Archivado',
+  pending_review: 'Aviso pendiente',
+  published_unreviewed: 'Publicada sin revisar',
+  published_reviewed: 'Publicada revisada',
+  archived: 'Archivada',
 };
 
 function toJsonString(value: unknown) {

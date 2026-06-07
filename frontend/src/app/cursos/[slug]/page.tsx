@@ -21,29 +21,6 @@ export default function CourseDetailPage() {
   } | null>(null);
   const [authStatus, setAuthStatus] = useState<'loading' | 'authed' | 'guest'>('loading');
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    let active = true;
-
-    (async () => {
-      try {
-        const data = await api.getCourse(slug);
-        if (!active) return;
-        setCourse(data);
-        setError('');
-      } catch (err) {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : 'No se pudo cargar el curso');
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [slug]);
 
   useEffect(() => {
     let active = true;
@@ -55,6 +32,7 @@ export default function CourseDetailPage() {
         setAuthStatus('authed');
         const data = await api.getCourseForUser(slug);
         if (!active) return;
+        setCourse(data);
         setAccess(data.access || null);
         const courseProgress = await api.getCourseProgress(slug);
         if (!active) return;
@@ -65,8 +43,11 @@ export default function CourseDetailPage() {
         });
       } catch {
         if (!active) return;
+        setCourse(null);
         setAccess(null);
         setAuthStatus('guest');
+      } finally {
+        if (active) setLoading(false);
       }
     })();
 
@@ -91,12 +72,30 @@ export default function CourseDetailPage() {
     );
   }
 
-  if (!course || error) {
+  if (!course) {
+    if (authStatus === 'guest') {
+      return (
+        <main className="shell">
+          <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--green-700)]">Acceso privado</p>
+            <h1 className="mt-3 text-2xl font-bold text-[var(--ink)]">Inicia sesión para entrar en este curso</h1>
+            <p className="mt-2 text-sm text-[var(--ink-soft)]">Los cursos solo están disponibles para usuarios registrados.</p>
+            <Link
+              href={`/login?next=${encodeURIComponent(`/cursos/${slug}`)}`}
+              className="mt-4 inline-flex rounded-xl bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white"
+            >
+              Iniciar sesión
+            </Link>
+          </article>
+        </main>
+      );
+    }
+
     return (
       <main className="shell">
         <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
           <h1 className="text-2xl font-bold text-[var(--ink)]">Curso no disponible</h1>
-          <p className="mt-2 text-sm text-[var(--ink-soft)]">{error || 'No encontramos este curso.'}</p>
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">No encontramos este curso.</p>
           <Link
             href="/cursos"
             className="mt-4 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white"

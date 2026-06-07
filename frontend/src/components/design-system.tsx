@@ -39,7 +39,7 @@ export function ButtonLink({
 
   if (/^https?:\/\//.test(href)) {
     return (
-      <a href={href} className={`${base} ${variants[variant]} ${className}`} rel="noopener noreferrer">
+      <a href={href} className={`${base} ${variants[variant]} ${className}`} rel="noopener noreferrer" target="_blank">
         {children}
       </a>
     );

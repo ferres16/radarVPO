@@ -7,6 +7,8 @@ const adminLinks = [
   { href: '/admin', label: 'Dashboard' },
   { href: '/admin/courses', label: 'Cursos CMS' },
   { href: '/admin/promotions', label: 'Promociones' },
+  { href: '/admin/promotions/history', label: 'Histórico promociones' },
+  { href: '/admin/alerts', label: 'Avisos' },
   { href: '/admin/services', label: 'Servicios' },
   { href: '/admin/news', label: 'Noticias' },
   { href: '/admin/users', label: 'Usuarios' },
@@ -21,7 +23,11 @@ export function AdminNav() {
       <p className="px-3 py-2 text-xs font-bold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Backoffice</p>
       <nav className="mt-1 space-y-1" aria-label="Navegación de administración">
         {adminLinks.map((link) => {
-          const active = pathname === link.href || pathname.startsWith(`${link.href}/`);
+          const active =
+            pathname === link.href ||
+            (link.href === '/admin/promotions'
+              ? pathname.startsWith('/admin/promotions/') && !pathname.startsWith('/admin/promotions/history')
+              : pathname.startsWith(`${link.href}/`));
           return (
             <Link
               key={link.href}

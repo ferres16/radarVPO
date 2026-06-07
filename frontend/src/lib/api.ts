@@ -26,6 +26,7 @@ const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.API_URL ||
   'http://localhost:3000/api/v1';
+const AUTH_TOKEN_KEY = 'radar_vpo_access_token';
 
 type CourseMutationPayload = Partial<
   Pick<
@@ -89,11 +90,16 @@ function normalizeServicePayload(payload: ServiceMutationPayload) {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token =
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem(AUTH_TOKEN_KEY)
+      : null;
   const res = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers || {}),
     },
     cache: 'no-store',
@@ -114,6 +120,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return res.json() as Promise<T>;
+}
+
+function persistAccessToken(token?: string) {
+  if (typeof window === 'undefined' || !token) return;
+  window.localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+function clearAccessToken() {
+  if (typeof window === 'undefined') return;
+  window.localStorage.removeItem(AUTH_TOKEN_KEY);
 }
 
 async function requestForm<T>(path: string, body: FormData): Promise<T> {
@@ -183,9 +199,9 @@ export const api = {
     request<{ deleted: boolean }>(`/backoffice/news/${id}`, {
       method: 'DELETE',
     }),
-  getBackofficePromotions: (status?: string, q?: string) =>
+  getBackofficePromotions: (status?: string, q?: string, limit?: number, offset?: number) =>
     request<PromotionDetail[]>(
-      `/backoffice/promotions${queryString({ status, q })}`,
+      `/backoffice/promotions${queryString({ status, q, limit, offset })}`,
     ),
   getBackofficePromotionById: (id: string) =>
     request<PromotionDetail>(`/backoffice/promotions/${id}`),
@@ -397,20 +413,29 @@ export const api = {
     request<{ deleted: boolean }>(`/backoffice/courses/access-rules/${ruleId}`, {
       method: 'DELETE',
     }),
-  login: (email: string, password: string) =>
-    request<{ user: { id: string; email: string } }>('/auth/login', {
+  login: async (email: string, password: string) => {
+    const result = await request<{ user: { id: string; email: string }; accessToken?: string }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
-    }),
-  logout: () =>
-    request<{ success: boolean }>('/auth/logout', {
+    });
+    persistAccessToken(result.accessToken);
+    return result;
+  },
+  logout: async () => {
+    const result = await request<{ success: boolean }>('/auth/logout', {
       method: 'POST',
-    }),
-  register: (email: string, password: string, fullName: string, phone: string) =>
-    request<{ user: { id: string; email: string } }>('/auth/register', {
+    });
+    clearAccessToken();
+    return result;
+  },
+  register: async (email: string, password: string, fullName: string, phone: string) => {
+    const result = await request<{ user: { id: string; email: string }; accessToken?: string }>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, fullName, phone }),
-    }),
+    });
+    persistAccessToken(result.accessToken);
+    return result;
+  },
   updateMe: (payload: Pick<UserProfile, 'fullName'>) =>
     request<UserProfile>('/users/me', {
       method: 'PATCH',

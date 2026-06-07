@@ -8,12 +8,10 @@ import { MotionCard, Stagger, StaggerItem } from '@/components/motion-primitives
 import { api } from '@/lib/api';
 import type { BackofficeOverview, PromotionDetail } from '@/types';
 
-const statuses = ['pending_review', 'published_unreviewed', 'published_reviewed', 'archived'] as const;
+const statuses = ['published_unreviewed', 'published_reviewed'] as const;
 const statusLabels: Record<(typeof statuses)[number], string> = {
-  pending_review: 'Pendientes de revisión',
-  published_unreviewed: 'Publicadas sin revisar',
-  published_reviewed: 'Publicadas revisadas',
-  archived: 'Archivadas',
+  published_unreviewed: 'Publicada sin revisar',
+  published_reviewed: 'Publicada revisada',
 };
 
 export default function AdminPromotionsPage() {
@@ -29,12 +27,13 @@ export default function AdminPromotionsPage() {
 
     (async () => {
       try {
-        const [rows, overviewData] = await Promise.all([
-          api.getBackofficePromotions(status || undefined, query || undefined),
+        const [rows, reviewedRows, overviewData] = await Promise.all([
+          api.getBackofficePromotions(status || 'published_unreviewed', query || undefined, 10),
+          status ? Promise.resolve([]) : api.getBackofficePromotions('published_reviewed', query || undefined, 10),
           api.getBackofficeOverview().catch(() => null),
         ]);
         if (!active) return;
-        setPromotions(rows);
+        setPromotions([...rows, ...reviewedRows].slice(0, 10));
         setOverview(overviewData);
       } catch (err) {
         if (!active) return;
@@ -52,11 +51,9 @@ export default function AdminPromotionsPage() {
   const filtered = useMemo(() => {
     return promotions;
   }, [promotions]);
-  const statusCounts: Record<(typeof statuses)[number], number> = {
-    pending_review: overview?.pendingReview ?? promotions.filter((promotion) => promotion.status === 'pending_review').length,
+  const statusCounts = {
     published_unreviewed: overview?.publishedUnreviewed ?? promotions.filter((promotion) => promotion.status === 'published_unreviewed').length,
     published_reviewed: overview?.publishedReviewed ?? promotions.filter((promotion) => promotion.status === 'published_reviewed').length,
-    archived: overview?.archived ?? promotions.filter((promotion) => promotion.status === 'archived').length,
   };
 
   return (
@@ -66,12 +63,17 @@ export default function AdminPromotionsPage() {
         <div className="space-y-6">
           <PageHero
             eyebrow="CMS de promociones"
-            title="Gestión editorial clara de todas las promociones"
-            description="Revisa qué falta en cada ficha: descripción, documentos, unidades, requisitos, estado y publicación."
-            actions={<ButtonLink href="/admin">Volver al dashboard</ButtonLink>}
+            title="10 promociones publicadas para gestionar hoy"
+            description="Solo aparecen las 10 promociones publicadas más recientes. El resto vive en Histórico y los avisos pendientes se gestionan en Avisos."
+            actions={
+              <>
+                <ButtonLink href="/admin/promotions/history" variant="secondary">Ver histórico</ButtonLink>
+                <ButtonLink href="/admin/alerts" variant="secondary">Gestionar avisos</ButtonLink>
+              </>
+            }
           />
 
-          <section className="grid gap-3 md:grid-cols-4">
+          <section className="grid gap-3 md:grid-cols-2">
             {statuses.map((item) => (
               <SurfaceCard key={item} className="p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">{statusLabels[item]}</p>
@@ -96,7 +98,7 @@ export default function AdminPromotionsPage() {
                 className="ds-control"
               />
               <select value={status} onChange={(event) => setStatus(event.target.value)} className="ds-control">
-                <option value="">Todos los estados</option>
+                <option value="">Publicadas sin revisar + revisadas</option>
                 {statuses.map((item) => (
                   <option key={item} value={item}>{statusLabels[item]}</option>
                 ))}
@@ -110,7 +112,7 @@ export default function AdminPromotionsPage() {
           {!loading && filtered.length === 0 ? (
             <SurfaceCard className="p-6 text-center">
               <h2 className="display-type text-2xl font-black text-[var(--ink)]">No hay promociones con estos criterios</h2>
-              <p className="mt-2 text-sm text-[var(--ink-soft)]">Prueba con “Todos los estados” o limpia la búsqueda para ver el inventario completo.</p>
+              <p className="mt-2 text-sm text-[var(--ink-soft)]">Prueba a limpiar la búsqueda o revisa el histórico.</p>
             </SurfaceCard>
           ) : null}
 

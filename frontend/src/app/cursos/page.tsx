@@ -150,15 +150,15 @@ export default function CoursesPage() {
           const access = accessMap[course.id];
           const badge = accessLabels[course.accessType] || 'Acceso';
           const hasSession = isAuthed === true;
-          const isLocked = hasSession ? (access ? !access.canAccess : course.accessType !== 'free') : course.accessType !== 'free';
+          const isLocked = hasSession ? (access ? !access.canAccess : course.accessType !== 'free') : true;
           const priceLabel = formatPrice(course.price, course.currency);
           const ctaHref = !hasSession
-            ? (course.accessType === 'free' ? `/cursos/${course.slug}` : course.stripePaymentLink || '/login')
+            ? `/login?next=${encodeURIComponent(`/cursos/${course.slug}`)}`
             : !isLocked
               ? `/cursos/${course.slug}`
               : course.stripePaymentLink || '/services';
           const ctaLabel = !hasSession
-            ? (course.accessType === 'free' ? 'Ver curso' : course.stripePaymentLink ? 'Comprar curso' : 'Inicia sesion')
+            ? 'Inicia sesión para entrar'
             : !isLocked
               ? 'Continuar'
               : course.stripePaymentLink

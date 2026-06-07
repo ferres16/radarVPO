@@ -49,7 +49,7 @@ export class AuthController {
       result.refreshToken,
       result.sessionId,
     );
-    return { user: result.user };
+    return { user: result.user, accessToken: result.accessToken };
   }
 
   @Post('login')
@@ -65,7 +65,7 @@ export class AuthController {
       result.refreshToken,
       result.sessionId,
     );
-    return { user: result.user };
+    return { user: result.user, accessToken: result.accessToken };
   }
 
   @Post('refresh')
@@ -85,7 +85,7 @@ export class AuthController {
       result.refreshToken,
       result.sessionId,
     );
-    return { user: result.user };
+    return { user: result.user, accessToken: result.accessToken };
   }
 
   @Post('logout')

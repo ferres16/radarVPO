@@ -40,6 +40,13 @@ function prettyLabel(key: string) {
     .trim();
 }
 
+function statusLabel(status: string) {
+  if (status === 'published_reviewed') return 'Publicada revisada';
+  if (status === 'published_unreviewed') return 'Publicada sin revisar';
+  if (status === 'pending_review') return 'Aviso pendiente';
+  return 'Archivada';
+}
+
 function DataBlock({
   title,
   payload,
@@ -120,16 +127,16 @@ export default async function PromotionDetailPage({
   return (
     <main className="shell space-y-6 pb-10">
       <Reveal>
-        <section className="grid overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-white shadow-card lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="relative min-h-[280px] bg-[linear-gradient(135deg,rgba(22,112,85,0.16),rgba(244,197,66,0.14),rgba(255,255,255,0.96))] p-6 md:p-8">
+        <section className="grid overflow-hidden rounded-[2.25rem] border border-[var(--stroke)] bg-white shadow-[0_24px_80px_rgba(30,31,28,0.12)] lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="relative min-h-[340px] bg-[linear-gradient(135deg,rgba(22,112,85,0.18),rgba(54,189,248,0.12),rgba(255,255,255,0.96))] p-6 md:p-8">
             {heroImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-85" />
             ) : null}
             <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(16,24,40,0.08),rgba(16,24,40,0.52))]" />
             <div className="relative flex h-full min-h-[240px] flex-col justify-end">
-              <span className="w-fit rounded-full bg-white/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">
-                {promotion.status === 'published_reviewed' ? 'Ficha revisada' : 'Información en actualización'}
+              <span className="w-fit rounded-full border border-white/45 bg-white/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)] shadow-sm backdrop-blur">
+                {statusLabel(promotion.status)}
               </span>
               <h1 className="display-type mt-4 max-w-3xl text-4xl font-black leading-tight text-white md:text-5xl">{promotion.title}</h1>
               <p className="mt-2 text-sm font-semibold text-white/86">
@@ -138,7 +145,7 @@ export default async function PromotionDetailPage({
             </div>
           </div>
           <aside className="p-5 md:p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Resumen de la promoción</p>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Resumen rápido</p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               {keyFacts.map((fact) => (
                 <div key={fact.label} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
@@ -147,8 +154,8 @@ export default async function PromotionDetailPage({
                 </div>
               ))}
             </div>
-            <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-white p-4">
-              <p className="font-semibold text-[var(--ink)]">Estado: {promotion.status}</p>
+            <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+              <p className="font-semibold text-[var(--ink)]">Estado: {statusLabel(promotion.status)}</p>
               <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
                 {promotion.statusMessage || 'Estamos analizando esta promoción y actualizando la información.'}
               </p>
@@ -216,53 +223,31 @@ export default async function PromotionDetailPage({
           {promotion.units.length === 0 ? (
             <p className="mt-2 text-sm text-[var(--ink-soft)]">Pendiente de revision manual.</p>
           ) : (
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full min-w-[1500px] text-sm">
+            <div className="mt-3 overflow-x-auto rounded-2xl border border-[var(--stroke)] bg-white">
+              <table className="w-full min-w-[760px] text-sm">
                 <thead>
-                  <tr className="border-b border-[var(--stroke)]">
-                    <th className="p-2 text-left">Ord.</th>
-                    <th className="p-2 text-left">Règ. us</th>
-                    <th className="p-2 text-left">Tip.</th>
+                  <tr className="border-b border-[var(--stroke)] bg-white">
+                    <th className="p-3 text-left">Vivienda</th>
+                    <th className="p-3 text-left">Régimen</th>
+                    <th className="p-3 text-left">Tipología</th>
                     <th className="p-2 text-left">Escalera</th>
                     <th className="p-2 text-left">Planta</th>
                     <th className="p-2 text-left">Puerta</th>
-                    <th className="p-2 text-left">E-M</th>
-                    <th className="p-2 text-left">6sH &lt; 8</th>
-                    <th className="p-2 text-left">8sH &lt; 12</th>
-                    <th className="p-2 text-left">H &gt; 12</th>
-                    <th className="p-2 text-left">C</th>
-                    <th className="p-2 text-left">CH</th>
-                    <th className="p-2 text-left">E-M-C</th>
-                    <th className="p-2 text-left">Otras piezas</th>
-                    <th className="p-2 text-left">Ocup. max.</th>
-                    <th className="p-2 text-left">Sup. útil interior</th>
-                    <th className="p-2 text-left">Sup. comp.</th>
-                    <th className="p-2 text-left">Res</th>
-                    <th className="p-2 text-left">P.V. max.</th>
+                    <th className="p-3 text-left">Sup. útil</th>
+                    <th className="p-3 text-left">Precio/Renta</th>
                   </tr>
                 </thead>
                 <tbody>
                   {promotion.units.map((row, index) => (
-                    <tr key={row.id} className="border-b border-[var(--stroke)]">
-                      <td className="p-2">{index + 1}</td>
-                      <td className="p-2">{String(row.extraData?.regUs || row.extraData?.regimenUso || 'n/d')}</td>
-                      <td className="p-2">{String(row.extraData?.tip || row.extraData?.tipologia || 'n/d')}</td>
+                    <tr key={row.id} className="border-b border-[var(--stroke)] last:border-b-0">
+                      <td className="p-3 font-semibold text-[var(--ink)]">{row.unitLabel || `#${index + 1}`}</td>
+                      <td className="p-3">{String(row.extraData?.regUs || row.extraData?.regimenUso || 'n/d')}</td>
+                      <td className="p-3">{String(row.extraData?.tip || row.extraData?.tipologia || 'n/d')}</td>
                       <td className="p-2">{row.stair || 'n/d'}</td>
                       <td className="p-2">{row.floor || 'n/d'}</td>
                       <td className="p-2">{row.door || 'n/d'}</td>
-                      <td className="p-2">{String(row.extraData?.em || row.extraData?.entradaComedor || 'n/d')}</td>
-                      <td className="p-2">{String(row.extraData?.h6sh8 || row.extraData?.h6sHlt8 || 'n/d')}</td>
-                      <td className="p-2">{String(row.extraData?.h8sh12 || row.extraData?.h8sHlt12 || 'n/d')}</td>
-                      <td className="p-2">{String(row.extraData?.hgt12 || row.extraData?.hGt12 || 'n/d')}</td>
-                      <td className="p-2">{String(row.extraData?.c || row.extraData?.cocina || 'n/d')}</td>
-                      <td className="p-2">{String(row.extraData?.ch || 'n/d')}</td>
-                      <td className="p-2">{String(row.extraData?.emc || row.extraData?.banosEntradaSalonCocina || row.bathrooms || 'n/d')}</td>
-                      <td className="p-2">{String(row.extraData?.otrasPiezas || row.notes || 'n/d')}</td>
-                      <td className="p-2">{String(row.extraData?.ocupacionMaxima || 'n/d')}</td>
-                      <td className="p-2">{row.usefulAreaM2 ?? 'n/d'}</td>
-                      <td className="p-2">{row.builtAreaM2 ?? 'n/d'}</td>
-                      <td className="p-2">{row.reservation ?? 'n/d'}</td>
-                      <td className="p-2">{row.priceSale ?? 'n/d'}</td>
+                      <td className="p-3">{row.usefulAreaM2 ?? 'n/d'}</td>
+                      <td className="p-3">{row.priceSale ?? row.monthlyRent ?? 'n/d'}</td>
                     </tr>
                   ))}
                 </tbody>

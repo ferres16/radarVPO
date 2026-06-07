@@ -170,15 +170,28 @@ export default function AdminServicesPage() {
         <div className="space-y-4">
       <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--green-700)]">Backoffice</p>
-        <h1 className="display-type mt-2 text-3xl font-black text-[var(--ink)]">Servicios</h1>
+        <h1 className="display-type mt-2 text-3xl font-black text-[var(--ink)]">Servicios vendibles</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
-          Gestiona guia basica, guia PRO, alertas PRO, seguimiento y cualquier servicio vendible con Payment Links.
+          Esta pantalla define los productos que vendes: seguimiento personalizado, asesorías 1:1, alertas PRO por WhatsApp y servicios manuales. Entra en juego cuando quieres poner precio, activar/desactivar el producto, añadir Payment Link de Stripe y después conceder acceso desde “Compras y Activaciones”.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link href="/admin" className="rounded-xl border border-[var(--stroke)] px-4 py-2 text-sm font-semibold text-[var(--ink)]">Panel</Link>
           <Link href="/admin/access" className="rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white">Compras y Activaciones</Link>
         </div>
       </header>
+
+      <section className="grid gap-3 md:grid-cols-3">
+        {[
+          ['1. Crear producto', 'Nombre, precio, tipo y enlace de pago.'],
+          ['2. Vender o activar', 'El usuario compra con Stripe o tú lo activas manualmente.'],
+          ['3. Controlar acceso', 'En Compras y Activaciones decides quién tiene el servicio activo.'],
+        ].map(([title, description]) => (
+          <article key={title} className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
+            <p className="text-sm font-black text-[var(--ink)]">{title}</p>
+            <p className="mt-1 text-sm text-[var(--ink-soft)]">{description}</p>
+          </article>
+        ))}
+      </section>
 
       {error ? <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{error}</div> : null}
 
