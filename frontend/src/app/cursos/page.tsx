@@ -10,8 +10,8 @@ import { StatusPill } from '@/components/status-pill';
 import type { Course, CourseAccessDecision } from '@/types';
 
 const accessLabels: Record<string, string> = {
-  free: 'Gratis',
-  paid: 'Pago unico',
+  free: 'Intro',
+  paid: 'Curso premium',
   pro: 'Plan PRO',
   seguimiento: 'Seguimiento',
 };
@@ -111,17 +111,18 @@ export default function CoursesPage() {
         <div className="absolute -right-24 -top-24 h-56 w-56 rounded-full bg-[rgba(59,130,246,0.16)] blur-3xl" />
         <div className="absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[rgba(16,185,129,0.18)] blur-3xl" />
         <div className="relative space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--ink-soft)]">Cursos Radar VPO</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--ink-soft)]">Radar VPO Academy</p>
           <h1 className="display-type text-4xl font-black text-[var(--ink)] sm:text-5xl">
-            Cursos premium para ganar claridad antes de cada convocatoria.
+            Cursos para tomar mejores decisiones sobre vivienda, hipotecas y ahorro.
           </h1>
           <p className="max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
-            Compra cursos puntuales con Stripe Payment Links, desbloquea contenido desde tu acceso activo y avanza por modulos con progreso guardado.
+            Aprende a preparar una solicitud, comparar alquiler o compra, entender una hipoteca, negociar mejor y evitar errores antes de firmar.
           </p>
           <div className="flex flex-wrap gap-2">
-            <span className="rounded-full bg-[var(--ink)] px-3 py-1 text-xs font-semibold text-white">Contenido vivo</span>
-            <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">Editor moderno</span>
-            <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">Progreso visual</span>
+            <span className="rounded-full bg-[var(--ink)] px-3 py-1 text-xs font-semibold text-white">Hipotecas</span>
+            <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">Compra y alquiler</span>
+            <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">Vivienda protegida</span>
+            <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">Finanzas personales</span>
           </div>
         </div>
       </header>
@@ -134,14 +135,14 @@ export default function CoursesPage() {
 
       {isAuthed === false ? (
         <article className="rounded-2xl border border-[var(--stroke)] bg-white p-4 text-sm text-[var(--ink-soft)]">
-          Para entrar en cualquier curso necesitas iniciar sesion. Puedes ver el catalogo sin registrarte.
+          Para entrar en cualquier curso necesitas iniciar sesión. Puedes ver el catálogo sin registrarte.
         </article>
       ) : null}
 
       {visibleCourses.length === 0 ? (
         <EmptyState
           title="Aun no hay cursos publicados"
-          description="El catalogo se mostrara aqui cuando el equipo publique el primer curso."
+          description="El catálogo se mostrará aquí cuando el equipo publique el primer curso."
         />
       ) : null}
 
@@ -183,7 +184,7 @@ export default function CoursesPage() {
                   </div>
                 ) : (
                   <div className="flex h-40 items-end rounded-2xl border border-[var(--stroke)] bg-[radial-gradient(circle_at_top,#dcfce7,#f8fafc_65%)] p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--green-700)]">Radar VPO Academy</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--green-700)]">Formación práctica</p>
                   </div>
                 )}
                 <div className="flex items-center justify-between">

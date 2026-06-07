@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { SkeletonCard } from '@/components/skeleton-card';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { Stagger, StaggerItem } from '@/components/motion-primitives';
+import { api } from '@/lib/api';
+import type { Service } from '@/types';
 
 const whatsappContactUrl =
   process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
@@ -78,11 +80,39 @@ const faqs = [
 ];
 
 export default function ServicesPage() {
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(false);
+    let active = true;
+
+    (async () => {
+      try {
+        const rows = await api.listServices();
+        if (!active) return;
+        setServices(rows.filter((service) => service.status === 'active'));
+      } catch {
+        if (!active) return;
+        setServices([]);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
   }, []);
+
+  const displayedServices = services.length > 0
+    ? services.map((service, index) => ({
+        eyebrow: `${String(index + 1).padStart(2, '0')} · ${service.name}`,
+        title: service.name,
+        copy: service.description || 'Servicio personalizado de Radar VPO.',
+        cta: service.stripePaymentLink ? 'Contratar servicio' : 'Consultar servicio',
+        href: service.stripePaymentLink || whatsappContactUrl,
+      }))
+    : fallbackServices;
 
   return (
     <main className="shell space-y-8 pb-16">
@@ -129,7 +159,7 @@ export default function ServicesPage() {
         <section className="space-y-4">
           <SectionHeader eyebrow="Qué incluye" title="Elige el nivel de ayuda que necesitas" description="Cursos para aprender, avisos para vigilar y asesoría para ir acompañado." />
         <section className="grid gap-4 lg:grid-cols-3">
-          {fallbackServices.map((service) => {
+          {displayedServices.map((service) => {
             const href = service.href;
             const external = /^https?:\/\//.test(href);
             return (

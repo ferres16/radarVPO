@@ -20,7 +20,7 @@ export default function LoginPage() {
     try {
       await api.login(email, password);
       const next = new URLSearchParams(window.location.search).get('next');
-      router.push(next && next.startsWith('/') ? next : '/dashboard');
+      router.push(next && next.startsWith('/') ? next : '/account');
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo iniciar sesion');

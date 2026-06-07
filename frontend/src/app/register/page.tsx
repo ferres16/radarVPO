@@ -32,7 +32,7 @@ export default function RegisterPage() {
 
     try {
       await api.register(email, password, fullName, phone);
-      router.push('/dashboard');
+      router.push('/account');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta');
     } finally {

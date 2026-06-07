@@ -14,6 +14,10 @@ const statusLabels: Record<(typeof statuses)[number], string> = {
   published_reviewed: 'Publicada revisada',
 };
 
+function promotionTimestamp(promotion: PromotionDetail) {
+  return new Date(promotion.createdAt || promotion.publishedAt || promotion.alertDetectedAt || 0).getTime();
+}
+
 export default function AdminPromotionsPage() {
   const [promotions, setPromotions] = useState<PromotionDetail[]>([]);
   const [query, setQuery] = useState('');
@@ -33,7 +37,11 @@ export default function AdminPromotionsPage() {
           api.getBackofficeOverview().catch(() => null),
         ]);
         if (!active) return;
-        setPromotions([...rows, ...reviewedRows].slice(0, 10));
+        setPromotions(
+          [...rows, ...reviewedRows]
+            .sort((a, b) => promotionTimestamp(b) - promotionTimestamp(a))
+            .slice(0, 10),
+        );
         setOverview(overviewData);
       } catch (err) {
         if (!active) return;

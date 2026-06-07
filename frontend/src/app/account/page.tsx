@@ -85,7 +85,7 @@ export default function AccountPage() {
         setAccessSummary(access);
       } catch {
         if (!active) return;
-        setCoursesError('No se pudieron cargar todos los datos del dashboard.');
+        setCoursesError('No se pudieron cargar todos los datos del perfil.');
       }
     })();
 
@@ -133,7 +133,7 @@ export default function AccountPage() {
     : 'Sin registro';
   const activeServices = accessSummary?.services.length ?? 0;
   const activeCourses = accessSummary?.courses.length ?? purchasedCoursesCount;
-  const dashboardCards = [
+  const profileCards = [
     { label: 'Solicitudes', value: '0', detail: 'Preparado para conectar con expediente cuando exista endpoint.' },
     { label: 'Favoritos', value: String(favorites.length), detail: 'Viviendas guardadas para seguimiento rápido.' },
     { label: 'Documentación', value: hasTracking ? 'En revisión' : 'Pendiente', detail: 'Bloque reservado para carpeta ciudadana.' },
@@ -240,7 +240,7 @@ export default function AccountPage() {
       </ProfileCard>
 
       <section className="grid gap-4 md:grid-cols-4">
-        {dashboardCards.map((card) => (
+        {profileCards.map((card) => (
           <ProfileCard key={card.label} className="bg-white/88 transition hover:-translate-y-1">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">{card.label}</p>
             <p className="display-type mt-3 text-2xl font-black text-[var(--ink)]">{card.value}</p>
