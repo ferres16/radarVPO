@@ -858,7 +858,7 @@ export class BackofficeService {
     const limit = Math.min(query.limit ?? 200, 500);
     const offset = query.offset ?? 0;
 
-    return this.prisma.promotion.findMany({
+    const promotions = await this.prisma.promotion.findMany({
       where,
       orderBy: [{ updatedAt: 'desc' }],
       include: {
@@ -871,11 +871,15 @@ export class BackofficeService {
       take: limit,
       skip: offset,
     });
+
+    return Promise.all(
+      promotions.map((promotion) => this.withSignedPromotionDocuments(promotion)),
+    );
   }
 
   async createPromotion(dto: CreatePromotionDto) {
     const source = await this.getManualSource();
-    return this.prisma.promotion.create({
+    const promotion = await this.prisma.promotion.create({
       data: {
         sourceId: source.id,
         title: dto.title,
@@ -897,6 +901,7 @@ export class BackofficeService {
         units: { orderBy: { rowOrder: 'asc' } },
       },
     });
+    return this.withSignedPromotionDocuments(promotion);
   }
 
   async getPromotion(promotionId: string) {
@@ -912,7 +917,7 @@ export class BackofficeService {
       throw new NotFoundException('Promotion not found');
     }
 
-    return promotion;
+    return this.withSignedPromotionDocuments(promotion);
   }
 
   async previewPromotion(promotionId: string) {
@@ -1324,6 +1329,31 @@ export class BackofficeService {
       _max: { sortOrder: true },
     });
     return (maxOrder._max.sortOrder ?? -1) + 1;
+  }
+
+  private async withSignedPromotionDocuments<
+    T extends { documents: Array<{ fileAssetId: string | null; publicUrl: string }> },
+  >(promotion: T): Promise<T> {
+    const documents = await Promise.all(
+      promotion.documents.map(async (document) => {
+        if (!document.fileAssetId) {
+          return document;
+        }
+
+        try {
+          const access = await this.fileStorage.getAccessibleUrl(
+            document.fileAssetId,
+            true,
+            { preferSigned: true },
+          );
+          return { ...document, publicUrl: access.url || document.publicUrl };
+        } catch {
+          return document;
+        }
+      }),
+    );
+
+    return { ...promotion, documents };
   }
 
   private async deleteCourseResourceAssets(where: Prisma.CourseResourceWhereInput) {

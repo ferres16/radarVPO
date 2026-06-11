@@ -637,7 +637,10 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
       <section className="space-y-4">
         {[activeModule].map((module) => {
           const moduleDraft = moduleDrafts[module.id] || {};
-          const lessons = module.lessons || [];
+          const lessons =
+            activePanel.type === 'lesson'
+              ? (module.lessons || []).filter((lesson) => lesson.id === activePanel.lessonId)
+              : module.lessons || [];
           return (
             <article key={module.id} className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -683,6 +686,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
               </div>
 
                 <div className="mt-4 space-y-4">
+                  {activePanel.type === 'module' ? (
                   <div className="grid gap-3 md:grid-cols-2">
                     <label className="text-sm text-[var(--ink)]">
                       Titulo
@@ -744,9 +748,12 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                       </select>
                     </label>
                   </div>
+                  ) : null}
 
                   <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-                    <h3 className="text-sm font-semibold text-[var(--ink)]">Lecciones</h3>
+                    <h3 className="text-sm font-semibold text-[var(--ink)]">
+                      {activePanel.type === 'lesson' ? 'Lección seleccionada' : 'Lecciones'}
+                    </h3>
                     <div className="mt-3 grid gap-3">
                       {lessons.map((lesson) => {
                         const lessonDraft = lessonDrafts[lesson.id] || {};
@@ -955,6 +962,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                       })}
                     </div>
 
+                    {activePanel.type === 'module' ? (
                     <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-white p-4">
                       <h4 className="text-sm font-semibold text-[var(--ink)]">Nueva leccion</h4>
                       <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -1046,6 +1054,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                         </button>
                       </div>
                     </div>
+                    ) : null}
                   </div>
                 </div>
             </article>

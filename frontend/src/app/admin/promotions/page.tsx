@@ -33,7 +33,13 @@ export default function AdminPromotionsPage() {
   async function loadPromotions(shouldApply = () => true) {
       try {
         const [rows, overviewData] = await Promise.all([
-          api.getBackofficePromotions(status || undefined, query || undefined, status ? 10 : 50),
+          status
+            ? api.getBackofficePromotions(status, query || undefined, 10)
+            : Promise.all(
+                statuses.map((item) =>
+                  api.getBackofficePromotions(item, query || undefined, 10),
+                ),
+              ).then((groups) => groups.flat()),
           api.getBackofficeOverview().catch(() => null),
         ]);
         if (!shouldApply()) return;

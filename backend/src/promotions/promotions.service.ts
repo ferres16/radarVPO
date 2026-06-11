@@ -3,10 +3,14 @@ import { Prisma, PromotionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
 import { withPromotionView } from '../common/promotion-view.util';
+import { FileStorageService } from '../storage/file-storage.service';
 
 @Injectable()
 export class PromotionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly fileStorage: FileStorageService,
+  ) {}
 
   async list(filters: ListPromotionsDto) {
     const limit = Math.min(filters.limit ?? 10, 50);
@@ -114,6 +118,7 @@ export class PromotionsService {
           orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
           select: {
             id: true,
+            fileAssetId: true,
             documentKind: true,
             title: true,
             description: true,
@@ -138,7 +143,7 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
-    return withPromotionView(item);
+    return withPromotionView(await this.withSignedPromotionDocuments(item));
   }
 
   async toggleFavorite(userId: string, promotionId: string) {
@@ -184,5 +189,30 @@ export class PromotionsService {
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  private async withSignedPromotionDocuments<
+    T extends { documents: Array<{ fileAssetId: string | null; publicUrl: string }> },
+  >(promotion: T): Promise<T> {
+    const documents = await Promise.all(
+      promotion.documents.map(async (document) => {
+        if (!document.fileAssetId) {
+          return document;
+        }
+
+        try {
+          const access = await this.fileStorage.getAccessibleUrl(
+            document.fileAssetId,
+            true,
+            { preferSigned: true },
+          );
+          return { ...document, publicUrl: access.url || document.publicUrl };
+        } catch {
+          return document;
+        }
+      }),
+    );
+
+    return { ...promotion, documents };
   }
 }

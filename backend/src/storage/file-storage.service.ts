@@ -100,7 +100,11 @@ export class FileStorageService {
     });
   }
 
-  async getAccessibleUrl(assetId: string, canAccess: boolean) {
+  async getAccessibleUrl(
+    assetId: string,
+    canAccess: boolean,
+    options: { preferSigned?: boolean } = {},
+  ) {
     const asset = await this.prisma.fileAsset.findUnique({
       where: { id: assetId },
     });
@@ -109,11 +113,11 @@ export class FileStorageService {
       throw new NotFoundException('File not found');
     }
 
-    if (asset.isPublic) {
+    if (asset.isPublic && !options.preferSigned) {
       return { url: asset.url, expiresAt: null };
     }
 
-    if (!canAccess) {
+    if (!asset.isPublic && !canAccess) {
       throw new ForbiddenException('Access denied');
     }
 
