@@ -50,6 +50,15 @@ type ServiceMutationPayload = Partial<
   Pick<Service, 'key' | 'name' | 'description' | 'price' | 'currency' | 'status' | 'serviceType' | 'stripePaymentLink'>
 >;
 
+type FileAssetQuery = {
+  q?: string;
+  entityType?: string;
+  entityId?: string;
+  mimeType?: string;
+  status?: string;
+  isPublic?: string;
+};
+
 function queryString(params: Record<string, string | number | undefined>) {
   const query = new URLSearchParams();
   Object.entries(params).forEach(([key, value]) => {
@@ -176,8 +185,22 @@ export const api = {
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
   getBackofficeJobs: () => request<JobRun[]>('/backoffice/jobs'),
   getBackofficeFailures: () => request<DeliveryFailure[]>('/backoffice/failures'),
-  getBackofficeFiles: (q?: string) =>
-    request<FileAsset[]>(`/backoffice/files${queryString({ q })}`),
+  getBackofficeFiles: (query?: string | FileAssetQuery) => {
+    const params =
+      typeof query === 'string'
+        ? { q: query }
+        : {
+            q: query?.q,
+            entityType: query?.entityType,
+            entityId: query?.entityId,
+            mimeType: query?.mimeType,
+            status: query?.status,
+            isPublic: query?.isPublic,
+          };
+    return request<FileAsset[]>(`/backoffice/files${queryString(params)}`);
+  },
+  getBackofficeFilesForEntity: (entityType: FileAsset['entityType'], entityId: string) =>
+    request<FileAsset[]>(`/backoffice/files/entity/${entityType}/${entityId}`),
   retryBackofficeFileDeletion: (id: string) =>
     request<FileAsset>(`/backoffice/files/${id}/retry-delete`, {
       method: 'POST',
@@ -296,6 +319,18 @@ export const api = {
   deleteBackofficeDocument: (id: string, documentId: string) =>
     request<{ deleted: boolean }>(`/backoffice/promotions/${id}/documents/${documentId}`, {
       method: 'DELETE',
+    }),
+  updateBackofficeDocument: (
+    id: string,
+    documentId: string,
+    payload: Partial<Pick<
+      PromotionDetail['documents'][number],
+      'title' | 'description' | 'altText' | 'sortOrder' | 'isFeatured' | 'isPublic' | 'section' | 'reviewStatus'
+    >>,
+  ) =>
+    request<PromotionDetail['documents'][number]>(`/backoffice/promotions/${id}/documents/${documentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     }),
   listCourses: () => request<Course[]>('/courses'),
   listServices: () => request<Service[]>('/services'),

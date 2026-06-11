@@ -48,12 +48,23 @@ export class FileStorageService {
       maxSizeBytes: params.maxSizeBytes,
     });
 
-    const upload = await this.s3.upload({
-      folder: params.folder,
-      fileName: params.file.originalname,
-      contentType: params.file.mimetype,
-      content: params.file.buffer,
-    });
+    let upload: { key: string; url: string };
+    try {
+      upload = await this.s3.upload({
+        folder: params.folder,
+        fileName: params.file.originalname,
+        contentType: params.file.mimetype,
+        content: params.file.buffer,
+      });
+    } catch (error) {
+      const err = error as { name?: string; Code?: string; message?: string };
+      if (err.name === 'AccessDenied' || err.Code === 'AccessDenied') {
+        throw new InternalServerErrorException(
+          'S3 denied the upload. Check IAM/bucket policy permissions for s3:PutObject on the configured bucket.',
+        );
+      }
+      throw error;
+    }
 
     try {
       return await this.prisma.fileAsset.create({

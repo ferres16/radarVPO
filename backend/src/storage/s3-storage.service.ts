@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -9,6 +9,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
 export class S3StorageService {
+  private readonly logger = new Logger(S3StorageService.name);
   readonly bucket = process.env.AWS_S3_BUCKET || process.env.S3_BUCKET;
   private readonly publicBaseUrl =
     process.env.AWS_S3_PUBLIC_BASE_URL || process.env.S3_PUBLIC_BASE_URL;
@@ -55,14 +56,19 @@ export class S3StorageService {
     const safeName = params.fileName.replace(/[^a-zA-Z0-9._-]+/g, '_');
     const key = `${params.folder}/${Date.now()}-${safeName}`;
 
-    await this.client.send(
-      new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: params.content,
-        ContentType: params.contentType,
-      }),
-    );
+    try {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: params.content,
+          ContentType: params.contentType,
+        }),
+      );
+    } catch (error) {
+      this.logS3Error('PutObject', key, error);
+      throw error;
+    }
 
     const url = this.publicBaseUrl
       ? `${this.publicBaseUrl.replace(/\/$/, '')}/${key}`
@@ -78,12 +84,17 @@ export class S3StorageService {
       );
     }
 
-    await this.client.send(
-      new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-      }),
-    );
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+      );
+    } catch (error) {
+      this.logS3Error('DeleteObject', key, error);
+      throw error;
+    }
   }
 
   async getSignedReadUrl(key: string, expiresInSeconds = 900): Promise<string> {
@@ -93,14 +104,19 @@ export class S3StorageService {
       );
     }
 
-    return getSignedUrl(
-      this.client,
-      new GetObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-      }),
-      { expiresIn: expiresInSeconds },
-    );
+    try {
+      return await getSignedUrl(
+        this.client,
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+        { expiresIn: expiresInSeconds },
+      );
+    } catch (error) {
+      this.logS3Error('GetSignedUrl', key, error);
+      throw error;
+    }
   }
 
   private buildFallbackUrl(key: string) {
@@ -110,5 +126,20 @@ export class S3StorageService {
     }
     const region = process.env.AWS_REGION || process.env.S3_REGION || 'us-east-1';
     return `https://${this.bucket}.s3.${region}.amazonaws.com/${key}`;
+  }
+
+  private logS3Error(operation: string, key: string, error: unknown) {
+    const err = error as { name?: string; Code?: string; message?: string; $metadata?: { httpStatusCode?: number; requestId?: string } };
+    this.logger.error(
+      JSON.stringify({
+        operation,
+        bucket: this.bucket,
+        key,
+        error: err.name || err.Code || 'S3Error',
+        message: err.message,
+        statusCode: err.$metadata?.httpStatusCode,
+        requestId: err.$metadata?.requestId,
+      }),
+    );
   }
 }

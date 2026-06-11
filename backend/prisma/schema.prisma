@@ -254,6 +254,14 @@ model PromotionDocument {
   promotionId String    @map("promotion_id")
   fileAssetId String?   @map("file_asset_id")
   documentKind PromotionDocumentKind @map("document_kind")
+  title       String?
+  description String?
+  altText     String?   @map("alt_text")
+  sortOrder   Int      @default(0) @map("sort_order")
+  isFeatured  Boolean  @default(false) @map("is_featured")
+  isPublic    Boolean  @default(true) @map("is_public")
+  section     String?
+  reviewStatus String   @default("published") @map("review_status")
   fileType    String    @map("file_type")
   originalName String?  @map("original_name")
   storagePath String    @map("storage_path")
@@ -264,6 +272,7 @@ model PromotionDocument {
   fileAsset   FileAsset? @relation(fields: [fileAssetId], references: [id], onDelete: SetNull)
 
   @@index([promotionId, documentKind])
+  @@index([promotionId, sortOrder])
   @@index([fileAssetId])
 
   @@map("promotion_documents")

@@ -34,6 +34,14 @@ export type UserProfile = {
 export type PromotionDocument = {
   id: string;
   documentKind: 'pdf_original' | 'screenshot' | 'image' | 'support_document';
+  title?: string | null;
+  description?: string | null;
+  altText?: string | null;
+  sortOrder?: number;
+  isFeatured?: boolean;
+  isPublic?: boolean;
+  section?: string | null;
+  reviewStatus?: string;
   fileType: string;
   originalName?: string | null;
   storagePath?: string;
@@ -122,6 +130,7 @@ export type CourseAccessDecision = {
 
 export type CourseResource = {
   id: string;
+  fileAssetId?: string | null;
   kind: 'image' | 'video' | 'file';
   fileType: string;
   originalName?: string | null;

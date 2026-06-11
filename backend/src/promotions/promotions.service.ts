@@ -110,10 +110,18 @@ export class PromotionsService {
         createdAt: true,
         updatedAt: true,
         documents: {
-          orderBy: { createdAt: 'desc' },
+          where: { isPublic: true },
+          orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
           select: {
             id: true,
             documentKind: true,
+            title: true,
+            description: true,
+            altText: true,
+            sortOrder: true,
+            isFeatured: true,
+            isPublic: true,
+            section: true,
             fileType: true,
             originalName: true,
             publicUrl: true,
@@ -167,7 +175,8 @@ export class PromotionsService {
         promotion: {
           include: {
             documents: {
-              orderBy: { createdAt: 'desc' },
+              where: { isPublic: true },
+              orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
               take: 1,
             },
           },

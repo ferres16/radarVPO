@@ -13,10 +13,12 @@ import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
+import type { CourseResource } from '@/types';
 
 type CourseLessonEditorProps = {
   value?: Record<string, unknown> | null;
   onChange: (next: Record<string, unknown>) => void;
+  resources?: CourseResource[];
 };
 
 const emptyDoc = {
@@ -24,7 +26,7 @@ const emptyDoc = {
   content: [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }],
 };
 
-export function CourseLessonEditor({ value, onChange }: CourseLessonEditorProps) {
+export function CourseLessonEditor({ value, onChange, resources = [] }: CourseLessonEditorProps) {
   const [copyMessage, setCopyMessage] = useState('');
   const editor = useEditor({
     extensions: [
@@ -126,6 +128,38 @@ export function CourseLessonEditor({ value, onChange }: CourseLessonEditorProps)
       .run();
   };
 
+  const insertResource = (resource: CourseResource) => {
+    const label = resource.originalName || resource.kind;
+    const url = resource.publicUrl || '#';
+
+    if (resource.kind === 'image' && resource.publicUrl) {
+      (editor.chain().focus() as unknown as { setImage: (attrs: { src: string; alt: string }) => { run: () => boolean } }).setImage({ src: resource.publicUrl, alt: label }).run();
+      return;
+    }
+
+    if (resource.kind === 'video' && resource.publicUrl) {
+      editor.chain().focus().insertContent({
+        type: 'paragraph',
+        content: [{ type: 'text', text: `Vídeo adjunto: ${label}` }],
+      }).run();
+      return;
+    }
+
+    editor.chain().focus().insertContent({
+      type: 'paragraph',
+      content: [
+        {
+          type: 'text',
+          text: label,
+          marks: [
+            { type: 'link', attrs: { href: url, target: '_blank', rel: 'noopener noreferrer nofollow', class: null } },
+            { type: 'bold' },
+          ],
+        },
+      ],
+    }).run();
+  };
+
   return (
     <div className="space-y-3">
       <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
@@ -151,6 +185,23 @@ export function CourseLessonEditor({ value, onChange }: CourseLessonEditorProps)
           ))}
         </div>
       </div>
+      {resources.length > 0 ? (
+        <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Recursos S3 de esta lección</p>
+          <div className="flex flex-wrap gap-2">
+            {resources.map((resource) => (
+              <button
+                key={resource.id}
+                type="button"
+                onClick={() => insertResource(resource)}
+                className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
+              >
+                Insertar {resource.originalName || resource.kind}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="flex flex-wrap gap-2">
         <button
           type="button"

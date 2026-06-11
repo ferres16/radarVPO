@@ -43,7 +43,7 @@ function renderNodes(nodes?: RichNode[]) {
       );
     }
 
-    if (node.type === 'bullet_list') {
+    if (node.type === 'bullet_list' || node.type === 'bulletList') {
       return (
         <ul key={key} className="list-disc space-y-2 pl-5 text-sm text-[var(--ink-soft)]">
           {content}
@@ -51,7 +51,7 @@ function renderNodes(nodes?: RichNode[]) {
       );
     }
 
-    if (node.type === 'ordered_list') {
+    if (node.type === 'ordered_list' || node.type === 'orderedList') {
       return (
         <ol key={key} className="list-decimal space-y-2 pl-5 text-sm text-[var(--ink-soft)]">
           {content}
@@ -59,7 +59,7 @@ function renderNodes(nodes?: RichNode[]) {
       );
     }
 
-    if (node.type === 'list_item') {
+    if (node.type === 'list_item' || node.type === 'listItem') {
       return <li key={key}>{content}</li>;
     }
 
@@ -149,7 +149,7 @@ function renderInline(nodes?: RichNode[]) {
     if (node.type === 'text') {
       return applyMarks(node.text ?? '', node.marks ?? [], index);
     }
-    if (node.type === 'hard_break') {
+    if (node.type === 'hard_break' || node.type === 'hardBreak') {
       return <br key={`br-${index}`} />;
     }
     return <span key={`inline-${index}`}>{renderNodes([node])}</span>;
@@ -344,15 +344,23 @@ export default function LessonPage() {
                 <h2 className="text-sm font-bold text-[var(--ink)]">Recursos adjuntos</h2>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2">
                   {lesson.resources.map((resource) => (
-                    <a
-                      key={resource.id}
-                      href={resource.publicUrl}
-                      className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-white/70"
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      {resource.originalName || resource.kind}
-                    </a>
+                    <div key={resource.id} className="rounded-xl border border-[var(--stroke)] bg-white p-3">
+                      {resource.kind === 'image' && resource.publicUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={resource.publicUrl} alt={resource.originalName || ''} className="mb-3 h-48 w-full rounded-xl object-cover" />
+                      ) : null}
+                      {resource.kind === 'video' && resource.publicUrl ? (
+                        <video src={resource.publicUrl} controls className="mb-3 aspect-video w-full rounded-xl" />
+                      ) : null}
+                      <a
+                        href={resource.publicUrl}
+                        className="text-sm font-semibold text-[var(--ink)] underline"
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        {resource.originalName || resource.kind}
+                      </a>
+                    </div>
                   ))}
                 </div>
               </div>

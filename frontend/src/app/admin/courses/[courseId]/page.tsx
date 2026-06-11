@@ -8,9 +8,11 @@ import { api } from '@/lib/api';
 import { CourseLessonEditor } from '@/components/course-lesson-editor';
 import type {
   Course,
+  CourseAccessType,
   CourseLesson,
   CourseModule,
   CourseModuleVisibility,
+  CourseStatus,
   LessonStatus,
   LessonType,
   UserProfile,
@@ -36,6 +38,8 @@ const emptyLesson: Partial<CourseLesson> = {
 const visibilityOptions: CourseModuleVisibility[] = ['visible', 'hidden'];
 const lessonStatusOptions: LessonStatus[] = ['draft', 'published'];
 const lessonTypeOptions: LessonType[] = ['text', 'video', 'downloadable', 'faq'];
+const courseStatusOptions: CourseStatus[] = ['draft', 'published', 'archived'];
+const courseAccessOptions: CourseAccessType[] = ['free', 'paid', 'pro', 'seguimiento'];
 
 type PageProps = {
   params: { courseId: string };
@@ -49,6 +53,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
   const [modules, setModules] = useState<CourseModule[]>([]);
   const [moduleDrafts, setModuleDrafts] = useState<Record<string, Partial<CourseModule>>>({});
   const [lessonDrafts, setLessonDrafts] = useState<Record<string, Partial<CourseLesson>>>({});
+  const [courseDraft, setCourseDraft] = useState<Partial<Course>>({});
   const [newModule, setNewModule] = useState<Partial<CourseModule>>(emptyModule);
   const [newLessons, setNewLessons] = useState<Record<string, Partial<CourseLesson>>>({});
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
@@ -74,6 +79,22 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         if (!active) return;
         const selected = courses.find((item) => item.id === courseId || item.slug === courseId) || null;
         setCourse(selected);
+        setCourseDraft(
+          selected
+            ? {
+                title: selected.title,
+                slug: selected.slug,
+                shortDescription: selected.shortDescription || '',
+                longDescription: selected.longDescription || '',
+                price: selected.price || '',
+                currency: selected.currency || 'EUR',
+                stripePaymentLink: selected.stripePaymentLink || '',
+                status: selected.status,
+                accessType: selected.accessType,
+                order: selected.order,
+              }
+            : {},
+        );
         setModules(selected?.modules || []);
         setModuleDrafts(
           Object.fromEntries(
@@ -122,6 +143,43 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
   const visibleModules = useMemo(() => {
     return [...modules].sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
   }, [modules]);
+  const publicationChecklist = useMemo(() => {
+    const lessons = modules.flatMap((module) => module.lessons || []);
+    return [
+      { label: 'Título y slug', done: Boolean(courseDraft.title && courseDraft.slug) },
+      { label: 'Portada pública', done: Boolean(course?.coverImage) },
+      { label: 'Descripción corta', done: Boolean(courseDraft.shortDescription) },
+      { label: 'Módulo visible', done: modules.some((module) => module.visibility === 'visible') },
+      { label: 'Lección publicada', done: lessons.some((lesson) => lesson.status === 'published') },
+      { label: 'Recursos S3 cargados', done: lessons.some((lesson) => (lesson.resources || []).length > 0) },
+      { label: 'Acceso y precio coherentes', done: courseDraft.accessType !== 'paid' || Boolean(courseDraft.price && courseDraft.stripePaymentLink) },
+    ];
+  }, [course?.coverImage, courseDraft.accessType, courseDraft.price, courseDraft.shortDescription, courseDraft.slug, courseDraft.stripePaymentLink, courseDraft.title, modules]);
+
+  async function saveCourseSettings() {
+    if (!course) return;
+    setSavingId('course-settings');
+    setError('');
+    try {
+      const updated = await api.updateBackofficeCourse(course.id, {
+        title: courseDraft.title,
+        slug: courseDraft.slug,
+        shortDescription: courseDraft.shortDescription,
+        longDescription: courseDraft.longDescription,
+        price: courseDraft.price ? String(courseDraft.price) : undefined,
+        currency: courseDraft.currency,
+        stripePaymentLink: courseDraft.stripePaymentLink,
+        status: courseDraft.status,
+        accessType: courseDraft.accessType,
+        order: courseDraft.order,
+      });
+      setCourse((prev) => ({ ...(prev || updated), ...updated }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar la configuración del curso');
+    } finally {
+      setSavingId('');
+    }
+  }
 
   async function createModule() {
     if (!newModule.title || !course) {
@@ -361,7 +419,8 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         <AdminNav />
         <div className="space-y-4">
       <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-        <h1 className="text-2xl font-bold text-[var(--ink)]">Contenido del curso</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--green-700)]">Constructor de curso</p>
+        <h1 className="mt-2 text-2xl font-bold text-[var(--ink)]">Contenido del curso</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
           {course ? course.title : 'Curso'}
         </p>
@@ -411,6 +470,38 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
           </div>
         ) : null}
       </header>
+
+      {course ? (
+        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+          <article className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">Configuración editorial</h2>
+            <p className="mt-1 text-sm text-[var(--ink-soft)]">Portada, acceso, estado, precio y descripción pública del curso.</p>
+            <div className="mt-4 grid gap-3 md:grid-cols-2">
+              <label className="text-sm font-semibold text-[var(--ink)]">Título<input className="ds-control mt-1" value={courseDraft.title || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, title: e.target.value }))} /></label>
+              <label className="text-sm font-semibold text-[var(--ink)]">Slug<input className="ds-control mt-1" value={courseDraft.slug || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, slug: e.target.value }))} /></label>
+              <label className="text-sm font-semibold text-[var(--ink)]">Estado<select className="ds-control mt-1" value={courseDraft.status || 'draft'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, status: e.target.value as CourseStatus }))}>{courseStatusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select></label>
+              <label className="text-sm font-semibold text-[var(--ink)]">Acceso<select className="ds-control mt-1" value={courseDraft.accessType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, accessType: e.target.value as CourseAccessType }))}>{courseAccessOptions.map((access) => <option key={access} value={access}>{access}</option>)}</select></label>
+              <label className="text-sm font-semibold text-[var(--ink)]">Precio<input className="ds-control mt-1" value={courseDraft.price || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, price: e.target.value }))} /></label>
+              <label className="text-sm font-semibold text-[var(--ink)]">Moneda<input className="ds-control mt-1" value={courseDraft.currency || 'EUR'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, currency: e.target.value }))} /></label>
+              <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Stripe Payment Link<input className="ds-control mt-1" value={courseDraft.stripePaymentLink || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, stripePaymentLink: e.target.value }))} /></label>
+              <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Descripción corta<textarea className="ds-control mt-1 min-h-24" value={courseDraft.shortDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, shortDescription: e.target.value }))} /></label>
+              <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Descripción larga<textarea className="ds-control mt-1 min-h-28" value={courseDraft.longDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, longDescription: e.target.value }))} /></label>
+            </div>
+            <button type="button" onClick={() => void saveCourseSettings()} disabled={savingId === 'course-settings'} className="mt-4 rounded-xl bg-[var(--green-500)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{savingId === 'course-settings' ? 'Guardando...' : 'Guardar configuración'}</button>
+          </article>
+          <article className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
+            <h2 className="text-lg font-semibold text-[var(--ink)]">Checklist de publicación</h2>
+            <div className="mt-4 space-y-2">
+              {publicationChecklist.map((item) => (
+                <div key={item.label} className="flex items-center gap-2 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3 text-sm">
+                  <span className={`h-3 w-3 rounded-full ${item.done ? 'bg-[var(--green-500)]' : 'bg-amber-400'}`} />
+                  <span className="font-semibold text-[var(--ink)]">{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
+      ) : null}
 
       {error ? (
         <article className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
@@ -721,6 +812,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
 
                                 <CourseLessonEditor
                                   value={(lessonDraft.contentJson as Record<string, unknown>) || null}
+                                  resources={lesson.resources || []}
                                   onChange={(next) =>
                                     setLessonDrafts((prev) => ({
                                       ...prev,
@@ -730,7 +822,8 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                 />
 
                                 <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-                                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Recursos adjuntos</p>
+                                  <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Biblioteca S3 de la lección</p>
+                                  <p className="mt-1 text-xs text-[var(--ink-soft)]">Sube imágenes, vídeos, PDFs o documentos. Se guardan como recursos privados y se entregan con URL firmada cuando el alumno tiene acceso.</p>
                                   <div className="mt-3 grid gap-2 sm:grid-cols-3">
                                     {['image', 'video', 'file'].map((kind) => (
                                       <label key={kind} className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-xs font-semibold text-[var(--ink)]">
@@ -760,6 +853,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                       {lesson.resources.map((resource) => (
                                         <li key={resource.id} className="flex flex-col gap-2 rounded-xl border border-[var(--stroke)] bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
                                           <span>{resource.originalName || resource.publicUrl}</span>
+                                          <span className="rounded-full bg-[var(--bg-app)] px-2 py-1 font-semibold">{resource.kind} · {resource.fileType}</span>
                                           <button
                                             type="button"
                                             onClick={() => void deleteResource(resource.id)}

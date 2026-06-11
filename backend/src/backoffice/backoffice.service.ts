@@ -5,6 +5,8 @@ import {
 } from '@nestjs/common';
 import {
   CourseAccessRuleType,
+  FileAssetStatus,
+  FileEntityType,
   Prisma,
   PromotionStatus,
   ServiceStatus,
@@ -23,6 +25,7 @@ import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import {
   BackofficeListDto,
+  BackofficeListFilesDto,
   BackofficeListPromotionsDto,
 } from './dto/list-backoffice.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
@@ -33,6 +36,7 @@ import { UpdateCourseLessonDto } from './dto/update-course-lesson.dto';
 import { UpdateCourseModuleDto } from './dto/update-course-module.dto';
 import { UpdatePromotionStatusDto } from './dto/update-promotion-status.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
+import { UpdatePromotionDocumentDto } from './dto/update-promotion-document.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
@@ -102,24 +106,39 @@ export class BackofficeService {
     });
   }
 
-  async listFiles(query: BackofficeListDto) {
+  async listFiles(query: BackofficeListFilesDto) {
     const limit = Math.min(query.limit ?? 100, 500);
     const offset = query.offset ?? 0;
     const search = query.q?.trim();
     return this.prisma.fileAsset.findMany({
-      where: search
-        ? {
-            OR: [
+      where: {
+        entityType: this.validFileEntityType(query.entityType),
+        entityId: query.entityId || undefined,
+        status: this.validFileStatus(query.status),
+        isPublic: query.isPublic === undefined ? undefined : query.isPublic === 'true',
+        mimeType: query.mimeType
+          ? { contains: query.mimeType, mode: 'insensitive' }
+          : undefined,
+        OR: search
+          ? [
               { originalName: { contains: search, mode: 'insensitive' } },
               { s3Key: { contains: search, mode: 'insensitive' } },
               { entityId: { contains: search, mode: 'insensitive' } },
-            ],
-          }
-        : undefined,
+            ]
+          : undefined,
+      },
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,
     });
+  }
+
+  listFilesForEntity(entityType: string, entityId: string) {
+    const parsedType = this.validFileEntityType(entityType);
+    if (!parsedType) {
+      throw new BadRequestException('Invalid file entity type');
+    }
+    return this.fileStorage.listForEntity(parsedType, entityId);
   }
 
   retryFileDeletion(fileAssetId: string) {
@@ -215,6 +234,12 @@ export class BackofficeService {
           include: {
             lessons: {
               orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+              include: {
+                resources: {
+                  orderBy: { createdAt: 'asc' },
+                  include: { fileAsset: true },
+                },
+              },
             },
           },
         },
@@ -837,7 +862,7 @@ export class BackofficeService {
       where,
       orderBy: [{ updatedAt: 'desc' }],
       include: {
-        documents: true,
+        documents: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }] },
         units: {
           orderBy: { rowOrder: 'asc' },
           take: 3,
@@ -868,7 +893,7 @@ export class BackofficeService {
         publicDescription: this.nullableText(dto.publicDescription),
       },
       include: {
-        documents: { orderBy: { createdAt: 'desc' } },
+        documents: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }] },
         units: { orderBy: { rowOrder: 'asc' } },
       },
     });
@@ -878,7 +903,7 @@ export class BackofficeService {
     const promotion = await this.prisma.promotion.findUnique({
       where: { id: promotionId },
       include: {
-        documents: { orderBy: { createdAt: 'desc' } },
+        documents: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }] },
         units: { orderBy: { rowOrder: 'asc' } },
       },
     });
@@ -940,7 +965,7 @@ export class BackofficeService {
       where: { id: promotionId },
       data,
       include: {
-        documents: { orderBy: { createdAt: 'desc' } },
+        documents: { orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }] },
         units: { orderBy: { rowOrder: 'asc' } },
       },
     });
@@ -1223,6 +1248,9 @@ export class BackofficeService {
         promotionId,
         fileAssetId: asset.id,
         documentKind: dto.documentKind,
+        title: file.originalname,
+        sortOrder: await this.nextPromotionDocumentOrder(promotionId),
+        isPublic: true,
         fileType: file.mimetype || 'application/octet-stream',
         originalName: file.originalname,
         storagePath: asset.s3Key,
@@ -1230,6 +1258,44 @@ export class BackofficeService {
         uploadedBy: uploadedByUserId || 'admin',
       },
     });
+  }
+
+  async updatePromotionDocument(
+    promotionId: string,
+    documentId: string,
+    dto: UpdatePromotionDocumentDto,
+  ) {
+    const document = await this.prisma.promotionDocument.findFirst({
+      where: { id: documentId, promotionId },
+      select: { id: true, fileAssetId: true },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Promotion document not found');
+    }
+
+    const updated = await this.prisma.promotionDocument.update({
+      where: { id: documentId },
+      data: {
+        title: this.nullableText(dto.title),
+        description: this.nullableText(dto.description),
+        altText: this.nullableText(dto.altText),
+        sortOrder: dto.sortOrder,
+        isFeatured: dto.isFeatured,
+        isPublic: dto.isPublic,
+        section: this.nullableText(dto.section),
+        reviewStatus: dto.reviewStatus,
+      },
+    });
+
+    if (document.fileAssetId && dto.isPublic !== undefined) {
+      await this.prisma.fileAsset.update({
+        where: { id: document.fileAssetId },
+        data: { isPublic: dto.isPublic },
+      });
+    }
+
+    return updated;
   }
 
   async deletePromotionDocument(promotionId: string, documentId: string) {
@@ -1250,6 +1316,14 @@ export class BackofficeService {
   private async deleteCourseAssets(courseId: string) {
     await this.fileStorage.deleteAssetsForEntity('course', courseId);
     await this.deleteCourseResourceAssets({ courseId });
+  }
+
+  private async nextPromotionDocumentOrder(promotionId: string) {
+    const maxOrder = await this.prisma.promotionDocument.aggregate({
+      where: { promotionId },
+      _max: { sortOrder: true },
+    });
+    return (maxOrder._max.sortOrder ?? -1) + 1;
   }
 
   private async deleteCourseResourceAssets(where: Prisma.CourseResourceWhereInput) {
@@ -1538,5 +1612,23 @@ export class BackofficeService {
     return allowed.includes(input as PromotionStatus)
       ? (input as PromotionStatus)
       : null;
+  }
+
+  private validFileEntityType(input?: string): FileEntityType | undefined {
+    if (!input) {
+      return undefined;
+    }
+    return Object.values(FileEntityType).includes(input as FileEntityType)
+      ? (input as FileEntityType)
+      : undefined;
+  }
+
+  private validFileStatus(input?: string): FileAssetStatus | undefined {
+    if (!input) {
+      return undefined;
+    }
+    return Object.values(FileAssetStatus).includes(input as FileAssetStatus)
+      ? (input as FileAssetStatus)
+      : undefined;
   }
 }

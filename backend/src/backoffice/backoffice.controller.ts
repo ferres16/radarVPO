@@ -30,6 +30,7 @@ import { CreateServiceDto } from './dto/create-service.dto';
 import { ImportUnitsFromPasteDto } from './dto/import-units-from-paste.dto';
 import {
   BackofficeListDto,
+  BackofficeListFilesDto,
   BackofficeListPromotionsDto,
 } from './dto/list-backoffice.dto';
 import { ReorderCourseItemsDto } from './dto/reorder-course-items.dto';
@@ -42,6 +43,7 @@ import { UpdateCourseLessonDto } from './dto/update-course-lesson.dto';
 import { UpdateCourseModuleDto } from './dto/update-course-module.dto';
 import { UpdatePromotionStatusDto } from './dto/update-promotion-status.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
+import { UpdatePromotionDocumentDto } from './dto/update-promotion-document.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
@@ -110,8 +112,16 @@ export class BackofficeController {
   }
 
   @Get('files')
-  listFiles(@Query() query: BackofficeListDto) {
+  listFiles(@Query() query: BackofficeListFilesDto) {
     return this.backofficeService.listFiles(query);
+  }
+
+  @Get('files/entity/:entityType/:entityId')
+  listFilesForEntity(
+    @Param('entityType') entityType: string,
+    @Param('entityId') entityId: string,
+  ) {
+    return this.backofficeService.listFilesForEntity(entityType, entityId);
   }
 
   @Post('files/:id/retry-delete')
@@ -463,6 +473,19 @@ export class BackofficeController {
     return this.backofficeService.deletePromotionDocument(
       promotionId,
       documentId,
+    );
+  }
+
+  @Patch('promotions/:id/documents/:documentId')
+  updateDocument(
+    @Param('id') promotionId: string,
+    @Param('documentId') documentId: string,
+    @Body() dto: UpdatePromotionDocumentDto,
+  ) {
+    return this.backofficeService.updatePromotionDocument(
+      promotionId,
+      documentId,
+      dto,
     );
   }
 }

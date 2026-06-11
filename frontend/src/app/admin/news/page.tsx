@@ -12,6 +12,9 @@ type NewsFormState = {
   relevance: string;
   publishedAt: string;
   summary: string;
+  body: string;
+  practicalImpact: string;
+  topic: string;
 };
 
 const initialForm: NewsFormState = {
@@ -21,6 +24,9 @@ const initialForm: NewsFormState = {
   relevance: 'medium',
   publishedAt: new Date().toISOString().slice(0, 16),
   summary: '',
+  body: '',
+  practicalImpact: '',
+  topic: '',
 };
 
 export default function AdminNewsPage() {
@@ -65,6 +71,9 @@ export default function AdminNewsPage() {
         relevance: form.relevance,
         publishedAt: new Date(form.publishedAt).toISOString(),
         summary: form.summary,
+        body: form.body,
+        practicalImpact: form.practicalImpact,
+        topic: form.topic,
       });
       setItems((prev) => [created, ...prev]);
       setForm(initialForm);
@@ -82,6 +91,9 @@ export default function AdminNewsPage() {
       const updated = await api.updateBackofficeNews(item.id, {
         title: item.title,
         summary: item.summary,
+        body: item.body,
+        practicalImpact: item.practicalImpact,
+        topic: item.topic,
         relevance: item.relevance,
       });
       setItems((prev) => prev.map((row) => (row.id === item.id ? updated : row)));
@@ -93,6 +105,9 @@ export default function AdminNewsPage() {
   }
 
   async function onDelete(newsId: string) {
+    if (!window.confirm('Vas a eliminar esta noticia y sus archivos asociados. ¿Continuar?')) {
+      return;
+    }
     setError('');
     try {
       await api.deleteBackofficeNews(newsId);
@@ -170,6 +185,25 @@ export default function AdminNewsPage() {
             onChange={(e) => setForm((prev) => ({ ...prev, summary: e.target.value }))}
             className="rounded-xl border border-[var(--stroke)] px-3 py-2"
           />
+          <input
+            placeholder="Tema / SEO básico"
+            value={form.topic}
+            onChange={(e) => setForm((prev) => ({ ...prev, topic: e.target.value }))}
+            className="rounded-xl border border-[var(--stroke)] px-3 py-2"
+          />
+          <textarea
+            placeholder="Impacto práctico"
+            value={form.practicalImpact}
+            onChange={(e) => setForm((prev) => ({ ...prev, practicalImpact: e.target.value }))}
+            className="rounded-xl border border-[var(--stroke)] px-3 py-2 md:col-span-2"
+          />
+          <textarea
+            placeholder="Cuerpo de la noticia"
+            value={form.body}
+            onChange={(e) => setForm((prev) => ({ ...prev, body: e.target.value }))}
+            className="rounded-xl border border-[var(--stroke)] px-3 py-2 md:col-span-2"
+            rows={5}
+          />
           <div className="md:col-span-2">
             <button
               type="submit"
@@ -229,6 +263,45 @@ export default function AdminNewsPage() {
                 )
               }
               rows={3}
+              className="mt-3 w-full rounded-xl border border-[var(--stroke)] px-3 py-2"
+            />
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <input
+                value={item.topic || ''}
+                onChange={(e) =>
+                  setItems((prev) =>
+                    prev.map((row) =>
+                      row.id === item.id ? { ...row, topic: e.target.value } : row,
+                    ),
+                  )
+                }
+                placeholder="Tema"
+                className="rounded-xl border border-[var(--stroke)] px-3 py-2"
+              />
+              <input
+                value={item.practicalImpact || ''}
+                onChange={(e) =>
+                  setItems((prev) =>
+                    prev.map((row) =>
+                      row.id === item.id ? { ...row, practicalImpact: e.target.value } : row,
+                    ),
+                  )
+                }
+                placeholder="Impacto práctico"
+                className="rounded-xl border border-[var(--stroke)] px-3 py-2"
+              />
+            </div>
+            <textarea
+              value={item.body || ''}
+              onChange={(e) =>
+                setItems((prev) =>
+                  prev.map((row) =>
+                    row.id === item.id ? { ...row, body: e.target.value } : row,
+                  ),
+                )
+              }
+              rows={5}
+              placeholder="Cuerpo"
               className="mt-3 w-full rounded-xl border border-[var(--stroke)] px-3 py-2"
             />
 

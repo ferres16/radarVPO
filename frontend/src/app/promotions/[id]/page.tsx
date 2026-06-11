@@ -117,6 +117,9 @@ export default async function PromotionDetailPage({
     pdfs: promotion.documents.filter((doc) => doc.fileType?.includes('pdf') || doc.documentKind === 'pdf_original'),
     plans: promotion.documents.filter((doc) => /plano|plan/i.test(doc.originalName || doc.documentKind)),
   };
+  const downloadableDocuments = promotion.documents.filter(
+    (doc) => !doc.fileType?.startsWith('image/') && !doc.fileType?.startsWith('video/'),
+  );
   const heroImage = documentsByType.images[0]?.publicUrl;
   const keyFacts = [
     { label: 'Municipio', value: promotion.municipality || 'Catalunya' },
@@ -212,6 +215,34 @@ export default async function PromotionDetailPage({
           </SurfaceCard>
         </section>
 
+        {documentsByType.images.length > 0 ? (
+          <section className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Galería</h2>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              {documentsByType.images.slice(0, 6).map((doc) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={doc.id}
+                  src={doc.publicUrl}
+                  alt={doc.altText || doc.title || doc.originalName || ''}
+                  className="h-56 w-full rounded-2xl object-cover shadow-sm"
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {documentsByType.videos.length > 0 ? (
+          <section className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Vídeos</h2>
+            <div className="mt-3 grid gap-3">
+              {documentsByType.videos.map((doc) => (
+                <video key={doc.id} src={doc.publicUrl} controls className="aspect-video w-full rounded-2xl bg-black" />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <DataBlock title="Fechas" payload={promotion.importantDates} />
           <DataBlock title="Requisitos" payload={promotion.requirements} />
@@ -262,11 +293,11 @@ export default async function PromotionDetailPage({
 
         <div id="documentos" className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Documentos de referencia</h2>
-          {promotion.documents.length === 0 ? (
+          {downloadableDocuments.length === 0 ? (
             <p className="mt-2 text-sm text-[var(--ink-soft)]">Sin documentos adjuntos.</p>
           ) : (
             <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {promotion.documents.map((doc) => (
+              {downloadableDocuments.map((doc) => (
                 <a
                   key={doc.id}
                   href={doc.publicUrl}
