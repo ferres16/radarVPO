@@ -272,6 +272,26 @@ export type BackofficeNewsItem = {
   createdAt: string;
 };
 
+export type FileAsset = {
+  id: string;
+  entityType: 'promotion' | 'alert' | 'course' | 'module' | 'lesson' | 'news' | 'service';
+  entityId: string;
+  fileName: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  s3Key: string;
+  s3Bucket: string;
+  url?: string | null;
+  isPublic: boolean;
+  uploadedByUserId?: string | null;
+  status: 'active' | 'deleted' | 'delete_failed';
+  deleteError?: string | null;
+  deletedAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type JobRun = {
   id: string;
   jobName: string;

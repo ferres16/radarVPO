@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { api } from '@/lib/api';
+import { InlineAdCard, SidebarAds } from '@/components/ads';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { Reveal } from '@/components/motion-primitives';
 
@@ -168,6 +169,7 @@ export default async function PromotionDetailPage({
         </section>
       </Reveal>
 
+      <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card md:p-6">
         <SectionHeader
           eyebrow="Ficha estructurada"
@@ -217,6 +219,8 @@ export default async function PromotionDetailPage({
           <DataBlock title="Contacto" payload={promotion.contactInfo} />
           <DataBlock title="Cuotas y reservas" payload={promotion.feesAndReservations} wide />
         </div>
+
+        <InlineAdCard className="mt-4" />
 
         <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Tabla de viviendas</h2>
@@ -277,6 +281,8 @@ export default async function PromotionDetailPage({
           )}
         </div>
       </article>
+      <SidebarAds />
+      </section>
     </main>
   );
 }

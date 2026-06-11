@@ -25,6 +25,7 @@ import { CreateCourseDto } from './dto/create-course.dto';
 import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
+import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { ImportUnitsFromPasteDto } from './dto/import-units-from-paste.dto';
 import {
@@ -49,18 +50,28 @@ import { UpsertUnitDto } from './dto/upsert-unit.dto';
 
 const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024;
 const MAX_COURSE_ASSET_SIZE = 25 * 1024 * 1024;
+const MAX_COURSE_COVER_SIZE = 5 * 1024 * 1024;
 const ALLOWED_DOCUMENT_MIME_TYPES = [
   'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'image/jpeg',
   'image/png',
+  'image/webp',
+  'video/mp4',
+  'video/quicktime',
 ];
 const ALLOWED_COURSE_ASSET_MIME_TYPES = [
   'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'image/jpeg',
   'image/png',
+  'image/webp',
   'video/mp4',
-  'video/webm',
+  'video/quicktime',
 ];
+const ALLOWED_COURSE_COVER_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const createMimeFilter =
   (allowed: string[]) =>
@@ -96,6 +107,16 @@ export class BackofficeController {
   @Get('failures')
   failures(@Query() query: BackofficeListDto) {
     return this.backofficeService.failures(query);
+  }
+
+  @Get('files')
+  listFiles(@Query() query: BackofficeListDto) {
+    return this.backofficeService.listFiles(query);
+  }
+
+  @Post('files/:id/retry-delete')
+  retryFileDeletion(@Param('id') fileAssetId: string) {
+    return this.backofficeService.retryFileDeletion(fileAssetId);
   }
 
   @Get('users')
@@ -193,6 +214,22 @@ export class BackofficeController {
     return this.backofficeService.deleteCourse(courseId);
   }
 
+  @Post('courses/:id/cover/upload')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_COURSE_COVER_SIZE },
+      fileFilter: createMimeFilter(ALLOWED_COURSE_COVER_MIME_TYPES),
+    }),
+  )
+  uploadCourseCover(
+    @Param('id') courseId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() admin: CurrentUserPayload,
+  ) {
+    return this.backofficeService.uploadCourseCover(courseId, file, admin.sub);
+  }
+
   @Post('courses/:id/modules')
   createCourseModule(
     @Param('id') courseId: string,
@@ -263,8 +300,14 @@ export class BackofficeController {
     @Param('lessonId') lessonId: string,
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: UploadCourseAssetDto,
+    @CurrentUser() admin: CurrentUserPayload,
   ) {
-    return this.backofficeService.uploadCourseResource(lessonId, dto, file);
+    return this.backofficeService.uploadCourseResource(lessonId, dto, file, admin.sub);
+  }
+
+  @Delete('courses/resources/:resourceId')
+  deleteCourseResource(@Param('resourceId') resourceId: string) {
+    return this.backofficeService.deleteCourseResource(resourceId);
   }
 
   @Post('courses/:id/access-rules')
@@ -311,6 +354,11 @@ export class BackofficeController {
     return this.backofficeService.listPromotions(query);
   }
 
+  @Post('promotions')
+  createPromotion(@Body() dto: CreatePromotionDto) {
+    return this.backofficeService.createPromotion(dto);
+  }
+
   @Get('promotions/:id')
   getPromotion(@Param('id') promotionId: string) {
     return this.backofficeService.getPromotion(promotionId);
@@ -335,6 +383,11 @@ export class BackofficeController {
     @Body() dto: UpdatePromotionStatusDto,
   ) {
     return this.backofficeService.updatePromotionStatus(promotionId, dto);
+  }
+
+  @Delete('promotions/:id')
+  deletePromotion(@Param('id') promotionId: string) {
+    return this.backofficeService.deletePromotion(promotionId);
   }
 
   @Post('promotions/:id/units')
@@ -397,7 +450,19 @@ export class BackofficeController {
     @Param('id') promotionId: string,
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: UploadDocumentDto,
+    @CurrentUser() admin: CurrentUserPayload,
   ) {
-    return this.backofficeService.uploadDocument(promotionId, dto, file);
+    return this.backofficeService.uploadDocument(promotionId, dto, file, admin.sub);
+  }
+
+  @Delete('promotions/:id/documents/:documentId')
+  deleteDocument(
+    @Param('id') promotionId: string,
+    @Param('documentId') documentId: string,
+  ) {
+    return this.backofficeService.deletePromotionDocument(
+      promotionId,
+      documentId,
+    );
   }
 }

@@ -2,22 +2,24 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import type { Promotion, UserAccessSummary, UserProfile } from '@/types';
+import type { Course, UserAccessSummary, UserProfile } from '@/types';
 import { ProfileCard } from '@/components/profile-card';
 import { StatusPill } from '@/components/status-pill';
 
 export default function AccountPage() {
+  const router = useRouter();
   const [me, setMe] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [fullNameDraft, setFullNameDraft] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
-  const [purchasedCoursesCount, setPurchasedCoursesCount] = useState(0);
+  const [courses, setCourses] = useState<Array<Course & { access?: { canAccess: boolean; reason: string } }>>([]);
   const [coursesError, setCoursesError] = useState('');
-  const [favorites, setFavorites] = useState<Promotion[]>([]);
   const [accessSummary, setAccessSummary] = useState<UserAccessSummary | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -67,21 +69,28 @@ export default function AccountPage() {
     }
   }
 
+  async function logout() {
+    setLoggingOut(true);
+    try {
+      await api.logout();
+      router.push('/login');
+    } finally {
+      setLoggingOut(false);
+    }
+  }
+
   useEffect(() => {
     if (!me) return;
     let active = true;
 
     (async () => {
       try {
-        const [list, favoriteList, access] = await Promise.all([
+        const [list, access] = await Promise.all([
           api.listCoursesForUser(),
-          api.getFavorites().catch(() => []),
           api.getMyAccess().catch(() => null),
         ]);
         if (!active) return;
-        const purchased = list.filter((course) => course.access?.reason === 'purchase');
-        setPurchasedCoursesCount(purchased.length);
-        setFavorites(favoriteList.map((item) => item.promotion).slice(0, 3));
+        setCourses(list);
         setAccessSummary(access);
       } catch {
         if (!active) return;
@@ -121,23 +130,20 @@ export default function AccountPage() {
   }
 
   const hasPro = me.plan === 'pro';
-  const hasTracking = me.plan === 'pro';
   const stripeCheckoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || '/register';
   const whatsappContactUrl =
     process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
     'https://wa.me/34600111222?text=Hola%2C%20quiero%20activar%20el%20seguimiento%20individualizado%20de%20Radar%20VPO.';
-  const hasProGuide = hasPro;
   const lastLogin = me.lastLoginAt ? new Date(me.lastLoginAt) : null;
   const lastLoginLabel = lastLogin
     ? new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium', timeStyle: 'short' }).format(lastLogin)
     : 'Sin registro';
-  const activeServices = accessSummary?.services.length ?? 0;
-  const activeCourses = accessSummary?.courses.length ?? purchasedCoursesCount;
-  const profileCards = [
-    { label: 'Solicitudes', value: '0', detail: 'Preparado para conectar con expediente cuando exista endpoint.' },
-    { label: 'Favoritos', value: String(favorites.length), detail: 'Viviendas guardadas para seguimiento rápido.' },
-    { label: 'Documentación', value: hasTracking ? 'En revisión' : 'Pendiente', detail: 'Bloque reservado para carpeta ciudadana.' },
-    { label: 'Notificaciones', value: hasTracking ? 'Activas' : 'Básicas', detail: 'Avisos por municipio, régimen y fechas clave.' },
+  const activeCourses = courses.filter((course) => course.access?.canAccess);
+  const lockedCourses = courses.filter((course) => !course.access?.canAccess);
+  const activeServices = accessSummary?.services ?? [];
+  const unlockedAccesses = [
+    ...activeCourses.map((course) => ({ id: `course-${course.id}`, label: course.title, type: 'Curso' })),
+    ...activeServices.map((item) => ({ id: `service-${item.service.id}`, label: item.service.name, type: 'Servicio' })),
   ];
 
   return (
@@ -148,20 +154,22 @@ export default function AccountPage() {
         <div className="relative">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Perfil</p>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Mi cuenta</p>
               <h1 className="mt-2 text-3xl font-black text-[var(--ink)] md:text-4xl display-type">{displayName}</h1>
-              <p className="mt-1 text-sm text-[var(--ink-soft)]">{me.email}</p>
+              <p className="mt-1 max-w-2xl text-sm text-[var(--ink-soft)]">
+                Gestiona tus datos, tu plan y los productos que tienes activos en Radar VPO.
+              </p>
             </div>
             
             <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Seguimiento actualizado</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Estado del plan</p>
               <div className="mt-2">
-                <StatusPill label={hasTracking ? 'Activo' : 'No activo'} tone={hasTracking ? 'active' : 'warning'} />
+                <StatusPill label={hasPro ? 'PRO activo' : 'Plan gratuito'} tone={hasPro ? 'active' : 'warning'} />
               </div>
             </div>
             <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Cursos comprados</p>
-              <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{purchasedCoursesCount}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Accesos desbloqueados</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{unlockedAccesses.length}</p>
               {coursesError ? <p className="mt-1 text-xs text-amber-700">{coursesError}</p> : null}
             </div>
           </div>
@@ -173,11 +181,11 @@ export default function AccountPage() {
             </div>
             <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Servicios activos</p>
-              <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{activeServices}</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{activeServices.length}</p>
             </div>
             <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Cursos y guías</p>
-              <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{activeCourses}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Cursos activos</p>
+              <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{activeCourses.length}</p>
             </div>
           </div>
 
@@ -216,60 +224,49 @@ export default function AccountPage() {
             >
               Guardar nombre
             </button>
-            {hasTracking ? (
-              <Link
-                href="/services"
-                className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
-              >
-                Ver plan de seguimiento
-              </Link>
-            ) : (
-              <Link
-                href={whatsappContactUrl}
-                className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
-              >
-                Activar seguimiento
-              </Link>
-            )}
+            <Link
+              href="/services"
+              className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
+            >
+              Activar servicio
+            </Link>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              disabled={loggingOut}
+              className="inline-flex items-center rounded-xl border border-red-100 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+            >
+              {loggingOut ? 'Cerrando...' : 'Cerrar sesión'}
+            </button>
             {profileMessage ? (
               <p className="w-full text-xs font-semibold text-[var(--green-700)]">{profileMessage}</p>
             ) : null}
-            <p className="w-full text-xs text-[var(--ink-soft)]">Ideal si necesitas un plan personalizado para tu caso.</p>
           </div>
         </div>
       </ProfileCard>
-
-      <section className="grid gap-4 md:grid-cols-4">
-        {profileCards.map((card) => (
-          <ProfileCard key={card.label} className="bg-white/88 transition hover:-translate-y-1">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">{card.label}</p>
-            <p className="display-type mt-3 text-2xl font-black text-[var(--ink)]">{card.value}</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{card.detail}</p>
-          </ProfileCard>
-        ))}
-      </section>
 
       <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
         <ProfileCard>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Viviendas guardadas</p>
-              <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Favoritos para comparar</h2>
+              <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Cursos activos</p>
+              <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Tu formación disponible</h2>
             </div>
-            <Link href="/promotions" className="inline-flex rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
-              Buscar vivienda
+            <Link href="/cursos" className="inline-flex rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
+              Ver catálogo
             </Link>
           </div>
-          {favorites.length === 0 ? (
+          {activeCourses.length === 0 ? (
             <p className="mt-4 rounded-2xl border border-dashed border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm text-[var(--ink-soft)]">
-              Aún no tienes viviendas favoritas. Guarda promociones para tener una comparación rápida desde tu perfil.
+              Todavía no tienes cursos activos. Puedes comprar un curso o activar un servicio para desbloquear contenido.
             </p>
           ) : (
             <div className="mt-4 space-y-3">
-              {favorites.map((promotion) => (
-                <Link key={promotion.id} href={`/promotions/${promotion.id}`} className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 transition hover:-translate-y-0.5 hover:bg-white">
-                  <p className="font-semibold text-[var(--ink)]">{promotion.title}</p>
-                  <p className="mt-1 text-sm text-[var(--ink-soft)]">{promotion.municipality || 'Catalunya'} {promotion.province ? `, ${promotion.province}` : ''}</p>
+              {activeCourses.map((course) => (
+                <Link key={course.id} href={`/cursos/${course.slug}`} className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 transition hover:-translate-y-0.5 hover:bg-white">
+                  <p className="font-semibold text-[var(--ink)]">{course.title}</p>
+                  <p className="mt-1 text-sm text-[var(--ink-soft)]">{course.shortDescription || 'Curso disponible en tu cuenta.'}</p>
+                  <span className="mt-3 inline-flex text-sm font-semibold text-[var(--green-700)]">Ver curso</span>
                 </Link>
               ))}
             </div>
@@ -277,80 +274,68 @@ export default function AccountPage() {
         </ProfileCard>
 
         <ProfileCard className="bg-[linear-gradient(135deg,rgba(54,189,248,0.08),rgba(255,255,255,0.96))]">
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--cyan-700)]">Roles y permisos</p>
-          <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Arquitectura preparada para escalar</h2>
-          <div className="mt-4 space-y-3 text-sm text-[var(--ink-soft)]">
-            <p><strong className="text-[var(--ink)]">Ciudadano:</strong> favoritos, avisos, documentación y seguimiento propio.</p>
-            <p><strong className="text-[var(--ink)]">Gestor:</strong> revisión de expedientes y soporte operativo.</p>
-            <p><strong className="text-[var(--ink)]">Administrador:</strong> backoffice completo, accesos y contenido.</p>
-          </div>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--cyan-700)]">Servicios contratados</p>
+          <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Acompañamiento activo</h2>
+          {activeServices.length === 0 ? (
+            <div className="mt-4 rounded-2xl border border-dashed border-[var(--stroke)] bg-white/70 p-4">
+              <p className="text-sm leading-6 text-[var(--ink-soft)]">No hay servicios activos en tu cuenta.</p>
+              <Link href={whatsappContactUrl} className="mt-3 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]">
+                Activar servicio
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-4 space-y-3">
+              {activeServices.map((item) => (
+                <div key={item.service.id} className="rounded-2xl border border-[var(--stroke)] bg-white/80 p-4">
+                  <p className="font-semibold text-[var(--ink)]">{item.service.name}</p>
+                  <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                    Activo desde {new Intl.DateTimeFormat('es-ES', { dateStyle: 'medium' }).format(new Date(item.activatedAt))}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
         </ProfileCard>
       </section>
 
-      <section id="guia-pro" className="space-y-4">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Guia PRO</p>
-          <h2 className="mt-2 text-2xl font-black text-[var(--ink)] display-type">Curso avanzado por modulos</h2>
-          <p className="mt-1 text-sm text-[var(--ink-soft)]">
-            Lectura progresiva, contenidos vivos y navegacion lateral sin descargas.
-          </p>
-        </div>
+      <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <ProfileCard>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Accesos desbloqueados</p>
+          <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Todo lo que tienes disponible</h2>
+          {unlockedAccesses.length === 0 ? (
+            <p className="mt-4 rounded-2xl border border-dashed border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm text-[var(--ink-soft)]">
+              No hay accesos desbloqueados todavía.
+            </p>
+          ) : (
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              {unlockedAccesses.map((item) => (
+                <div key={item.id} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--green-700)]">{item.type}</p>
+                  <p className="mt-1 font-semibold text-[var(--ink)]">{item.label}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </ProfileCard>
 
-        {hasProGuide ? (
-          <ProfileCard className="border-[rgba(47,107,36,0.25)] bg-[linear-gradient(130deg,rgba(47,107,36,0.08),rgba(255,255,255,0.96))]">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Indice del curso</p>
-                <h3 className="mt-2 text-xl font-bold text-[var(--ink)]">Accede a todos los modulos en una sola pagina.</h3>
-                <p className="mt-2 text-sm text-[var(--ink-soft)]">
-                  Cada modulo tiene su propia pagina con contenido, recursos y multimedia.
-                </p>
-              </div>
-              <Link
-                href="/cursos"
-                className="inline-flex items-center justify-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]"
-              >
-                Ver cursos
+        <ProfileCard className="border-[rgba(47,107,36,0.25)] bg-[linear-gradient(130deg,rgba(47,107,36,0.08),rgba(255,255,255,0.96))]">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Siguientes pasos</p>
+          <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Compra cursos o activa servicios</h2>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link href="/cursos" className="inline-flex items-center justify-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]">
+              Comprar curso
+            </Link>
+            <Link href="/services" className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
+              Activar servicio
+            </Link>
+            {!hasPro && lockedCourses.length > 0 ? (
+              <Link href={stripeCheckoutUrl} className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
+                Mejorar plan
               </Link>
-            </div>
-          </ProfileCard>
-        ) : (
-          <ProfileCard className="border-[rgba(47,107,36,0.25)] bg-[linear-gradient(130deg,rgba(47,107,36,0.10),rgba(255,255,255,0.96))]">
-            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-              <div>
-                <StatusPill label="Bloqueada" tone="locked" />
-                <h3 className="mt-3 text-2xl font-black text-[var(--ink)]">Desbloquea la guia PRO con seguimiento.</h3>
-                <p className="mt-2 text-sm text-[var(--ink-soft)]">
-                  Accede a modulos, lecciones, FAQ y material vivo sin PDFs. Solo disponible con seguimiento activo.
-                </p>
-              </div>
-              <div className="flex flex-col gap-2">
-                <Link
-                    href={stripeCheckoutUrl}
-                  className="inline-flex items-center justify-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]"
-                >
-                    Ir a Stripe Checkout
-                </Link>
-                <Link
-                    href={whatsappContactUrl}
-                  className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
-                >
-                    Pedir seguimiento por WhatsApp
-                </Link>
-              </div>
-            </div>
-          </ProfileCard>
-        )}
+            ) : null}
+          </div>
+        </ProfileCard>
       </section>
-
-      {me.role === 'admin' ? (
-        <Link
-          href="/admin"
-          className="inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]"
-        >
-          Abrir panel de admin
-        </Link>
-      ) : null}
     </main>
   );
 }

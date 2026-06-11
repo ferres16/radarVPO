@@ -294,6 +294,43 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     }
   }
 
+  async function uploadCourseCover(file: File) {
+    if (!course) return;
+    setSavingId('course-cover');
+    setError('');
+    try {
+      const updated = await api.uploadBackofficeCourseCover(course.id, file);
+      setCourse(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo subir la portada');
+    } finally {
+      setSavingId('');
+    }
+  }
+
+  async function deleteResource(resourceId: string) {
+    const accepted = window.confirm('Se eliminara el recurso tambien de S3. ¿Continuar?');
+    if (!accepted) return;
+    setSavingId(resourceId);
+    setError('');
+    try {
+      await api.deleteBackofficeCourseResource(resourceId);
+      setModules((prev) =>
+        prev.map((module) => ({
+          ...module,
+          lessons: (module.lessons || []).map((lesson) => ({
+            ...lesson,
+            resources: (lesson.resources || []).filter((resource) => resource.id !== resourceId),
+          })),
+        })),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo borrar el recurso');
+    } finally {
+      setSavingId('');
+    }
+  }
+
   if (loading) {
     return (
       <main className="shell">
@@ -344,6 +381,35 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
             </Link>
           ) : null}
         </div>
+        {course ? (
+          <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Portada pública del curso</p>
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
+              {course.coverImage ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={course.coverImage} alt="" className="h-20 w-32 rounded-xl object-cover" />
+              ) : (
+                <div className="flex h-20 w-32 items-center justify-center rounded-xl border border-dashed border-[var(--stroke)] bg-white text-xs text-[var(--ink-soft)]">
+                  Sin portada
+                </div>
+              )}
+              <label className="w-fit rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-sm">
+                {savingId === 'course-cover' ? 'Subiendo...' : 'Subir portada'}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    void uploadCourseCover(file);
+                    event.currentTarget.value = '';
+                  }}
+                />
+              </label>
+            </div>
+          </div>
+        ) : null}
       </header>
 
       {error ? (
@@ -671,6 +737,13 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                         {`Subir ${kind}`}
                                         <input
                                           type="file"
+                                          accept={
+                                            kind === 'image'
+                                              ? 'image/jpeg,image/png,image/webp'
+                                              : kind === 'video'
+                                                ? 'video/mp4,video/quicktime'
+                                                : '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                                          }
                                           className="hidden"
                                           onChange={(event) => {
                                             const file = event.target.files?.[0];
@@ -683,10 +756,18 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                     ))}
                                   </div>
                                   {lesson.resources && lesson.resources.length > 0 ? (
-                                    <ul className="mt-3 space-y-1 text-xs text-[var(--ink-soft)]">
+                                    <ul className="mt-3 space-y-2 text-xs text-[var(--ink-soft)]">
                                       {lesson.resources.map((resource) => (
-                                        <li key={resource.id}>
-                                          {resource.originalName || resource.publicUrl}
+                                        <li key={resource.id} className="flex flex-col gap-2 rounded-xl border border-[var(--stroke)] bg-white p-3 sm:flex-row sm:items-center sm:justify-between">
+                                          <span>{resource.originalName || resource.publicUrl}</span>
+                                          <button
+                                            type="button"
+                                            onClick={() => void deleteResource(resource.id)}
+                                            disabled={savingId === resource.id}
+                                            className="rounded-lg border border-red-100 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+                                          >
+                                            Eliminar
+                                          </button>
                                         </li>
                                       ))}
                                     </ul>

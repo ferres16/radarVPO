@@ -11,6 +11,7 @@ const adminLinks = [
   { href: '/admin/alerts', label: 'Avisos' },
   { href: '/admin/services', label: 'Servicios' },
   { href: '/admin/news', label: 'Noticias' },
+  { href: '/admin/files', label: 'Archivos' },
   { href: '/admin/users', label: 'Usuarios' },
   { href: '/admin/access', label: 'Compras y accesos' },
 ];

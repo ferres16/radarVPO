@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
+import Script from "next/script";
+import { MobileStickyAd } from "@/components/ads";
 import { TopNav } from "@/components/top-nav";
+import { adsConfig } from "@/lib/ads";
 import "./globals.css";
 
 const inter = Inter({
@@ -27,8 +30,18 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col pt-16 md:pt-20">
+        {adsConfig.enabled && adsConfig.clientId ? (
+          <Script
+            id="adsense-script"
+            async
+            strategy="afterInteractive"
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsConfig.clientId}`}
+            crossOrigin="anonymous"
+          />
+        ) : null}
         <TopNav />
         {children}
+        <MobileStickyAd />
       </body>
     </html>
   );

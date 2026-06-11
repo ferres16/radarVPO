@@ -12,6 +12,7 @@ import {
 } from '@prisma/client';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { FileStorageService } from '../storage/file-storage.service';
 
 type AccessDecision = {
   canAccess: boolean;
@@ -28,7 +29,10 @@ type AccessDecision = {
 
 @Injectable()
 export class CoursesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly fileStorage: FileStorageService,
+  ) {}
 
   private readonly publicLessonSelect = {
     id: true,
@@ -178,7 +182,10 @@ export class CoursesService {
       },
       include: {
         module: true,
-        resources: { orderBy: { createdAt: 'asc' } },
+        resources: {
+          orderBy: { createdAt: 'asc' },
+          include: { fileAsset: true },
+        },
       },
     });
 
@@ -205,10 +212,32 @@ export class CoursesService {
       lesson.id,
     );
 
+    const resources = await Promise.all(
+      lesson.resources.map(async (resource) => {
+        const { fileAsset, ...publicResource } = resource;
+        if (!resource.fileAssetId) {
+          return publicResource;
+        }
+
+        const signed = await this.fileStorage.getAccessibleUrl(
+          resource.fileAssetId,
+          true,
+        );
+
+        return {
+          ...publicResource,
+          publicUrl: signed.url || publicResource.publicUrl,
+        };
+      }),
+    );
+
     return {
       course: this.stripInternalCourseFields(course),
       access,
-      lesson,
+      lesson: {
+        ...lesson,
+        resources,
+      },
     };
   }
 

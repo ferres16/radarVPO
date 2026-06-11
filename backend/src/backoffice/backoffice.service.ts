@@ -12,12 +12,14 @@ import {
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { FileStorageService } from '../storage/file-storage.service';
 import { S3StorageService } from '../storage/s3-storage.service';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
+import { CreatePromotionDto } from './dto/create-promotion.dto';
 import { CreateServiceDto } from './dto/create-service.dto';
 import {
   BackofficeListDto,
@@ -42,6 +44,7 @@ export class BackofficeService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: S3StorageService,
+    private readonly fileStorage: FileStorageService,
   ) {}
 
   async overview() {
@@ -97,6 +100,30 @@ export class BackofficeService {
       take: limit,
       skip: offset,
     });
+  }
+
+  async listFiles(query: BackofficeListDto) {
+    const limit = Math.min(query.limit ?? 100, 500);
+    const offset = query.offset ?? 0;
+    const search = query.q?.trim();
+    return this.prisma.fileAsset.findMany({
+      where: search
+        ? {
+            OR: [
+              { originalName: { contains: search, mode: 'insensitive' } },
+              { s3Key: { contains: search, mode: 'insensitive' } },
+              { entityId: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : undefined,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+    });
+  }
+
+  retryFileDeletion(fileAssetId: string) {
+    return this.fileStorage.retryFailedDeletion(fileAssetId);
   }
 
   async listUsers(query: BackofficeListDto) {
@@ -452,6 +479,8 @@ export class BackofficeService {
   }
 
   async deleteCourse(courseId: string) {
+    await this.ensureCourse(courseId);
+    await this.deleteCourseAssets(courseId);
     await this.prisma.course.delete({ where: { id: courseId } });
     return { deleted: true };
   }
@@ -510,6 +539,14 @@ export class BackofficeService {
   }
 
   async deleteCourseModule(moduleId: string) {
+    const module = await this.prisma.courseModule.findUnique({
+      where: { id: moduleId },
+      select: { id: true },
+    });
+    if (!module) {
+      throw new NotFoundException('Module not found');
+    }
+    await this.deleteCourseResourceAssets({ moduleId });
     await this.prisma.courseModule.delete({ where: { id: moduleId } });
     return { deleted: true };
   }
@@ -582,7 +619,30 @@ export class BackofficeService {
   }
 
   async deleteCourseLesson(lessonId: string) {
+    const lesson = await this.prisma.courseLesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true },
+    });
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+    await this.deleteCourseResourceAssets({ lessonId });
     await this.prisma.courseLesson.delete({ where: { id: lessonId } });
+    return { deleted: true };
+  }
+
+  async deleteCourseResource(resourceId: string) {
+    const resource = await this.prisma.courseResource.findUnique({
+      where: { id: resourceId },
+      select: { id: true, fileAssetId: true, storagePath: true },
+    });
+
+    if (!resource) {
+      throw new NotFoundException('Course resource not found');
+    }
+
+    await this.deleteLinkedAsset(resource.fileAssetId, resource.storagePath);
+    await this.prisma.courseResource.delete({ where: { id: resourceId } });
     return { deleted: true };
   }
 
@@ -590,6 +650,7 @@ export class BackofficeService {
     lessonId: string,
     dto: UploadCourseAssetDto,
     file: Express.Multer.File,
+    uploadedByUserId?: string,
   ) {
     if (!file) {
       throw new BadRequestException('File is required');
@@ -604,11 +665,24 @@ export class BackofficeService {
       throw new NotFoundException('Lesson not found');
     }
 
-    const upload = await this.storage.upload({
+    const asset = await this.fileStorage.uploadFile({
+      entityType: 'lesson',
+      entityId: lesson.id,
       folder: `courses/${lesson.courseId}/${lessonId}`,
-      fileName: file.originalname,
-      contentType: file.mimetype,
-      content: file.buffer,
+      file,
+      isPublic: false,
+      uploadedByUserId,
+      allowedMimeTypes: [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'video/mp4',
+        'video/quicktime',
+      ],
+      maxSizeBytes: Number(process.env.COURSE_ASSET_MAX_SIZE_BYTES || 50 * 1024 * 1024),
     });
 
     return this.prisma.courseResource.create({
@@ -616,12 +690,38 @@ export class BackofficeService {
         courseId: lesson.courseId,
         moduleId: lesson.moduleId,
         lessonId: lesson.id,
+        fileAssetId: asset.id,
         kind: dto.kind,
         fileType: file.mimetype,
         originalName: file.originalname,
-        storagePath: upload.key,
-        publicUrl: upload.url,
+        storagePath: asset.s3Key,
+        publicUrl: asset.url || '',
       },
+    });
+  }
+
+  async uploadCourseCover(
+    courseId: string,
+    file: Express.Multer.File,
+    uploadedByUserId?: string,
+  ) {
+    await this.ensureCourse(courseId);
+    await this.fileStorage.deleteAssetsForEntity('course', courseId);
+
+    const asset = await this.fileStorage.uploadFile({
+      entityType: 'course',
+      entityId: courseId,
+      folder: `courses/${courseId}/cover`,
+      file,
+      isPublic: true,
+      uploadedByUserId,
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      maxSizeBytes: Number(process.env.COURSE_COVER_MAX_SIZE_BYTES || 5 * 1024 * 1024),
+    });
+
+    return this.prisma.course.update({
+      where: { id: courseId },
+      data: { coverImage: asset.url },
     });
   }
 
@@ -710,6 +810,7 @@ export class BackofficeService {
 
   async deleteNews(newsId: string) {
     await this.ensureNews(newsId);
+    await this.fileStorage.deleteAssetsForEntity('news', newsId);
     await this.prisma.newsItem.delete({ where: { id: newsId } });
     return { deleted: true };
   }
@@ -744,6 +845,32 @@ export class BackofficeService {
       },
       take: limit,
       skip: offset,
+    });
+  }
+
+  async createPromotion(dto: CreatePromotionDto) {
+    const source = await this.getManualSource();
+    return this.prisma.promotion.create({
+      data: {
+        sourceId: source.id,
+        title: dto.title,
+        sourceUrl:
+          dto.sourceUrl ||
+          process.env.FRONTEND_URL ||
+          'https://radar-vpo.local/manual-promotion',
+        location: this.nullableText(dto.location),
+        municipality: this.nullableText(dto.municipality),
+        province: this.nullableText(dto.province),
+        promotionType: dto.promotionType || 'desconocido',
+        status: dto.status || 'pending_review',
+        promoter: this.nullableText(dto.promoter),
+        totalHomes: dto.totalHomes,
+        publicDescription: this.nullableText(dto.publicDescription),
+      },
+      include: {
+        documents: { orderBy: { createdAt: 'desc' } },
+        units: { orderBy: { rowOrder: 'asc' } },
+      },
     });
   }
 
@@ -817,6 +944,21 @@ export class BackofficeService {
         units: { orderBy: { rowOrder: 'asc' } },
       },
     });
+  }
+
+  async deletePromotion(promotionId: string) {
+    await this.ensurePromotion(promotionId);
+    const documents = await this.prisma.promotionDocument.findMany({
+      where: { promotionId },
+      select: { fileAssetId: true, storagePath: true },
+    });
+
+    for (const document of documents) {
+      await this.deleteLinkedAsset(document.fileAssetId, document.storagePath);
+    }
+
+    await this.prisma.promotion.delete({ where: { id: promotionId } });
+    return { deleted: true };
   }
 
   async updatePromotionStatus(
@@ -1048,6 +1190,7 @@ export class BackofficeService {
     promotionId: string,
     dto: UploadDocumentDto,
     file: Express.Multer.File,
+    uploadedByUserId?: string,
   ) {
     await this.ensurePromotion(promotionId);
 
@@ -1055,22 +1198,100 @@ export class BackofficeService {
       throw new BadRequestException('File is required');
     }
 
-    const upload = await this.storage.upload({
+    const asset = await this.fileStorage.uploadFile({
+      entityType: 'promotion',
+      entityId: promotionId,
       folder: `promotions/${promotionId}`,
-      fileName: file.originalname,
-      contentType: file.mimetype || 'application/octet-stream',
-      content: file.buffer,
+      file,
+      isPublic: true,
+      uploadedByUserId,
+      allowedMimeTypes: [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'video/mp4',
+        'video/quicktime',
+      ],
+      maxSizeBytes: Number(process.env.PROMOTION_ASSET_MAX_SIZE_BYTES || 25 * 1024 * 1024),
     });
 
     return this.prisma.promotionDocument.create({
       data: {
         promotionId,
+        fileAssetId: asset.id,
         documentKind: dto.documentKind,
         fileType: file.mimetype || 'application/octet-stream',
         originalName: file.originalname,
-        storagePath: upload.key,
-        publicUrl: upload.url,
-        uploadedBy: 'admin',
+        storagePath: asset.s3Key,
+        publicUrl: asset.url || '',
+        uploadedBy: uploadedByUserId || 'admin',
+      },
+    });
+  }
+
+  async deletePromotionDocument(promotionId: string, documentId: string) {
+    const document = await this.prisma.promotionDocument.findFirst({
+      where: { id: documentId, promotionId },
+      select: { id: true, fileAssetId: true, storagePath: true },
+    });
+
+    if (!document) {
+      throw new NotFoundException('Promotion document not found');
+    }
+
+    await this.deleteLinkedAsset(document.fileAssetId, document.storagePath);
+    await this.prisma.promotionDocument.delete({ where: { id: documentId } });
+    return { deleted: true };
+  }
+
+  private async deleteCourseAssets(courseId: string) {
+    await this.fileStorage.deleteAssetsForEntity('course', courseId);
+    await this.deleteCourseResourceAssets({ courseId });
+  }
+
+  private async deleteCourseResourceAssets(where: Prisma.CourseResourceWhereInput) {
+    const resources = await this.prisma.courseResource.findMany({
+      where,
+      select: { fileAssetId: true, storagePath: true },
+    });
+
+    for (const resource of resources) {
+      await this.deleteLinkedAsset(resource.fileAssetId, resource.storagePath);
+    }
+  }
+
+  private async deleteLinkedAsset(fileAssetId?: string | null, storagePath?: string | null) {
+    if (fileAssetId) {
+      await this.fileStorage.deleteAsset(fileAssetId);
+      return;
+    }
+
+    if (!storagePath || /^https?:\/\//i.test(storagePath)) {
+      return;
+    }
+
+    await this.storage.delete(storagePath);
+  }
+
+  private async getManualSource() {
+    const existing = await this.prisma.source.findFirst({
+      where: { sourceType: 'manual', name: 'Backoffice manual' },
+    });
+
+    if (existing) {
+      return existing;
+    }
+
+    return this.prisma.source.create({
+      data: {
+        name: 'Backoffice manual',
+        sourceType: 'manual',
+        baseUrl:
+          process.env.FRONTEND_URL || 'https://radar-vpo.local/manual-source',
+        active: true,
       },
     });
   }

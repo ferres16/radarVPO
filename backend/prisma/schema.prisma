@@ -87,6 +87,22 @@ enum CourseResourceKind {
   file
 }
 
+enum FileEntityType {
+  promotion
+  alert
+  course
+  module
+  lesson
+  news
+  service
+}
+
+enum FileAssetStatus {
+  active
+  deleted
+  delete_failed
+}
+
 enum CourseAccessRuleType {
   plan
   entitlement
@@ -157,6 +173,7 @@ model User {
   lessonProgresses LessonProgress[]
   courseAccesses UserCourseAccess[]
   serviceAccesses UserServiceAccess[]
+  uploadedFiles FileAsset[]
 
   @@map("users")
 }
@@ -235,6 +252,7 @@ model Promotion {
 model PromotionDocument {
   id          String    @id @default(cuid())
   promotionId String    @map("promotion_id")
+  fileAssetId String?   @map("file_asset_id")
   documentKind PromotionDocumentKind @map("document_kind")
   fileType    String    @map("file_type")
   originalName String?  @map("original_name")
@@ -243,10 +261,41 @@ model PromotionDocument {
   uploadedBy  String?   @map("uploaded_by")
   createdAt   DateTime  @default(now()) @map("created_at")
   promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  fileAsset   FileAsset? @relation(fields: [fileAssetId], references: [id], onDelete: SetNull)
 
   @@index([promotionId, documentKind])
+  @@index([fileAssetId])
 
   @@map("promotion_documents")
+}
+
+model FileAsset {
+  id               String          @id @default(cuid())
+  entityType       FileEntityType  @map("entity_type")
+  entityId         String          @map("entity_id")
+  fileName         String          @map("file_name")
+  originalName     String          @map("original_name")
+  mimeType         String          @map("mime_type")
+  size             Int
+  s3Key            String          @map("s3_key")
+  s3Bucket         String          @map("s3_bucket")
+  url              String?
+  isPublic         Boolean         @default(true) @map("is_public")
+  uploadedByUserId String?         @map("uploaded_by_user_id")
+  status           FileAssetStatus @default(active)
+  deleteError      String?         @map("delete_error")
+  deletedAt        DateTime?       @map("deleted_at")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  uploadedBy       User?           @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  promotionDocuments PromotionDocument[]
+  courseResources CourseResource[]
+
+  @@unique([s3Bucket, s3Key])
+  @@index([entityType, entityId])
+  @@index([uploadedByUserId])
+  @@index([status])
+  @@map("file_assets")
 }
 
 model PromotionUnit {
@@ -422,6 +471,7 @@ model CourseResource {
   courseId     String             @map("course_id")
   moduleId     String?            @map("module_id")
   lessonId     String?            @map("lesson_id")
+  fileAssetId  String?            @map("file_asset_id")
   kind         CourseResourceKind
   fileType     String             @map("file_type")
   originalName String?            @map("original_name")
@@ -431,9 +481,11 @@ model CourseResource {
   course       Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
   module       CourseModule?      @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   lesson       CourseLesson?      @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  fileAsset    FileAsset?         @relation(fields: [fileAssetId], references: [id], onDelete: SetNull)
 
   @@index([courseId])
   @@index([lessonId])
+  @@index([fileAssetId])
   @@map("course_resources")
 }
 

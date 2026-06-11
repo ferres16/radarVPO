@@ -1,5 +1,7 @@
+import { Fragment } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { InlineAdCard } from '@/components/ads';
 import { PromotionCard } from '@/components/promotion-card';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 
@@ -72,8 +74,11 @@ export default async function PromotionsPage({
         <section className="space-y-4">
         <SectionHeader title="Últimas promociones" description="Fichas recientes con ubicación, estado y acceso directo al detalle." />
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Resultados de vivienda">
-          {visiblePromotions.map((promotion) => (
-            <PromotionCard key={promotion.id} promotion={promotion} />
+          {visiblePromotions.map((promotion, index) => (
+            <Fragment key={promotion.id}>
+              {index === 3 ? <InlineAdCard className="md:col-span-2 xl:col-span-3" /> : null}
+              <PromotionCard promotion={promotion} />
+            </Fragment>
           ))}
         </section>
         </section>

@@ -223,6 +223,13 @@ export default function AdminPromotionEditPage() {
     await refresh();
   }
 
+  async function removeDocument(documentId: string) {
+    const accepted = window.confirm('Se eliminara el archivo tambien de S3. ¿Continuar?');
+    if (!accepted) return;
+    await api.deleteBackofficeDocument(id, documentId);
+    await refresh();
+  }
+
   if (loading || !promotion) {
     return (
       <main className="shell">
@@ -413,19 +420,36 @@ export default function AdminPromotionEditPage() {
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <label className="rounded-xl border border-dashed p-3 text-sm">
             PDF original
-            <input className="mt-2 block" type="file" onChange={(e) => uploadFile(e, 'pdf_original')} />
+            <input className="mt-2 block" type="file" accept="application/pdf" onChange={(e) => uploadFile(e, 'pdf_original')} />
           </label>
           <label className="rounded-xl border border-dashed p-3 text-sm">
-            Captura o imagen
+            Galeria, video o documento
             <input className="mt-2 block" type="file" accept="image/*" onChange={(e) => uploadFile(e, 'image')} />
+          </label>
+          <label className="rounded-xl border border-dashed p-3 text-sm">
+            Video
+            <input className="mt-2 block" type="file" accept="video/mp4,video/quicktime" onChange={(e) => uploadFile(e, 'support_document')} />
+          </label>
+          <label className="rounded-xl border border-dashed p-3 text-sm">
+            Documento auxiliar
+            <input className="mt-2 block" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => uploadFile(e, 'support_document')} />
           </label>
         </div>
 
         <div className="mt-4 space-y-2">
           {promotion.documents.map((doc) => (
-            <a key={doc.id} href={doc.publicUrl} target="_blank" rel="noreferrer" className="block rounded-lg border p-2 text-sm hover:bg-[var(--bg-app)]">
-              {doc.originalName || doc.publicUrl} - {doc.documentKind}
-            </a>
+            <div key={doc.id} className="flex flex-col gap-2 rounded-lg border p-2 text-sm hover:bg-[var(--bg-app)] sm:flex-row sm:items-center sm:justify-between">
+              <a href={doc.publicUrl} target="_blank" rel="noreferrer" className="font-semibold text-[var(--ink)]">
+                {doc.originalName || doc.publicUrl} - {doc.documentKind}
+              </a>
+              <button
+                type="button"
+                onClick={() => void removeDocument(doc.id)}
+                className="rounded-lg border border-red-100 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50"
+              >
+                Eliminar archivo
+              </button>
+            </div>
           ))}
         </div>
       </section>

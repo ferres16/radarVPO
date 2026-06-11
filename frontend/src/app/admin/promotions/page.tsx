@@ -25,18 +25,17 @@ export default function AdminPromotionsPage() {
   const [overview, setOverview] = useState<BackofficeOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [newPromotionTitle, setNewPromotionTitle] = useState('');
+  const [creating, setCreating] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-
-    (async () => {
+  async function loadPromotions(shouldApply = () => true) {
       try {
         const [rows, reviewedRows, overviewData] = await Promise.all([
           api.getBackofficePromotions(status || 'published_unreviewed', query || undefined, 10),
           status ? Promise.resolve([]) : api.getBackofficePromotions('published_reviewed', query || undefined, 10),
           api.getBackofficeOverview().catch(() => null),
         ]);
-        if (!active) return;
+        if (!shouldApply()) return;
         setPromotions(
           [...rows, ...reviewedRows]
             .sort((a, b) => promotionTimestamp(b) - promotionTimestamp(a))
@@ -44,17 +43,55 @@ export default function AdminPromotionsPage() {
         );
         setOverview(overviewData);
       } catch (err) {
-        if (!active) return;
+        if (!shouldApply()) return;
         setError(err instanceof Error ? err.message : 'No se pudieron cargar promociones');
       } finally {
-        if (active) setLoading(false);
+        if (shouldApply()) setLoading(false);
       }
-    })();
+  }
+
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    void loadPromotions(() => active);
 
     return () => {
       active = false;
     };
   }, [status, query]);
+
+  async function createPromotion() {
+    if (!newPromotionTitle.trim()) {
+      setError('El título de la promoción es obligatorio.');
+      return;
+    }
+    setCreating(true);
+    setError('');
+    try {
+      const created = await api.createBackofficePromotion({
+        title: newPromotionTitle.trim(),
+        status: 'published_unreviewed',
+      });
+      setNewPromotionTitle('');
+      setPromotions((prev) => [created, ...prev].slice(0, 10));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo crear la promoción');
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function deletePromotion(promotionId: string) {
+    const accepted = window.confirm('Se eliminara la promoción y todos sus archivos asociados en S3. ¿Continuar?');
+    if (!accepted) return;
+    setError('');
+    try {
+      await api.deleteBackofficePromotion(promotionId);
+      setPromotions((prev) => prev.filter((promotion) => promotion.id !== promotionId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar la promoción');
+    }
+  }
 
   const filtered = useMemo(() => {
     return promotions;
@@ -112,6 +149,22 @@ export default function AdminPromotionsPage() {
                 ))}
               </select>
             </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
+              <input
+                value={newPromotionTitle}
+                onChange={(event) => setNewPromotionTitle(event.target.value)}
+                placeholder="Nueva promoción manual"
+                className="ds-control"
+              />
+              <button
+                type="button"
+                onClick={() => void createPromotion()}
+                disabled={creating}
+                className="rounded-2xl bg-[var(--green-700)] px-5 py-3 text-sm font-bold text-white hover:bg-[var(--green-900)] disabled:opacity-60"
+              >
+                {creating ? 'Creando...' : 'Crear promoción'}
+              </button>
+            </div>
           </section>
 
           {error ? <SurfaceCard className="border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{error}</SurfaceCard> : null}
@@ -134,9 +187,18 @@ export default function AdminPromotionsPage() {
                       <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">{promotion.title}</h2>
                       <p className="mt-2 text-sm text-[var(--ink-soft)]">{promotion.municipality || 'Catalunya'} · {promotion.promotionType}</p>
                     </div>
-                    <Link href={`/admin/promotions/${promotion.id}`} className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white transition hover:bg-[var(--green-900)]">
-                      Editar ficha
-                    </Link>
+                    <div className="flex flex-wrap gap-2">
+                      <Link href={`/admin/promotions/${promotion.id}`} className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white transition hover:bg-[var(--green-900)]">
+                        Editar ficha
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => void deletePromotion(promotion.id)}
+                        className="rounded-full border border-red-100 bg-white px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </div>
                   <div className="mt-4 grid gap-2 sm:grid-cols-4">
                     <span className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3 text-xs font-semibold text-[var(--ink-soft)]">Docs {promotion.documents?.length || 0}</span>

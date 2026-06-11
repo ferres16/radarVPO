@@ -9,6 +9,7 @@ import {
   CourseLesson,
   CourseModule,
   CourseResource,
+  FileAsset,
   NewsItem,
   Promotion,
   PromotionDetail,
@@ -133,16 +134,30 @@ function clearAccessToken() {
 }
 
 async function requestForm<T>(path: string, body: FormData): Promise<T> {
+  const token =
+    typeof window !== 'undefined'
+      ? window.localStorage.getItem(AUTH_TOKEN_KEY)
+      : null;
   const res = await fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
     body,
     credentials: 'include',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     cache: 'no-store',
   });
 
   if (!res.ok) {
     const fallback = `Request failed with status ${res.status}`;
-    throw new Error(fallback);
+    let message = fallback;
+    try {
+      const payload = (await res.json()) as { error?: { message?: string } };
+      message = payload.error?.message || fallback;
+    } catch {
+      message = fallback;
+    }
+    throw new Error(message);
   }
 
   return res.json() as Promise<T>;
@@ -161,6 +176,12 @@ export const api = {
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
   getBackofficeJobs: () => request<JobRun[]>('/backoffice/jobs'),
   getBackofficeFailures: () => request<DeliveryFailure[]>('/backoffice/failures'),
+  getBackofficeFiles: (q?: string) =>
+    request<FileAsset[]>(`/backoffice/files${queryString({ q })}`),
+  retryBackofficeFileDeletion: (id: string) =>
+    request<FileAsset>(`/backoffice/files/${id}/retry-delete`, {
+      method: 'POST',
+    }),
   getBackofficeUsers: (q?: string) => request<BackofficeUser[]>(`/backoffice/users${queryString({ q })}`),
   updateBackofficeUser: (
     id: string,
@@ -207,6 +228,11 @@ export const api = {
     request<PromotionDetail>(`/backoffice/promotions/${id}`),
   getBackofficePromotionPreview: (id: string) =>
     request<Record<string, unknown>>(`/backoffice/promotions/${id}/preview`),
+  createBackofficePromotion: (payload: Record<string, unknown>) =>
+    request<PromotionDetail>('/backoffice/promotions', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   updateBackofficePromotion: (id: string, payload: Record<string, unknown>) =>
     request<PromotionDetail>(`/backoffice/promotions/${id}`, {
       method: 'PATCH',
@@ -216,6 +242,10 @@ export const api = {
     request<Promotion>(`/backoffice/promotions/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+    }),
+  deleteBackofficePromotion: (id: string) =>
+    request<{ deleted: boolean }>(`/backoffice/promotions/${id}`, {
+      method: 'DELETE',
     }),
   createBackofficeUnit: (id: string, payload: Partial<PromotionUnit>) =>
     request<PromotionUnit>(`/backoffice/promotions/${id}/units`, {
@@ -263,6 +293,10 @@ export const api = {
     form.append('file', file);
     return requestForm(`/backoffice/promotions/${id}/documents/upload`, form);
   },
+  deleteBackofficeDocument: (id: string, documentId: string) =>
+    request<{ deleted: boolean }>(`/backoffice/promotions/${id}/documents/${documentId}`, {
+      method: 'DELETE',
+    }),
   listCourses: () => request<Course[]>('/courses'),
   listServices: () => request<Service[]>('/services'),
   listCoursesForUser: () => request<Array<Course & { access: { canAccess: boolean; reason: string } }>>('/courses/access'),
@@ -304,6 +338,11 @@ export const api = {
     request<{ deleted: boolean }>(`/backoffice/courses/${id}`, {
       method: 'DELETE',
     }),
+  uploadBackofficeCourseCover: (courseId: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return requestForm<Course>(`/backoffice/courses/${courseId}/cover/upload`, form);
+  },
   getBackofficeServices: (q?: string) => request<Service[]>(`/backoffice/services${queryString({ q })}`),
   createBackofficeService: (payload: ServiceMutationPayload) =>
     request<Service>('/backoffice/services', {
@@ -393,6 +432,10 @@ export const api = {
     form.append('file', file);
     return requestForm<CourseResource>(`/backoffice/courses/lessons/${lessonId}/resources/upload`, form);
   },
+  deleteBackofficeCourseResource: (resourceId: string) =>
+    request<{ deleted: boolean }>(`/backoffice/courses/resources/${resourceId}`, {
+      method: 'DELETE',
+    }),
   createBackofficeCourseAccessRule: (
     courseId: string,
     payload: { ruleType: CourseAccessRuleType; configJson: Record<string, unknown> },

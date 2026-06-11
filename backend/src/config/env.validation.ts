@@ -71,6 +71,63 @@ class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  AWS_ACCESS_KEY_ID?: string;
+
+  @IsOptional()
+  @IsString()
+  AWS_SECRET_ACCESS_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  AWS_REGION?: string;
+
+  @IsOptional()
+  @IsString()
+  AWS_S3_BUCKET?: string;
+
+  @IsOptional()
+  @IsString()
+  AWS_S3_PUBLIC_BASE_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  AWS_S3_ENDPOINT?: string;
+
+  @IsOptional()
+  @IsBooleanString()
+  AWS_S3_FORCE_PATH_STYLE?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  MAX_FILE_SIZE_BYTES?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  PROMOTION_ASSET_MAX_SIZE_BYTES?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  COURSE_ASSET_MAX_SIZE_BYTES?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  COURSE_COVER_MAX_SIZE_BYTES?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(60)
+  S3_SIGNED_URL_TTL_SECONDS?: number;
+
+  @IsOptional()
+  @IsString()
+  ALLOWED_FILE_MIME_TYPES?: string;
+
+  @IsOptional()
+  @IsString()
   S3_ENDPOINT?: string;
 
   @IsOptional()

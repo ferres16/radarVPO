@@ -1,4 +1,6 @@
+import { Fragment } from 'react';
 import { api } from '@/lib/api';
+import { InlineAdCard } from '@/components/ads';
 import { EmptyState } from '@/components/empty-state';
 import { NewsCard } from '@/components/news-card';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
@@ -63,10 +65,13 @@ export default async function NewsPage({
           <section className="space-y-4">
             <SectionHeader eyebrow="Recientes" title="Últimas publicaciones" />
             <Stagger className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {recent.map((item) => (
-                <StaggerItem key={item.id}>
-                  <NewsCard item={item} />
-                </StaggerItem>
+              {recent.map((item, index) => (
+                <Fragment key={item.id}>
+                  {index === 3 ? <InlineAdCard className="md:col-span-2 xl:col-span-3" /> : null}
+                  <StaggerItem>
+                    <NewsCard item={item} />
+                  </StaggerItem>
+                </Fragment>
               ))}
             </Stagger>
           </section>
