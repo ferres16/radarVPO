@@ -132,6 +132,16 @@ $ npm run test:cov
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
+## Course assets and S3
+
+Course covers, lesson media, PDFs and attachments are stored in S3 through `FileStorageService`. Configure:
+
+- `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `AWS_S3_BUCKET`
+- `AWS_S3_PUBLIC_BASE_URL`, `AWS_S3_ENDPOINT`, `AWS_S3_FORCE_PATH_STYLE`
+- `COURSE_ASSET_MAX_SIZE_BYTES`, `COURSE_COVER_MAX_SIZE_BYTES`, `S3_SIGNED_URL_TTL_SECONDS`
+
+Course block assets are private by default and returned to users through signed URLs after the course access check. Course covers are public when `AWS_S3_PUBLIC_BASE_URL` is configured.
+
 If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
 ```bash

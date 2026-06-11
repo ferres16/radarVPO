@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
+  CourseAssetKind,
   CourseAccessRuleType,
   FileAssetStatus,
   FileEntityType,
@@ -17,6 +18,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FileStorageService } from '../storage/file-storage.service';
 import { S3StorageService } from '../storage/s3-storage.service';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
+import { CreateCourseContentBlockDto } from './dto/create-course-content-block.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
@@ -31,6 +33,7 @@ import {
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
 import { UpdateAccessDto } from './dto/update-access.dto';
 import { UpdateCourseAccessRuleDto } from './dto/update-course-access-rule.dto';
+import { UpdateCourseContentBlockDto } from './dto/update-course-content-block.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { UpdateCourseLessonDto } from './dto/update-course-lesson.dto';
 import { UpdateCourseModuleDto } from './dto/update-course-module.dto';
@@ -39,6 +42,7 @@ import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { UpdatePromotionDocumentDto } from './dto/update-promotion-document.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UploadCourseBlockAssetDto } from './dto/upload-course-block-asset.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpsertUnitDto } from './dto/upsert-unit.dto';
@@ -224,7 +228,7 @@ export class BackofficeService {
   async listCourses(query: BackofficeListDto) {
     const limit = Math.min(query.limit ?? 100, 500);
     const offset = query.offset ?? 0;
-    return this.prisma.course.findMany({
+    const courses = await this.prisma.course.findMany({
       orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
       take: limit,
       skip: offset,
@@ -235,6 +239,19 @@ export class BackofficeService {
             lessons: {
               orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
               include: {
+                blocks: {
+                  orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+                  include: {
+                    assets: {
+                      orderBy: { createdAt: 'asc' },
+                      include: { fileAsset: true },
+                    },
+                  },
+                },
+                assets: {
+                  orderBy: { createdAt: 'asc' },
+                  include: { fileAsset: true },
+                },
                 resources: {
                   orderBy: { createdAt: 'asc' },
                   include: { fileAsset: true },
@@ -243,9 +260,17 @@ export class BackofficeService {
             },
           },
         },
+        assets: {
+          orderBy: { createdAt: 'asc' },
+          include: { fileAsset: true },
+        },
         accessRules: { orderBy: { createdAt: 'asc' } },
       },
     });
+
+    return Promise.all(
+      courses.map((course) => this.withSignedCourseAssetsForBackoffice(course)),
+    );
   }
 
   async createCourse(dto: CreateCourseDto) {
@@ -256,12 +281,21 @@ export class BackofficeService {
         shortDescription: this.nullableText(dto.shortDescription),
         longDescription: this.nullableText(dto.longDescription),
         coverImage: this.nullableText(dto.coverImage),
+        pricingType: dto.pricingType,
         price: this.nullableDecimal(dto.price),
         currency: this.nullableText(dto.currency),
         stripePaymentLink: this.nullableText(dto.stripePaymentLink),
         status: dto.status,
         accessType: dto.accessType,
         order: dto.order ?? 0,
+        seoTitle: this.nullableText(dto.seoTitle),
+        seoDescription: this.nullableText(dto.seoDescription),
+        seoMetadata: this.coerceJsonValue(dto.seoMetadata),
+        publishedAt: dto.publishedAt
+          ? new Date(dto.publishedAt)
+          : dto.status === 'published'
+            ? new Date()
+            : undefined,
       },
     });
   }
@@ -275,12 +309,21 @@ export class BackofficeService {
         shortDescription: this.nullableText(dto.shortDescription),
         longDescription: this.nullableText(dto.longDescription),
         coverImage: this.nullableText(dto.coverImage),
+        pricingType: dto.pricingType,
         price: this.nullableDecimal(dto.price),
         currency: this.nullableText(dto.currency),
         stripePaymentLink: this.nullableText(dto.stripePaymentLink),
         status: dto.status,
         accessType: dto.accessType,
         order: dto.order,
+        seoTitle: this.nullableText(dto.seoTitle),
+        seoDescription: this.nullableText(dto.seoDescription),
+        seoMetadata: this.coerceJsonValue(dto.seoMetadata),
+        publishedAt: dto.publishedAt
+          ? new Date(dto.publishedAt)
+          : dto.status === 'published'
+            ? new Date()
+            : undefined,
       },
     });
   }
@@ -571,6 +614,7 @@ export class BackofficeService {
     if (!module) {
       throw new NotFoundException('Module not found');
     }
+    await this.deleteCourseAssetFiles({ moduleId });
     await this.deleteCourseResourceAssets({ moduleId });
     await this.prisma.courseModule.delete({ where: { id: moduleId } });
     return { deleted: true };
@@ -592,6 +636,7 @@ export class BackofficeService {
         moduleId: module.id,
         title: dto.title,
         slug: dto.slug,
+        summary: this.nullableText(dto.summary),
         contentJson: this.coerceJsonValue(dto.contentJson),
         order: dto.order ?? 0,
         durationMinutes: dto.durationMinutes,
@@ -634,6 +679,7 @@ export class BackofficeService {
       data: {
         title: dto.title,
         slug: dto.slug,
+        summary: this.nullableText(dto.summary),
         contentJson: this.coerceJsonValue(dto.contentJson),
         order: dto.order,
         durationMinutes: dto.durationMinutes,
@@ -651,8 +697,111 @@ export class BackofficeService {
     if (!lesson) {
       throw new NotFoundException('Lesson not found');
     }
+    await this.deleteCourseAssetFiles({ lessonId });
     await this.deleteCourseResourceAssets({ lessonId });
     await this.prisma.courseLesson.delete({ where: { id: lessonId } });
+    return { deleted: true };
+  }
+
+  async createCourseContentBlock(
+    lessonId: string,
+    dto: CreateCourseContentBlockDto,
+  ) {
+    await this.ensureLesson(lessonId);
+    return this.prisma.courseContentBlock.create({
+      data: {
+        lessonId,
+        type: dto.type,
+        content: this.coerceRequiredJsonValue(dto.content),
+        order: dto.order ?? 0,
+      },
+      include: {
+        assets: {
+          orderBy: { createdAt: 'asc' },
+          include: { fileAsset: true },
+        },
+      },
+    });
+  }
+
+  async reorderCourseContentBlocks(lessonId: string, blockIds: string[]) {
+    const blocks = await this.prisma.courseContentBlock.findMany({
+      where: { id: { in: blockIds }, lessonId },
+      select: { id: true },
+    });
+
+    if (blocks.length !== blockIds.length) {
+      throw new BadRequestException(
+        'Some blocks do not belong to this lesson',
+      );
+    }
+
+    await this.prisma.$transaction(
+      blockIds.map((id, index) =>
+        this.prisma.courseContentBlock.update({
+          where: { id },
+          data: { order: index },
+        }),
+      ),
+    );
+
+    return this.prisma.courseContentBlock.findMany({
+      where: { lessonId },
+      orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+      include: {
+        assets: {
+          orderBy: { createdAt: 'asc' },
+          include: { fileAsset: true },
+        },
+      },
+    });
+  }
+
+  async updateCourseContentBlock(
+    blockId: string,
+    dto: UpdateCourseContentBlockDto,
+  ) {
+    return this.prisma.courseContentBlock.update({
+      where: { id: blockId },
+      data: {
+        type: dto.type,
+        content: this.coerceJsonValue(dto.content),
+        order: dto.order,
+      },
+      include: {
+        assets: {
+          orderBy: { createdAt: 'asc' },
+          include: { fileAsset: true },
+        },
+      },
+    });
+  }
+
+  async deleteCourseContentBlock(blockId: string) {
+    const block = await this.prisma.courseContentBlock.findUnique({
+      where: { id: blockId },
+      select: { id: true },
+    });
+    if (!block) {
+      throw new NotFoundException('Content block not found');
+    }
+
+    await this.deleteCourseAssetFiles({ blockId });
+    await this.prisma.courseContentBlock.delete({ where: { id: blockId } });
+    return { deleted: true };
+  }
+
+  async deleteCourseAsset(assetId: string) {
+    const asset = await this.prisma.courseAsset.findUnique({
+      where: { id: assetId },
+      select: { id: true, fileAssetId: true, s3Key: true },
+    });
+    if (!asset) {
+      throw new NotFoundException('Course asset not found');
+    }
+
+    await this.deleteLinkedAsset(asset.fileAssetId, asset.s3Key);
+    await this.prisma.courseAsset.delete({ where: { id: assetId } });
     return { deleted: true };
   }
 
@@ -725,12 +874,93 @@ export class BackofficeService {
     });
   }
 
+  async uploadCourseBlockAsset(
+    blockId: string,
+    dto: UploadCourseBlockAssetDto,
+    file: Express.Multer.File,
+    uploadedByUserId?: string,
+  ) {
+    if (!file) {
+      throw new BadRequestException('File is required');
+    }
+
+    const block = await this.prisma.courseContentBlock.findUnique({
+      where: { id: blockId },
+      select: {
+        id: true,
+        lesson: {
+          select: {
+            id: true,
+            courseId: true,
+            moduleId: true,
+            course: {
+              select: { pricingType: true, accessType: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!block) {
+      throw new NotFoundException('Content block not found');
+    }
+
+    const isFreeCourse =
+      block.lesson.course.pricingType === 'free' &&
+      block.lesson.course.accessType === 'free';
+    const isPublic =
+      dto.isPublic === 'true' && dto.kind === CourseAssetKind.image && isFreeCourse;
+
+    const asset = await this.fileStorage.uploadFile({
+      entityType: 'lesson',
+      entityId: block.lesson.id,
+      folder: `courses/${block.lesson.courseId}/${block.lesson.id}/blocks/${block.id}`,
+      file,
+      isPublic,
+      uploadedByUserId,
+      allowedMimeTypes: [
+        'application/pdf',
+        'image/jpeg',
+        'image/png',
+        'image/webp',
+        'video/mp4',
+      ],
+      maxSizeBytes: Number(process.env.COURSE_ASSET_MAX_SIZE_BYTES || 50 * 1024 * 1024),
+    });
+
+    const courseAsset = await this.prisma.courseAsset.create({
+      data: {
+        courseId: block.lesson.courseId,
+        moduleId: block.lesson.moduleId,
+        lessonId: block.lesson.id,
+        blockId: block.id,
+        fileAssetId: asset.id,
+        kind: dto.kind,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        s3Key: asset.s3Key,
+        url: asset.url,
+        isPublic,
+        altText: this.nullableText(dto.altText),
+        caption: this.nullableText(dto.caption),
+      },
+      include: { fileAsset: true },
+    });
+
+    const signed = await this.fileStorage.getAccessibleUrl(asset.id, true, {
+      preferSigned: true,
+    });
+    return { ...courseAsset, url: signed.url || courseAsset.url };
+  }
+
   async uploadCourseCover(
     courseId: string,
     file: Express.Multer.File,
     uploadedByUserId?: string,
   ) {
     await this.ensureCourse(courseId);
+    await this.deleteCourseAssetFiles({ courseId, kind: CourseAssetKind.cover });
     await this.fileStorage.deleteAssetsForEntity('course', courseId);
 
     const asset = await this.fileStorage.uploadFile({
@@ -742,6 +972,20 @@ export class BackofficeService {
       uploadedByUserId,
       allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
       maxSizeBytes: Number(process.env.COURSE_COVER_MAX_SIZE_BYTES || 5 * 1024 * 1024),
+    });
+
+    await this.prisma.courseAsset.create({
+      data: {
+        courseId,
+        fileAssetId: asset.id,
+        kind: CourseAssetKind.cover,
+        originalName: file.originalname,
+        mimeType: file.mimetype,
+        size: file.size,
+        s3Key: asset.s3Key,
+        url: asset.url,
+        isPublic: true,
+      },
     });
 
     return this.prisma.course.update({
@@ -1319,6 +1563,7 @@ export class BackofficeService {
   }
 
   private async deleteCourseAssets(courseId: string) {
+    await this.deleteCourseAssetFiles({ courseId });
     await this.fileStorage.deleteAssetsForEntity('course', courseId);
     await this.deleteCourseResourceAssets({ courseId });
   }
@@ -1356,6 +1601,78 @@ export class BackofficeService {
     return { ...promotion, documents };
   }
 
+  private async withSignedCourseAssetsForBackoffice<
+    T extends {
+      assets?: Array<{ fileAssetId: string | null; url: string | null }>;
+      modules?: Array<{
+        lessons?: Array<{
+          assets?: Array<{ fileAssetId: string | null; url: string | null }>;
+          blocks?: Array<{
+            assets?: Array<{ fileAssetId: string | null; url: string | null }>;
+          }>;
+          resources?: Array<{ fileAssetId: string | null; publicUrl: string }>;
+        }>;
+      }>;
+    },
+  >(course: T): Promise<T> {
+    const signAsset = async <A extends { fileAssetId: string | null; url: string | null }>(
+      asset: A,
+    ): Promise<A> => {
+      if (!asset.fileAssetId) return asset;
+      try {
+        const access = await this.fileStorage.getAccessibleUrl(
+          asset.fileAssetId,
+          true,
+          { preferSigned: true },
+        );
+        return { ...asset, url: access.url || asset.url } as A;
+      } catch {
+        return asset;
+      }
+    };
+
+    const signResource = async <R extends { fileAssetId: string | null; publicUrl: string }>(
+      resource: R,
+    ): Promise<R> => {
+      if (!resource.fileAssetId) return resource;
+      try {
+        const access = await this.fileStorage.getAccessibleUrl(
+          resource.fileAssetId,
+          true,
+          { preferSigned: true },
+        );
+        return { ...resource, publicUrl: access.url || resource.publicUrl } as R;
+      } catch {
+        return resource;
+      }
+    };
+
+    const modules = await Promise.all(
+      (course.modules || []).map(async (module) => ({
+        ...module,
+        lessons: await Promise.all(
+          (module.lessons || []).map(async (lesson) => ({
+            ...lesson,
+            assets: await Promise.all((lesson.assets || []).map(signAsset)),
+            resources: await Promise.all((lesson.resources || []).map(signResource)),
+            blocks: await Promise.all(
+              (lesson.blocks || []).map(async (block) => ({
+                ...block,
+                assets: await Promise.all((block.assets || []).map(signAsset)),
+              })),
+            ),
+          })),
+        ),
+      })),
+    );
+
+    return {
+      ...course,
+      assets: await Promise.all((course.assets || []).map(signAsset)),
+      modules,
+    } as T;
+  }
+
   private async deleteCourseResourceAssets(where: Prisma.CourseResourceWhereInput) {
     const resources = await this.prisma.courseResource.findMany({
       where,
@@ -1364,6 +1681,17 @@ export class BackofficeService {
 
     for (const resource of resources) {
       await this.deleteLinkedAsset(resource.fileAssetId, resource.storagePath);
+    }
+  }
+
+  private async deleteCourseAssetFiles(where: Prisma.CourseAssetWhereInput) {
+    const assets = await this.prisma.courseAsset.findMany({
+      where,
+      select: { fileAssetId: true, s3Key: true },
+    });
+
+    for (const asset of assets) {
+      await this.deleteLinkedAsset(asset.fileAssetId, asset.s3Key);
     }
   }
 
@@ -1532,6 +1860,19 @@ export class BackofficeService {
     }
 
     return course;
+  }
+
+  private async ensureLesson(lessonId: string) {
+    const lesson = await this.prisma.courseLesson.findUnique({
+      where: { id: lessonId },
+      select: { id: true },
+    });
+
+    if (!lesson) {
+      throw new NotFoundException('Lesson not found');
+    }
+
+    return lesson;
   }
 
   private async ensureUserAndCourse(userId: string, courseId: string) {

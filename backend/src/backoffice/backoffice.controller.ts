@@ -21,6 +21,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { BackofficeService } from './backoffice.service';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
+import { CreateCourseContentBlockDto } from './dto/create-course-content-block.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
@@ -38,6 +39,7 @@ import { ReorderUnitsDto } from './dto/reorder-units.dto';
 import { UpdateAccessDto } from './dto/update-access.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
 import { UpdateCourseAccessRuleDto } from './dto/update-course-access-rule.dto';
+import { UpdateCourseContentBlockDto } from './dto/update-course-content-block.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { UpdateCourseLessonDto } from './dto/update-course-lesson.dto';
 import { UpdateCourseModuleDto } from './dto/update-course-module.dto';
@@ -46,13 +48,14 @@ import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { UpdatePromotionDocumentDto } from './dto/update-promotion-document.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UploadCourseBlockAssetDto } from './dto/upload-course-block-asset.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpsertUnitDto } from './dto/upsert-unit.dto';
 
 const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024;
-const MAX_COURSE_ASSET_SIZE = 25 * 1024 * 1024;
-const MAX_COURSE_COVER_SIZE = 5 * 1024 * 1024;
+const MAX_COURSE_ASSET_SIZE = Number(process.env.COURSE_ASSET_MAX_SIZE_BYTES || 25 * 1024 * 1024);
+const MAX_COURSE_COVER_SIZE = Number(process.env.COURSE_COVER_MAX_SIZE_BYTES || 5 * 1024 * 1024);
 const ALLOWED_DOCUMENT_MIME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -65,13 +68,10 @@ const ALLOWED_DOCUMENT_MIME_TYPES = [
 ];
 const ALLOWED_COURSE_ASSET_MIME_TYPES = [
   'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'image/jpeg',
   'image/png',
   'image/webp',
   'video/mp4',
-  'video/quicktime',
 ];
 const ALLOWED_COURSE_COVER_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -298,6 +298,52 @@ export class BackofficeController {
     return this.backofficeService.deleteCourseLesson(lessonId);
   }
 
+  @Post('courses/lessons/:lessonId/blocks')
+  createCourseContentBlock(
+    @Param('lessonId') lessonId: string,
+    @Body() dto: CreateCourseContentBlockDto,
+  ) {
+    return this.backofficeService.createCourseContentBlock(lessonId, dto);
+  }
+
+  @Post('courses/lessons/:lessonId/blocks/reorder')
+  reorderCourseContentBlocks(
+    @Param('lessonId') lessonId: string,
+    @Body() dto: ReorderCourseItemsDto,
+  ) {
+    return this.backofficeService.reorderCourseContentBlocks(lessonId, dto.ids);
+  }
+
+  @Patch('courses/blocks/:blockId')
+  updateCourseContentBlock(
+    @Param('blockId') blockId: string,
+    @Body() dto: UpdateCourseContentBlockDto,
+  ) {
+    return this.backofficeService.updateCourseContentBlock(blockId, dto);
+  }
+
+  @Delete('courses/blocks/:blockId')
+  deleteCourseContentBlock(@Param('blockId') blockId: string) {
+    return this.backofficeService.deleteCourseContentBlock(blockId);
+  }
+
+  @Post('courses/blocks/:blockId/assets/upload')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_COURSE_ASSET_SIZE },
+      fileFilter: createMimeFilter(ALLOWED_COURSE_ASSET_MIME_TYPES),
+    }),
+  )
+  uploadCourseBlockAsset(
+    @Param('blockId') blockId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: UploadCourseBlockAssetDto,
+    @CurrentUser() admin: CurrentUserPayload,
+  ) {
+    return this.backofficeService.uploadCourseBlockAsset(blockId, dto, file, admin.sub);
+  }
+
   @Post('courses/lessons/:lessonId/resources/upload')
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
@@ -318,6 +364,11 @@ export class BackofficeController {
   @Delete('courses/resources/:resourceId')
   deleteCourseResource(@Param('resourceId') resourceId: string) {
     return this.backofficeService.deleteCourseResource(resourceId);
+  }
+
+  @Delete('courses/assets/:assetId')
+  deleteCourseAsset(@Param('assetId') assetId: string) {
+    return this.backofficeService.deleteCourseAsset(assetId);
   }
 
   @Post('courses/:id/access-rules')

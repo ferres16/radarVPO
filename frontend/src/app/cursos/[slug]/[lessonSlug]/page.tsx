@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import type { JSX as ReactJSX, ReactNode } from 'react';
 import { useParams } from 'next/navigation';
+import { CourseBlockRenderer } from '@/components/course-block-renderer';
 import { api } from '@/lib/api';
 import type { Course, CourseLesson, CourseModule } from '@/types';
 
@@ -335,7 +336,11 @@ export default function LessonPage() {
         ) : (
           <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
             <div className="prose max-w-none">
-              {lesson?.contentJson ? renderNodes((lesson.contentJson as { content?: RichNode[] }).content) : (
+              {lesson?.blocks?.length ? (
+                <CourseBlockRenderer blocks={lesson.blocks} />
+              ) : lesson?.contentJson ? (
+                renderNodes((lesson.contentJson as { content?: RichNode[] }).content)
+              ) : (
                 <p className="text-sm text-[var(--ink-soft)]">Contenido pendiente.</p>
               )}
             </div>

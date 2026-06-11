@@ -64,6 +64,11 @@ enum CourseAccessType {
   seguimiento
 }
 
+enum CoursePricingType {
+  free
+  premium
+}
+
 enum CourseModuleVisibility {
   visible
   hidden
@@ -85,6 +90,29 @@ enum CourseResourceKind {
   image
   video
   file
+}
+
+enum CourseContentBlockType {
+  heading
+  paragraph
+  image
+  video
+  document
+  list
+  quote
+  divider
+  callout
+  button
+  gallery
+  attachments
+}
+
+enum CourseAssetKind {
+  cover
+  image
+  video
+  document
+  attachment
 }
 
 enum FileEntityType {
@@ -299,6 +327,7 @@ model FileAsset {
   uploadedBy       User?           @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   promotionDocuments PromotionDocument[]
   courseResources CourseResource[]
+  courseAssets CourseAsset[]
 
   @@unique([s3Bucket, s3Key])
   @@index([entityType, entityId])
@@ -412,17 +441,23 @@ model Course {
   shortDescription  String?          @map("short_description")
   longDescription   String?          @map("long_description")
   coverImage        String?          @map("cover_image")
+  pricingType       CoursePricingType @default(free) @map("pricing_type")
   price             Decimal?         @db.Decimal(12, 2)
   currency          String?          @db.VarChar(8)
   stripePaymentLink String?          @map("stripe_payment_link")
   status            CourseStatus     @default(draft)
   accessType        CourseAccessType @default(free) @map("access_type")
   order             Int              @default(0)
+  seoTitle          String?          @map("seo_title")
+  seoDescription    String?          @map("seo_description")
+  seoMetadata       Json?            @map("seo_metadata")
+  publishedAt       DateTime?        @map("published_at")
   createdAt         DateTime         @default(now()) @map("created_at")
   updatedAt         DateTime         @updatedAt @map("updated_at")
   modules           CourseModule[]
   lessons           CourseLesson[]
   resources         CourseResource[]
+  assets            CourseAsset[]
   accessRules       CourseAccessRule[]
   progresses        CourseProgress[]
   lessonProgresses  LessonProgress[]
@@ -445,6 +480,7 @@ model CourseModule {
   course      Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lessons     CourseLesson[]
   resources   CourseResource[]
+  assets      CourseAsset[]
   lessonProgresses LessonProgress[]
 
   @@index([courseId, order])
@@ -457,6 +493,7 @@ model CourseLesson {
   moduleId        String        @map("module_id")
   title           String
   slug            String
+  summary         String?
   contentJson     Json?         @map("content_json")
   order           Int           @default(0)
   durationMinutes Int?          @map("duration_minutes")
@@ -467,12 +504,59 @@ model CourseLesson {
   course          Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
   module          CourseModule  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   resources       CourseResource[]
+  blocks          CourseContentBlock[]
+  assets          CourseAsset[]
   progresses      LessonProgress[]
   lastProgresses  CourseProgress[] @relation("LastLessonProgress")
 
   @@unique([courseId, slug])
   @@index([moduleId, order])
   @@map("course_lessons")
+}
+
+model CourseContentBlock {
+  id        String                 @id @default(cuid())
+  lessonId  String                 @map("lesson_id")
+  type      CourseContentBlockType
+  content   Json
+  order     Int                    @default(0)
+  createdAt DateTime               @default(now()) @map("created_at")
+  updatedAt DateTime               @updatedAt @map("updated_at")
+  lesson    CourseLesson           @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  assets    CourseAsset[]
+
+  @@index([lessonId, order])
+  @@map("course_content_blocks")
+}
+
+model CourseAsset {
+  id               String              @id @default(cuid())
+  courseId         String              @map("course_id")
+  moduleId         String?             @map("module_id")
+  lessonId         String?             @map("lesson_id")
+  blockId          String?             @map("block_id")
+  fileAssetId      String?             @map("file_asset_id")
+  kind             CourseAssetKind
+  originalName     String?             @map("original_name")
+  mimeType         String              @map("mime_type")
+  size             Int                 @default(0)
+  s3Key            String              @map("s3_key")
+  url              String?
+  isPublic         Boolean             @default(false) @map("is_public")
+  altText          String?             @map("alt_text")
+  caption          String?
+  createdAt        DateTime            @default(now()) @map("created_at")
+  course           Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module           CourseModule?       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lesson           CourseLesson?       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  block            CourseContentBlock? @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  fileAsset        FileAsset?          @relation(fields: [fileAssetId], references: [id], onDelete: SetNull)
+
+  @@index([courseId])
+  @@index([lessonId])
+  @@index([blockId])
+  @@index([fileAssetId])
+  @@map("course_assets")
 }
 
 model CourseResource {

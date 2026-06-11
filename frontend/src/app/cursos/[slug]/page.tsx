@@ -57,7 +57,9 @@ export default function CourseDetailPage() {
   }, [slug]);
 
   const modules = useMemo(() => course?.modules || [], [course]);
-  const locked = access ? !access.canAccess : course?.accessType !== 'free';
+  const locked = access
+    ? !access.canAccess
+    : course?.accessType !== 'free' || course?.pricingType === 'premium';
   const progressPercent = progress?.progressPercent ?? 0;
   const purchaseHref = course?.stripePaymentLink || '/services';
   const purchaseExternal = isExternalUrl(purchaseHref);

@@ -149,9 +149,13 @@ export default function CoursesPage() {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {visibleCourses.map((course) => {
           const access = accessMap[course.id];
-          const badge = accessLabels[course.accessType] || 'Acceso';
+          const badge = course.pricingType === 'premium'
+            ? 'Curso premium'
+            : accessLabels[course.accessType] || 'Acceso';
           const hasSession = isAuthed === true;
-          const isLocked = hasSession ? (access ? !access.canAccess : course.accessType !== 'free') : true;
+          const isLocked = hasSession
+            ? (access ? !access.canAccess : course.accessType !== 'free' || course.pricingType === 'premium')
+            : true;
           const priceLabel = formatPrice(course.price, course.currency);
           const ctaHref = !hasSession
             ? `/login?next=${encodeURIComponent(`/cursos/${course.slug}`)}`

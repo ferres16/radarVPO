@@ -1,9 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { CourseAccessType, CourseStatus } from '@prisma/client';
+import { CourseAccessType, CoursePricingType, CourseStatus } from '@prisma/client';
 import {
   IsDecimal,
   IsEnum,
+  IsISO8601,
   IsInt,
+  IsObject,
   IsOptional,
   IsString,
   IsUrl,
@@ -44,6 +46,11 @@ export class UpdateCourseDto {
   @IsUrl({ require_protocol: true })
   coverImage?: string;
 
+  @ApiPropertyOptional({ enum: CoursePricingType })
+  @IsOptional()
+  @IsEnum(CoursePricingType)
+  pricingType?: CoursePricingType;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsDecimal({ decimal_digits: '0,2', force_decimal: false })
@@ -76,4 +83,26 @@ export class UpdateCourseDto {
   @IsInt()
   @Min(0)
   order?: number;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(180)
+  seoTitle?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  seoDescription?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsObject()
+  seoMetadata?: Record<string, unknown>;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsISO8601()
+  publishedAt?: string;
 }

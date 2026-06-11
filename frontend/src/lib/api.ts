@@ -6,6 +6,10 @@ import {
   Course,
   CourseAccessRule,
   CourseAccessRuleType,
+  CourseAsset,
+  CourseAssetKind,
+  CourseContentBlock,
+  CourseContentBlockType,
   CourseLesson,
   CourseModule,
   CourseResource,
@@ -37,12 +41,17 @@ type CourseMutationPayload = Partial<
     | 'shortDescription'
     | 'longDescription'
     | 'coverImage'
+    | 'pricingType'
     | 'price'
     | 'currency'
     | 'stripePaymentLink'
     | 'status'
     | 'accessType'
     | 'order'
+    | 'seoTitle'
+    | 'seoDescription'
+    | 'seoMetadata'
+    | 'publishedAt'
   >
 >;
 
@@ -83,9 +92,12 @@ function normalizeCoursePayload(payload: CourseMutationPayload) {
     shortDescription: nullableText(payload.shortDescription),
     longDescription: nullableText(payload.longDescription),
     coverImage: nullableText(payload.coverImage),
+    pricingType: payload.pricingType,
     price: nullableText(payload.price),
     currency: nullableText(payload.currency),
     stripePaymentLink: nullableText(payload.stripePaymentLink),
+    seoTitle: nullableText(payload.seoTitle),
+    seoDescription: nullableText(payload.seoDescription),
   };
 }
 
@@ -341,6 +353,8 @@ export const api = {
     request<{ course: Course; lesson: CourseLesson; access: { canAccess: boolean; reason: string } }>(
       `/courses/${slug}/lessons/${lessonSlug}`,
     ),
+  getCourseAssetUrl: (assetId: string) =>
+    request<{ url: string | null; expiresAt: string | null }>(`/courses/assets/${assetId}/url`),
   getCourseProgress: (slug: string) =>
     request<{
       courseId: string;
@@ -434,7 +448,7 @@ export const api = {
     }),
   createBackofficeCourseLesson: (
     moduleId: string,
-    payload: Pick<CourseLesson, 'title' | 'slug' | 'contentJson' | 'order' | 'durationMinutes' | 'status' | 'type'>,
+    payload: Pick<CourseLesson, 'title' | 'slug' | 'summary' | 'contentJson' | 'order' | 'durationMinutes' | 'status' | 'type'>,
   ) =>
     request<CourseLesson>(`/backoffice/courses/modules/${moduleId}/lessons`, {
       method: 'POST',
@@ -447,7 +461,7 @@ export const api = {
     }),
   updateBackofficeCourseLesson: (
     lessonId: string,
-    payload: Partial<Pick<CourseLesson, 'title' | 'slug' | 'contentJson' | 'order' | 'durationMinutes' | 'status' | 'type'>>,
+    payload: Partial<Pick<CourseLesson, 'title' | 'slug' | 'summary' | 'contentJson' | 'order' | 'durationMinutes' | 'status' | 'type'>>,
   ) =>
     request<CourseLesson>(`/backoffice/courses/lessons/${lessonId}`, {
       method: 'PATCH',
@@ -455,6 +469,49 @@ export const api = {
     }),
   deleteBackofficeCourseLesson: (lessonId: string) =>
     request<{ deleted: boolean }>(`/backoffice/courses/lessons/${lessonId}`, {
+      method: 'DELETE',
+    }),
+  createBackofficeCourseContentBlock: (
+    lessonId: string,
+    payload: { type: CourseContentBlockType; content: Record<string, unknown>; order?: number },
+  ) =>
+    request<CourseContentBlock>(`/backoffice/courses/lessons/${lessonId}/blocks`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  reorderBackofficeCourseContentBlocks: (lessonId: string, ids: string[]) =>
+    request<CourseContentBlock[]>(`/backoffice/courses/lessons/${lessonId}/blocks/reorder`, {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
+  updateBackofficeCourseContentBlock: (
+    blockId: string,
+    payload: Partial<{ type: CourseContentBlockType; content: Record<string, unknown>; order: number }>,
+  ) =>
+    request<CourseContentBlock>(`/backoffice/courses/blocks/${blockId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  deleteBackofficeCourseContentBlock: (blockId: string) =>
+    request<{ deleted: boolean }>(`/backoffice/courses/blocks/${blockId}`, {
+      method: 'DELETE',
+    }),
+  uploadBackofficeCourseBlockAsset: (
+    blockId: string,
+    kind: CourseAssetKind,
+    file: File,
+    options: { isPublic?: boolean; altText?: string; caption?: string } = {},
+  ) => {
+    const form = new FormData();
+    form.append('kind', kind);
+    if (options.isPublic !== undefined) form.append('isPublic', String(options.isPublic));
+    if (options.altText) form.append('altText', options.altText);
+    if (options.caption) form.append('caption', options.caption);
+    form.append('file', file);
+    return requestForm<CourseAsset>(`/backoffice/courses/blocks/${blockId}/assets/upload`, form);
+  },
+  deleteBackofficeCourseAsset: (assetId: string) =>
+    request<{ deleted: boolean }>(`/backoffice/courses/assets/${assetId}`, {
       method: 'DELETE',
     }),
   uploadBackofficeCourseResource: (

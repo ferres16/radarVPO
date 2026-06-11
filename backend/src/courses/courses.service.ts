@@ -38,6 +38,7 @@ export class CoursesService {
     id: true,
     title: true,
     slug: true,
+    summary: true,
     order: true,
     durationMinutes: true,
     status: true,
@@ -60,6 +61,7 @@ export class CoursesService {
                 id: true,
                 title: true,
                 slug: true,
+                summary: true,
                 order: true,
                 durationMinutes: true,
                 status: true,
@@ -89,6 +91,7 @@ export class CoursesService {
                   id: true,
                   title: true,
                   slug: true,
+                  summary: true,
                   order: true,
                   durationMinutes: true,
                   status: true,
@@ -182,6 +185,19 @@ export class CoursesService {
       },
       include: {
         module: true,
+        blocks: {
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            assets: {
+              orderBy: { createdAt: 'asc' },
+              include: { fileAsset: true },
+            },
+          },
+        },
+        assets: {
+          orderBy: { createdAt: 'asc' },
+          include: { fileAsset: true },
+        },
         resources: {
           orderBy: { createdAt: 'asc' },
           include: { fileAsset: true },
@@ -200,6 +216,8 @@ export class CoursesService {
         lesson: {
           ...lesson,
           contentJson: null,
+          blocks: [],
+          assets: [],
           resources: [],
         },
       };
@@ -231,13 +249,47 @@ export class CoursesService {
       }),
     );
 
+    const lessonAssets = await Promise.all(
+      lesson.assets.map((asset) => this.withAccessibleCourseAsset(asset)),
+    );
+
+    const blocks = await Promise.all(
+      lesson.blocks.map(async (block) => ({
+        ...block,
+        assets: await Promise.all(
+          block.assets.map((asset) => this.withAccessibleCourseAsset(asset)),
+        ),
+      })),
+    );
+
     return {
       course: this.stripInternalCourseFields(course),
       access,
       lesson: {
         ...lesson,
+        blocks,
+        assets: lessonAssets,
         resources,
       },
+    };
+  }
+
+  private async withAccessibleCourseAsset<
+    T extends { fileAssetId: string | null; url: string | null; fileAsset?: unknown },
+  >(asset: T) {
+    const { fileAsset, ...publicAsset } = asset;
+    if (!asset.fileAssetId) {
+      return publicAsset;
+    }
+
+    const signed = await this.fileStorage.getAccessibleUrl(
+      asset.fileAssetId,
+      true,
+    );
+
+    return {
+      ...publicAsset,
+      url: signed.url || publicAsset.url,
     };
   }
 
@@ -286,6 +338,32 @@ export class CoursesService {
     });
 
     return this.recalculateCourseProgress(userId, lesson.courseId, lesson.id);
+  }
+
+  async getCourseAssetUrl(assetId: string, userId: string) {
+    const asset = await this.prisma.courseAsset.findUnique({
+      where: { id: assetId },
+      include: {
+        course: {
+          include: {
+            accessRules: { orderBy: { createdAt: 'asc' } },
+          },
+        },
+      },
+    });
+
+    if (!asset || !asset.fileAssetId) {
+      throw new NotFoundException('Course asset not found');
+    }
+
+    const profile = await this.getAccessProfile(userId);
+    const access = this.evaluateAccess(asset.course, profile);
+
+    if (!asset.isPublic && !access.canAccess) {
+      throw new ForbiddenException('Access denied');
+    }
+
+    return this.fileStorage.getAccessibleUrl(asset.fileAssetId, access.canAccess);
   }
 
   async getCourseProgressBySlug(userId: string, courseSlug: string) {
@@ -431,6 +509,7 @@ export class CoursesService {
     course: {
       id?: string;
       accessType: CourseAccessType;
+      pricingType?: string;
       accessRules?: Array<{
         ruleType: CourseAccessRuleType;
         configJson: Prisma.JsonValue;
@@ -445,7 +524,10 @@ export class CoursesService {
       serviceAccesses: Array<{ service: { id: string; key: string } }>;
     },
   ): AccessDecision {
-    if (course.accessType === CourseAccessType.free) {
+    if (
+      course.accessType === CourseAccessType.free &&
+      course.pricingType !== 'premium'
+    ) {
       return { canAccess: true, reason: 'free' };
     }
 

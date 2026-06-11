@@ -5,10 +5,11 @@ import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
 import { api } from '@/lib/api';
-import { CourseLessonEditor } from '@/components/course-lesson-editor';
+import { CourseBlockEditor } from '@/components/course-block-editor';
 import type {
   Course,
   CourseAccessType,
+  CourseContentBlock,
   CourseLesson,
   CourseModule,
   CourseModuleVisibility,
@@ -92,12 +93,16 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 slug: selected.slug,
                 shortDescription: selected.shortDescription || '',
                 longDescription: selected.longDescription || '',
+                pricingType: selected.pricingType || 'free',
                 price: selected.price || '',
                 currency: selected.currency || 'EUR',
                 stripePaymentLink: selected.stripePaymentLink || '',
                 status: selected.status,
                 accessType: selected.accessType,
                 order: selected.order,
+                seoTitle: selected.seoTitle || '',
+                seoDescription: selected.seoDescription || '',
+                publishedAt: selected.publishedAt || '',
               }
             : {},
         );
@@ -124,6 +129,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 {
                   title: lesson.title,
                   slug: lesson.slug,
+                  summary: lesson.summary || '',
                   contentJson: lesson.contentJson || null,
                   order: lesson.order,
                   durationMinutes: lesson.durationMinutes || 10,
@@ -181,12 +187,16 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         slug: courseDraft.slug,
         shortDescription: courseDraft.shortDescription,
         longDescription: courseDraft.longDescription,
+        pricingType: courseDraft.pricingType,
         price: courseDraft.price ? String(courseDraft.price) : undefined,
         currency: courseDraft.currency,
         stripePaymentLink: courseDraft.stripePaymentLink,
         status: courseDraft.status,
         accessType: courseDraft.accessType,
         order: courseDraft.order,
+        seoTitle: courseDraft.seoTitle,
+        seoDescription: courseDraft.seoDescription,
+        publishedAt: courseDraft.publishedAt || undefined,
       });
       setCourse((prev) => ({ ...(prev || updated), ...updated }));
     } catch (err) {
@@ -272,6 +282,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
       const created = await api.createBackofficeCourseLesson(moduleId, {
         title: payload.title,
         slug: payload.slug,
+        summary: payload.summary || undefined,
         contentJson: payload.contentJson || undefined,
         order: payload.order ?? 0,
         durationMinutes: payload.durationMinutes || 10,
@@ -290,6 +301,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         [created.id]: {
           title: created.title,
           slug: created.slug,
+          summary: created.summary || '',
           contentJson: created.contentJson || null,
           order: created.order,
           durationMinutes: created.durationMinutes || 10,
@@ -324,6 +336,17 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     } finally {
       setSavingId('');
     }
+  }
+
+  function updateLessonBlocks(lessonId: string, blocks: CourseContentBlock[]) {
+    setModules((prev) =>
+      prev.map((module) => ({
+        ...module,
+        lessons: (module.lessons || []).map((lesson) =>
+          lesson.id === lessonId ? { ...lesson, blocks } : lesson,
+        ),
+      })),
+    );
   }
 
   async function deleteLesson(lessonId: string) {
@@ -558,11 +581,15 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
               <label className="text-sm font-semibold text-[var(--ink)]">Slug<input className="ds-control mt-1" value={courseDraft.slug || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, slug: e.target.value }))} /></label>
               <label className="text-sm font-semibold text-[var(--ink)]">Estado<select className="ds-control mt-1" value={courseDraft.status || 'draft'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, status: e.target.value as CourseStatus }))}>{courseStatusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select></label>
               <label className="text-sm font-semibold text-[var(--ink)]">Acceso<select className="ds-control mt-1" value={courseDraft.accessType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, accessType: e.target.value as CourseAccessType }))}>{courseAccessOptions.map((access) => <option key={access} value={access}>{access}</option>)}</select></label>
+              <label className="text-sm font-semibold text-[var(--ink)]">Tipo comercial<select className="ds-control mt-1" value={courseDraft.pricingType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, pricingType: e.target.value as Course['pricingType'] }))}><option value="free">Gratuito</option><option value="premium">Premium</option></select></label>
               <label className="text-sm font-semibold text-[var(--ink)]">Precio<input className="ds-control mt-1" value={courseDraft.price || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, price: e.target.value }))} /></label>
               <label className="text-sm font-semibold text-[var(--ink)]">Moneda<input className="ds-control mt-1" value={courseDraft.currency || 'EUR'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, currency: e.target.value }))} /></label>
+              <label className="text-sm font-semibold text-[var(--ink)]">Fecha publicación<input type="datetime-local" className="ds-control mt-1" value={(courseDraft.publishedAt || '').slice(0, 16)} onChange={(e) => setCourseDraft((prev) => ({ ...prev, publishedAt: e.target.value }))} /></label>
               <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Stripe Payment Link<input className="ds-control mt-1" value={courseDraft.stripePaymentLink || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, stripePaymentLink: e.target.value }))} /></label>
               <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Descripción corta<textarea className="ds-control mt-1 min-h-24" value={courseDraft.shortDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, shortDescription: e.target.value }))} /></label>
               <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Descripción larga<textarea className="ds-control mt-1 min-h-28" value={courseDraft.longDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, longDescription: e.target.value }))} /></label>
+              <label className="text-sm font-semibold text-[var(--ink)]">SEO title<input className="ds-control mt-1" value={courseDraft.seoTitle || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, seoTitle: e.target.value }))} /></label>
+              <label className="text-sm font-semibold text-[var(--ink)]">SEO description<input className="ds-control mt-1" value={courseDraft.seoDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, seoDescription: e.target.value }))} /></label>
             </div>
             <button type="button" onClick={() => void saveCourseSettings()} disabled={savingId === 'course-settings'} className="mt-4 rounded-xl bg-[var(--green-500)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{savingId === 'course-settings' ? 'Guardando...' : 'Guardar configuración'}</button>
           </article>
@@ -827,6 +854,19 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                       className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
                                     />
                                   </label>
+                                  <label className="text-sm text-[var(--ink)] md:col-span-2">
+                                    Resumen
+                                    <textarea
+                                      value={lessonDraft.summary || ''}
+                                      onChange={(e) =>
+                                        setLessonDrafts((prev) => ({
+                                          ...prev,
+                                          [lesson.id]: { ...lessonDraft, summary: e.target.value },
+                                        }))
+                                      }
+                                      className="mt-1 min-h-20 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                                    />
+                                  </label>
                                   <label className="text-sm text-[var(--ink)]">
                                     Estado
                                     <select
@@ -895,16 +935,11 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                   </label>
                                 </div>
 
-                                <CourseLessonEditor
-                                  value={(lessonDraft.contentJson as Record<string, unknown>) || null}
-                                  resources={lesson.resources || []}
-                                  onUploadResource={(file, kind) => uploadResource(lesson.id, file, kind)}
-                                  onChange={(next) =>
-                                    setLessonDrafts((prev) => ({
-                                      ...prev,
-                                      [lesson.id]: { ...lessonDraft, contentJson: next },
-                                    }))
-                                  }
+                                <CourseBlockEditor
+                                  lessonId={lesson.id}
+                                  blocks={lesson.blocks || []}
+                                  onChange={(blocks) => updateLessonBlocks(lesson.id, blocks)}
+                                  onError={setError}
                                 />
 
                                 <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
@@ -987,6 +1022,17 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                           }
                           placeholder="slug-leccion"
                           className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                        />
+                        <input
+                          value={newLessons[module.id]?.summary || ''}
+                          onChange={(e) =>
+                            setNewLessons((prev) => ({
+                              ...prev,
+                              [module.id]: { ...prev[module.id], summary: e.target.value },
+                            }))
+                          }
+                          placeholder="Resumen breve"
+                          className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
                         />
                       </div>
                       <div className="mt-3 flex flex-wrap items-center gap-3">

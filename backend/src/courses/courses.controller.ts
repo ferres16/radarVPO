@@ -22,6 +22,15 @@ export class CoursesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('assets/:assetId/url')
+  getCourseAssetUrl(
+    @Param('assetId') assetId: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.coursesService.getCourseAssetUrl(assetId, user.sub);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':slug')
   getCourse(
     @Param('slug') slug: string,
