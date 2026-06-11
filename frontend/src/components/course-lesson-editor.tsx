@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -19,6 +19,7 @@ type CourseLessonEditorProps = {
   value?: Record<string, unknown> | null;
   onChange: (next: Record<string, unknown>) => void;
   resources?: CourseResource[];
+  onUploadResource?: (file: File, kind: CourseResource['kind']) => Promise<CourseResource | null>;
 };
 
 const emptyDoc = {
@@ -26,8 +27,15 @@ const emptyDoc = {
   content: [{ type: 'paragraph', content: [{ type: 'text', text: '' }] }],
 };
 
-export function CourseLessonEditor({ value, onChange, resources = [] }: CourseLessonEditorProps) {
+export function CourseLessonEditor({
+  value,
+  onChange,
+  resources = [],
+  onUploadResource,
+}: CourseLessonEditorProps) {
   const [copyMessage, setCopyMessage] = useState('');
+  const [uploadingKind, setUploadingKind] = useState<CourseResource['kind'] | ''>('');
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -93,10 +101,29 @@ export function CourseLessonEditor({ value, onChange, resources = [] }: CourseLe
     return url?.trim() || '';
   };
 
-  const insertImage = () => {
+  const insertImageUrl = () => {
     const src = askForUrl('URL de la imagen');
     if (!src) return;
     (editor.chain().focus() as unknown as { setImage: (attrs: { src: string; alt: string }) => { run: () => boolean } }).setImage({ src, alt: '' }).run();
+  };
+
+  const uploadInlineImage = async (file: File) => {
+    if (!onUploadResource) {
+      insertImageUrl();
+      return;
+    }
+
+    setUploadingKind('image');
+    try {
+      const resource = await onUploadResource(file, 'image');
+      if (!resource?.publicUrl) return;
+      (editor.chain().focus() as unknown as { setImage: (attrs: { src: string; alt: string }) => { run: () => boolean } }).setImage({
+        src: resource.publicUrl,
+        alt: resource.originalName || '',
+      }).run();
+    } finally {
+      setUploadingKind('');
+    }
   };
 
   const insertVideo = () => {
@@ -167,7 +194,8 @@ export function CourseLessonEditor({ value, onChange, resources = [] }: CourseLe
         <div className="flex flex-wrap gap-2">
           {[
             { label: 'Texto', action: () => editor.chain().focus().setParagraph().run() },
-            { label: 'Imagen', action: insertImage },
+            { label: uploadingKind === 'image' ? 'Subiendo imagen...' : 'Subir imagen', action: () => imageInputRef.current?.click() },
+            { label: 'Imagen por URL', action: insertImageUrl },
             { label: 'Video', action: insertVideo },
             { label: 'Tabla', action: () => (editor.chain().focus() as unknown as { insertTable: (attrs: { rows: number; cols: number; withHeaderRow: boolean }) => { run: () => boolean } }).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
             { label: 'Cita', action: () => editor.chain().focus().toggleBlockquote().run() },
@@ -178,11 +206,24 @@ export function CourseLessonEditor({ value, onChange, resources = [] }: CourseLe
               key={item.label}
               type="button"
               onClick={item.action}
+              disabled={uploadingKind === 'image' && item.label.includes('Subiendo')}
               className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
             >
               {item.label}
             </button>
           ))}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              void uploadInlineImage(file);
+              event.currentTarget.value = '';
+            }}
+          />
         </div>
       </div>
       {resources.length > 0 ? (

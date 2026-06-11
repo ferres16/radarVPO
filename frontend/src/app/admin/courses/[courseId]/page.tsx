@@ -12,6 +12,7 @@ import type {
   CourseLesson,
   CourseModule,
   CourseModuleVisibility,
+  CourseResource,
   CourseStatus,
   LessonStatus,
   LessonType,
@@ -330,7 +331,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     }
   }
 
-  async function uploadResource(lessonId: string, file: File, kind: 'image' | 'video' | 'file') {
+  async function uploadResource(lessonId: string, file: File, kind: 'image' | 'video' | 'file'): Promise<CourseResource | null> {
     setSavingId(`${lessonId}-resource`);
     setError('');
     try {
@@ -345,8 +346,10 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
           ),
         })),
       );
+      return resource;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo subir el recurso');
+      return null;
     } finally {
       setSavingId('');
     }
@@ -813,6 +816,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                 <CourseLessonEditor
                                   value={(lessonDraft.contentJson as Record<string, unknown>) || null}
                                   resources={lesson.resources || []}
+                                  onUploadResource={(file, kind) => uploadResource(lesson.id, file, kind)}
                                   onChange={(next) =>
                                     setLessonDrafts((prev) => ({
                                       ...prev,

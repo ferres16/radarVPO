@@ -695,7 +695,7 @@ export class BackofficeService {
       entityId: lesson.id,
       folder: `courses/${lesson.courseId}/${lessonId}`,
       file,
-      isPublic: false,
+      isPublic: dto.kind === 'image',
       uploadedByUserId,
       allowedMimeTypes: [
         'application/pdf',
