@@ -177,7 +177,7 @@ export function CourseBlockEditor({ lessonId, blocks = [], onChange, onError }: 
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
+      <div className="grid gap-4 2xl:grid-cols-[minmax(560px,1fr)_460px]">
         <div className="space-y-3">
           {orderedBlocks.map((block, index) => (
             <article key={block.id} className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
@@ -220,7 +220,7 @@ export function CourseBlockEditor({ lessonId, blocks = [], onChange, onError }: 
         </div>
 
         {preview ? (
-          <aside className="h-fit rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card xl:sticky xl:top-4">
+          <aside className="h-fit rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card 2xl:sticky 2xl:top-4">
             <p className="mb-4 text-xs font-bold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Preview</p>
             <CourseBlockRenderer blocks={orderedBlocks} />
           </aside>

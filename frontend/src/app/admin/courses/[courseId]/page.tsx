@@ -459,7 +459,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
   }
 
   return (
-    <main className="shell pb-16">
+    <main className="shell max-w-[1600px] pb-16">
       <div className="admin-shell">
         <AdminNav />
         <div className="space-y-4">
@@ -522,7 +522,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         </article>
       ) : null}
 
-      <section className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <section className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
         <aside className="h-fit rounded-3xl border border-[var(--stroke)] bg-white p-4 shadow-card lg:sticky lg:top-4">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--green-700)]">Curso editando</p>
           <h2 className="mt-2 text-lg font-black text-[var(--ink)]">{course?.title || 'Curso'}</h2>
@@ -608,9 +608,9 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
       ) : null}
 
       {activePanel.type === 'new-module' ? (
-      <section className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
+      <section className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
         <h2 className="text-lg font-semibold text-[var(--ink)]">Nuevo modulo</h2>
-        <div className="mt-3 grid gap-3 md:grid-cols-3">
+        <div className="mt-3 grid gap-3 md:grid-cols-2">
           <input
             value={newModule.title || ''}
             onChange={(e) => setNewModule((prev) => ({ ...prev, title: e.target.value }))}
@@ -629,7 +629,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
               type="number"
               value={newModule.order ?? 0}
               onChange={(e) => setNewModule((prev) => ({ ...prev, order: Number(e.target.value) }))}
-              className="ml-2 w-20 rounded-xl border border-[var(--stroke)] px-2 py-1 text-sm"
+              className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
             />
           </label>
         </div>

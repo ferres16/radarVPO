@@ -275,8 +275,9 @@ export default function LessonPage() {
   }
 
   return (
-    <main className="shell grid gap-6 pb-16 lg:grid-cols-[280px_1fr]">
-      <aside className="rounded-3xl border border-[var(--stroke)] bg-white p-4 shadow-card">
+    <main className="shell h-[calc(100vh-96px)] min-h-[640px] overflow-hidden pb-6">
+      <div className="grid h-full gap-6 lg:grid-cols-[280px_1fr]">
+      <aside className="h-full overflow-y-auto rounded-3xl border border-[var(--stroke)] bg-white p-4 shadow-card">
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Indice</p>
         <div className="mt-3 space-y-3">
           {modules.map((module) => (
@@ -302,78 +303,80 @@ export default function LessonPage() {
         </div>
       </aside>
 
-      <section className="space-y-6">
-        <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Leccion</p>
-          <h1 className="mt-2 text-3xl font-black text-[var(--ink)] display-type">{lesson?.title}</h1>
-          <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--ink-soft)]">
-            <span>{lesson?.durationMinutes ? `${lesson.durationMinutes} min` : 'Tiempo flexible'}</span>
-            <span>Tipo: {lesson?.type}</span>
-          </div>
-          {locked ? (
-            <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
-              Esta leccion esta bloqueada. Necesitas acceso activo para continuar.
-              <Link href="/services" className="ml-2 font-semibold underline">
-                Ver planes
-              </Link>
+      <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-[var(--stroke)] bg-white shadow-card">
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+          <header className="rounded-3xl border border-[var(--stroke)] bg-[var(--bg-app)] p-6">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Leccion</p>
+            <h1 className="mt-2 text-3xl font-black text-[var(--ink)] display-type">{lesson?.title}</h1>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--ink-soft)]">
+              <span>{lesson?.durationMinutes ? `${lesson.durationMinutes} min` : 'Tiempo flexible'}</span>
+              <span>Tipo: {lesson?.type}</span>
             </div>
-          ) : null}
-        </header>
-
-        {locked ? (
-          <article className="rounded-3xl border border-amber-200 bg-amber-50 p-6 shadow-card">
-            <h2 className="text-xl font-black text-amber-950">Contenido bloqueado</h2>
-            <p className="mt-2 text-sm leading-6 text-amber-900">
-              Esta leccion existe, pero el contenido solo se entrega cuando el acceso del usuario esta activo en la base de datos.
-            </p>
-            <Link
-              href={`/cursos/${payload.course.slug}`}
-              className="mt-4 inline-flex rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white"
-            >
-              Ver opciones de acceso
-            </Link>
-          </article>
-        ) : (
-          <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-            <div className="prose max-w-none">
-              {lesson?.blocks?.length ? (
-                <CourseBlockRenderer blocks={lesson.blocks} />
-              ) : lesson?.contentJson ? (
-                renderNodes((lesson.contentJson as { content?: RichNode[] }).content)
-              ) : (
-                <p className="text-sm text-[var(--ink-soft)]">Contenido pendiente.</p>
-              )}
-            </div>
-            {lesson?.resources?.length ? (
-              <div className="mt-6 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-                <h2 className="text-sm font-bold text-[var(--ink)]">Recursos adjuntos</h2>
-                <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                  {lesson.resources.map((resource) => (
-                    <div key={resource.id} className="rounded-xl border border-[var(--stroke)] bg-white p-3">
-                      {resource.kind === 'image' && resource.publicUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={resource.publicUrl} alt={resource.originalName || ''} className="mb-3 h-48 w-full rounded-xl object-cover" />
-                      ) : null}
-                      {resource.kind === 'video' && resource.publicUrl ? (
-                        <video src={resource.publicUrl} controls className="mb-3 aspect-video w-full rounded-xl" />
-                      ) : null}
-                      <a
-                        href={resource.publicUrl}
-                        className="text-sm font-semibold text-[var(--ink)] underline"
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
-                        {resource.originalName || resource.kind}
-                      </a>
-                    </div>
-                  ))}
-                </div>
+            {locked ? (
+              <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
+                Esta leccion esta bloqueada. Necesitas acceso activo para continuar.
+                <Link href="/services" className="ml-2 font-semibold underline">
+                  Ver planes
+                </Link>
               </div>
             ) : null}
-          </article>
-        )}
+          </header>
 
-        <div className="flex flex-wrap items-center justify-between gap-3">
+          {locked ? (
+            <article className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-6">
+              <h2 className="text-xl font-black text-amber-950">Contenido bloqueado</h2>
+              <p className="mt-2 text-sm leading-6 text-amber-900">
+                Esta leccion existe, pero el contenido solo se entrega cuando el acceso del usuario esta activo en la base de datos.
+              </p>
+              <Link
+                href={`/cursos/${payload.course.slug}`}
+                className="mt-4 inline-flex rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white"
+              >
+                Ver opciones de acceso
+              </Link>
+            </article>
+          ) : (
+            <article className="mt-6">
+              <div className="prose max-w-none">
+                {lesson?.blocks?.length ? (
+                  <CourseBlockRenderer blocks={lesson.blocks} />
+                ) : lesson?.contentJson ? (
+                  renderNodes((lesson.contentJson as { content?: RichNode[] }).content)
+                ) : (
+                  <p className="text-sm text-[var(--ink-soft)]">Contenido pendiente.</p>
+                )}
+              </div>
+              {lesson?.resources?.length ? (
+                <div className="mt-6 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+                  <h2 className="text-sm font-bold text-[var(--ink)]">Recursos adjuntos</h2>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {lesson.resources.map((resource) => (
+                      <div key={resource.id} className="rounded-xl border border-[var(--stroke)] bg-white p-3">
+                        {resource.kind === 'image' && resource.publicUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={resource.publicUrl} alt={resource.originalName || ''} className="mb-3 h-48 w-full rounded-xl object-cover" />
+                        ) : null}
+                        {resource.kind === 'video' && resource.publicUrl ? (
+                          <video src={resource.publicUrl} controls className="mb-3 aspect-video w-full rounded-xl" />
+                        ) : null}
+                        <a
+                          href={resource.publicUrl}
+                          className="text-sm font-semibold text-[var(--ink)] underline"
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          {resource.originalName || resource.kind}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </article>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--stroke)] bg-white/95 p-4 backdrop-blur">
           <div className="flex flex-wrap gap-2">
             <Link
               href={`/cursos/${payload.course.slug}`}
@@ -410,6 +413,7 @@ export default function LessonPage() {
           </div>
         </div>
       </section>
+      </div>
     </main>
   );
 }

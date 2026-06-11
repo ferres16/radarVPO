@@ -33,21 +33,14 @@ export default function AdminPromotionsPage() {
   async function loadPromotions(shouldApply = () => true) {
       try {
         const [rows, overviewData] = await Promise.all([
-          status
-            ? api.getBackofficePromotions(status, query || undefined, 10)
-            : Promise.all(
-                statuses.map((item) =>
-                  api.getBackofficePromotions(item, query || undefined, 10),
-                ),
-              ).then((groups) => groups.flat()),
+          api.getBackofficePromotions(status || undefined, query || undefined, 100),
           api.getBackofficeOverview().catch(() => null),
         ]);
         if (!shouldApply()) return;
         setPromotions(
           rows
-            .filter((promotion) => status || promotion.status !== 'archived')
             .sort((a, b) => promotionTimestamp(b) - promotionTimestamp(a))
-            .slice(0, 10),
+            .slice(0, 50),
         );
         setOverview(overviewData);
       } catch (err) {
@@ -117,8 +110,8 @@ export default function AdminPromotionsPage() {
         <div className="space-y-6">
           <PageHero
             eyebrow="CMS de promociones"
-            title="Últimas 10 promociones para gestionar"
-            description="Por defecto aparecen las 10 promociones más recientes no archivadas, incluyendo avisos pendientes y promociones publicadas."
+            title="Promociones para gestionar"
+            description="Por defecto aparecen las promociones más recientes de cualquier estado. Usa el filtro si quieres ver solo una bandeja concreta."
             actions={
               <>
                 <ButtonLink href="/admin/promotions/history" variant="secondary">Ver histórico</ButtonLink>
@@ -152,7 +145,7 @@ export default function AdminPromotionsPage() {
                 className="ds-control"
               />
               <select value={status} onChange={(event) => setStatus(event.target.value)} className="ds-control">
-                <option value="">Últimas no archivadas</option>
+                <option value="">Todas recientes</option>
                 {statuses.map((item) => (
                   <option key={item} value={item}>{statusLabels[item]}</option>
                 ))}
