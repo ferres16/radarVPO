@@ -8,10 +8,12 @@ import { MotionCard, Stagger, StaggerItem } from '@/components/motion-primitives
 import { api } from '@/lib/api';
 import type { BackofficeOverview, PromotionDetail } from '@/types';
 
-const statuses = ['published_unreviewed', 'published_reviewed'] as const;
-const statusLabels: Record<(typeof statuses)[number], string> = {
+const statuses = ['pending_review', 'published_unreviewed', 'published_reviewed'] as const;
+const statusLabels: Record<PromotionDetail['status'], string> = {
+  pending_review: 'Aviso pendiente',
   published_unreviewed: 'Publicada sin revisar',
   published_reviewed: 'Publicada revisada',
+  archived: 'Archivada',
 };
 
 function promotionTimestamp(promotion: PromotionDetail) {
@@ -30,14 +32,14 @@ export default function AdminPromotionsPage() {
 
   async function loadPromotions(shouldApply = () => true) {
       try {
-        const [rows, reviewedRows, overviewData] = await Promise.all([
-          api.getBackofficePromotions(status || 'published_unreviewed', query || undefined, 10),
-          status ? Promise.resolve([]) : api.getBackofficePromotions('published_reviewed', query || undefined, 10),
+        const [rows, overviewData] = await Promise.all([
+          api.getBackofficePromotions(status || undefined, query || undefined, status ? 10 : 50),
           api.getBackofficeOverview().catch(() => null),
         ]);
         if (!shouldApply()) return;
         setPromotions(
-          [...rows, ...reviewedRows]
+          rows
+            .filter((promotion) => status || promotion.status !== 'archived')
             .sort((a, b) => promotionTimestamp(b) - promotionTimestamp(a))
             .slice(0, 10),
         );
@@ -97,6 +99,7 @@ export default function AdminPromotionsPage() {
     return promotions;
   }, [promotions]);
   const statusCounts = {
+    pending_review: overview?.pendingReview ?? promotions.filter((promotion) => promotion.status === 'pending_review').length,
     published_unreviewed: overview?.publishedUnreviewed ?? promotions.filter((promotion) => promotion.status === 'published_unreviewed').length,
     published_reviewed: overview?.publishedReviewed ?? promotions.filter((promotion) => promotion.status === 'published_reviewed').length,
   };
@@ -108,8 +111,8 @@ export default function AdminPromotionsPage() {
         <div className="space-y-6">
           <PageHero
             eyebrow="CMS de promociones"
-            title="10 promociones publicadas para gestionar hoy"
-            description="Solo aparecen las 10 promociones publicadas más recientes. El resto vive en Histórico y los avisos pendientes se gestionan en Avisos."
+            title="Últimas 10 promociones para gestionar"
+            description="Por defecto aparecen las 10 promociones más recientes no archivadas, incluyendo avisos pendientes y promociones publicadas."
             actions={
               <>
                 <ButtonLink href="/admin/promotions/history" variant="secondary">Ver histórico</ButtonLink>
@@ -118,7 +121,7 @@ export default function AdminPromotionsPage() {
             }
           />
 
-          <section className="grid gap-3 md:grid-cols-2">
+          <section className="grid gap-3 md:grid-cols-3">
             {statuses.map((item) => (
               <SurfaceCard key={item} className="p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">{statusLabels[item]}</p>
@@ -143,7 +146,7 @@ export default function AdminPromotionsPage() {
                 className="ds-control"
               />
               <select value={status} onChange={(event) => setStatus(event.target.value)} className="ds-control">
-                <option value="">Publicadas sin revisar + revisadas</option>
+                <option value="">Últimas no archivadas</option>
                 {statuses.map((item) => (
                   <option key={item} value={item}>{statusLabels[item]}</option>
                 ))}
@@ -183,7 +186,7 @@ export default function AdminPromotionsPage() {
                 <MotionCard className="ds-card p-5">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">{statusLabels[promotion.status as (typeof statuses)[number]] || promotion.status}</p>
+                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">{statusLabels[promotion.status] || promotion.status}</p>
                       <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">{promotion.title}</h2>
                       <p className="mt-2 text-sm text-[var(--ink-soft)]">{promotion.municipality || 'Catalunya'} · {promotion.promotionType}</p>
                     </div>

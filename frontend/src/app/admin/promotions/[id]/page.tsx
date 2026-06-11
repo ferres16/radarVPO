@@ -146,6 +146,25 @@ export default function AdminPromotionEditPage() {
     };
   }, [id]);
 
+  useEffect(() => {
+    const applyHashTab = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (hash === 'documentos' || hash === 'media') {
+        setActiveTab('media');
+      }
+      if (hash === 'unidades') {
+        setActiveTab('units');
+      }
+      if (hash === 'contenido') {
+        setActiveTab('content');
+      }
+    };
+
+    applyHashTab();
+    window.addEventListener('hashchange', applyHashTab);
+    return () => window.removeEventListener('hashchange', applyHashTab);
+  }, []);
+
   const units = useMemo(() => promotion?.units || [], [promotion]);
   const documents = useMemo(() => promotion?.documents || [], [promotion]);
   const mediaGroups = useMemo(() => ({
@@ -612,7 +631,18 @@ function DocumentEditorRow({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--green-700)]">{classifyDocument(doc)}</p>
-          <a href={doc.publicUrl} target="_blank" rel="noreferrer" className="mt-1 block font-semibold text-[var(--ink)] underline">{doc.originalName || doc.publicUrl}</a>
+          {doc.publicUrl ? (
+            <a href={doc.publicUrl} target="_blank" rel="noreferrer" className="mt-1 block font-semibold text-[var(--ink)] underline">{doc.originalName || doc.publicUrl}</a>
+          ) : (
+            <p className="mt-1 font-semibold text-[var(--ink)]">{doc.originalName || 'Archivo sin URL pública'}</p>
+          )}
+          {doc.fileType?.startsWith('image/') && doc.publicUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={doc.publicUrl} alt={doc.altText || ''} className="mt-3 h-32 w-48 rounded-xl object-cover" />
+          ) : null}
+          {doc.fileType?.startsWith('video/') && doc.publicUrl ? (
+            <video src={doc.publicUrl} controls className="mt-3 h-32 w-48 rounded-xl bg-black" />
+          ) : null}
         </div>
         <button type="button" onClick={onDelete} className="rounded-lg border border-red-100 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">Eliminar S3</button>
       </div>

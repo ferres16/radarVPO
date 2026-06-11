@@ -46,6 +46,12 @@ type PageProps = {
   params: { courseId: string };
 };
 
+type CourseEditorPanel =
+  | { type: 'settings' }
+  | { type: 'new-module' }
+  | { type: 'module'; moduleId: string }
+  | { type: 'lesson'; moduleId: string; lessonId: string };
+
 export default function AdminCourseModulesPage({ params }: PageProps) {
   const routeParams = useParams<{ courseId?: string }>();
   const courseId = typeof routeParams.courseId === 'string' ? routeParams.courseId : params.courseId;
@@ -57,8 +63,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
   const [courseDraft, setCourseDraft] = useState<Partial<Course>>({});
   const [newModule, setNewModule] = useState<Partial<CourseModule>>(emptyModule);
   const [newLessons, setNewLessons] = useState<Record<string, Partial<CourseLesson>>>({});
-  const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
-  const [expandedLessonId, setExpandedLessonId] = useState<string | null>(null);
+  const [activePanel, setActivePanel] = useState<CourseEditorPanel>({ type: 'settings' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [savingId, setSavingId] = useState('');
@@ -144,6 +149,15 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
   const visibleModules = useMemo(() => {
     return [...modules].sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
   }, [modules]);
+  const activeModule = useMemo(() => {
+    if (activePanel.type === 'module') {
+      return modules.find((module) => module.id === activePanel.moduleId) || null;
+    }
+    if (activePanel.type === 'lesson') {
+      return modules.find((module) => module.id === activePanel.moduleId) || null;
+    }
+    return null;
+  }, [activePanel, modules]);
   const publicationChecklist = useMemo(() => {
     const lessons = modules.flatMap((module) => module.lessons || []);
     return [
@@ -197,6 +211,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         visibility: (newModule.visibility as CourseModuleVisibility) || 'visible',
       });
       setModules((prev) => [created, ...prev]);
+      setActivePanel({ type: 'module', moduleId: created.id });
       setModuleDrafts((prev) => ({
         ...prev,
         [created.id]: {
@@ -283,6 +298,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         },
       }));
       setNewLessons((prev) => ({ ...prev, [moduleId]: emptyLesson }));
+      setActivePanel({ type: 'lesson', moduleId, lessonId: created.id });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la leccion');
     } finally {
@@ -318,6 +334,9 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     setError('');
     try {
       await api.deleteBackofficeCourseLesson(lessonId);
+      if (activePanel.type === 'lesson' && activePanel.lessonId === lessonId) {
+        setActivePanel({ type: 'settings' });
+      }
       setModules((prev) =>
         prev.map((module) => ({
           ...module,
@@ -474,7 +493,62 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         ) : null}
       </header>
 
-      {course ? (
+      {error ? (
+        <article className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          {error}
+        </article>
+      ) : null}
+
+      <section className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+        <aside className="h-fit rounded-3xl border border-[var(--stroke)] bg-white p-4 shadow-card lg:sticky lg:top-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--green-700)]">Curso editando</p>
+          <h2 className="mt-2 text-lg font-black text-[var(--ink)]">{course?.title || 'Curso'}</h2>
+          <div className="mt-4 space-y-2">
+            <button
+              type="button"
+              onClick={() => setActivePanel({ type: 'settings' })}
+              className={`w-full rounded-2xl px-3 py-2 text-left text-sm font-semibold ${activePanel.type === 'settings' ? 'bg-[var(--green-500)] text-white' : 'bg-[var(--bg-app)] text-[var(--ink)]'}`}
+            >
+              Configuración del curso
+            </button>
+            <button
+              type="button"
+              onClick={() => setActivePanel({ type: 'new-module' })}
+              className={`w-full rounded-2xl px-3 py-2 text-left text-sm font-semibold ${activePanel.type === 'new-module' ? 'bg-[var(--green-500)] text-white' : 'bg-[var(--bg-app)] text-[var(--ink)]'}`}
+            >
+              Añadir módulo
+            </button>
+          </div>
+          <div className="mt-4 space-y-3">
+            {visibleModules.map((module) => (
+              <div key={module.id} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-2">
+                <button
+                  type="button"
+                  onClick={() => setActivePanel({ type: 'module', moduleId: module.id })}
+                  className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold ${activePanel.type === 'module' && activePanel.moduleId === module.id ? 'bg-[var(--ink)] text-white' : 'text-[var(--ink)]'}`}
+                >
+                  {module.title}
+                </button>
+                <div className="mt-1 space-y-1">
+                  {(module.lessons || []).map((lesson) => (
+                    <button
+                      key={lesson.id}
+                      type="button"
+                      onClick={() => setActivePanel({ type: 'lesson', moduleId: module.id, lessonId: lesson.id })}
+                      className={`w-full rounded-xl px-3 py-2 text-left text-xs font-semibold ${activePanel.type === 'lesson' && activePanel.lessonId === lesson.id ? 'bg-[var(--green-500)] text-white' : 'text-[var(--ink-soft)] hover:bg-white'}`}
+                    >
+                      {lesson.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </aside>
+
+        <div className="min-w-0 space-y-4">
+
+      {course && activePanel.type === 'settings' ? (
         <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
           <article className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
             <h2 className="text-lg font-semibold text-[var(--ink)]">Configuración editorial</h2>
@@ -506,12 +580,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         </section>
       ) : null}
 
-      {error ? (
-        <article className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          {error}
-        </article>
-      ) : null}
-
+      {activePanel.type === 'new-module' ? (
       <section className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
         <h2 className="text-lg font-semibold text-[var(--ink)]">Nuevo modulo</h2>
         <div className="mt-3 grid gap-3 md:grid-cols-3">
@@ -562,12 +631,13 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
           </button>
         </div>
       </section>
+      ) : null}
 
+      {(activePanel.type === 'module' || activePanel.type === 'lesson') && activeModule ? (
       <section className="space-y-4">
-        {visibleModules.map((module) => {
+        {[activeModule].map((module) => {
           const moduleDraft = moduleDrafts[module.id] || {};
           const lessons = module.lessons || [];
-          const isExpanded = expandedModuleId === module.id;
           return (
             <article key={module.id} className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -588,10 +658,10 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => setExpandedModuleId(isExpanded ? null : module.id)}
+                    onClick={() => setActivePanel({ type: 'settings' })}
                     className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)]"
                   >
-                    {isExpanded ? 'Cerrar' : 'Editar modulo'}
+                    Cerrar módulo
                   </button>
                   <button
                     type="button"
@@ -612,7 +682,6 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 </div>
               </div>
 
-              {isExpanded ? (
                 <div className="mt-4 space-y-4">
                   <div className="grid gap-3 md:grid-cols-2">
                     <label className="text-sm text-[var(--ink)]">
@@ -681,7 +750,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                     <div className="mt-3 grid gap-3">
                       {lessons.map((lesson) => {
                         const lessonDraft = lessonDrafts[lesson.id] || {};
-                        const isLessonExpanded = expandedLessonId === lesson.id;
+                        const isLessonExpanded = activePanel.type === 'lesson' && activePanel.lessonId === lesson.id;
                         return (
                           <div key={lesson.id} className="rounded-2xl border border-[var(--stroke)] bg-white p-4">
                             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -692,7 +761,13 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                               <div className="flex flex-wrap items-center gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => setExpandedLessonId(isLessonExpanded ? null : lesson.id)}
+                                  onClick={() =>
+                                    setActivePanel(
+                                      isLessonExpanded
+                                        ? { type: 'module', moduleId: module.id }
+                                        : { type: 'lesson', moduleId: module.id, lessonId: lesson.id },
+                                    )
+                                  }
                                   className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]"
                                 >
                                   {isLessonExpanded ? 'Cerrar' : 'Editar'}
@@ -973,10 +1048,12 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                     </div>
                   </div>
                 </div>
-              ) : null}
             </article>
           );
         })}
+      </section>
+      ) : null}
+        </div>
       </section>
         </div>
       </div>
