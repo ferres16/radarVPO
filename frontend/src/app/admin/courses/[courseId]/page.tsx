@@ -459,7 +459,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
   }
 
   return (
-    <main className="shell max-w-[1600px] pb-16">
+    <main className="shell max-w-[1800px] pb-16">
       <div className="admin-shell">
         <AdminNav />
         <div className="space-y-4">
@@ -522,15 +522,15 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         </article>
       ) : null}
 
-      <section className="grid gap-4 2xl:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="h-fit rounded-3xl border border-[var(--stroke)] bg-white p-4 shadow-card 2xl:sticky 2xl:top-4">
-          <div className="flex flex-wrap items-start justify-between gap-3 2xl:block">
+      <section className="grid gap-4">
+        <aside className="rounded-3xl border border-[var(--stroke)] bg-white p-4 shadow-card">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--green-700)]">Curso editando</p>
               <h2 className="mt-2 text-lg font-black text-[var(--ink)]">{course?.title || 'Curso'}</h2>
             </div>
           </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 2xl:block 2xl:space-y-2">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <button
               type="button"
               onClick={() => setActivePanel({ type: 'settings' })}
@@ -546,7 +546,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
               Añadir módulo
             </button>
           </div>
-          <div className="mt-4 grid gap-3 lg:grid-cols-2 2xl:block 2xl:space-y-3">
+          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {visibleModules.map((module) => (
               <div key={module.id} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-2">
                 <button
@@ -576,33 +576,68 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         <div className="min-w-0 space-y-4">
 
       {course && activePanel.type === 'settings' ? (
-        <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_280px]">
+        <section className="space-y-4">
           <article className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
-            <h2 className="text-lg font-semibold text-[var(--ink)]">Configuración editorial</h2>
-            <p className="mt-1 text-sm text-[var(--ink-soft)]">Portada, acceso, estado, precio y descripción pública del curso.</p>
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <label className="text-sm font-semibold text-[var(--ink)]">Título<input className="ds-control mt-1" value={courseDraft.title || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, title: e.target.value }))} /></label>
-              <label className="text-sm font-semibold text-[var(--ink)]">Slug<input className="ds-control mt-1" value={courseDraft.slug || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, slug: e.target.value }))} /></label>
-              <label className="text-sm font-semibold text-[var(--ink)]">Estado<select className="ds-control mt-1" value={courseDraft.status || 'draft'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, status: e.target.value as CourseStatus }))}>{courseStatusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select></label>
-              <label className="text-sm font-semibold text-[var(--ink)]">Acceso<select className="ds-control mt-1" value={courseDraft.accessType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, accessType: e.target.value as CourseAccessType }))}>{courseAccessOptions.map((access) => <option key={access} value={access}>{access}</option>)}</select></label>
-              <label className="text-sm font-semibold text-[var(--ink)]">Tipo comercial<select className="ds-control mt-1" value={courseDraft.pricingType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, pricingType: e.target.value as Course['pricingType'] }))}><option value="free">Gratuito</option><option value="premium">Premium</option></select></label>
-              <label className="text-sm font-semibold text-[var(--ink)]">Precio<input className="ds-control mt-1" value={courseDraft.price || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, price: e.target.value }))} /></label>
-              <label className="text-sm font-semibold text-[var(--ink)]">Moneda<input className="ds-control mt-1" value={courseDraft.currency || 'EUR'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, currency: e.target.value }))} /></label>
-              <label className="text-sm font-semibold text-[var(--ink)]">Fecha publicación<input type="datetime-local" className="ds-control mt-1" value={(courseDraft.publishedAt || '').slice(0, 16)} onChange={(e) => setCourseDraft((prev) => ({ ...prev, publishedAt: e.target.value }))} /></label>
-              <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Stripe Payment Link<input className="ds-control mt-1" value={courseDraft.stripePaymentLink || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, stripePaymentLink: e.target.value }))} /></label>
-              <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Descripción corta<textarea className="ds-control mt-1 min-h-24" value={courseDraft.shortDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, shortDescription: e.target.value }))} /></label>
-              <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Descripción larga<textarea className="ds-control mt-1 min-h-28" value={courseDraft.longDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, longDescription: e.target.value }))} /></label>
-              <label className="text-sm font-semibold text-[var(--ink)]">SEO title<input className="ds-control mt-1" value={courseDraft.seoTitle || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, seoTitle: e.target.value }))} /></label>
-              <label className="text-sm font-semibold text-[var(--ink)]">SEO description<input className="ds-control mt-1" value={courseDraft.seoDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, seoDescription: e.target.value }))} /></label>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-semibold text-[var(--ink)]">Configuración editorial</h2>
+                <p className="mt-1 text-sm text-[var(--ink-soft)]">Organiza el curso por bloques de información para evitar formularios interminables.</p>
+              </div>
+              <button type="button" onClick={() => void saveCourseSettings()} disabled={savingId === 'course-settings'} className="rounded-xl bg-[var(--green-500)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{savingId === 'course-settings' ? 'Guardando...' : 'Guardar configuración'}</button>
             </div>
-            <button type="button" onClick={() => void saveCourseSettings()} disabled={savingId === 'course-settings'} className="mt-4 rounded-xl bg-[var(--green-500)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{savingId === 'course-settings' ? 'Guardando...' : 'Guardar configuración'}</button>
+
+            <div className="mt-5 grid gap-4 xl:grid-cols-2">
+              <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+                <h3 className="text-sm font-bold text-[var(--ink)]">Identidad del curso</h3>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <label className="text-sm font-semibold text-[var(--ink)]">Título<input className="ds-control mt-1 w-full" value={courseDraft.title || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, title: e.target.value }))} /></label>
+                  <label className="text-sm font-semibold text-[var(--ink)]">Slug<input className="ds-control mt-1 w-full" value={courseDraft.slug || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, slug: e.target.value }))} /></label>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+                <h3 className="text-sm font-bold text-[var(--ink)]">Publicación y acceso</h3>
+                <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  <label className="text-sm font-semibold text-[var(--ink)]">Estado<select className="ds-control mt-1 w-full" value={courseDraft.status || 'draft'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, status: e.target.value as CourseStatus }))}>{courseStatusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select></label>
+                  <label className="text-sm font-semibold text-[var(--ink)]">Acceso<select className="ds-control mt-1 w-full" value={courseDraft.accessType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, accessType: e.target.value as CourseAccessType }))}>{courseAccessOptions.map((access) => <option key={access} value={access}>{access}</option>)}</select></label>
+                  <label className="text-sm font-semibold text-[var(--ink)]">Tipo comercial<select className="ds-control mt-1 w-full" value={courseDraft.pricingType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, pricingType: e.target.value as Course['pricingType'] }))}><option value="free">Gratuito</option><option value="premium">Premium</option></select></label>
+                  <label className="text-sm font-semibold text-[var(--ink)]">Fecha publicación<input type="datetime-local" className="ds-control mt-1 w-full" value={(courseDraft.publishedAt || '').slice(0, 16)} onChange={(e) => setCourseDraft((prev) => ({ ...prev, publishedAt: e.target.value }))} /></label>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+                <h3 className="text-sm font-bold text-[var(--ink)]">Precio y compra</h3>
+                <div className="mt-3 grid gap-3 md:grid-cols-[1fr_120px]">
+                  <label className="text-sm font-semibold text-[var(--ink)]">Precio<input className="ds-control mt-1 w-full" value={courseDraft.price || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, price: e.target.value }))} /></label>
+                  <label className="text-sm font-semibold text-[var(--ink)]">Moneda<input className="ds-control mt-1 w-full" value={courseDraft.currency || 'EUR'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, currency: e.target.value }))} /></label>
+                  <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Stripe Payment Link<input className="ds-control mt-1 w-full" value={courseDraft.stripePaymentLink || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, stripePaymentLink: e.target.value }))} /></label>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+                <h3 className="text-sm font-bold text-[var(--ink)]">SEO</h3>
+                <div className="mt-3 grid gap-3 md:grid-cols-2">
+                  <label className="text-sm font-semibold text-[var(--ink)]">SEO title<input className="ds-control mt-1 w-full" value={courseDraft.seoTitle || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, seoTitle: e.target.value }))} /></label>
+                  <label className="text-sm font-semibold text-[var(--ink)]">SEO description<input className="ds-control mt-1 w-full" value={courseDraft.seoDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, seoDescription: e.target.value }))} /></label>
+                </div>
+              </section>
+
+              <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 xl:col-span-2">
+                <h3 className="text-sm font-bold text-[var(--ink)]">Descripciones públicas</h3>
+                <div className="mt-3 grid gap-3 lg:grid-cols-2">
+                  <label className="text-sm font-semibold text-[var(--ink)]">Descripción corta<textarea className="ds-control mt-1 min-h-24 w-full" value={courseDraft.shortDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, shortDescription: e.target.value }))} /></label>
+                  <label className="text-sm font-semibold text-[var(--ink)]">Descripción larga<textarea className="ds-control mt-1 min-h-24 w-full" value={courseDraft.longDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, longDescription: e.target.value }))} /></label>
+                </div>
+              </section>
+            </div>
           </article>
+
           <article className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
             <h2 className="text-lg font-semibold text-[var(--ink)]">Checklist de publicación</h2>
-            <div className="mt-4 space-y-2">
+            <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {publicationChecklist.map((item) => (
                 <div key={item.label} className="flex items-center gap-2 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3 text-sm">
-                  <span className={`h-3 w-3 rounded-full ${item.done ? 'bg-[var(--green-500)]' : 'bg-amber-400'}`} />
+                  <span className={`h-3 w-3 shrink-0 rounded-full ${item.done ? 'bg-[var(--green-500)]' : 'bg-amber-400'}`} />
                   <span className="font-semibold text-[var(--ink)]">{item.label}</span>
                 </div>
               ))}
