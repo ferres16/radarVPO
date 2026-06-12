@@ -522,11 +522,15 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         </article>
       ) : null}
 
-      <section className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)]">
-        <aside className="h-fit rounded-3xl border border-[var(--stroke)] bg-white p-4 shadow-card lg:sticky lg:top-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--green-700)]">Curso editando</p>
-          <h2 className="mt-2 text-lg font-black text-[var(--ink)]">{course?.title || 'Curso'}</h2>
-          <div className="mt-4 space-y-2">
+      <section className="grid gap-4 2xl:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="h-fit rounded-3xl border border-[var(--stroke)] bg-white p-4 shadow-card 2xl:sticky 2xl:top-4">
+          <div className="flex flex-wrap items-start justify-between gap-3 2xl:block">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--green-700)]">Curso editando</p>
+              <h2 className="mt-2 text-lg font-black text-[var(--ink)]">{course?.title || 'Curso'}</h2>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2 sm:grid-cols-2 2xl:block 2xl:space-y-2">
             <button
               type="button"
               onClick={() => setActivePanel({ type: 'settings' })}
@@ -542,7 +546,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
               Añadir módulo
             </button>
           </div>
-          <div className="mt-4 space-y-3">
+          <div className="mt-4 grid gap-3 lg:grid-cols-2 2xl:block 2xl:space-y-3">
             {visibleModules.map((module) => (
               <div key={module.id} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-2">
                 <button
@@ -572,7 +576,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         <div className="min-w-0 space-y-4">
 
       {course && activePanel.type === 'settings' ? (
-        <section className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+        <section className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_280px]">
           <article className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
             <h2 className="text-lg font-semibold text-[var(--ink)]">Configuración editorial</h2>
             <p className="mt-1 text-sm text-[var(--ink-soft)]">Portada, acceso, estado, precio y descripción pública del curso.</p>
@@ -633,13 +637,13 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
             />
           </label>
         </div>
-        <div className="mt-3 flex flex-wrap items-center gap-3">
-          <label className="text-sm text-[var(--ink)]">
+        <div className="mt-3 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
+          <label className="text-sm font-semibold text-[var(--ink)]">
             Visibilidad
             <select
               value={newModule.visibility || 'visible'}
               onChange={(e) => setNewModule((prev) => ({ ...prev, visibility: e.target.value as CourseModuleVisibility }))}
-              className="ml-2 rounded-xl border border-[var(--stroke)] px-2 py-1 text-sm"
+              className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
             >
               {visibilityOptions.map((option) => (
                 <option key={option} value={option}>
@@ -1035,8 +1039,8 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                           className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
                         />
                       </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-3">
-                        <label className="text-sm text-[var(--ink)]">
+                      <div className="mt-3 grid gap-3 md:grid-cols-3">
+                        <label className="text-sm font-semibold text-[var(--ink)]">
                           Tipo
                           <select
                             value={newLessons[module.id]?.type || 'text'}
@@ -1046,7 +1050,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                 [module.id]: { ...prev[module.id], type: e.target.value as LessonType },
                               }))
                             }
-                            className="ml-2 rounded-xl border border-[var(--stroke)] px-2 py-1 text-sm"
+                            className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
                           >
                             {lessonTypeOptions.map((type) => (
                               <option key={type} value={type}>
@@ -1055,7 +1059,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                             ))}
                           </select>
                         </label>
-                        <label className="text-sm text-[var(--ink)]">
+                        <label className="text-sm font-semibold text-[var(--ink)]">
                           Estado
                           <select
                             value={newLessons[module.id]?.status || 'draft'}
@@ -1065,7 +1069,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                 [module.id]: { ...prev[module.id], status: e.target.value as LessonStatus },
                               }))
                             }
-                            className="ml-2 rounded-xl border border-[var(--stroke)] px-2 py-1 text-sm"
+                            className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
                           >
                             {lessonStatusOptions.map((status) => (
                               <option key={status} value={status}>
@@ -1074,7 +1078,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                             ))}
                           </select>
                         </label>
-                        <label className="text-sm text-[var(--ink)]">
+                        <label className="text-sm font-semibold text-[var(--ink)]">
                           Orden
                           <input
                             type="number"
@@ -1085,7 +1089,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                 [module.id]: { ...prev[module.id], order: Number(e.target.value) },
                               }))
                             }
-                            className="ml-2 w-20 rounded-xl border border-[var(--stroke)] px-2 py-1 text-sm"
+                            className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
                           />
                         </label>
                       </div>
