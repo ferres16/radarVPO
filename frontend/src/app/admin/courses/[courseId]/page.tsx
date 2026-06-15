@@ -43,6 +43,14 @@ const lessonTypeOptions: LessonType[] = ['text', 'video', 'downloadable', 'faq']
 const courseStatusOptions: CourseStatus[] = ['draft', 'published', 'archived'];
 const courseAccessOptions: CourseAccessType[] = ['free', 'paid', 'pro', 'seguimiento'];
 
+const getCourseSalePrice = (course: Pick<Course, 'salePrice' | 'seoMetadata'>) => {
+  const metadataSalePrice = course.seoMetadata?.salePrice;
+  if (typeof metadataSalePrice === 'string' || typeof metadataSalePrice === 'number') {
+    return String(metadataSalePrice);
+  }
+  return course.salePrice || '';
+};
+
 type PageProps = {
   params: { courseId: string };
 };
@@ -96,7 +104,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 pricingType: selected.pricingType || 'free',
                 coverImage: selected.coverImage || '',
                 price: selected.price || '',
-                salePrice: selected.salePrice || '',
+                salePrice: getCourseSalePrice(selected),
                 currency: selected.currency || 'EUR',
                 stripePaymentLink: selected.stripePaymentLink || '',
                 status: selected.status,
@@ -104,6 +112,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 order: selected.order,
                 seoTitle: selected.seoTitle || '',
                 seoDescription: selected.seoDescription || '',
+                seoMetadata: selected.seoMetadata || {},
                 publishedAt: selected.publishedAt || '',
               }
             : {},
@@ -192,7 +201,6 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         coverImage: courseDraft.coverImage,
         pricingType: courseDraft.pricingType,
         price: courseDraft.price ? String(courseDraft.price) : undefined,
-        salePrice: courseDraft.salePrice ? String(courseDraft.salePrice) : undefined,
         currency: courseDraft.currency,
         stripePaymentLink: courseDraft.stripePaymentLink,
         status: courseDraft.status,
@@ -200,6 +208,10 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         order: courseDraft.order,
         seoTitle: courseDraft.seoTitle,
         seoDescription: courseDraft.seoDescription,
+        seoMetadata: {
+          ...(courseDraft.seoMetadata || {}),
+          salePrice: courseDraft.salePrice ? String(courseDraft.salePrice) : null,
+        },
         publishedAt: courseDraft.publishedAt || undefined,
       });
       setCourse((prev) => ({ ...(prev || updated), ...updated }));

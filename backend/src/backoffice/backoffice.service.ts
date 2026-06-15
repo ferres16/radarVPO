@@ -1001,6 +1001,25 @@ export class BackofficeService {
           include: {
             lessons: {
               orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+              include: {
+                blocks: {
+                  orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+                  include: {
+                    assets: {
+                      orderBy: { createdAt: 'asc' },
+                      include: { fileAsset: true },
+                    },
+                  },
+                },
+                assets: {
+                  orderBy: { createdAt: 'asc' },
+                  include: { fileAsset: true },
+                },
+                resources: {
+                  orderBy: { createdAt: 'asc' },
+                  include: { fileAsset: true },
+                },
+              },
             },
           },
         },
