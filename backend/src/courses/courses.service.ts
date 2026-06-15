@@ -4,7 +4,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  CourseAssetKind,
   CourseAccessRuleType,
   CourseAccessType,
   CourseStatus,
@@ -47,7 +46,7 @@ export class CoursesService {
   } satisfies Prisma.CourseLessonSelect;
 
   async listCourses() {
-    const courses = await this.prisma.course.findMany({
+    return this.prisma.course.findMany({
       where: { status: CourseStatus.published },
       orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
       include: {
@@ -71,20 +70,8 @@ export class CoursesService {
             },
           },
         },
-        assets: {
-          where: { kind: CourseAssetKind.cover },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          include: { fileAsset: true },
-        },
       },
     });
-
-    return Promise.all(
-      courses.map(async (course) =>
-        this.stripInternalCourseFields(await this.withAccessibleCourseCover(course)),
-      ),
-    );
   }
 
   async listCoursesForUser(userId: string) {
@@ -114,23 +101,15 @@ export class CoursesService {
             },
           },
           accessRules: { orderBy: { createdAt: 'asc' } },
-          assets: {
-            where: { kind: CourseAssetKind.cover },
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-            include: { fileAsset: true },
-          },
         },
       }),
       this.getAccessProfile(userId),
     ]);
 
-    return Promise.all(
-      courses.map(async (course) => ({
-        ...this.stripInternalCourseFields(await this.withAccessibleCourseCover(course)),
-        access: this.evaluateAccess(course, profile),
-      })),
-    );
+    return courses.map((course) => ({
+      ...this.stripInternalCourseFields(course),
+      access: this.evaluateAccess(course, profile),
+    }));
   }
 
   private async getPublishedCourseBySlug(
@@ -154,12 +133,6 @@ export class CoursesService {
         accessRules: includeAccessRules
           ? { orderBy: { createdAt: 'asc' } }
           : false,
-        assets: {
-          where: { kind: CourseAssetKind.cover },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-          include: { fileAsset: true },
-        },
       },
     });
 
@@ -170,51 +143,17 @@ export class CoursesService {
     return course;
   }
 
-  private async withAccessibleCourseCover<
-    T extends {
-      coverImage?: string | null;
-      assets?: Array<{
-        fileAssetId: string | null;
-        url: string | null;
-        kind: CourseAssetKind | string;
-        fileAsset?: unknown;
-      }>;
-    },
-  >(course: T): Promise<T> {
-    const cover = course.assets?.find((asset) => asset.kind === CourseAssetKind.cover);
-    if (!cover?.fileAssetId) {
-      return course;
-    }
-
-    try {
-      const signed = await this.fileStorage.getAccessibleUrl(cover.fileAssetId, true, {
-        preferSigned: true,
-      });
-
-      return {
-        ...course,
-        coverImage: signed.url || cover.url || course.coverImage,
-      };
-    } catch {
-      return {
-        ...course,
-        coverImage: cover.url || course.coverImage,
-      };
-    }
-  }
-
   private stripInternalCourseFields<T extends { accessRules?: unknown }>(
     course: T,
   ) {
     const publicCourse = { ...course };
     delete publicCourse.accessRules;
-    delete (publicCourse as T & { assets?: unknown }).assets;
     return publicCourse;
   }
 
   async getCourseBySlug(slug: string) {
     const course = await this.getPublishedCourseBySlug(slug);
-    return this.stripInternalCourseFields(await this.withAccessibleCourseCover(course));
+    return this.stripInternalCourseFields(course);
   }
 
   async getCourseBySlugForUser(slug: string, userId: string) {
@@ -224,7 +163,7 @@ export class CoursesService {
     ]);
 
     return {
-      ...this.stripInternalCourseFields(await this.withAccessibleCourseCover(course)),
+      ...this.stripInternalCourseFields(course),
       access: this.evaluateAccess(course, profile),
     };
   }
