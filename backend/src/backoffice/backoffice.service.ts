@@ -1641,7 +1641,8 @@ export class BackofficeService {
 
   private async withSignedCourseAssetsForBackoffice<
     T extends {
-      assets?: Array<{ fileAssetId: string | null; url: string | null }>;
+      coverImage?: string | null;
+      assets?: Array<{ fileAssetId: string | null; url: string | null; kind?: CourseAssetKind }>;
       modules?: Array<{
         lessons?: Array<{
           assets?: Array<{ fileAssetId: string | null; url: string | null }>;
@@ -1703,10 +1704,13 @@ export class BackofficeService {
         ),
       })),
     );
+    const assets = await Promise.all((course.assets || []).map(signAsset));
+    const cover = assets.find((asset) => asset.kind === CourseAssetKind.cover);
 
     return {
       ...course,
-      assets: await Promise.all((course.assets || []).map(signAsset)),
+      coverImage: cover?.url || course.coverImage,
+      assets,
       modules,
     } as T;
   }
