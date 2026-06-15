@@ -5,6 +5,7 @@ import Script from "next/script";
 import { MobileStickyAd } from "@/components/ads";
 import { TopNav } from "@/components/top-nav";
 import { adsConfig } from "@/lib/ads";
+import { siteConfig } from "@/lib/seo";
 import "./globals.css";
 
 const inter = Inter({
@@ -18,8 +19,41 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Radar VPO",
-  description: "Asesoria personalizada, seguimiento individualizado y noticias de vivienda en Catalunya y Espana",
+  metadataBase: new URL(siteConfig.url),
+  title: {
+    default: siteConfig.title,
+    template: `%s | ${siteConfig.name}`,
+  },
+  description: siteConfig.description,
+  keywords: siteConfig.keywords,
+  applicationName: siteConfig.name,
+  alternates: {
+    canonical: siteConfig.url,
+  },
+  openGraph: {
+    title: siteConfig.title,
+    description: siteConfig.description,
+    url: siteConfig.url,
+    siteName: siteConfig.name,
+    locale: siteConfig.locale,
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: siteConfig.title,
+    description: siteConfig.description,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
 };
 
 export default function RootLayout({

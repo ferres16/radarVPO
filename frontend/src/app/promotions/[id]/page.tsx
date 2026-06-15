@@ -1,8 +1,11 @@
 import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { InlineAdCard, SidebarAds } from '@/components/ads';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { Reveal } from '@/components/motion-primitives';
+import { StructuredData } from '@/components/structured-data';
+import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
 type JsonMap = Record<string, unknown>;
 
@@ -46,6 +49,37 @@ function statusLabel(status: string) {
   if (status === 'published_unreviewed') return 'Publicada sin revisar';
   if (status === 'pending_review') return 'Aviso pendiente';
   return 'Archivada';
+}
+
+type PromotionDetailParams = {
+  params: Promise<{ id: string }>;
+};
+
+async function getPromotion(id: string) {
+  return api.getPromotionById(id).catch(() => null);
+}
+
+export async function generateMetadata({ params }: PromotionDetailParams): Promise<Metadata> {
+  const { id } = await params;
+  const promotion = await getPromotion(id);
+
+  if (!promotion) {
+    return createMetadata({
+      title: 'Promoción no disponible',
+      description: 'Promoción de vivienda protegida no disponible.',
+      path: `/promotions/${id}`,
+    });
+  }
+
+  const location = promotion.municipality || promotion.province || 'Cataluña';
+  return createMetadata({
+    title: `${promotion.title} - Vivienda protegida en ${location}`,
+    description:
+      promotion.publicDescription ||
+      `Ficha de promoción de vivienda protegida en ${location}: requisitos, fechas, documentos y fuente oficial.`,
+    path: `/promotions/${promotion.id}`,
+    keywords: ['promociones VPO', location, promotion.promotionType, 'vivienda protegida'],
+  });
 }
 
 function DataBlock({
@@ -101,11 +135,9 @@ function DataBlock({
 
 export default async function PromotionDetailPage({
   params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+}: PromotionDetailParams) {
   const { id } = await params;
-  const promotion = await api.getPromotionById(id).catch(() => null);
+  const promotion = await getPromotion(id);
 
   if (!promotion) {
     return notFound();
@@ -130,6 +162,13 @@ export default async function PromotionDetailPage({
 
   return (
     <main className="shell space-y-6 pb-10">
+      <StructuredData
+        data={breadcrumbJsonLd([
+          { name: 'Inicio', path: '/' },
+          { name: 'Promociones', path: '/promotions' },
+          { name: promotion.title, path: `/promotions/${promotion.id}` },
+        ])}
+      />
       <Reveal>
         <section className="grid overflow-hidden rounded-[2.25rem] border border-[var(--stroke)] bg-white shadow-[0_24px_80px_rgba(30,31,28,0.12)] lg:grid-cols-[1.15fr_0.85fr]">
           <div className="relative min-h-[340px] bg-[linear-gradient(135deg,rgba(22,112,85,0.18),rgba(54,189,248,0.12),rgba(255,255,255,0.96))] p-6 md:p-8">
@@ -167,6 +206,16 @@ export default async function PromotionDetailPage({
             <div className="mt-4 flex flex-wrap gap-2">
               <ButtonLink href={promotion.sourceUrl} variant="primary">Fuente oficial</ButtonLink>
               <ButtonLink href="#documentos" variant="secondary">Ver documentos</ButtonLink>
+            </div>
+            <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-eco)] p-4">
+              <p className="text-sm font-bold text-[var(--ink)]">No dependas de encontrar la próxima promoción tarde.</p>
+              <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
+                Activa Alertas VPO o contrata seguimiento si quieres que Radar VPO vigile oportunidades similares por ti.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <ButtonLink href="/register?intent=alerts">Recibir alertas similares</ButtonLink>
+                <ButtonLink href="/services" variant="secondary">Pedir ayuda</ButtonLink>
+              </div>
             </div>
           </aside>
         </section>

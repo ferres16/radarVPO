@@ -216,6 +216,7 @@ model Session {
   user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([revokedAt, expiresAt])
   @@map("sessions")
 }
 
@@ -274,6 +275,7 @@ model Promotion {
   @@index([municipality, province, status])
   @@index([status, publishedAt])
   @@index([status, estimatedPublicationDate])
+  @@index([province, municipality, publishedAt])
   @@map("promotions")
 }
 
@@ -396,6 +398,7 @@ model NewsItem {
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([publishedAt])
+  @@index([category, publishedAt])
 
   @@map("news_items")
 }
@@ -465,6 +468,7 @@ model Course {
   userAccesses       UserCourseAccess[]
 
   @@index([status, accessType])
+  @@index([status, order, createdAt])
   @@map("courses")
 }
 
@@ -683,6 +687,7 @@ model Purchase {
   course      Course?        @relation(fields: [courseId], references: [id], onDelete: SetNull)
 
   @@index([userId, status])
+  @@index([courseId, status])
   @@map("purchases")
 }
 
@@ -700,6 +705,7 @@ model Subscription {
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+  @@index([status, currentPeriodEnd])
   @@map("subscriptions")
 }
 

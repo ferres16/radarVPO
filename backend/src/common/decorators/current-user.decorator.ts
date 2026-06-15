@@ -5,6 +5,7 @@ export type CurrentUserPayload = {
   email: string;
   role: 'user' | 'admin';
   plan: 'free' | 'pro';
+  sessionId: string;
 };
 
 export const CurrentUser = createParamDecorator(

@@ -1,124 +1,122 @@
-'use client';
-
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
 import { api } from '@/lib/api';
-import type { Course, CourseAccessDecision } from '@/types';
+import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { StructuredData } from '@/components/structured-data';
+import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
 const isExternalUrl = (href: string) => /^https?:\/\//.test(href);
 
-export default function CourseDetailPage() {
-  const params = useParams<{ slug?: string }>();
-  const slug = typeof params.slug === 'string' ? params.slug : '';
-  const [course, setCourse] = useState<Course | null>(null);
-  const [access, setAccess] = useState<CourseAccessDecision | null>(null);
-  const [progress, setProgress] = useState<{
-    progressPercent: number;
-    completedLessons: number;
-    totalLessons: number;
-  } | null>(null);
-  const [authStatus, setAuthStatus] = useState<'loading' | 'authed' | 'guest'>('loading');
-  const [loading, setLoading] = useState(true);
+type CourseDetailParams = {
+  params: Promise<{ slug: string }>;
+};
 
-  useEffect(() => {
-    let active = true;
+async function getPublicCourse(slug: string) {
+  return api.getCourse(slug).catch(() => null);
+}
 
-    (async () => {
-      try {
-        await api.getMe();
-        if (!active) return;
-        setAuthStatus('authed');
-        const data = await api.getCourseForUser(slug);
-        if (!active) return;
-        setCourse(data);
-        setAccess(data.access || null);
-        const courseProgress = await api.getCourseProgress(slug);
-        if (!active) return;
-        setProgress({
-          progressPercent: courseProgress.progressPercent,
-          completedLessons: courseProgress.completedLessons,
-          totalLessons: courseProgress.totalLessons,
-        });
-      } catch {
-        if (!active) return;
-        setCourse(null);
-        setAccess(null);
-        setAuthStatus('guest');
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [slug]);
-
-  const modules = useMemo(() => course?.modules || [], [course]);
-  const locked = access
-    ? !access.canAccess
-    : course?.accessType !== 'free' || course?.pricingType === 'premium';
-  const progressPercent = progress?.progressPercent ?? 0;
-  const purchaseHref = course?.stripePaymentLink || '/services';
-  const purchaseExternal = isExternalUrl(purchaseHref);
-
-  if (loading) {
-    return (
-      <main className="shell">
-        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-          <p className="text-sm text-[var(--ink-soft)]">Cargando curso...</p>
-        </article>
-      </main>
-    );
-  }
+export async function generateMetadata({ params }: CourseDetailParams): Promise<Metadata> {
+  const { slug } = await params;
+  const course = await getPublicCourse(slug);
 
   if (!course) {
-    if (authStatus === 'guest') {
-      return (
-        <main className="shell">
-          <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--green-700)]">Acceso privado</p>
-            <h1 className="mt-3 text-2xl font-bold text-[var(--ink)]">Inicia sesión para entrar en este curso</h1>
-            <p className="mt-2 text-sm text-[var(--ink-soft)]">Los cursos solo están disponibles para usuarios registrados.</p>
-            <Link
-              href={`/login?next=${encodeURIComponent(`/cursos/${slug}`)}`}
-              className="mt-4 inline-flex rounded-xl bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white"
-            >
-              Iniciar sesión
-            </Link>
-          </article>
-        </main>
-      );
-    }
-
-    return (
-      <main className="shell">
-        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-          <h1 className="text-2xl font-bold text-[var(--ink)]">Curso no disponible</h1>
-          <p className="mt-2 text-sm text-[var(--ink-soft)]">No encontramos este curso.</p>
-          <Link
-            href="/cursos"
-            className="mt-4 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white"
-          >
-            Volver a cursos
-          </Link>
-        </article>
-      </main>
-    );
+    return createMetadata({
+      title: 'Curso no disponible',
+      description: 'Curso de Radar VPO no disponible.',
+      path: `/cursos/${slug}`,
+    });
   }
+
+  return createMetadata({
+    title: course.seoTitle || course.title,
+    description:
+      course.seoDescription ||
+      course.shortDescription ||
+      course.longDescription ||
+      'Curso práctico de vivienda protegida en Cataluña.',
+    path: `/cursos/${course.slug}`,
+    keywords: ['curso vivienda protegida', course.title, course.accessType],
+  });
+}
+
+export default async function CourseDetailPage({ params }: CourseDetailParams) {
+  const { slug } = await params;
+  const course = await getPublicCourse(slug);
+
+  if (!course) {
+    return notFound();
+  }
+
+  const modules = course.modules || [];
+  const lessonCount = modules.reduce((count, module) => count + (module.lessons?.length || 0), 0);
+  const purchaseHref = course.stripePaymentLink || `/login?next=${encodeURIComponent(`/cursos/${course.slug}`)}`;
+  const purchaseExternal = isExternalUrl(purchaseHref);
+  const priceLabel = course.price
+    ? new Intl.NumberFormat('es-ES', {
+        style: 'currency',
+        currency: course.currency || 'EUR',
+        maximumFractionDigits: 0,
+      }).format(Number(course.price))
+    : course.pricingType === 'free'
+      ? 'Gratis'
+      : 'Acceso bajo solicitud';
+
+  const courseJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: course.title,
+    description: course.shortDescription || course.longDescription || 'Curso practico de vivienda protegida.',
+    url: absoluteUrl(`/cursos/${course.slug}`),
+    provider: {
+      '@type': 'Organization',
+      name: 'Radar VPO',
+    },
+    offers: course.price
+      ? {
+          '@type': 'Offer',
+          price: String(course.price),
+          priceCurrency: course.currency || 'EUR',
+          availability: 'https://schema.org/InStock',
+        }
+      : undefined,
+  };
 
   return (
     <main className="shell space-y-6 pb-16">
+      <StructuredData
+        data={[
+          breadcrumbJsonLd([
+            { name: 'Inicio', path: '/' },
+            { name: 'Cursos', path: '/cursos' },
+            { name: course.title, path: `/cursos/${course.slug}` },
+          ]),
+          courseJsonLd,
+        ]}
+      />
       <header className="relative overflow-hidden rounded-[2.5rem] border border-[var(--stroke)] bg-white shadow-card">
         <div className="grid gap-0 lg:grid-cols-[1.3fr_0.7fr]">
           <div className="p-6 sm:p-8">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--ink-soft)]">Curso</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--ink-soft)]">Curso Radar VPO</p>
             <h1 className="mt-3 text-4xl font-black text-[var(--ink)] display-type">{course.title}</h1>
             <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
               {course.longDescription || course.shortDescription || 'Descripcion pendiente.'}
             </p>
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">Precio</p>
+                <p className="mt-1 text-lg font-black text-[var(--ink)]">{priceLabel}</p>
+              </div>
+              <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">Lecciones</p>
+                <p className="mt-1 text-lg font-black text-[var(--ink)]">{lessonCount}</p>
+              </div>
+              <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">Acceso</p>
+                <p className="mt-1 text-lg font-black text-[var(--ink)]">{course.accessType}</p>
+              </div>
+            </div>
             <div className="mt-6 flex flex-wrap gap-3">
               <Link
                 href="/cursos"
@@ -126,24 +124,19 @@ export default function CourseDetailPage() {
               >
                 Volver a cursos
               </Link>
-              {locked ? (
-                purchaseExternal ? (
-                  <a
-                    href={purchaseHref}
-                    className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white"
-                    rel="noopener noreferrer"
-                  >
-                    Comprar curso
-                  </a>
-                ) : (
-                  <Link
-                    href={authStatus === 'guest' ? '/login' : purchaseHref}
-                    className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white"
-                  >
-                    {authStatus === 'guest' ? 'Iniciar sesion' : 'Desbloquear acceso'}
-                  </Link>
-                )
-              ) : null}
+              {purchaseExternal ? (
+                <a
+                  href={purchaseHref}
+                  className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white"
+                  rel="noopener noreferrer"
+                >
+                  Comprar curso
+                </a>
+              ) : (
+                <Link href={purchaseHref} className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white">
+                  {course.pricingType === 'free' ? 'Entrar al curso' : 'Solicitar acceso'}
+                </Link>
+              )}
             </div>
           </div>
           <div className="border-t border-[var(--stroke)] bg-[linear-gradient(160deg,#f8fafc,white)] p-6 sm:p-8 lg:border-l lg:border-t-0">
@@ -161,15 +154,9 @@ export default function CourseDetailPage() {
             ) : null}
             <div className="rounded-2xl border border-[var(--stroke)] bg-white p-4">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Acceso</p>
-              <p className={`mt-2 text-2xl font-black ${locked ? 'text-rose-600' : 'text-emerald-600'}`}>
-                {locked ? 'Bloqueado' : 'Disponible'}
-              </p>
+              <p className="mt-2 text-2xl font-black text-[var(--green-700)]">Landing pública</p>
               <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                {locked
-                  ? authStatus === 'guest'
-                    ? 'Inicia sesion o compra el curso para desbloquearlo.'
-                    : 'Necesitas compra, plan o acceso activo.'
-                  : 'Puedes avanzar modulo a modulo.'}
+                Puedes consultar el temario y comprar o solicitar acceso. Las lecciones completas requieren sesión y permiso activo.
               </p>
             </div>
           </div>
@@ -180,7 +167,7 @@ export default function CourseDetailPage() {
         <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
           <h2 className="text-lg font-semibold text-[var(--ink)]">Indice del curso</h2>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
-            Modulos y lecciones ordenadas para avanzar sin perder contexto.
+            Modulos y lecciones visibles para decidir si el curso encaja con tu situación.
           </p>
           <div className="mt-4 space-y-3">
             {modules.map((module, index) => (
@@ -203,15 +190,12 @@ export default function CourseDetailPage() {
                   {(module.lessons || []).map((lesson) => (
                     <Link
                       key={lesson.id}
-                      href={`/cursos/${course.slug}/${lesson.slug}`}
-                      className={`flex items-center justify-between rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm transition ${
-                        locked ? 'pointer-events-none opacity-60' : 'hover:bg-white'
-                      }`}
-                      aria-disabled={locked}
+                      href={`/login?next=${encodeURIComponent(`/cursos/${course.slug}/${lesson.slug}`)}`}
+                      className="flex items-center justify-between rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm transition hover:bg-white"
                     >
                       <span className="font-semibold text-[var(--ink)]">{lesson.title}</span>
                       <span className="text-xs text-[var(--ink-soft)]">
-                        {locked ? 'Bloqueada' : lesson.durationMinutes ? `${lesson.durationMinutes} min` : 'Leccion'}
+                        {lesson.durationMinutes ? `${lesson.durationMinutes} min` : 'Leccion'}
                       </span>
                     </Link>
                   ))}
@@ -222,25 +206,24 @@ export default function CourseDetailPage() {
         </article>
 
         <aside className="space-y-4">
-          <div className="rounded-3xl border border-[var(--stroke)] bg-[linear-gradient(135deg,#eef2ff,white)] p-6 shadow-card">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Progreso</p>
-            <h3 className="mt-2 text-2xl font-black text-[var(--ink)] display-type">{progressPercent}% completado</h3>
-            <div className="mt-3 h-2 w-full rounded-full bg-white">
-              <div
-                className="h-2 rounded-full bg-[var(--green-500)] transition-all"
-                style={{ width: `${Math.min(100, progressPercent)}%` }}
-              />
+          <SurfaceCard className="p-6">
+            <SectionHeader eyebrow="Qué conseguirás" title="Más claridad antes de solicitar" />
+            <p className="mt-2 text-sm text-[var(--ink-soft)]">
+              Entenderás requisitos, plazos, errores frecuentes y criterios prácticos para presentarte con más margen.
+            </p>
+            <div className="mt-5">
+              <ButtonLink href={purchaseHref}>{course.stripePaymentLink ? 'Comprar curso' : 'Solicitar acceso'}</ButtonLink>
             </div>
+          </SurfaceCard>
+          <SurfaceCard className="p-6">
+            <SectionHeader eyebrow="Upsell" title="¿Tienes un caso concreto?" />
             <p className="mt-2 text-sm text-[var(--ink-soft)]">
-              {progress ? `${progress.completedLessons} de ${progress.totalLessons} lecciones completadas.` : 'Sin progreso registrado.'}
+              Combina el curso con seguimiento o asesoría si necesitas revisar documentación, requisitos o estrategia.
             </p>
-          </div>
-          <div className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Recursos</p>
-            <p className="mt-2 text-sm text-[var(--ink-soft)]">
-              Encontraras archivos adjuntos, plantillas y enlaces dentro de cada leccion.
-            </p>
-          </div>
+            <div className="mt-5">
+              <ButtonLink href="/services" variant="secondary">Ver servicios</ButtonLink>
+            </div>
+          </SurfaceCard>
         </aside>
       </section>
     </main>

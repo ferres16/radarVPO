@@ -1,9 +1,20 @@
 import { Fragment } from 'react';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { InlineAdCard } from '@/components/ads';
 import { PromotionCard } from '@/components/promotion-card';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { StructuredData } from '@/components/structured-data';
+import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
+
+export const metadata: Metadata = createMetadata({
+  title: 'Promociones VPO y vivienda pública en Cataluña',
+  description:
+    'Consulta promociones de vivienda protegida, vivienda pública, HPO y VPO en Cataluña con fichas, documentos, fechas y avisos relevantes.',
+  path: '/promotions',
+  keywords: ['promociones VPO', 'vivienda pública cataluña', 'pisos protegidos cataluña'],
+});
 
 export default async function PromotionsPage({
   searchParams,
@@ -22,6 +33,12 @@ export default async function PromotionsPage({
 
   return (
     <main className="shell space-y-6 pb-10">
+      <StructuredData
+        data={breadcrumbJsonLd([
+          { name: 'Inicio', path: '/' },
+          { name: 'Promociones', path: '/promotions' },
+        ])}
+      />
       <PageHero
         eyebrow="Oportunidades recientes"
         title="Las 10 oportunidades de vivienda pública más recientes"

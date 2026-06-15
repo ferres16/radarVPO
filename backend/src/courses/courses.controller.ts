@@ -30,13 +30,11 @@ export class CoursesController {
     return this.coursesService.getCourseAssetUrl(assetId, user.sub);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get(':slug')
   getCourse(
     @Param('slug') slug: string,
-    @CurrentUser() user: CurrentUserPayload,
   ) {
-    return this.coursesService.getCourseBySlugForUser(slug, user.sub);
+    return this.coursesService.getCourseBySlug(slug);
   }
 
   @UseGuards(JwtAuthGuard)

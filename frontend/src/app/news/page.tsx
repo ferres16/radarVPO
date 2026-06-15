@@ -1,10 +1,21 @@
 import { Fragment } from 'react';
+import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { InlineAdCard } from '@/components/ads';
 import { EmptyState } from '@/components/empty-state';
 import { NewsCard } from '@/components/news-card';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { Stagger, StaggerItem } from '@/components/motion-primitives';
+import { StructuredData } from '@/components/structured-data';
+import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
+
+export const metadata: Metadata = createMetadata({
+  title: 'Noticias de vivienda protegida y pública',
+  description:
+    'Actualidad sobre vivienda protegida, vivienda pública, ayudas, normativa, adjudicaciones y promociones VPO/HPO en Cataluña.',
+  path: '/news',
+  keywords: ['vivienda social cataluña', 'adjudicaciones vivienda protegida', 'noticias vivienda pública'],
+});
 
 export default async function NewsPage({
   searchParams,
@@ -23,6 +34,12 @@ export default async function NewsPage({
 
   return (
     <main className="shell space-y-6 pb-10">
+      <StructuredData
+        data={breadcrumbJsonLd([
+          { name: 'Inicio', path: '/' },
+          { name: 'Noticias', path: '/news' },
+        ])}
+      />
       <PageHero
         eyebrow="Noticias"
         title="Actualidad útil para tomar mejores decisiones"

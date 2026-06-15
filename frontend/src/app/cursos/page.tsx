@@ -1,13 +1,20 @@
-'use client';
-
 import Link from 'next/link';
 import Image from 'next/image';
-import { useEffect, useMemo, useState } from 'react';
+import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
-import { SkeletonCard } from '@/components/skeleton-card';
-import { StatusPill } from '@/components/status-pill';
-import type { Course, CourseAccessDecision } from '@/types';
+import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { StructuredData } from '@/components/structured-data';
+import { breadcrumbJsonLd, createMetadata, faqJsonLd } from '@/lib/seo';
+import type { Course } from '@/types';
+
+export const metadata: Metadata = createMetadata({
+  title: 'Cursos de vivienda protegida',
+  description:
+    'Cursos prácticos para entender vivienda protegida, requisitos VPO/HPO, documentación, adjudicaciones y errores frecuentes antes de solicitar.',
+  path: '/cursos',
+  keywords: ['cursos vivienda protegida', 'HPO cataluña', 'adjudicaciones vivienda protegida'],
+});
 
 const accessLabels: Record<string, string> = {
   free: 'Intro',
@@ -36,108 +43,91 @@ const formatPrice = (price?: string | number | null, currency?: string | null) =
 
 const isExternalUrl = (href: string) => /^https?:\/\//.test(href);
 
-export default function CoursesPage() {
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [accessMap, setAccessMap] = useState<Record<string, CourseAccessDecision>>({});
-  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+const faqs = [
+  {
+    question: '¿Los cursos sirven si todavía no tengo una promoción concreta?',
+    answer: 'Sí. Están diseñados para preparar requisitos, documentación y criterio antes de que se abra una convocatoria.',
+  },
+  {
+    question: '¿Necesito registrarme para comprar un curso?',
+    answer: 'Puedes consultar el temario público. Para acceder al contenido completo necesitarás compra, plan o acceso asignado según el curso.',
+  },
+  {
+    question: '¿Qué diferencia hay entre cursos y servicios premium?',
+    answer: 'Los cursos enseñan el proceso de forma estructurada; los servicios premium revisan tu caso concreto y te acompañan en decisiones.',
+  },
+];
 
-  useEffect(() => {
-    let active = true;
+function courseJsonLd(course: Course) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: course.title,
+    description: course.shortDescription || course.longDescription || 'Curso practico de vivienda protegida.',
+    provider: {
+      '@type': 'Organization',
+      name: 'Radar VPO',
+    },
+    offers: course.price
+      ? {
+          '@type': 'Offer',
+          price: String(course.price),
+          priceCurrency: course.currency || 'EUR',
+          availability: 'https://schema.org/InStock',
+        }
+      : undefined,
+  };
+}
 
-    (async () => {
-      try {
-        const list = await api.listCourses();
-        if (!active) return;
-        setCourses(list);
-        setError('');
-      } catch (err) {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : 'No se pudo cargar cursos');
-      } finally {
-        if (active) setLoading(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    let active = true;
-
-    (async () => {
-      try {
-        const list = await api.listCoursesForUser();
-        if (!active) return;
-        setAccessMap(
-          Object.fromEntries(
-            list.map((course) => [course.id, course.access || { canAccess: false, reason: 'locked' }]),
-          ),
-        );
-        setIsAuthed(true);
-      } catch {
-        if (!active) return;
-        setAccessMap({});
-        setIsAuthed(false);
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const visibleCourses = useMemo(
-    () => [...courses].sort((a, b) => a.order - b.order || a.title.localeCompare(b.title)),
-    [courses],
-  );
-
-  if (loading) {
-    return (
-      <main className="shell grid gap-4 pb-16 md:grid-cols-3">
-        <SkeletonCard />
-        <SkeletonCard />
-        <SkeletonCard />
-      </main>
-    );
-  }
+export default async function CoursesPage() {
+  const courses = await api.listCourses().catch(() => []);
+  const visibleCourses = [...courses].sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
 
   return (
     <main className="shell space-y-6 pb-16">
-      <header className="relative overflow-hidden rounded-[2.5rem] border border-[var(--stroke)] bg-[radial-gradient(circle_at_top,#ecfdf5,white_60%)] p-6 shadow-card sm:p-10">
-        <div className="absolute -right-24 -top-24 h-56 w-56 rounded-full bg-[rgba(59,130,246,0.16)] blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[rgba(16,185,129,0.18)] blur-3xl" />
-        <div className="relative space-y-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--ink-soft)]">Radar VPO Academy</p>
-          <h1 className="display-type text-4xl font-black text-[var(--ink)] sm:text-5xl">
-            Cursos para tomar mejores decisiones sobre vivienda, hipotecas y ahorro.
-          </h1>
-          <p className="max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
-            Aprende a preparar una solicitud, comparar alquiler o compra, entender una hipoteca, negociar mejor y evitar errores antes de firmar.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full bg-[var(--ink)] px-3 py-1 text-xs font-semibold text-white">Hipotecas</span>
-            <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">Compra y alquiler</span>
-            <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">Vivienda protegida</span>
-            <span className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-semibold text-[var(--ink)]">Finanzas personales</span>
-          </div>
-        </div>
-      </header>
+      <StructuredData
+        data={[
+          breadcrumbJsonLd([
+            { name: 'Inicio', path: '/' },
+            { name: 'Cursos', path: '/cursos' },
+          ]),
+          faqJsonLd(faqs),
+          ...visibleCourses.map(courseJsonLd),
+        ]}
+      />
+      <PageHero
+        eyebrow="Radar VPO Academy"
+        title="Cursos para entender vivienda protegida y presentar mejores solicitudes"
+        description="Formación práctica para preparar requisitos, documentación, plazos, adjudicaciones y errores frecuentes antes de que una convocatoria te obligue a improvisar."
+        actions={
+          <>
+            <ButtonLink href="#catalogo">Ver cursos</ButtonLink>
+            <ButtonLink href="/services" variant="secondary">Necesito asesoría</ButtonLink>
+          </>
+        }
+      >
+        <SurfaceCard className="p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Aprenderás a</p>
+          <ul className="mt-4 space-y-3 text-sm font-semibold text-[var(--ink)]">
+            <li>Preparar documentación con antelación.</li>
+            <li>Entender requisitos económicos y familiares.</li>
+            <li>Evitar errores que te dejan fuera de una convocatoria.</li>
+          </ul>
+        </SurfaceCard>
+      </PageHero>
 
-      {error ? (
-        <article className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-          {error}
-        </article>
-      ) : null}
-
-      {isAuthed === false ? (
-        <article className="rounded-2xl border border-[var(--stroke)] bg-white p-4 text-sm text-[var(--ink-soft)]">
-          Para entrar en cualquier curso necesitas iniciar sesión. Puedes ver el catálogo sin registrarte.
-        </article>
-      ) : null}
+      <section className="grid gap-4 md:grid-cols-3">
+        {[
+          ['Casos prácticos', 'Lecciones orientadas a situaciones reales de usuarios que buscan vivienda protegida.'],
+          ['Acceso progresivo', 'Cursos gratuitos, premium, PRO o vinculados a seguimiento según el nivel de ayuda.'],
+          ['Complemento premium', 'Cuando el curso no basta, puedes contratar revisión personalizada de tu caso.'],
+        ].map(([title, copy]) => (
+          <SurfaceCard key={title} className="p-5">
+            <h2 className="display-type text-2xl font-black text-[var(--ink)]">{title}</h2>
+            <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{copy}</p>
+          </SurfaceCard>
+        ))}
+      </section>
 
       {visibleCourses.length === 0 ? (
         <EmptyState
@@ -146,29 +136,20 @@ export default function CoursesPage() {
         />
       ) : null}
 
+      <section id="catalogo" className="space-y-4">
+        <SectionHeader
+          eyebrow="Catálogo"
+          title="Cursos disponibles"
+          description="Cada curso debe explicar qué aprenderás, qué resultado puedes esperar y cuál es el siguiente paso para acceder."
+        />
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {visibleCourses.map((course) => {
-          const access = accessMap[course.id];
           const badge = course.pricingType === 'premium'
             ? 'Curso premium'
             : accessLabels[course.accessType] || 'Acceso';
-          const hasSession = isAuthed === true;
-          const isLocked = hasSession
-            ? (access ? !access.canAccess : course.accessType !== 'free' || course.pricingType === 'premium')
-            : true;
           const priceLabel = formatPrice(course.price, course.currency);
-          const ctaHref = !hasSession
-            ? `/login?next=${encodeURIComponent(`/cursos/${course.slug}`)}`
-            : !isLocked
-              ? `/cursos/${course.slug}`
-              : course.stripePaymentLink || '/services';
-          const ctaLabel = !hasSession
-            ? 'Inicia sesión para entrar'
-            : !isLocked
-              ? 'Continuar'
-              : course.stripePaymentLink
-                ? 'Comprar curso'
-                : 'Solicitar acceso';
+          const ctaHref = course.stripePaymentLink || `/cursos/${course.slug}`;
+          const ctaLabel = course.stripePaymentLink ? 'Comprar curso' : 'Ver temario';
           const external = isExternalUrl(ctaHref);
           return (
             <article key={course.id} className="group relative overflow-hidden rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(30,31,28,0.13)]">
@@ -195,7 +176,9 @@ export default function CoursesPage() {
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${accessTone[course.accessType] || 'bg-slate-100 text-slate-700'}`}>
                     {badge}
                   </span>
-                  <StatusPill label={isLocked ? 'Bloqueado' : 'Activo'} tone={isLocked ? 'locked' : 'active'} />
+                  <span className="rounded-full bg-[var(--bg-eco)] px-3 py-1 text-xs font-bold text-[var(--green-700)]">
+                    {priceLabel || 'Ver acceso'}
+                  </span>
                 </div>
                 <div>
                   <h2 className="display-type text-xl font-black text-[var(--ink)]">
@@ -235,6 +218,31 @@ export default function CoursesPage() {
             </article>
           );
         })}
+      </section>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
+        <SurfaceCard className="p-6">
+          <SectionHeader eyebrow="FAQ" title="Dudas antes de comprar" />
+          <div className="mt-4 space-y-3">
+            {faqs.map((item) => (
+              <details key={item.question} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
+                <summary className="cursor-pointer text-sm font-bold text-[var(--ink)]">{item.question}</summary>
+                <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{item.answer}</p>
+              </details>
+            ))}
+          </div>
+        </SurfaceCard>
+        <SurfaceCard className="p-6">
+          <SectionHeader eyebrow="Siguiente paso" title="¿No sabes qué curso elegir?" />
+          <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
+            Si tienes una convocatoria concreta, combina formación con asesoría o seguimiento premium para revisar tu caso.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <ButtonLink href="/services">Pedir asesoría</ButtonLink>
+            <ButtonLink href="/register?intent=alerts" variant="secondary">Activar alertas</ButtonLink>
+          </div>
+        </SurfaceCard>
       </section>
     </main>
   );

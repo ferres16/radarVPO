@@ -9,10 +9,10 @@ import type { UserProfile } from '@/types';
 
 const primaryLinks = [
   { href: '/', label: 'Inicio' },
+  { href: '/alerts', label: 'Alertas VPO' },
   { href: '/promotions', label: 'Promociones' },
-  { href: '/services', label: 'Servicios' },
   { href: '/cursos', label: 'Cursos' },
-  { href: '/alerts', label: 'Avisos' },
+  { href: '/services', label: 'Servicios' },
   { href: '/news', label: 'Noticias' },
 ];
 
@@ -204,10 +204,10 @@ export function TopNav() {
                 Iniciar Sesión
               </Link>
               <Link
-                href="/register"
+                href="/register?intent=alerts"
                 className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
               >
-                Registrarse
+                Activar alertas
               </Link>
             </>
           )}
@@ -297,11 +297,11 @@ export function TopNav() {
                   Iniciar Sesión
                 </Link>
                 <Link
-                  href="/register"
+                  href="/register?intent=alerts"
                   className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-semibold text-white"
                   onClick={() => setMobileOpen(false)}
                 >
-                  Registrarse
+                  Activar alertas
                 </Link>
               </li>
             )}

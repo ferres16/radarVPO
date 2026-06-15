@@ -87,6 +87,10 @@ export class AuthService {
       session.refreshTokenHash,
     );
     if (!matches) {
+      await this.prisma.session.update({
+        where: { id: session.id },
+        data: { revokedAt: new Date() },
+      });
       throw new UnauthorizedException('Session mismatch');
     }
 
@@ -122,7 +126,7 @@ export class AuthService {
     const sessionId = existingSessionId ?? crypto.randomUUID();
 
     const accessToken = await this.jwtService.signAsync(
-      { sub: userId, email, role, plan },
+      { sub: userId, email, role, plan, sessionId },
       {
         secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
         expiresIn: '15m',
