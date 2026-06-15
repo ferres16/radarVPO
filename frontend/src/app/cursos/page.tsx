@@ -45,6 +45,14 @@ const isOnSale = (salePrice?: string | number | null) => {
   return Number(salePrice) > 0;
 };
 
+const getCourseSalePrice = (course: Course) => {
+  const metadataSalePrice = course.seoMetadata?.salePrice;
+  if (typeof metadataSalePrice === 'string' || typeof metadataSalePrice === 'number') {
+    return metadataSalePrice;
+  }
+  return course.salePrice;
+};
+
 const isExternalUrl = (href: string) => /^https?:\/\//.test(href);
 
 const faqs = [
@@ -63,7 +71,8 @@ const faqs = [
 ];
 
 function courseJsonLd(course: Course) {
-  const offerPrice = isOnSale(course.salePrice) ? course.salePrice : course.price;
+  const salePrice = getCourseSalePrice(course);
+  const offerPrice = isOnSale(salePrice) ? salePrice : course.price;
   return {
     '@context': 'https://schema.org',
     '@type': 'Course',
@@ -152,8 +161,9 @@ export default async function CoursesPage() {
           const badge = course.pricingType === 'premium'
             ? 'Curso premium'
             : accessLabels[course.accessType] || 'Acceso';
-          const onSale = isOnSale(course.salePrice);
-          const priceLabel = formatPrice(onSale ? course.salePrice : course.price, course.currency);
+          const salePrice = getCourseSalePrice(course);
+          const onSale = isOnSale(salePrice);
+          const priceLabel = formatPrice(onSale ? salePrice : course.price, course.currency);
           const originalPriceLabel = onSale ? formatPrice(course.price, course.currency) : null;
           const ctaHref = course.stripePaymentLink || `/cursos/${course.slug}`;
           const ctaLabel = course.stripePaymentLink ? 'Comprar curso' : 'Ver temario';

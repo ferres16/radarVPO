@@ -42,7 +42,6 @@ type CourseMutationPayload = Partial<
     | 'coverImage'
     | 'pricingType'
     | 'price'
-    | 'salePrice'
     | 'currency'
     | 'stripePaymentLink'
     | 'status'
@@ -56,7 +55,7 @@ type CourseMutationPayload = Partial<
 >;
 
 type ServiceMutationPayload = Partial<
-  Pick<Service, 'key' | 'name' | 'description' | 'price' | 'salePrice' | 'currency' | 'status' | 'serviceType' | 'stripePaymentLink'>
+  Pick<Service, 'key' | 'name' | 'description' | 'price' | 'currency' | 'status' | 'serviceType' | 'stripePaymentLink'>
 >;
 
 type FileAssetQuery = {
@@ -87,29 +86,31 @@ function nullableText(value: unknown) {
 }
 
 function normalizeCoursePayload(payload: CourseMutationPayload) {
+  const rest = { ...payload } as CourseMutationPayload & { salePrice?: unknown };
+  delete rest.salePrice;
   return {
-    ...payload,
-    shortDescription: nullableText(payload.shortDescription),
-    longDescription: nullableText(payload.longDescription),
-    coverImage: nullableText(payload.coverImage),
-    pricingType: payload.pricingType,
-    price: nullableText(payload.price),
-    salePrice: nullableText(payload.salePrice),
-    currency: nullableText(payload.currency),
-    stripePaymentLink: nullableText(payload.stripePaymentLink),
-    seoTitle: nullableText(payload.seoTitle),
-    seoDescription: nullableText(payload.seoDescription),
+    ...rest,
+    shortDescription: nullableText(rest.shortDescription),
+    longDescription: nullableText(rest.longDescription),
+    coverImage: nullableText(rest.coverImage),
+    pricingType: rest.pricingType,
+    price: nullableText(rest.price),
+    currency: nullableText(rest.currency),
+    stripePaymentLink: nullableText(rest.stripePaymentLink),
+    seoTitle: nullableText(rest.seoTitle),
+    seoDescription: nullableText(rest.seoDescription),
   };
 }
 
 function normalizeServicePayload(payload: ServiceMutationPayload) {
+  const rest = { ...payload } as ServiceMutationPayload & { salePrice?: unknown };
+  delete rest.salePrice;
   return {
-    ...payload,
-    description: nullableText(payload.description),
-    price: nullableText(payload.price),
-    salePrice: nullableText(payload.salePrice),
-    currency: nullableText(payload.currency),
-    stripePaymentLink: nullableText(payload.stripePaymentLink),
+    ...rest,
+    description: nullableText(rest.description),
+    price: nullableText(rest.price),
+    currency: nullableText(rest.currency),
+    stripePaymentLink: nullableText(rest.stripePaymentLink),
   };
 }
 

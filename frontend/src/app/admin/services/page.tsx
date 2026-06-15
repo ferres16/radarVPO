@@ -23,11 +23,30 @@ const emptyService: Partial<Service> = {
 
 const statusOptions: ServiceStatus[] = ['active', 'inactive', 'archived'];
 const typeOptions: ServiceType[] = ['one_time', 'subscription', 'manual'];
+const salePriceMarkerPattern = /\n?<!--rvpo:salePrice=([^>]*)-->/;
 
 const statusTone = (status: ServiceStatus) => {
   if (status === 'active') return 'active';
   if (status === 'inactive') return 'warning';
   return 'locked';
+};
+
+const extractSalePrice = (service: Service | Partial<Service>) => {
+  if (service.salePrice) return String(service.salePrice);
+  const match = service.description?.match(salePriceMarkerPattern);
+  return match?.[1] || '';
+};
+
+const cleanDescription = (description?: string | null) => {
+  return (description || '').replace(salePriceMarkerPattern, '').trim();
+};
+
+const withSalePriceMarker = (service: Partial<Service>): Partial<Service> => {
+  const description = cleanDescription(service.description);
+  return {
+    ...service,
+    description: service.salePrice ? `${description}\n<!--rvpo:salePrice=${service.salePrice}-->`.trim() : description,
+  };
 };
 
 export default function AdminServicesPage() {
@@ -96,9 +115,8 @@ export default function AdminServicesPage() {
       const created = await api.createBackofficeService({
         key: newService.key,
         name: newService.name,
-        description: newService.description,
+        description: withSalePriceMarker(newService).description,
         price: newService.price,
-        salePrice: newService.salePrice,
         currency: newService.currency,
         status: newService.status as ServiceStatus,
         serviceType: newService.serviceType as ServiceType,
@@ -120,7 +138,7 @@ export default function AdminServicesPage() {
     setSavingId(serviceId);
     setError('');
     try {
-      const updated = await api.updateBackofficeService(serviceId, payload);
+      const updated = await api.updateBackofficeService(serviceId, withSalePriceMarker(payload));
       setServices((prev) => prev.map((service) => (service.id === serviceId ? updated : service)));
       setDrafts((prev) => ({ ...prev, [serviceId]: toDraft(updated) }));
     } catch (err) {
@@ -275,9 +293,9 @@ function toDraft(service: Service): Partial<Service> {
   return {
     key: service.key,
     name: service.name,
-    description: service.description || '',
+    description: cleanDescription(service.description),
     price: service.price || '',
-    salePrice: service.salePrice || '',
+    salePrice: extractSalePrice(service),
     currency: service.currency || 'EUR',
     status: service.status,
     serviceType: service.serviceType,

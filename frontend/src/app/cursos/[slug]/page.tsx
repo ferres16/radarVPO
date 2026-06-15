@@ -5,11 +5,20 @@ import { api } from '@/lib/api';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
 import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
+import type { Course } from '@/types';
 
 const isExternalUrl = (href: string) => /^https?:\/\//.test(href);
 const isOnSale = (salePrice?: string | number | null) => {
   if (!salePrice) return false;
   return Number(salePrice) > 0;
+};
+
+const getCourseSalePrice = (course: Course) => {
+  const metadataSalePrice = course.seoMetadata?.salePrice;
+  if (typeof metadataSalePrice === 'string' || typeof metadataSalePrice === 'number') {
+    return metadataSalePrice;
+  }
+  return course.salePrice;
 };
 
 type CourseDetailParams = {
@@ -56,8 +65,9 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
   const lessonCount = modules.reduce((count, module) => count + (module.lessons?.length || 0), 0);
   const purchaseHref = course.stripePaymentLink || `/login?next=${encodeURIComponent(`/cursos/${course.slug}`)}`;
   const purchaseExternal = isExternalUrl(purchaseHref);
-  const onSale = isOnSale(course.salePrice);
-  const displayedPrice = onSale ? course.salePrice : course.price;
+  const salePrice = getCourseSalePrice(course);
+  const onSale = isOnSale(salePrice);
+  const displayedPrice = onSale ? salePrice : course.price;
   const priceLabel = displayedPrice
     ? new Intl.NumberFormat('es-ES', {
         style: 'currency',

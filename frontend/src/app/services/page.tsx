@@ -91,6 +91,18 @@ const faqs = [
   ['¿El contacto está integrado aquí?', 'Sí. WhatsApp, email, formulario y reserva de llamada viven en esta página.'],
 ];
 
+const salePriceMarkerPattern = /\n?<!--rvpo:salePrice=([^>]*)-->/;
+
+const getServiceSalePrice = (service: Service) => {
+  if (service.salePrice) return service.salePrice;
+  const match = service.description?.match(salePriceMarkerPattern);
+  return match?.[1] || null;
+};
+
+const cleanServiceDescription = (description?: string | null) => {
+  return (description || '').replace(salePriceMarkerPattern, '').trim();
+};
+
 const formatPrice = (price?: string | number | null, currency?: string | null) => {
   if (!price) return null;
   const amount = Number(price);
@@ -136,11 +148,11 @@ export default function ServicesPage() {
     ? services.map((service, index) => ({
         eyebrow: `${String(index + 1).padStart(2, '0')} · ${service.name}`,
         title: service.name,
-        copy: service.description || 'Servicio personalizado de Radar VPO.',
+        copy: cleanServiceDescription(service.description) || 'Servicio personalizado de Radar VPO.',
         cta: service.stripePaymentLink ? 'Contratar servicio' : 'Consultar servicio',
         href: service.stripePaymentLink || whatsappContactUrl,
         price: service.price,
-        salePrice: service.salePrice,
+        salePrice: getServiceSalePrice(service),
         currency: service.currency,
       }))
     : fallbackServices;

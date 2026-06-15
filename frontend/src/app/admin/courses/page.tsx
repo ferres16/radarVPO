@@ -25,6 +25,22 @@ const emptyCourse: Partial<Course> = {
 const statusOptions: CourseStatus[] = ['draft', 'published', 'archived'];
 const accessOptions: CourseAccessType[] = ['free', 'paid', 'pro', 'seguimiento'];
 
+const getCourseSalePrice = (course: Pick<Course, 'salePrice' | 'seoMetadata'>) => {
+  const metadataSalePrice = course.seoMetadata?.salePrice;
+  if (typeof metadataSalePrice === 'string' || typeof metadataSalePrice === 'number') {
+    return String(metadataSalePrice);
+  }
+  return course.salePrice || '';
+};
+
+const withSaleMetadata = (payload: Partial<Course>): Partial<Course> => ({
+  ...payload,
+  seoMetadata: {
+    ...(payload.seoMetadata || {}),
+    salePrice: payload.salePrice ? String(payload.salePrice) : null,
+  },
+});
+
 export default function AdminCoursesPage() {
   const [me, setMe] = useState<UserProfile | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
@@ -65,7 +81,7 @@ export default function AdminCoursesPage() {
                 accessType: course.accessType,
                 order: course.order,
                 price: course.price || '',
-                salePrice: course.salePrice || '',
+                salePrice: getCourseSalePrice(course),
                 currency: course.currency || 'EUR',
                 stripePaymentLink: course.stripePaymentLink || '',
               },
@@ -101,7 +117,7 @@ export default function AdminCoursesPage() {
     setSavingId(courseId);
     setError('');
     try {
-      const updated = await api.updateBackofficeCourse(courseId, payload);
+      const updated = await api.updateBackofficeCourse(courseId, withSaleMetadata(payload));
       setCourses((prev) => prev.map((item) => (item.id === courseId ? updated : item)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar el curso');
@@ -128,7 +144,10 @@ export default function AdminCoursesPage() {
         accessType: (newCourse.accessType as CourseAccessType) || 'free',
         order: newCourse.order ?? 0,
         price: newCourse.price ? String(newCourse.price) : undefined,
-        salePrice: newCourse.salePrice ? String(newCourse.salePrice) : undefined,
+        seoMetadata: {
+          ...(newCourse.seoMetadata || {}),
+          salePrice: newCourse.salePrice ? String(newCourse.salePrice) : null,
+        },
         currency: newCourse.currency || undefined,
         stripePaymentLink: newCourse.stripePaymentLink || undefined,
       });
@@ -145,7 +164,7 @@ export default function AdminCoursesPage() {
           accessType: created.accessType,
           order: created.order,
           price: created.price || '',
-          salePrice: created.salePrice || '',
+          salePrice: getCourseSalePrice(created),
           currency: created.currency || 'EUR',
           stripePaymentLink: created.stripePaymentLink || '',
         },
