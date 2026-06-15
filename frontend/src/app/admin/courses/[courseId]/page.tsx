@@ -94,7 +94,9 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 shortDescription: selected.shortDescription || '',
                 longDescription: selected.longDescription || '',
                 pricingType: selected.pricingType || 'free',
+                coverImage: selected.coverImage || '',
                 price: selected.price || '',
+                salePrice: selected.salePrice || '',
                 currency: selected.currency || 'EUR',
                 stripePaymentLink: selected.stripePaymentLink || '',
                 status: selected.status,
@@ -168,14 +170,14 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     const lessons = modules.flatMap((module) => module.lessons || []);
     return [
       { label: 'Título y slug', done: Boolean(courseDraft.title && courseDraft.slug) },
-      { label: 'Portada pública', done: Boolean(course?.coverImage) },
+      { label: 'Portada pública', done: Boolean(courseDraft.coverImage || course?.coverImage) },
       { label: 'Descripción corta', done: Boolean(courseDraft.shortDescription) },
       { label: 'Módulo visible', done: modules.some((module) => module.visibility === 'visible') },
       { label: 'Lección publicada', done: lessons.some((lesson) => lesson.status === 'published') },
       { label: 'Recursos S3 cargados', done: lessons.some((lesson) => (lesson.resources || []).length > 0) },
       { label: 'Acceso y precio coherentes', done: courseDraft.accessType !== 'paid' || Boolean(courseDraft.price && courseDraft.stripePaymentLink) },
     ];
-  }, [course?.coverImage, courseDraft.accessType, courseDraft.price, courseDraft.shortDescription, courseDraft.slug, courseDraft.stripePaymentLink, courseDraft.title, modules]);
+  }, [course?.coverImage, courseDraft.accessType, courseDraft.coverImage, courseDraft.price, courseDraft.shortDescription, courseDraft.slug, courseDraft.stripePaymentLink, courseDraft.title, modules]);
 
   async function saveCourseSettings() {
     if (!course) return;
@@ -187,8 +189,10 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         slug: courseDraft.slug,
         shortDescription: courseDraft.shortDescription,
         longDescription: courseDraft.longDescription,
+        coverImage: courseDraft.coverImage,
         pricingType: courseDraft.pricingType,
         price: courseDraft.price ? String(courseDraft.price) : undefined,
+        salePrice: courseDraft.salePrice ? String(courseDraft.salePrice) : undefined,
         currency: courseDraft.currency,
         stripePaymentLink: courseDraft.stripePaymentLink,
         status: courseDraft.status,
@@ -404,6 +408,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     try {
       const updated = await api.uploadBackofficeCourseCover(course.id, file);
       setCourse(updated);
+      setCourseDraft((prev) => ({ ...prev, coverImage: updated.coverImage || '' }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo subir la portada');
     } finally {
@@ -489,9 +494,9 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
           <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Portada pública del curso</p>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-              {course.coverImage ? (
+              {(courseDraft.coverImage || course.coverImage) ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={course.coverImage} alt="" className="h-20 w-32 rounded-xl object-cover" />
+                <img src={courseDraft.coverImage || course.coverImage || ''} alt="" className="h-20 w-32 rounded-xl object-cover" />
               ) : (
                 <div className="flex h-20 w-32 items-center justify-center rounded-xl border border-dashed border-[var(--stroke)] bg-white text-xs text-[var(--ink-soft)]">
                   Sin portada
@@ -511,6 +516,12 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                   }}
                 />
               </label>
+              <input
+                value={courseDraft.coverImage || ''}
+                onChange={(event) => setCourseDraft((prev) => ({ ...prev, coverImage: event.target.value }))}
+                placeholder="URL de portada"
+                className="ds-control flex-1"
+              />
             </div>
           </div>
         ) : null}
@@ -607,10 +618,11 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
 
               <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
                 <h3 className="text-sm font-bold text-[var(--ink)]">Precio y compra</h3>
-                <div className="mt-3 grid gap-3 md:grid-cols-[1fr_120px]">
+                <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_120px]">
                   <label className="text-sm font-semibold text-[var(--ink)]">Precio<input className="ds-control mt-1 w-full" value={courseDraft.price || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, price: e.target.value }))} /></label>
+                  <label className="text-sm font-semibold text-[var(--ink)]">Precio oferta<input className="ds-control mt-1 w-full" value={courseDraft.salePrice || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, salePrice: e.target.value }))} /></label>
                   <label className="text-sm font-semibold text-[var(--ink)]">Moneda<input className="ds-control mt-1 w-full" value={courseDraft.currency || 'EUR'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, currency: e.target.value }))} /></label>
-                  <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Stripe Payment Link<input className="ds-control mt-1 w-full" value={courseDraft.stripePaymentLink || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, stripePaymentLink: e.target.value }))} /></label>
+                  <label className="text-sm font-semibold text-[var(--ink)] md:col-span-3">Stripe Payment Link<input className="ds-control mt-1 w-full" value={courseDraft.stripePaymentLink || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, stripePaymentLink: e.target.value }))} /></label>
                 </div>
               </section>
 

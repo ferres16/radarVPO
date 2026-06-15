@@ -39,6 +39,11 @@ export class UpdateServiceDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsDecimal({ decimal_digits: '0,2', force_decimal: false })
+  salePrice?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
   @IsString()
   @Matches(/^[A-Z]{3,8}$/)
   @MaxLength(8)

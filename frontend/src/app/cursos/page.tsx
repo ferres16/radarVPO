@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
@@ -41,6 +40,11 @@ const formatPrice = (price?: string | number | null, currency?: string | null) =
   }).format(amount as number);
 };
 
+const isOnSale = (salePrice?: string | number | null) => {
+  if (!salePrice) return false;
+  return Number(salePrice) > 0;
+};
+
 const isExternalUrl = (href: string) => /^https?:\/\//.test(href);
 
 const faqs = [
@@ -59,6 +63,7 @@ const faqs = [
 ];
 
 function courseJsonLd(course: Course) {
+  const offerPrice = isOnSale(course.salePrice) ? course.salePrice : course.price;
   return {
     '@context': 'https://schema.org',
     '@type': 'Course',
@@ -68,10 +73,10 @@ function courseJsonLd(course: Course) {
       '@type': 'Organization',
       name: 'Radar VPO',
     },
-    offers: course.price
+    offers: offerPrice
       ? {
           '@type': 'Offer',
-          price: String(course.price),
+          price: String(offerPrice),
           priceCurrency: course.currency || 'EUR',
           availability: 'https://schema.org/InStock',
         }
@@ -147,7 +152,9 @@ export default async function CoursesPage() {
           const badge = course.pricingType === 'premium'
             ? 'Curso premium'
             : accessLabels[course.accessType] || 'Acceso';
-          const priceLabel = formatPrice(course.price, course.currency);
+          const onSale = isOnSale(course.salePrice);
+          const priceLabel = formatPrice(onSale ? course.salePrice : course.price, course.currency);
+          const originalPriceLabel = onSale ? formatPrice(course.price, course.currency) : null;
           const ctaHref = course.stripePaymentLink || `/cursos/${course.slug}`;
           const ctaLabel = course.stripePaymentLink ? 'Comprar curso' : 'Ver temario';
           const external = isExternalUrl(ctaHref);
@@ -158,14 +165,17 @@ export default async function CoursesPage() {
                 {course.coverImage ? (
                   <div className="relative h-40 overflow-hidden rounded-2xl border border-[var(--stroke)]">
                     <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.0),rgba(0,0,0,0.4))]" />
-                    <Image
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                       src={course.coverImage}
                       alt=""
-                      fill
-                      sizes="(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw"
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                      unoptimized
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                     />
+                    {onSale ? (
+                      <span className="absolute left-3 top-3 rounded-full bg-[var(--green-700)] px-3 py-1 text-xs font-black text-white">
+                        Oferta
+                      </span>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="flex h-40 items-end rounded-2xl border border-[var(--stroke)] bg-[radial-gradient(circle_at_top,#dcfce7,#f8fafc_65%)] p-4">
@@ -177,7 +187,7 @@ export default async function CoursesPage() {
                     {badge}
                   </span>
                   <span className="rounded-full bg-[var(--bg-eco)] px-3 py-1 text-xs font-bold text-[var(--green-700)]">
-                    {priceLabel || 'Ver acceso'}
+                    {onSale ? 'En oferta' : priceLabel || 'Ver acceso'}
                   </span>
                 </div>
                 <div>
@@ -194,7 +204,10 @@ export default async function CoursesPage() {
                   </span>
                   <div className="flex items-center gap-3">
                     {priceLabel ? (
-                      <span className="text-xs font-semibold text-[var(--ink)]">{priceLabel}</span>
+                      <span className="text-xs font-semibold text-[var(--ink)]">
+                        {originalPriceLabel ? <span className="mr-1 text-[var(--ink-soft)] line-through">{originalPriceLabel}</span> : null}
+                        {priceLabel}
+                      </span>
                     ) : null}
                     {external ? (
                       <a

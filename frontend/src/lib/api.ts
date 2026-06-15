@@ -42,6 +42,7 @@ type CourseMutationPayload = Partial<
     | 'coverImage'
     | 'pricingType'
     | 'price'
+    | 'salePrice'
     | 'currency'
     | 'stripePaymentLink'
     | 'status'
@@ -55,7 +56,7 @@ type CourseMutationPayload = Partial<
 >;
 
 type ServiceMutationPayload = Partial<
-  Pick<Service, 'key' | 'name' | 'description' | 'price' | 'currency' | 'status' | 'serviceType' | 'stripePaymentLink'>
+  Pick<Service, 'key' | 'name' | 'description' | 'price' | 'salePrice' | 'currency' | 'status' | 'serviceType' | 'stripePaymentLink'>
 >;
 
 type FileAssetQuery = {
@@ -93,6 +94,7 @@ function normalizeCoursePayload(payload: CourseMutationPayload) {
     coverImage: nullableText(payload.coverImage),
     pricingType: payload.pricingType,
     price: nullableText(payload.price),
+    salePrice: nullableText(payload.salePrice),
     currency: nullableText(payload.currency),
     stripePaymentLink: nullableText(payload.stripePaymentLink),
     seoTitle: nullableText(payload.seoTitle),
@@ -105,6 +107,7 @@ function normalizeServicePayload(payload: ServiceMutationPayload) {
     ...payload,
     description: nullableText(payload.description),
     price: nullableText(payload.price),
+    salePrice: nullableText(payload.salePrice),
     currency: nullableText(payload.currency),
     stripePaymentLink: nullableText(payload.stripePaymentLink),
   };

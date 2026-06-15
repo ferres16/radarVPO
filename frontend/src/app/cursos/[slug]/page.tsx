@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
@@ -8,6 +7,10 @@ import { StructuredData } from '@/components/structured-data';
 import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
 const isExternalUrl = (href: string) => /^https?:\/\//.test(href);
+const isOnSale = (salePrice?: string | number | null) => {
+  if (!salePrice) return false;
+  return Number(salePrice) > 0;
+};
 
 type CourseDetailParams = {
   params: Promise<{ slug: string }>;
@@ -53,15 +56,24 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
   const lessonCount = modules.reduce((count, module) => count + (module.lessons?.length || 0), 0);
   const purchaseHref = course.stripePaymentLink || `/login?next=${encodeURIComponent(`/cursos/${course.slug}`)}`;
   const purchaseExternal = isExternalUrl(purchaseHref);
-  const priceLabel = course.price
+  const onSale = isOnSale(course.salePrice);
+  const displayedPrice = onSale ? course.salePrice : course.price;
+  const priceLabel = displayedPrice
+    ? new Intl.NumberFormat('es-ES', {
+        style: 'currency',
+        currency: course.currency || 'EUR',
+        maximumFractionDigits: 0,
+      }).format(Number(displayedPrice))
+    : course.pricingType === 'free'
+      ? 'Gratis'
+      : 'Acceso bajo solicitud';
+  const originalPriceLabel = onSale && course.price
     ? new Intl.NumberFormat('es-ES', {
         style: 'currency',
         currency: course.currency || 'EUR',
         maximumFractionDigits: 0,
       }).format(Number(course.price))
-    : course.pricingType === 'free'
-      ? 'Gratis'
-      : 'Acceso bajo solicitud';
+    : null;
 
   const courseJsonLd = {
     '@context': 'https://schema.org',
@@ -76,7 +88,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
     offers: course.price
       ? {
           '@type': 'Offer',
-          price: String(course.price),
+          price: String(displayedPrice),
           priceCurrency: course.currency || 'EUR',
           availability: 'https://schema.org/InStock',
         }
@@ -106,7 +118,11 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">Precio</p>
-                <p className="mt-1 text-lg font-black text-[var(--ink)]">{priceLabel}</p>
+                <p className="mt-1 text-lg font-black text-[var(--ink)]">
+                  {originalPriceLabel ? <span className="mr-2 text-sm text-[var(--ink-soft)] line-through">{originalPriceLabel}</span> : null}
+                  {priceLabel}
+                </p>
+                {onSale ? <p className="mt-1 text-xs font-black uppercase tracking-[0.18em] text-[var(--green-700)]">Oferta activa</p> : null}
               </div>
               <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">Lecciones</p>
@@ -142,13 +158,11 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           <div className="border-t border-[var(--stroke)] bg-[linear-gradient(160deg,#f8fafc,white)] p-6 sm:p-8 lg:border-l lg:border-t-0">
             {course.coverImage ? (
               <div className="relative mb-4 h-40 overflow-hidden rounded-2xl border border-[var(--stroke)]">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={course.coverImage}
                   alt=""
-                  fill
-                  sizes="(min-width: 1024px) 35vw, 100vw"
-                  className="object-cover"
-                  unoptimized
+                  className="h-full w-full object-cover"
                 />
               </div>
             ) : null}

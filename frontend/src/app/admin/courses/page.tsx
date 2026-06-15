@@ -14,6 +14,7 @@ const emptyCourse: Partial<Course> = {
   longDescription: '',
   coverImage: '',
   price: '',
+  salePrice: '',
   currency: 'EUR',
   stripePaymentLink: '',
   status: 'draft',
@@ -64,6 +65,7 @@ export default function AdminCoursesPage() {
                 accessType: course.accessType,
                 order: course.order,
                 price: course.price || '',
+                salePrice: course.salePrice || '',
                 currency: course.currency || 'EUR',
                 stripePaymentLink: course.stripePaymentLink || '',
               },
@@ -126,6 +128,7 @@ export default function AdminCoursesPage() {
         accessType: (newCourse.accessType as CourseAccessType) || 'free',
         order: newCourse.order ?? 0,
         price: newCourse.price ? String(newCourse.price) : undefined,
+        salePrice: newCourse.salePrice ? String(newCourse.salePrice) : undefined,
         currency: newCourse.currency || undefined,
         stripePaymentLink: newCourse.stripePaymentLink || undefined,
       });
@@ -142,6 +145,7 @@ export default function AdminCoursesPage() {
           accessType: created.accessType,
           order: created.order,
           price: created.price || '',
+          salePrice: created.salePrice || '',
           currency: created.currency || 'EUR',
           stripePaymentLink: created.stripePaymentLink || '',
         },
@@ -302,6 +306,12 @@ export default function AdminCoursesPage() {
             value={newCourse.price || ''}
             onChange={(e) => setNewCourse((prev) => ({ ...prev, price: e.target.value }))}
             placeholder="Precio"
+            className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+          />
+          <input
+            value={newCourse.salePrice || ''}
+            onChange={(e) => setNewCourse((prev) => ({ ...prev, salePrice: e.target.value }))}
+            placeholder="Precio oferta"
             className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
           />
           <input
@@ -473,6 +483,19 @@ export default function AdminCoursesPage() {
                         setDrafts((prev) => ({
                           ...prev,
                           [course.id]: { ...draft, price: e.target.value },
+                        }))
+                      }
+                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                    />
+                  </label>
+                  <label className="text-sm text-[var(--ink)]">
+                    Precio oferta
+                    <input
+                      value={draft.salePrice || ''}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [course.id]: { ...draft, salePrice: e.target.value },
                         }))
                       }
                       className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"

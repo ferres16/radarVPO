@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
 import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
-import { getDaysRemaining, shouldShowAlert } from '@/lib/alert-countdown';
+import { getDaysRemaining } from '@/lib/alert-countdown';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { MotionCard, Stagger, StaggerItem } from '@/components/motion-primitives';
 import { StructuredData } from '@/components/structured-data';
@@ -55,8 +55,7 @@ export default async function AlertsPage() {
     .map((item) => ({
       item,
       daysRemaining: getDaysRemaining(item.estimatedPublicationDate),
-    }))
-    .filter((entry): entry is { item: (typeof alerts)[number]; daysRemaining: number } => shouldShowAlert(entry.daysRemaining));
+    }));
 
   return (
     <main className="shell space-y-6 pb-10">

@@ -16,6 +16,7 @@ export class ServicesService {
         name: true,
         description: true,
         price: true,
+        salePrice: true,
         currency: true,
         status: true,
         serviceType: true,

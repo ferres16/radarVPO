@@ -446,6 +446,7 @@ model Course {
   coverImage        String?          @map("cover_image")
   pricingType       CoursePricingType @default(free) @map("pricing_type")
   price             Decimal?         @db.Decimal(12, 2)
+  salePrice         Decimal?         @db.Decimal(12, 2) @map("sale_price")
   currency          String?          @db.VarChar(8)
   stripePaymentLink String?          @map("stripe_payment_link")
   status            CourseStatus     @default(draft)
@@ -604,6 +605,7 @@ model Service {
   name              String
   description       String?
   price             Decimal?          @db.Decimal(12, 2)
+  salePrice         Decimal?          @db.Decimal(12, 2) @map("sale_price")
   currency          String?           @db.VarChar(8)
   status            ServiceStatus     @default(active)
   serviceType       ServiceType       @default(manual) @map("service_type")

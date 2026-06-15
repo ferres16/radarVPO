@@ -121,9 +121,9 @@ export function SurfaceCard({
 
 export function MetricCard({ label, value, detail }: { label: string; value: ReactNode; detail?: string }) {
   return (
-    <SurfaceCard>
+    <SurfaceCard className="flex min-h-32 flex-col items-center justify-center text-center">
       <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--ink-soft)]">{label}</p>
-      <p className="display-type mt-2 text-3xl font-black text-[var(--ink)]">{value}</p>
+      <p className="display-type mt-2 text-4xl font-black text-[var(--ink)]">{value}</p>
       {detail ? <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{detail}</p> : null}
     </SurfaceCard>
   );

@@ -20,6 +20,9 @@ const fallbackServices = [
       'Vigilamos promociones, avisos y fechas clave para que sepas cuándo actuar y qué preparar.',
     cta: 'Activar seguimiento',
     href: whatsappContactUrl,
+    price: null,
+    salePrice: null,
+    currency: 'EUR',
     accent: 'from-cyan-50 to-white',
   },
   {
@@ -29,6 +32,9 @@ const fallbackServices = [
       'Revisamos tu caso, requisitos y documentación para ayudarte a presentarte con más seguridad.',
     cta: 'Pedir asesoría',
     href: whatsappContactUrl,
+    price: null,
+    salePrice: null,
+    currency: 'EUR',
     accent: 'from-emerald-50 to-white',
   },
   {
@@ -38,6 +44,9 @@ const fallbackServices = [
       'Recibe avisos prioritarios por WhatsApp cuando haya nuevas oportunidades o cambios importantes.',
     cta: 'Activar alertas',
     href: whatsappContactUrl,
+    price: null,
+    salePrice: null,
+    currency: 'EUR',
     accent: 'from-white to-cyan-50',
   },
   {
@@ -47,6 +56,9 @@ const fallbackServices = [
       'Formación clara para entender requisitos, documentación, errores frecuentes y estrategias de inscripción.',
     cta: 'Ver cursos',
     href: '/cursos',
+    price: null,
+    salePrice: null,
+    currency: 'EUR',
     accent: 'from-emerald-50 to-cyan-50',
   },
 ];
@@ -78,6 +90,22 @@ const faqs = [
   ['¿Puedo empezar solo con cursos?', 'Sí. Los cursos son la vía más ligera para ganar criterio antes de contratar seguimiento.'],
   ['¿El contacto está integrado aquí?', 'Sí. WhatsApp, email, formulario y reserva de llamada viven en esta página.'],
 ];
+
+const formatPrice = (price?: string | number | null, currency?: string | null) => {
+  if (!price) return null;
+  const amount = Number(price);
+  if (!Number.isFinite(amount)) return null;
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: currency || 'EUR',
+    maximumFractionDigits: 0,
+  }).format(amount);
+};
+
+const isOnSale = (salePrice?: string | number | null) => {
+  if (!salePrice) return false;
+  return Number(salePrice) > 0;
+};
 
 export default function ServicesPage() {
   const [services, setServices] = useState<Service[]>([]);
@@ -111,6 +139,9 @@ export default function ServicesPage() {
         copy: service.description || 'Servicio personalizado de Radar VPO.',
         cta: service.stripePaymentLink ? 'Contratar servicio' : 'Consultar servicio',
         href: service.stripePaymentLink || whatsappContactUrl,
+        price: service.price,
+        salePrice: service.salePrice,
+        currency: service.currency,
       }))
     : fallbackServices;
 
@@ -162,6 +193,9 @@ export default function ServicesPage() {
           {displayedServices.map((service) => {
             const href = service.href;
             const external = /^https?:\/\//.test(href);
+            const onSale = isOnSale(service.salePrice);
+            const priceLabel = formatPrice(onSale ? service.salePrice : service.price, service.currency);
+            const originalPriceLabel = onSale ? formatPrice(service.price, service.currency) : null;
             return (
               <article
                 key={service.title}
@@ -169,7 +203,18 @@ export default function ServicesPage() {
               >
                 <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#4E8F3A,#A7D08A,#4E8F3A)] opacity-70" />
                 <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">{service.eyebrow}</p>
+                {onSale ? (
+                  <span className="mt-3 inline-flex rounded-full bg-[var(--green-700)] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white">
+                    Oferta
+                  </span>
+                ) : null}
                 <h2 className="mt-3 text-2xl font-bold text-[var(--ink)]">{service.title}</h2>
+                {priceLabel ? (
+                  <p className="mt-2 text-sm font-black text-[var(--ink)]">
+                    {originalPriceLabel ? <span className="mr-2 text-[var(--ink-soft)] line-through">{originalPriceLabel}</span> : null}
+                    {priceLabel}
+                  </p>
+                ) : null}
                 <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
                   {service.copy}
                 </p>

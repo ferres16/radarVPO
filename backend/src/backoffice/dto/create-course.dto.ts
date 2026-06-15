@@ -56,6 +56,11 @@ export class CreateCourseDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @IsDecimal({ decimal_digits: '0,2', force_decimal: false })
+  salePrice?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
   @Matches(/^[A-Z]{3,8}$/)
   @MaxLength(8)

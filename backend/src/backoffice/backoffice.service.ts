@@ -283,6 +283,7 @@ export class BackofficeService {
         coverImage: this.nullableText(dto.coverImage),
         pricingType: dto.pricingType,
         price: this.nullableDecimal(dto.price),
+        salePrice: this.nullableDecimal(dto.salePrice),
         currency: this.nullableText(dto.currency),
         stripePaymentLink: this.nullableText(dto.stripePaymentLink),
         status: dto.status,
@@ -311,6 +312,7 @@ export class BackofficeService {
         coverImage: this.nullableText(dto.coverImage),
         pricingType: dto.pricingType,
         price: this.nullableDecimal(dto.price),
+        salePrice: this.nullableDecimal(dto.salePrice),
         currency: this.nullableText(dto.currency),
         stripePaymentLink: this.nullableText(dto.stripePaymentLink),
         status: dto.status,
@@ -355,6 +357,7 @@ export class BackofficeService {
         name: dto.name,
         description: this.nullableText(dto.description),
         price: this.nullableDecimal(dto.price),
+        salePrice: this.nullableDecimal(dto.salePrice),
         currency: this.nullableText(dto.currency),
         status: dto.status ?? ServiceStatus.active,
         serviceType: dto.serviceType ?? ServiceType.manual,
@@ -371,6 +374,7 @@ export class BackofficeService {
         name: dto.name,
         description: this.nullableText(dto.description),
         price: this.nullableDecimal(dto.price),
+        salePrice: this.nullableDecimal(dto.salePrice),
         currency: this.nullableText(dto.currency),
         status: dto.status,
         serviceType: dto.serviceType,
@@ -988,10 +992,25 @@ export class BackofficeService {
       },
     });
 
-    return this.prisma.course.update({
+    const updated = await this.prisma.course.update({
       where: { id: courseId },
       data: { coverImage: asset.url },
+      include: {
+        modules: {
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            lessons: {
+              orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+            },
+          },
+        },
+        assets: {
+          orderBy: { createdAt: 'asc' },
+          include: { fileAsset: true },
+        },
+      },
     });
+    return this.withSignedCourseAssetsForBackoffice(updated);
   }
 
   async createCourseAccessRule(

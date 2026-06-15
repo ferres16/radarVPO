@@ -232,6 +232,7 @@ export type Course = {
   coverImage?: string | null;
   pricingType?: CoursePricingType;
   price?: string | number | null;
+  salePrice?: string | number | null;
   currency?: string | null;
   stripePaymentLink?: string | null;
   status: CourseStatus;
@@ -258,6 +259,7 @@ export type Service = {
   name: string;
   description?: string | null;
   price?: string | number | null;
+  salePrice?: string | number | null;
   currency?: string | null;
   status: ServiceStatus;
   serviceType: ServiceType;

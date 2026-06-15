@@ -14,6 +14,7 @@ const emptyService: Partial<Service> = {
   name: '',
   description: '',
   price: '',
+  salePrice: '',
   currency: 'EUR',
   status: 'active',
   serviceType: 'manual',
@@ -97,6 +98,7 @@ export default function AdminServicesPage() {
         name: newService.name,
         description: newService.description,
         price: newService.price,
+        salePrice: newService.salePrice,
         currency: newService.currency,
         status: newService.status as ServiceStatus,
         serviceType: newService.serviceType as ServiceType,
@@ -275,6 +277,7 @@ function toDraft(service: Service): Partial<Service> {
     name: service.name,
     description: service.description || '',
     price: service.price || '',
+    salePrice: service.salePrice || '',
     currency: service.currency || 'EUR',
     status: service.status,
     serviceType: service.serviceType,
@@ -294,6 +297,7 @@ function ServiceFields({
       <input value={value.key || ''} onChange={(event) => onChange({ ...value, key: event.target.value })} placeholder="guia_pro" className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm" />
       <input value={value.name || ''} onChange={(event) => onChange({ ...value, name: event.target.value })} placeholder="Guia PRO" className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm" />
       <input value={value.price || ''} onChange={(event) => onChange({ ...value, price: event.target.value })} placeholder="Precio" className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm" />
+      <input value={value.salePrice || ''} onChange={(event) => onChange({ ...value, salePrice: event.target.value })} placeholder="Precio oferta" className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm" />
       <input value={value.currency || 'EUR'} onChange={(event) => onChange({ ...value, currency: event.target.value.toUpperCase() })} placeholder="EUR" className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm" />
       <select value={value.status || 'active'} onChange={(event) => onChange({ ...value, status: event.target.value as ServiceStatus })} className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm">
         {statusOptions.map((status) => <option key={status} value={status}>{status}</option>)}
