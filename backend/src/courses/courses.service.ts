@@ -176,7 +176,7 @@ export class CoursesService {
       assets?: Array<{
         fileAssetId: string | null;
         url: string | null;
-        kind: CourseAssetKind;
+        kind: CourseAssetKind | string;
         fileAsset?: unknown;
       }>;
     },
@@ -186,14 +186,21 @@ export class CoursesService {
       return course;
     }
 
-    const signed = await this.fileStorage.getAccessibleUrl(cover.fileAssetId, true, {
-      preferSigned: true,
-    });
+    try {
+      const signed = await this.fileStorage.getAccessibleUrl(cover.fileAssetId, true, {
+        preferSigned: true,
+      });
 
-    return {
-      ...course,
-      coverImage: signed.url || cover.url || course.coverImage,
-    };
+      return {
+        ...course,
+        coverImage: signed.url || cover.url || course.coverImage,
+      };
+    } catch {
+      return {
+        ...course,
+        coverImage: cover.url || course.coverImage,
+      };
+    }
   }
 
   private stripInternalCourseFields<T extends { accessRules?: unknown }>(
