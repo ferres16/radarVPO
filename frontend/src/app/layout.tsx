@@ -27,6 +27,11 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   keywords: siteConfig.keywords,
   applicationName: siteConfig.name,
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/logo-radar-vpo.png",
+  },
   alternates: {
     canonical: siteConfig.url,
   },

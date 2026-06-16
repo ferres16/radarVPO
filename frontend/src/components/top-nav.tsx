@@ -88,8 +88,9 @@ export function TopNav() {
           className="group flex items-center gap-2 rounded-full px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
           aria-label="Radar VPO, ir al inicio"
         >
-          <span className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,var(--green-700),var(--cyan-700))] text-sm font-black text-white shadow-sm transition duration-200 group-hover:scale-105">
-            RV
+          <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm transition duration-200 group-hover:scale-105">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo-radar-vpo.png" alt="" className="h-full w-full object-contain p-0.5" />
           </span>
           <span className="leading-tight">
             <span className="block text-sm font-black tracking-tight text-[var(--ink)]">Radar VPO</span>
