@@ -1,13 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { CourseAccessLink, CourseAccessProvider, CourseLessonAccessLink } from '@/components/course-access';
 import { StructuredData } from '@/components/structured-data';
 import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 import type { Course } from '@/types';
 
-const isExternalUrl = (href: string) => /^https?:\/\//.test(href);
 const isOnSale = (salePrice?: string | number | null) => {
   if (!salePrice) return false;
   return Number(salePrice) > 0;
@@ -21,12 +22,32 @@ const getCourseSalePrice = (course: Course) => {
   return course.salePrice;
 };
 
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  process.env.API_URL ||
+  'http://localhost:3000/api/v1';
+
 type CourseDetailParams = {
   params: Promise<{ slug: string }>;
 };
 
 async function getPublicCourse(slug: string) {
   return api.getCourse(slug).catch(() => null);
+}
+
+async function getCourseWithAccess(slug: string) {
+  const cookieHeader = (await cookies()).toString();
+  if (!cookieHeader) return null;
+
+  const response = await fetch(`${API_BASE_URL}/courses/${slug}/access`, {
+    headers: {
+      Cookie: cookieHeader,
+    },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) return null;
+  return response.json() as Promise<Course>;
 }
 
 export async function generateMetadata({ params }: CourseDetailParams): Promise<Metadata> {
@@ -55,7 +76,11 @@ export async function generateMetadata({ params }: CourseDetailParams): Promise<
 
 export default async function CourseDetailPage({ params }: CourseDetailParams) {
   const { slug } = await params;
-  const course = await getPublicCourse(slug);
+  const [publicCourse, courseWithAccess] = await Promise.all([
+    getPublicCourse(slug),
+    getCourseWithAccess(slug),
+  ]);
+  const course = courseWithAccess || publicCourse;
 
   if (!course) {
     return notFound();
@@ -63,8 +88,17 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
 
   const modules = course.modules || [];
   const lessonCount = modules.reduce((count, module) => count + (module.lessons?.length || 0), 0);
-  const purchaseHref = course.stripePaymentLink || `/login?next=${encodeURIComponent(`/cursos/${course.slug}`)}`;
-  const purchaseExternal = isExternalUrl(purchaseHref);
+  const firstLesson = modules.flatMap((module) => module.lessons || [])[0];
+  const canAccess = Boolean(course.access?.canAccess);
+  const courseEntryHref = firstLesson
+    ? `/cursos/${course.slug}/${firstLesson.slug}`
+    : `/account`;
+  const lockedAccessHref = course.stripePaymentLink || `/login?next=${encodeURIComponent(`/cursos/${course.slug}`)}`;
+  const lockedAccessLabel = course.stripePaymentLink
+    ? 'Comprar curso'
+    : course.pricingType === 'free'
+      ? 'Entrar al curso'
+      : 'Solicitar acceso';
   const salePrice = getCourseSalePrice(course);
   const onSale = isOnSale(salePrice);
   const displayedPrice = onSale ? salePrice : course.price;
@@ -117,6 +151,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           courseJsonLd,
         ]}
       />
+      <CourseAccessProvider slug={course.slug} initialCanAccess={canAccess}>
       <header className="relative overflow-hidden rounded-[2.5rem] border border-[var(--stroke)] bg-white shadow-card">
         <div className="grid gap-0 lg:grid-cols-[1.3fr_0.7fr]">
           <div className="p-6 sm:p-8">
@@ -150,19 +185,12 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               >
                 Volver a cursos
               </Link>
-              {purchaseExternal ? (
-                <a
-                  href={purchaseHref}
-                  className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white"
-                  rel="noopener noreferrer"
-                >
-                  Comprar curso
-                </a>
-              ) : (
-                <Link href={purchaseHref} className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white">
-                  {course.pricingType === 'free' ? 'Entrar al curso' : 'Solicitar acceso'}
-                </Link>
-              )}
+              <CourseAccessLink
+                hrefWhenAccess={courseEntryHref}
+                hrefWhenLocked={lockedAccessHref}
+                lockedLabel={lockedAccessLabel}
+                className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white"
+              />
             </div>
           </div>
           <div className="border-t border-[var(--stroke)] bg-[linear-gradient(160deg,#f8fafc,white)] p-6 sm:p-8 lg:border-l lg:border-t-0">
@@ -212,16 +240,17 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                 </summary>
                 <div className="mt-3 space-y-2">
                   {(module.lessons || []).map((lesson) => (
-                    <Link
+                    <CourseLessonAccessLink
                       key={lesson.id}
-                      href={`/login?next=${encodeURIComponent(`/cursos/${course.slug}/${lesson.slug}`)}`}
+                      courseSlug={course.slug}
+                      lessonSlug={lesson.slug}
                       className="flex items-center justify-between rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm transition hover:bg-white"
                     >
                       <span className="font-semibold text-[var(--ink)]">{lesson.title}</span>
                       <span className="text-xs text-[var(--ink-soft)]">
                         {lesson.durationMinutes ? `${lesson.durationMinutes} min` : 'Leccion'}
                       </span>
-                    </Link>
+                    </CourseLessonAccessLink>
                   ))}
                 </div>
               </details>
@@ -236,7 +265,12 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               Entenderás requisitos, plazos, errores frecuentes y criterios prácticos para presentarte con más margen.
             </p>
             <div className="mt-5">
-              <ButtonLink href={purchaseHref}>{course.stripePaymentLink ? 'Comprar curso' : 'Solicitar acceso'}</ButtonLink>
+              <CourseAccessLink
+                hrefWhenAccess={courseEntryHref}
+                hrefWhenLocked={lockedAccessHref}
+                lockedLabel={course.stripePaymentLink ? 'Comprar curso' : 'Solicitar acceso'}
+                className="inline-flex items-center justify-center rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+              />
             </div>
           </SurfaceCard>
           <SurfaceCard className="p-6">
@@ -250,6 +284,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           </SurfaceCard>
         </aside>
       </section>
+      </CourseAccessProvider>
     </main>
   );
 }
