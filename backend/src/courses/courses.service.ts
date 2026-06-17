@@ -608,7 +608,11 @@ export class CoursesService {
       }
     }
 
-    if (course.accessType === CourseAccessType.pro && profile.plan === 'pro') {
+    if (
+      course.accessType === CourseAccessType.pro &&
+      (profile.plan === 'pro' ||
+        profile.subscriptions.some((subscription) => subscription.planKey === 'pro'))
+    ) {
       return { canAccess: true, reason: 'plan' };
     }
 

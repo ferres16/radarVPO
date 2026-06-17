@@ -5,14 +5,15 @@ import { EmptyState } from '@/components/empty-state';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata, faqJsonLd } from '@/lib/seo';
+import { proHref, proPlan, starterCourseKeywords } from '@/lib/pro';
 import type { Course } from '@/types';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Cursos de vivienda protegida',
+  title: 'Curso de iniciación incluido con Radar VPO Pro',
   description:
-    'Cursos prácticos para entender vivienda protegida, requisitos VPO/HPO, documentación, adjudicaciones y errores frecuentes antes de solicitar.',
+    'Radar VPO Pro incluye el curso de iniciación a la vivienda pública para entender requisitos, documentación, adjudicaciones y errores frecuentes.',
   path: '/cursos',
-  keywords: ['cursos vivienda protegida', 'HPO cataluña', 'adjudicaciones vivienda protegida'],
+  keywords: ['curso iniciación vivienda pública', 'Radar VPO Pro', 'curso VPO Cataluña'],
 });
 
 const accessLabels: Record<string, string> = {
@@ -61,12 +62,12 @@ const faqs = [
     answer: 'Sí. Están diseñados para preparar requisitos, documentación y criterio antes de que se abra una convocatoria.',
   },
   {
-    question: '¿Necesito registrarme para comprar un curso?',
-    answer: 'Puedes consultar el temario público. Para acceder al contenido completo necesitarás compra, plan o acceso asignado según el curso.',
+    question: '¿Qué curso incluye Radar VPO Pro?',
+    answer: `Pro incluye el ${proPlan.courseLabel.toLowerCase()}, pensado para entender el proceso antes de solicitar.`,
   },
   {
-    question: '¿Qué diferencia hay entre cursos y servicios premium?',
-    answer: 'Los cursos enseñan el proceso de forma estructurada; los servicios premium revisan tu caso concreto y te acompañan en decisiones.',
+    question: '¿Puedo comprar cursos sueltos?',
+    answer: 'Sí, si el catálogo incluye cursos premium independientes. Aun así, el camino principal recomendado es Radar VPO Pro.',
   },
 ];
 
@@ -96,6 +97,14 @@ function courseJsonLd(course: Course) {
 export default async function CoursesPage() {
   const courses = await api.listCourses().catch(() => []);
   const visibleCourses = [...courses].sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
+  const starterCourse =
+    visibleCourses.find((course) => course.accessType === 'pro') ||
+    visibleCourses.find((course) =>
+      starterCourseKeywords.some((keyword) =>
+        `${course.title} ${course.shortDescription || ''}`.toLowerCase().includes(keyword),
+      ),
+    ) ||
+    visibleCourses[0];
 
   return (
     <main className="shell space-y-6 pb-16">
@@ -110,37 +119,45 @@ export default async function CoursesPage() {
         ]}
       />
       <PageHero
-        eyebrow="Radar VPO Academy"
-        title="Cursos para entender vivienda protegida y presentar mejores solicitudes"
-        description="Formación práctica para preparar requisitos, documentación, plazos, adjudicaciones y errores frecuentes antes de que una convocatoria te obligue a improvisar."
+        eyebrow="Formación incluida en Pro"
+        title="Empieza por el curso de iniciación a la vivienda pública"
+        description={`${proPlan.name} incluye formación práctica para entender requisitos, documentación, plazos, adjudicaciones y errores frecuentes antes de solicitar.`}
         actions={
           <>
-            <ButtonLink href="#catalogo">Ver cursos</ButtonLink>
-            <ButtonLink href="/services" variant="secondary">Necesito asesoría</ButtonLink>
+            <ButtonLink href={proHref}>Activar Pro por {proPlan.price}</ButtonLink>
+            <ButtonLink href="#catalogo" variant="secondary">Ver temarios</ButtonLink>
           </>
         }
       >
         <SurfaceCard className="p-5">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Aprenderás a</p>
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Incluido con Pro</p>
           <ul className="mt-4 space-y-3 text-sm font-semibold text-[var(--ink)]">
             <li>Preparar documentación con antelación.</li>
             <li>Entender requisitos económicos y familiares.</li>
             <li>Evitar errores que te dejan fuera de una convocatoria.</li>
+            <li>Recibir alertas SMS y correo además del curso.</li>
           </ul>
         </SurfaceCard>
       </PageHero>
 
-      <section className="grid gap-4 md:grid-cols-3">
-        {[
-          ['Casos prácticos', 'Lecciones orientadas a situaciones reales de usuarios que buscan vivienda protegida.'],
-          ['Acceso progresivo', 'Cursos gratuitos, premium, PRO o vinculados a seguimiento según el nivel de ayuda.'],
-          ['Complemento premium', 'Cuando el curso no basta, puedes contratar revisión personalizada de tu caso.'],
-        ].map(([title, copy]) => (
-          <SurfaceCard key={title} className="p-5">
-            <h2 className="display-type text-2xl font-black text-[var(--ink)]">{title}</h2>
-            <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{copy}</p>
-          </SurfaceCard>
-        ))}
+      <section className="grid gap-4 lg:grid-cols-[1fr_0.8fr]">
+        <SurfaceCard className="p-6">
+          <SectionHeader eyebrow="Ruta recomendada" title={starterCourse?.title || proPlan.courseLabel} />
+          <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
+            El curso de iniciación es la base para aprovechar las alertas: te ayuda a saber si cumples requisitos, qué documentos preparar y cómo actuar cuando llegue un aviso.
+          </p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <ButtonLink href={starterCourse ? `/cursos/${starterCourse.slug}` : proHref}>Ver curso incluido</ButtonLink>
+            <ButtonLink href={proHref} variant="secondary">Activar Radar VPO Pro</ButtonLink>
+          </div>
+        </SurfaceCard>
+        <SurfaceCard className="p-6">
+          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Plan completo</p>
+          <p className="display-type mt-3 text-4xl font-black text-[var(--ink)]">{proPlan.price}</p>
+          <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
+            Curso de iniciación, alertas SMS y alertas por correo en un único plan mensual.
+          </p>
+        </SurfaceCard>
       </section>
 
       {visibleCourses.length === 0 ? (
@@ -153,20 +170,23 @@ export default async function CoursesPage() {
       <section id="catalogo" className="space-y-4">
         <SectionHeader
           eyebrow="Catálogo"
-          title="Cursos disponibles"
-          description="Cada curso debe explicar qué aprenderás, qué resultado puedes esperar y cuál es el siguiente paso para acceder."
+          title="Temarios y cursos disponibles"
+          description="El curso de iniciación forma parte de Pro. Otros cursos pueden ampliar temas concretos si están publicados."
         />
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {visibleCourses.map((course) => {
-          const badge = course.pricingType === 'premium'
+          const includedInPro = course.id === starterCourse?.id || course.accessType === 'pro';
+          const badge = includedInPro
+            ? 'Incluido en Pro'
+            : course.pricingType === 'premium'
             ? 'Curso premium'
             : accessLabels[course.accessType] || 'Acceso';
           const salePrice = getCourseSalePrice(course);
           const onSale = isOnSale(salePrice);
           const priceLabel = formatPrice(onSale ? salePrice : course.price, course.currency);
           const originalPriceLabel = onSale ? formatPrice(course.price, course.currency) : null;
-          const ctaHref = course.stripePaymentLink || `/cursos/${course.slug}`;
-          const ctaLabel = course.stripePaymentLink ? 'Comprar curso' : 'Ver temario';
+          const ctaHref = includedInPro ? `/cursos/${course.slug}` : course.stripePaymentLink || `/cursos/${course.slug}`;
+          const ctaLabel = includedInPro ? 'Ver curso incluido' : course.stripePaymentLink ? 'Comprar curso' : 'Ver temario';
           const external = isExternalUrl(ctaHref);
           return (
             <article key={course.id} className="group relative overflow-hidden rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_50px_rgba(30,31,28,0.13)]">
@@ -241,7 +261,7 @@ export default async function CoursesPage() {
             </article>
           );
         })}
-      </section>
+        </div>
       </section>
 
       <section className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">

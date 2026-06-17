@@ -1,12 +1,15 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { proPlan } from '@/lib/pro';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [intent, setIntent] = useState('');
+  const isProIntent = intent === 'pro';
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -24,6 +27,10 @@ export default function RegisterPage() {
   }, [password]);
 
   const passwordLabel = ['Muy débil', 'Básica', 'Media', 'Buena', 'Fuerte'][passwordScore];
+
+  useEffect(() => {
+    setIntent(new URLSearchParams(window.location.search).get('intent') || '');
+  }, []);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -44,8 +51,12 @@ export default function RegisterPage() {
     <main className="shell">
       <section className="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-white shadow-card md:grid-cols-[1.05fr_0.95fr] animate-fade-up">
         <div className="p-6 md:p-8">
-        <h1 className="text-2xl font-bold text-[var(--ink)]">Crear cuenta</h1>
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">Guarda filtros, viviendas favoritas y recibe avisos personalizados.</p>
+        <h1 className="text-2xl font-bold text-[var(--ink)]">{isProIntent ? 'Crear cuenta para Radar VPO Pro' : 'Crear cuenta'}</h1>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">
+          {isProIntent
+            ? `${proPlan.name} cuesta ${proPlan.price} e incluye alertas SMS, alertas por correo y curso de iniciación.`
+            : 'Guarda filtros, viviendas favoritas y recibe avisos personalizados.'}
+        </p>
 
         <form className="mt-5 space-y-4" onSubmit={onSubmit}>
           <div>
@@ -84,9 +95,14 @@ export default function RegisterPage() {
 
         <aside className="bg-[linear-gradient(145deg,#f8fbfd,#edf7f2)] p-6 md:p-8">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Perfil ciudadano</p>
-          <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)]">Un espacio para seguir tus oportunidades</h2>
+          <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)]">
+            {isProIntent ? 'Activa Pro y empieza con más margen' : 'Un espacio para seguir tus oportunidades'}
+          </h2>
           <div className="mt-6 space-y-3">
-            {['Favoritos y viviendas guardadas', 'Avisos por municipio y régimen', 'Historial y documentación preparada'].map((item) => (
+            {(isProIntent
+              ? ['Alertas SMS prioritarias', 'Alertas por correo', proPlan.courseLabel]
+              : ['Favoritos y viviendas guardadas', 'Avisos por municipio y régimen', 'Historial y documentación preparada']
+            ).map((item) => (
               <div key={item} className="rounded-2xl border border-[var(--stroke)] bg-white/82 p-4 text-sm font-semibold text-[var(--ink)] shadow-sm">
                 {item}
               </div>

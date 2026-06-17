@@ -198,6 +198,22 @@ class EnvironmentVariables {
   TELEGRAM_CHANNEL_ID_PRO?: string;
 
   @IsOptional()
+  @IsString()
+  BREVO_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  BREVO_SMS_SENDER?: string;
+
+  @IsOptional()
+  @IsString()
+  BREVO_EMAIL_SENDER?: string;
+
+  @IsOptional()
+  @IsBooleanString()
+  BREVO_PRO_ALERTS_ENABLED?: string;
+
+  @IsOptional()
   @IsUrl()
   REGISTRE_NEWS_URL?: string;
 

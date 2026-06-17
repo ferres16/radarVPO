@@ -5,6 +5,7 @@ import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { proHref } from '@/lib/pro';
 import type { UserProfile } from '@/types';
 
 const primaryLinks = [
@@ -12,7 +13,6 @@ const primaryLinks = [
   { href: '/alerts', label: 'Alertas VPO' },
   { href: '/promotions', label: 'Promociones' },
   { href: '/cursos', label: 'Cursos' },
-  { href: '/services', label: 'Servicios' },
   { href: '/news', label: 'Noticias' },
 ];
 
@@ -23,6 +23,7 @@ export function TopNav() {
   const [me, setMe] = useState<UserProfile | null>(null);
   const router = useRouter();
   const pathname = usePathname();
+  const proIsExternal = /^https?:\/\//.test(proHref);
 
   useEffect(() => {
     let active = true;
@@ -147,6 +148,23 @@ export function TopNav() {
         </form>
 
         <nav className="hidden items-center gap-2 md:flex" aria-label="Acceso de usuario">
+          {proIsExternal ? (
+            <a
+              href={proHref}
+              className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-black text-white shadow-card transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Radar VPO Pro
+            </a>
+          ) : (
+            <Link
+              href={proHref}
+              className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-black text-white shadow-card transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+            >
+              Radar VPO Pro
+            </Link>
+          )}
           {me ? (
             <div className="relative">
               <button
@@ -204,12 +222,6 @@ export function TopNav() {
               >
                 Iniciar Sesión
               </Link>
-              <Link
-                href="/register?intent=alerts"
-                className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-card transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
-              >
-                Activar alertas
-              </Link>
             </>
           )}
         </nav>
@@ -253,6 +265,27 @@ export function TopNav() {
                 </Link>
               </li>
             ))}
+            <li>
+              {proIsExternal ? (
+                <a
+                  href={proHref}
+                  className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-black text-white"
+                  onClick={() => setMobileOpen(false)}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Radar VPO Pro
+                </a>
+              ) : (
+                <Link
+                  href={proHref}
+                  className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-black text-white"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Radar VPO Pro
+                </Link>
+              )}
+            </li>
             {me ? (
               <li>
                 <Link
@@ -289,20 +322,13 @@ export function TopNav() {
                 </button>
               </li>
             ) : (
-              <li className="grid grid-cols-2 gap-2">
+              <li>
                 <Link
                   href="/login"
                   className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-center text-sm font-semibold text-[var(--ink)]"
                   onClick={() => setMobileOpen(false)}
                 >
                   Iniciar Sesión
-                </Link>
-                <Link
-                  href="/register?intent=alerts"
-                  className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-semibold text-white"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Activar alertas
                 </Link>
               </li>
             )}

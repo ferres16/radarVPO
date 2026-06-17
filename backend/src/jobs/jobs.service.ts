@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegistreScraperService } from './registre-scraper.service';
 import { NewsAutomationService } from './news-automation.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 const inMemoryLocks = new Set<string>();
 
@@ -15,6 +16,7 @@ export class JobsService implements OnApplicationBootstrap {
     private readonly prisma: PrismaService,
     private readonly registreScraperService: RegistreScraperService,
     private readonly newsAutomationService: NewsAutomationService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async onApplicationBootstrap() {
@@ -46,10 +48,15 @@ export class JobsService implements OnApplicationBootstrap {
       this.logger.log(
         `Checked active sources=${count}; registre scanned=${registre.scanned}, created=${registre.promotionsCreated}, docs=${registre.documentsCreated}, merged=${registre.duplicatesMerged}`,
       );
+      const proAlerts =
+        registre.promotionsCreated > 0
+          ? await this.notificationsService.notifyProUsersForPendingAlerts()
+          : { skipped: true, reason: 'no_new_promotions', sent: 0 };
 
       return {
         checkedSources: count,
         registre,
+        proAlerts,
       };
     });
   }

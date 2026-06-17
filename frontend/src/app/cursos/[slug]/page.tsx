@@ -7,6 +7,7 @@ import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-syst
 import { CourseAccessLink, CourseAccessProvider, CourseLessonAccessLink } from '@/components/course-access';
 import { StructuredData } from '@/components/structured-data';
 import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
+import { proHref, proPlan } from '@/lib/pro';
 import type { Course } from '@/types';
 
 const isOnSale = (salePrice?: string | number | null) => {
@@ -90,11 +91,16 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
   const lessonCount = modules.reduce((count, module) => count + (module.lessons?.length || 0), 0);
   const firstLesson = modules.flatMap((module) => module.lessons || [])[0];
   const canAccess = Boolean(course.access?.canAccess);
+  const includedInPro = course.accessType === 'pro';
   const courseEntryHref = firstLesson
     ? `/cursos/${course.slug}/${firstLesson.slug}`
     : `/account`;
-  const lockedAccessHref = course.stripePaymentLink || `/login?next=${encodeURIComponent(`/cursos/${course.slug}`)}`;
-  const lockedAccessLabel = course.stripePaymentLink
+  const lockedAccessHref = includedInPro
+    ? proHref
+    : course.stripePaymentLink || `/login?next=${encodeURIComponent(`/cursos/${course.slug}`)}`;
+  const lockedAccessLabel = includedInPro
+    ? 'Activar Radar VPO Pro'
+    : course.stripePaymentLink
     ? 'Comprar curso'
     : course.pricingType === 'free'
       ? 'Entrar al curso'
@@ -175,7 +181,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               </div>
               <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">Acceso</p>
-                <p className="mt-1 text-lg font-black text-[var(--ink)]">{course.accessType}</p>
+                <p className="mt-1 text-lg font-black text-[var(--ink)]">{includedInPro ? 'Incluido en Pro' : course.accessType}</p>
               </div>
             </div>
             <div className="mt-6 flex flex-wrap gap-3">
@@ -208,7 +214,9 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Acceso</p>
               <p className="mt-2 text-2xl font-black text-[var(--green-700)]">Landing pública</p>
               <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                Puedes consultar el temario y comprar o solicitar acceso. Las lecciones completas requieren sesión y permiso activo.
+                {includedInPro
+                  ? `${proPlan.name} incluye este curso. Si ya eres Pro, podrás entrar directamente a las lecciones.`
+                  : 'Puedes consultar el temario y comprar o solicitar acceso. Las lecciones completas requieren sesión y permiso activo.'}
               </p>
             </div>
           </div>
@@ -268,7 +276,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               <CourseAccessLink
                 hrefWhenAccess={courseEntryHref}
                 hrefWhenLocked={lockedAccessHref}
-                lockedLabel={course.stripePaymentLink ? 'Comprar curso' : 'Solicitar acceso'}
+                lockedLabel={includedInPro ? 'Activar Radar VPO Pro' : course.stripePaymentLink ? 'Comprar curso' : 'Solicitar acceso'}
                 className="inline-flex items-center justify-center rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
               />
             </div>
