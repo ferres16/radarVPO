@@ -2,17 +2,21 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { getDaysRemaining } from '@/lib/alert-countdown';
+import { copy } from '@/lib/navigation';
 import { proHref, proPlan } from '@/lib/pro';
 import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
-import { ButtonLink, Eyebrow, SurfaceCard } from '@/components/design-system';
+import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { ProComparison } from '@/components/pro-comparison';
+import { RadarVisual } from '@/components/radar-visual';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Alertas prioritarias de vivienda protegida',
-  description: 'VPO PRO envía alertas SMS y correo sobre nuevas oportunidades de vivienda protegida en Cataluña.',
+  title: 'Próximos lanzamientos de vivienda protegida',
+  description:
+    'Promociones que todavía no han sido publicadas oficialmente pero que podrían aparecer próximamente en Cataluña.',
   path: '/alerts',
-  keywords: ['alertas VPO', 'VPO PRO', 'alertas SMS vivienda protegida'],
+  keywords: ['próximos lanzamientos VPO', 'VPO PRO', 'vivienda protegida Cataluña'],
 });
 
 export default async function AlertsPage() {
@@ -30,30 +34,41 @@ export default async function AlertsPage() {
       <StructuredData
         data={breadcrumbJsonLd([
           { name: 'Inicio', path: '/' },
-          { name: 'Alertas VPO', path: '/alerts' },
+          { name: copy.upcomingLaunches, path: '/alerts' },
         ])}
       />
 
-      <section className="mx-auto max-w-3xl text-center">
-        <Eyebrow>Alertas VPO</Eyebrow>
-        <h1 className="display-type mt-4 text-4xl font-black text-[var(--ink)] md:text-5xl">
-          Entérate antes con {proPlan.name}
-        </h1>
-        <p className="mt-4 text-base leading-7 text-[var(--ink-soft)]">
-          En la web ves avisos básicos. Con VPO PRO recibes SMS y correo cuando detectamos una oportunidad relevante.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
-          <ButtonLink href="/promotions" variant="secondary">Ver promociones</ButtonLink>
-        </div>
-        <p className="mt-4 text-sm font-bold text-[var(--green-700)]">{proPlan.price}</p>
-      </section>
+      <PageHero
+        eyebrow={copy.upcomingLaunches}
+        title="Sabe qué puede salir antes de que se publique"
+        description="Aquí ves los próximos lanzamientos que estamos monitorizando. Con VPO PRO recibes notificaciones por SMS y correo en cuanto detectamos novedad relevante."
+        actions={
+          <>
+            <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
+            <ButtonLink href="/promotions" variant="secondary">Ver promociones publicadas</ButtonLink>
+          </>
+        }
+      >
+        <RadarVisual />
+      </PageHero>
 
-      <section id="avisos" className="space-y-4">
-        <h2 className="text-xl font-black text-[var(--ink)]">Avisos actuales</h2>
+      <SurfaceCard premium className="flex flex-col gap-4 bg-[var(--bg-eco)]/60 p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--green-700)]">{proPlan.name}</p>
+          <p className="mt-1 text-sm font-semibold text-[var(--ink)]">¿No quieres entrar cada día a revisar?</p>
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">Te avisamos cuando detectemos un próximo lanzamiento en tu zona. {proPlan.price}</p>
+        </div>
+        <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
+      </SurfaceCard>
+
+      <section id="lanzamientos" className="space-y-4">
+        <SectionHeader
+          title="Lanzamientos monitorizados"
+          description="Oportunidades que aún no tienen convocatoria oficial pero muestran señales de publicación próxima."
+        />
         {activeAlerts.length === 0 ? (
-          <SurfaceCard className="p-8 text-center">
-            <p className="text-sm text-[var(--ink-soft)]">Sin avisos activos. Activa VPO PRO para recibir el próximo por SMS y correo.</p>
+          <SurfaceCard premium className="p-8 text-center">
+            <p className="text-sm text-[var(--ink-soft)]">Sin lanzamientos previstos visibles ahora mismo. Activa VPO PRO para recibir el siguiente por SMS y correo.</p>
             <div className="mt-6">
               <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
             </div>
@@ -61,21 +76,21 @@ export default async function AlertsPage() {
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {activeAlerts.map(({ item, daysRemaining }) => (
-              <SurfaceCard key={item.id} className="p-5">
+              <SurfaceCard key={item.id} premium className="p-5">
                 <AlertCountdownBadge daysRemaining={daysRemaining} size="lg" />
                 <p className="mt-4 text-base font-bold text-[var(--ink)]">{item.title}</p>
                 <p className="mt-2 text-sm text-[var(--ink-soft)]">{item.municipality || 'Cataluña'}</p>
                 <div className="mt-5 flex flex-wrap gap-2">
-                  <Link href={`/promotions/${item.id}`} className="rounded-full bg-[var(--green-700)] px-4 py-2 text-xs font-bold text-white">
+                  <Link href={`/promotions/${item.id}`} className="rounded-full bg-[var(--green-700)] px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-[var(--green-900)]">
                     Ver ficha
                   </Link>
                   {/^https?:\/\//.test(proHref) ? (
-                    <a href={proHref} className="rounded-full border border-[var(--stroke)] px-4 py-2 text-xs font-bold text-[var(--ink)]" rel="noopener noreferrer" target="_blank">
-                      Recibir por SMS/email
+                    <a href={proHref} className="rounded-full border border-[var(--stroke-strong)] bg-white/90 px-4 py-2 text-xs font-bold text-[var(--ink)]" rel="noopener noreferrer" target="_blank">
+                      Recibir notificación
                     </a>
                   ) : (
-                    <Link href={proHref} className="rounded-full border border-[var(--stroke)] px-4 py-2 text-xs font-bold text-[var(--ink)]">
-                      Recibir por SMS/email
+                    <Link href={proHref} className="rounded-full border border-[var(--stroke-strong)] bg-white/90 px-4 py-2 text-xs font-bold text-[var(--ink)]">
+                      Recibir notificación
                     </Link>
                   )}
                 </div>
@@ -84,6 +99,11 @@ export default async function AlertsPage() {
           </div>
         )}
       </section>
+
+      <ProComparison
+        title="¿Por qué activar VPO PRO?"
+        description="Entra cuando quieras a ver lanzamientos. PRO te avisa al móvil y al correo para no depender de acordarte."
+      />
     </main>
   );
 }

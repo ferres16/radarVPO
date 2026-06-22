@@ -7,19 +7,19 @@ function displayDate(promotion: Promotion) {
     return promotion.publishedAt ? `Publicado: ${promotion.publishedAt.slice(0, 10)}` : null;
   }
 
-  return promotion.deadlineDate ? `Fin: ${promotion.deadlineDate.slice(0, 10)}` : null;
+  return promotion.deadlineDate ? `Fin plazo: ${promotion.deadlineDate.slice(0, 10)}` : null;
 }
 
 function statusLabel(status: Promotion['status']) {
-  if (status === 'pending_review') return 'Pendiente de revision';
-  if (status === 'published_unreviewed') return 'Información en actualización';
-  if (status === 'published_reviewed') return 'Promoción completa';
+  if (status === 'pending_review') return 'Pendiente de revisión';
+  if (status === 'published_unreviewed') return 'En actualización';
+  if (status === 'published_reviewed') return 'Ficha completa';
   return 'Archivada';
 }
 
 function statusTone(status: Promotion['status']) {
   if (status === 'published_reviewed') return 'border-[rgba(22,112,85,0.24)] bg-[rgba(22,112,85,0.10)] text-[var(--green-700)]';
-  if (status === 'published_unreviewed') return 'border-[rgba(244,197,66,0.34)] bg-[rgba(244,197,66,0.16)] text-[#7a5600]';
+  if (status === 'published_unreviewed') return 'border-[rgba(232,184,74,0.34)] bg-[rgba(232,184,74,0.16)] text-[#7a5600]';
   return 'border-[var(--stroke)] bg-[var(--bg-app)] text-[var(--ink-soft)]';
 }
 
@@ -41,17 +41,24 @@ export function PromotionCard({
   titleOverride?: string;
 }) {
   return (
-    <MotionCard className="group flex h-full flex-col rounded-[1.5rem] border border-[var(--stroke)] bg-white p-4 shadow-card transition duration-300 hover:border-[rgba(22,112,85,0.30)] hover:shadow-[0_18px_40px_rgba(30,31,28,0.10)]">
+    <MotionCard className="premium-card group flex h-full flex-col p-5">
       <div className="mb-3 flex items-start justify-between gap-2">
-        <h3 className="text-base font-bold leading-6 text-[var(--ink)]">{titleOverride || promotion.title}</h3>
+        <div>
+          <span className="inline-flex rounded-full bg-[rgba(22,112,85,0.10)] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--green-700)]">
+            Publicada
+          </span>
+          <h3 className="mt-2 text-base font-bold leading-6 text-[var(--ink)] group-hover:text-[var(--green-700)]">
+            {titleOverride || promotion.title}
+          </h3>
+        </div>
         {!hideStatus ? (
           <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-semibold transition ${statusTone(promotion.status)}`}>
             {statusLabel(promotion.status)}
           </span>
         ) : null}
       </div>
-      <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">Ubicación</p>
+      <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)]/80 px-3 py-2.5">
+        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-soft)]">Ubicación</p>
         <p className="mt-1 text-sm font-semibold text-[var(--ink)]">
           {promotion.municipality || 'Catalunya'} {promotion.province ? `, ${promotion.province}` : ''}
         </p>
@@ -63,7 +70,7 @@ export function PromotionCard({
       {!hideDetail ? (
         <Link
           href={`/promotions/${promotion.id}`}
-          className="mt-auto inline-flex w-fit rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white outline-none transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+          className="mt-auto inline-flex w-fit rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-sm outline-none transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-900)] hover:shadow-glow focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
         >
           Ver ficha
         </Link>

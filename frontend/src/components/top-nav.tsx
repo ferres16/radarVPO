@@ -4,16 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { primaryNavLinks } from '@/lib/navigation';
 import { proHref, proPlan } from '@/lib/pro';
 import type { UserProfile } from '@/types';
 
-const primaryLinks = [
-  { href: '/', label: 'Inicio' },
-  { href: '/alerts', label: 'Alertas VPO' },
-  { href: '/promotions', label: 'Promociones' },
-  { href: '/cursos', label: 'Cursos' },
-  { href: '/services', label: 'Servicios' },
-];
+const primaryLinks = primaryNavLinks;
 
 export function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -74,7 +69,7 @@ export function TopNav() {
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 px-3 pt-3">
-      <div className="mx-auto flex w-full max-w-[1240px] items-center justify-between rounded-[1.5rem] border border-white/70 bg-white/78 px-3 py-2 shadow-[0_18px_50px_rgba(16,24,40,0.12)] backdrop-blur-xl md:px-4">
+      <div className="glass-surface mx-auto flex w-full max-w-[1240px] items-center justify-between rounded-[1.5rem] px-3 py-2 md:px-4">
         <Link
           href="/"
           className="group flex items-center gap-2 rounded-full px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
@@ -106,7 +101,7 @@ export function TopNav() {
           </span>
         </button>
 
-        <nav className="hidden items-center gap-1 xl:flex" aria-label="Navegación principal">
+        <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Navegación principal">
           {primaryLinks.map((link) => {
             const active = isActive(link.href);
             return (
@@ -114,14 +109,14 @@ export function TopNav() {
               key={link.href}
               href={link.href}
               aria-current={active ? 'page' : undefined}
-              className={`relative rounded-full px-3 py-2 text-sm font-semibold transition duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] ${
+              className={`relative rounded-full px-2.5 py-2 text-[13px] font-semibold transition duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-3 xl:text-sm ${
                 active
-                  ? 'bg-[var(--bg-eco)] text-[var(--green-700)]'
-                  : 'text-[var(--ink)] hover:-translate-y-0.5 hover:bg-white'
+                  ? 'bg-[rgba(22,112,85,0.10)] text-[var(--green-700)]'
+                  : 'text-[var(--ink)] hover:bg-white/80'
               }`}
             >
               {link.label}
-              {active ? <span className="absolute inset-x-4 -bottom-0.5 h-0.5 rounded-full bg-[var(--cyan-700)]" /> : null}
+              {active ? <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[var(--cyan-500)]" /> : null}
             </Link>
             );
           })}
@@ -250,7 +245,7 @@ export function TopNav() {
                   }`}
                   onClick={() => setMobileOpen(false)}
                 >
-                  {link.label}
+                  {link.mobileLabel ?? link.label}
                 </Link>
               </li>
             ))}

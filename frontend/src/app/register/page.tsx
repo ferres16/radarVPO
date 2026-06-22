@@ -4,7 +4,8 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { proPlan } from '@/lib/pro';
+import { proHref, proPlan } from '@/lib/pro';
+import { ButtonLink } from '@/components/design-system';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function RegisterPage() {
 
     try {
       await api.register(email, password, fullName, phone);
-      router.push('/account');
+      router.push(isProIntent ? proHref : '/account');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta');
     } finally {
@@ -48,66 +49,76 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="shell">
-      <section className="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-white shadow-card md:grid-cols-[1.05fr_0.95fr] animate-fade-up">
+    <main className="shell pb-16">
+      <section className="premium-card mx-auto grid max-w-5xl overflow-hidden md:grid-cols-[1.05fr_0.95fr] animate-fade-up">
         <div className="p-6 md:p-8">
-        <h1 className="text-2xl font-bold text-[var(--ink)]">{isProIntent ? `Crear cuenta para ${proPlan.name}` : 'Crear cuenta'}</h1>
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">
-          {isProIntent
-            ? `${proPlan.name} cuesta ${proPlan.price} e incluye alertas SMS, alertas por correo y curso de iniciación.`
-            : 'Guarda filtros, viviendas favoritas y recibe avisos personalizados.'}
-        </p>
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--green-700)]">
+            {isProIntent ? proPlan.name : 'Cuenta gratuita'}
+          </p>
+          <h1 className="display-type mt-3 text-2xl font-black text-[var(--ink)] md:text-3xl">
+            {isProIntent ? 'Activa tu ventaja competitiva' : 'Crea tu cuenta'}
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
+            {isProIntent
+              ? `${proPlan.price}. Notificaciones prioritarias, seguimiento de municipios y curso incluido.`
+              : 'Guarda oportunidades y accede a próximos lanzamientos y promociones publicadas.'}
+          </p>
 
-        <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-          <div>
-            <label htmlFor="fullName" className="text-sm font-medium text-[var(--ink)]">Nombre completo</label>
-            <input id="fullName" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="mt-1 w-full rounded-2xl border border-[var(--stroke)] px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
-          </div>
-          <div>
-            <label htmlFor="email" className="text-sm font-medium text-[var(--ink)]">Email</label>
-            <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1 w-full rounded-2xl border border-[var(--stroke)] px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
-          </div>
-          <div>
-            <label htmlFor="phone" className="text-sm font-medium text-[var(--ink)]">Teléfono</label>
-            <input id="phone" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required className="mt-1 w-full rounded-2xl border border-[var(--stroke)] px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
-          </div>
-          <div>
-            <label htmlFor="password" className="text-sm font-medium text-[var(--ink)]">Contraseña</label>
-            <input id="password" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required aria-describedby="password-help" className="mt-1 w-full rounded-2xl border border-[var(--stroke)] px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
-            <div className="mt-2" id="password-help">
-              <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-app)]" aria-hidden="true">
-                <div className="h-full rounded-full bg-[var(--green-700)] transition-all" style={{ width: `${Math.max(passwordScore, 1) * 25}%` }} />
-              </div>
-              <p className="mt-1 text-xs text-[var(--ink-soft)]">Fortaleza: {passwordLabel}. Usa 8 caracteres, mayúsculas, números y símbolos.</p>
+          <form className="mt-5 space-y-4" onSubmit={onSubmit}>
+            <div>
+              <label htmlFor="fullName" className="text-sm font-medium text-[var(--ink)]">Nombre completo</label>
+              <input id="fullName" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="ds-control mt-1 w-full" />
             </div>
-          </div>
-          {error ? <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="alert" aria-live="polite">{error}</p> : null}
-          <button type="submit" disabled={loading} className="w-full rounded-2xl bg-[var(--green-700)] px-4 py-3 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] disabled:opacity-60">
-            {loading ? 'Creando...' : 'Crear cuenta'}
-          </button>
-        </form>
+            <div>
+              <label htmlFor="email" className="text-sm font-medium text-[var(--ink)]">Email</label>
+              <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="ds-control mt-1 w-full" />
+            </div>
+            <div>
+              <label htmlFor="phone" className="text-sm font-medium text-[var(--ink)]">Teléfono</label>
+              <input id="phone" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required className="ds-control mt-1 w-full" />
+            </div>
+            <div>
+              <label htmlFor="password" className="text-sm font-medium text-[var(--ink)]">Contraseña</label>
+              <input id="password" type="password" autoComplete="new-password" minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} required aria-describedby="password-help" className="ds-control mt-1 w-full" />
+              <div className="mt-2" id="password-help">
+                <div className="h-2 overflow-hidden rounded-full bg-[var(--bg-muted)]" aria-hidden="true">
+                  <div className="h-full rounded-full bg-gradient-to-r from-[var(--green-700)] to-[var(--cyan-500)] transition-all" style={{ width: `${Math.max(passwordScore, 1) * 25}%` }} />
+                </div>
+                <p className="mt-1 text-xs text-[var(--ink-soft)]">Fortaleza: {passwordLabel}</p>
+              </div>
+            </div>
+            {error ? <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="alert" aria-live="polite">{error}</p> : null}
+            <button type="submit" disabled={loading} className="w-full rounded-2xl bg-[var(--green-700)] px-4 py-3 font-bold text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] disabled:opacity-60">
+              {loading ? 'Creando...' : isProIntent ? proPlan.ctaLabel : 'Crear cuenta'}
+            </button>
+          </form>
 
-        <p className="mt-4 text-sm text-[var(--ink-soft)]">
-          Ya tienes cuenta?{' '}
-          <Link href="/login" className="font-semibold text-[var(--green-700)]">Entrar</Link>
-        </p>
+          <p className="mt-4 text-sm text-[var(--ink-soft)]">
+            ¿Ya tienes cuenta?{' '}
+            <Link href="/login" className="font-semibold text-[var(--green-700)]">Entrar</Link>
+          </p>
         </div>
 
-        <aside className="bg-[linear-gradient(145deg,#f8fbfd,#edf7f2)] p-6 md:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Perfil ciudadano</p>
-          <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)]">
-            {isProIntent ? 'Activa Pro y empieza con más margen' : 'Un espacio para seguir tus oportunidades'}
+        <aside className="section-band--muted border-0 bg-transparent p-6 md:p-8">
+          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--green-700)]">Qué obtienes</p>
+          <h2 className="display-type mt-4 text-2xl font-black text-[var(--ink)] md:text-3xl">
+            {isProIntent ? 'Llega preparado al plazo' : 'Empieza gratis, sube a PRO cuando quieras'}
           </h2>
           <div className="mt-6 space-y-3">
             {(isProIntent
-              ? ['Alertas SMS prioritarias', 'Alertas por correo', proPlan.courseLabel]
-              : ['Favoritos y viviendas guardadas', 'Avisos por municipio y régimen', 'Historial y documentación preparada']
+              ? ['Notificaciones SMS prioritarias', 'Avisos por correo', proPlan.courseLabel, 'Seguimiento de municipios']
+              : ['Próximos lanzamientos en web', 'Promociones publicadas', 'Perfil y favoritos', 'Upgrade a VPO PRO']
             ).map((item) => (
-              <div key={item} className="rounded-2xl border border-[var(--stroke)] bg-white/82 p-4 text-sm font-semibold text-[var(--ink)] shadow-sm">
+              <div key={item} className="rounded-2xl border border-[var(--stroke)] bg-white/90 p-4 text-sm font-semibold text-[var(--ink)] shadow-sm">
                 {item}
               </div>
             ))}
           </div>
+          {isProIntent ? null : (
+            <div className="mt-6">
+              <ButtonLink href="/register?intent=pro">{proPlan.ctaLabel}</ButtonLink>
+            </div>
+          )}
         </aside>
       </section>
     </main>

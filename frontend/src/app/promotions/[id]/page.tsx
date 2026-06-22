@@ -1,8 +1,11 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
+import { copy } from '@/lib/navigation';
+import { proHref, proPlan } from '@/lib/pro';
 import { InlineAdCard, SidebarAds } from '@/components/ads';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { ProComparison } from '@/components/pro-comparison';
 import { Reveal } from '@/components/motion-primitives';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
@@ -45,9 +48,9 @@ function prettyLabel(key: string) {
 }
 
 function statusLabel(status: string) {
-  if (status === 'published_reviewed') return 'Publicada revisada';
-  if (status === 'published_unreviewed') return 'Publicada sin revisar';
-  if (status === 'pending_review') return 'Aviso pendiente';
+  if (status === 'published_reviewed') return 'Publicada y revisada';
+  if (status === 'published_unreviewed') return 'Publicada · en actualización';
+  if (status === 'pending_review') return 'Próximo lanzamiento';
   return 'Archivada';
 }
 
@@ -165,13 +168,13 @@ export default async function PromotionDetailPage({
       <StructuredData
         data={breadcrumbJsonLd([
           { name: 'Inicio', path: '/' },
-          { name: 'Promociones', path: '/promotions' },
+          { name: copy.publishedPromotions, path: '/promotions' },
           { name: promotion.title, path: `/promotions/${promotion.id}` },
         ])}
       />
       <Reveal>
-        <section className="grid overflow-hidden rounded-[2.25rem] border border-[var(--stroke)] bg-white shadow-[0_24px_80px_rgba(30,31,28,0.12)] lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="relative min-h-[340px] bg-[linear-gradient(135deg,rgba(22,112,85,0.18),rgba(54,189,248,0.12),rgba(255,255,255,0.96))] p-6 md:p-8">
+        <section className="premium-card grid overflow-hidden lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="relative min-h-[340px] bg-[linear-gradient(135deg,rgba(11,18,32,0.92),rgba(22,112,85,0.55))] p-6 md:p-8">
             {heroImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-85" />
@@ -207,14 +210,14 @@ export default async function PromotionDetailPage({
               <ButtonLink href={promotion.sourceUrl} variant="primary">Fuente oficial</ButtonLink>
               <ButtonLink href="#documentos" variant="secondary">Ver documentos</ButtonLink>
             </div>
-            <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-eco)] p-4">
-              <p className="text-sm font-bold text-[var(--ink)]">No dependas de encontrar la próxima promoción tarde.</p>
+            <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-eco)]/60 p-4">
+              <p className="text-sm font-bold text-[var(--ink)]">¿Quieres enterarte del siguiente antes?</p>
               <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-                Activa Alertas VPO o contrata seguimiento si quieres que Radar VPO vigile oportunidades similares por ti.
+                Con {proPlan.name} recibes notificaciones cuando detectemos próximos lanzamientos o promociones similares en tu zona.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
-                <ButtonLink href="/register?intent=alerts">Recibir alertas similares</ButtonLink>
-                <ButtonLink href="/services" variant="secondary">Pedir ayuda</ButtonLink>
+                <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
+                <ButtonLink href="/alerts" variant="secondary">Ver próximos lanzamientos</ButtonLink>
               </div>
             </div>
           </aside>
@@ -222,7 +225,7 @@ export default async function PromotionDetailPage({
       </Reveal>
 
       <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <article className="rounded-[1.75rem] border border-[var(--stroke)] bg-white p-5 shadow-card md:p-6">
+      <article className="premium-card p-5 md:p-6">
         <SectionHeader
           eyebrow="Ficha estructurada"
           title="Información, requisitos, ubicación y documentación"
@@ -307,11 +310,11 @@ export default async function PromotionDetailPage({
           {promotion.units.length === 0 ? (
             <p className="mt-2 text-sm text-[var(--ink-soft)]">Pendiente de revision manual.</p>
           ) : (
-            <div className="mt-3 overflow-x-auto rounded-2xl border border-[var(--stroke)] bg-white">
+            <div className="mt-3 overflow-x-auto rounded-2xl border border-[var(--stroke)] bg-white/90">
               <table className="w-full min-w-[760px] text-sm">
                 <thead>
-                  <tr className="border-b border-[var(--stroke)] bg-white">
-                    <th className="p-3 text-left">Vivienda</th>
+                  <tr className="border-b border-[var(--stroke)] bg-[var(--bg-app)]">
+                    <th className="p-3 text-left text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Vivienda</th>
                     <th className="p-3 text-left">Régimen</th>
                     <th className="p-3 text-left">Tipología</th>
                     <th className="p-2 text-left">Escalera</th>
@@ -363,6 +366,8 @@ export default async function PromotionDetailPage({
       </article>
       <SidebarAds />
       </section>
+
+      <ProComparison compact title="¿Te interesa llegar antes la próxima vez?" />
     </main>
   );
 }

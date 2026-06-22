@@ -4,6 +4,8 @@ import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
+import { proHref, proPlan } from '@/lib/pro';
+import { ButtonLink } from '@/components/design-system';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -23,53 +25,60 @@ export default function LoginPage() {
       router.push(next && next.startsWith('/') ? next : '/account');
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesion');
+      setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión');
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="shell">
-      <section className="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-white shadow-card md:grid-cols-[0.9fr_1.1fr] animate-fade-up">
-        <aside className="bg-[linear-gradient(145deg,var(--green-900),var(--green-700))] p-6 text-white md:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-white/70">Área privada</p>
-          <h1 className="display-type mt-4 text-3xl font-black leading-tight md:text-4xl">Gestiona tus viviendas guardadas y avisos</h1>
+    <main className="shell pb-16">
+      <section className="premium-card mx-auto grid max-w-5xl overflow-hidden md:grid-cols-[0.9fr_1.1fr] animate-fade-up">
+        <aside className="bg-[linear-gradient(145deg,var(--green-900),#0b1220)] p-6 text-white md:p-8">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/70">Área privada</p>
+          <h1 className="display-type mt-4 text-3xl font-black leading-tight md:text-4xl">
+            Tus oportunidades, centralizadas
+          </h1>
           <p className="mt-4 text-sm leading-6 text-white/78">
-            Accede a tu perfil para revisar estado, documentación, favoritos y próximas oportunidades.
+            Accede a tu perfil, revisa promociones guardadas y gestiona tu suscripción VPO PRO.
           </p>
-          <div className="mt-6 rounded-3xl border border-white/15 bg-white/10 p-4 backdrop-blur">
-            <p className="text-sm font-semibold">Consejo de seguridad</p>
-            <p className="mt-2 text-sm text-white/74">Usa una contraseña única y revisa siempre que la URL sea la oficial de Radar VPO.</p>
+          <div className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+            <p className="text-sm font-semibold">¿Aún no tienes PRO?</p>
+            <p className="mt-2 text-sm text-white/74">Recibe notificaciones cuando detectemos próximos lanzamientos en tu zona.</p>
+            <div className="mt-4">
+              <ButtonLink href={proHref} className="!bg-white !text-[var(--ink)] hover:!bg-[var(--bg-eco)]">
+                {proPlan.ctaLabel}
+              </ButtonLink>
+            </div>
           </div>
         </aside>
 
         <div className="p-6 md:p-8">
-        <h2 className="text-2xl font-bold text-[var(--ink)]">Iniciar sesión</h2>
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">Accede a tu cuenta, avisos y servicios.</p>
+          <h2 className="display-type text-2xl font-black text-[var(--ink)]">Iniciar sesión</h2>
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">Accede a tu cuenta y servicios.</p>
 
-        <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-          <div>
-            <label htmlFor="email" className="text-sm font-medium text-[var(--ink)]">Email</label>
-            <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="mt-1 w-full rounded-2xl border border-[var(--stroke)] px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
-          </div>
-          <div>
-            <div className="flex items-center justify-between gap-3">
-              <label htmlFor="password" className="text-sm font-medium text-[var(--ink)]">Contraseña</label>
-              <Link href="/register" className="text-xs font-semibold text-[var(--green-700)]">¿Necesitas cuenta?</Link>
+          <form className="mt-5 space-y-4" onSubmit={onSubmit}>
+            <div>
+              <label htmlFor="email" className="text-sm font-medium text-[var(--ink)]">Email</label>
+              <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="ds-control mt-1 w-full" />
             </div>
-            <input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1 w-full rounded-2xl border border-[var(--stroke)] px-4 py-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
-          </div>
-          {error ? <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="alert" aria-live="polite">{error}</p> : null}
-          <button type="submit" disabled={loading} className="w-full rounded-2xl bg-[var(--green-700)] px-4 py-3 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] disabled:opacity-60">
-            {loading ? 'Entrando...' : 'Entrar'}
-          </button>
-        </form>
+            <div>
+              <div className="flex items-center justify-between gap-3">
+                <label htmlFor="password" className="text-sm font-medium text-[var(--ink)]">Contraseña</label>
+                <Link href="/register" className="text-xs font-semibold text-[var(--green-700)]">Crear cuenta</Link>
+              </div>
+              <input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required className="ds-control mt-1 w-full" />
+            </div>
+            {error ? <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="alert" aria-live="polite">{error}</p> : null}
+            <button type="submit" disabled={loading} className="w-full rounded-2xl bg-[var(--green-700)] px-4 py-3 font-bold text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] disabled:opacity-60">
+              {loading ? 'Entrando...' : 'Entrar'}
+            </button>
+          </form>
 
-        <p className="mt-4 text-sm text-[var(--ink-soft)]">
-          No tienes cuenta?{' '}
-          <Link href="/register" className="font-semibold text-[var(--green-700)]">Registrate</Link>
-        </p>
+          <p className="mt-4 text-sm text-[var(--ink-soft)]">
+            ¿No tienes cuenta?{' '}
+            <Link href="/register" className="font-semibold text-[var(--green-700)]">Regístrate</Link>
+          </p>
         </div>
       </section>
     </main>

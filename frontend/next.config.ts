@@ -18,6 +18,12 @@ const contentSecurityPolicy = [
 ].filter(Boolean).join("; ");
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      { source: '/proximos-lanzamientos', destination: '/alerts', permanent: true },
+      { source: '/promociones-publicadas', destination: '/promotions', permanent: true },
+    ];
+  },
   async headers() {
     const securityHeaders = [
       { key: "Content-Security-Policy", value: contentSecurityPolicy },

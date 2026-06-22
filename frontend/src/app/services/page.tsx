@@ -17,7 +17,7 @@ const fallbackServices = [
     eyebrow: '01 · Seguimiento personalizado',
     title: 'Seguimiento personalizado',
     copy:
-      'Vigilamos promociones, avisos y fechas clave para que sepas cuándo actuar y qué preparar.',
+      'Vigilamos próximos lanzamientos, promociones publicadas y fechas clave para que sepas cuándo actuar.',
     cta: 'Activar seguimiento',
     href: whatsappContactUrl,
     price: null,
@@ -38,12 +38,12 @@ const fallbackServices = [
     accent: 'from-emerald-50 to-white',
   },
   {
-    eyebrow: '03 · Alertas Pro',
-    title: 'Alertas Pro por WhatsApp',
+    eyebrow: '03 · VPO PRO',
+    title: 'Notificaciones PRO por WhatsApp',
     copy:
-      'Recibe avisos prioritarios por WhatsApp cuando haya nuevas oportunidades o cambios importantes.',
-    cta: 'Activar alertas',
-    href: whatsappContactUrl,
+      'Recibe avisos prioritarios cuando haya nuevos lanzamientos, promociones publicadas o cambios importantes.',
+    cta: 'Activar VPO PRO',
+    href: '/register?intent=pro',
     price: null,
     salePrice: null,
     currency: 'EUR',
@@ -80,7 +80,7 @@ const benefits = [
 
 const useCases = [
   'No sabes si cumples requisitos económicos o familiares.',
-  'Quieres enterarte de nuevas promociones antes de que se saturen.',
+  'Quieres enterarte de promociones y lanzamientos antes de que se saturen.',
   'Necesitas preparar documentación antes de abrirse una solicitud.',
   'Quieres aprender el proceso sin pagar una asesoría completa.',
 ];

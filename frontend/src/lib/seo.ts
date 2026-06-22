@@ -4,14 +4,14 @@ export const siteConfig = {
   name: 'Radar VPO',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://radarvpo.com',
   locale: 'es_ES',
-  title: 'Radar VPO | Alertas de vivienda protegida en Cataluña',
+  title: 'Radar VPO | Próximos lanzamientos y promociones de vivienda protegida',
   description:
-    'Recibe alertas de vivienda protegida en Cataluña, consulta promociones VPO/HPO, aprende con cursos prácticos y contrata seguimiento especializado.',
+    'Detecta próximos lanzamientos de vivienda protegida en Cataluña, consulta promociones publicadas y actúa antes con VPO PRO.',
   keywords: [
     'vivienda protegida cataluña',
     'vivienda pública cataluña',
-    'promociones VPO',
-    'alertas vivienda protegida',
+    'próximos lanzamientos VPO',
+    'promociones publicadas VPO',
     'pisos protegidos cataluña',
     'HPO cataluña',
     'promociones vivienda pública barcelona',
