@@ -190,7 +190,7 @@ export function CourseLessonEditor({
   return (
     <div className="space-y-3">
       <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
-        <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Insertar bloques</p>
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Formato</p>
         <div className="flex flex-wrap gap-2">
           {[
             { label: 'Texto', action: () => editor.chain().focus().setParagraph().run() },

@@ -51,7 +51,7 @@ export default function RegisterPage() {
     <main className="shell">
       <section className="mx-auto grid max-w-5xl overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-white shadow-card md:grid-cols-[1.05fr_0.95fr] animate-fade-up">
         <div className="p-6 md:p-8">
-        <h1 className="text-2xl font-bold text-[var(--ink)]">{isProIntent ? 'Crear cuenta para Radar VPO Pro' : 'Crear cuenta'}</h1>
+        <h1 className="text-2xl font-bold text-[var(--ink)]">{isProIntent ? `Crear cuenta para ${proPlan.name}` : 'Crear cuenta'}</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
           {isProIntent
             ? `${proPlan.name} cuesta ${proPlan.price} e incluye alertas SMS, alertas por correo y curso de iniciación.`

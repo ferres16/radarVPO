@@ -5,11 +5,10 @@ import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
 import { api } from '@/lib/api';
-import { CourseBlockEditor } from '@/components/course-block-editor';
+import { CourseLessonEditor } from '@/components/course-lesson-editor';
 import type {
   Course,
   CourseAccessType,
-  CourseContentBlock,
   CourseLesson,
   CourseModule,
   CourseModuleVisibility,
@@ -352,17 +351,6 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     } finally {
       setSavingId('');
     }
-  }
-
-  function updateLessonBlocks(lessonId: string, blocks: CourseContentBlock[]) {
-    setModules((prev) =>
-      prev.map((module) => ({
-        ...module,
-        lessons: (module.lessons || []).map((lesson) =>
-          lesson.id === lessonId ? { ...lesson, blocks } : lesson,
-        ),
-      })),
-    );
   }
 
   async function deleteLesson(lessonId: string) {
@@ -998,12 +986,23 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                   </label>
                                 </div>
 
-                                <CourseBlockEditor
-                                  lessonId={lesson.id}
-                                  blocks={lesson.blocks || []}
-                                  onChange={(blocks) => updateLessonBlocks(lesson.id, blocks)}
-                                  onError={setError}
-                                />
+                                <div className="rounded-2xl border border-[var(--stroke)] bg-white p-4">
+                                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Editor de contenido</p>
+                                  <p className="mt-1 text-xs text-[var(--ink-soft)]">Escribe como en Notion: títulos, listas, imágenes, vídeos y tablas en un solo editor.</p>
+                                  <div className="mt-4">
+                                    <CourseLessonEditor
+                                      value={(lessonDraft.contentJson as Record<string, unknown> | null) || null}
+                                      onChange={(next) =>
+                                        setLessonDrafts((prev) => ({
+                                          ...prev,
+                                          [lesson.id]: { ...lessonDraft, contentJson: next },
+                                        }))
+                                      }
+                                      resources={lesson.resources || []}
+                                      onUploadResource={(file, kind) => uploadResource(lesson.id, file, kind)}
+                                    />
+                                  </div>
+                                </div>
 
                                 <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
                                   <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Biblioteca S3 de la lección</p>

@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
-import type { FormEvent } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
-import { proHref } from '@/lib/pro';
+import { proHref, proPlan } from '@/lib/pro';
 import type { UserProfile } from '@/types';
 
 const primaryLinks = [
@@ -13,13 +12,12 @@ const primaryLinks = [
   { href: '/alerts', label: 'Alertas VPO' },
   { href: '/promotions', label: 'Promociones' },
   { href: '/cursos', label: 'Cursos' },
-  { href: '/news', label: 'Noticias' },
+  { href: '/services', label: 'Servicios' },
 ];
 
 export function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [globalQuery, setGlobalQuery] = useState('');
   const [me, setMe] = useState<UserProfile | null>(null);
   const router = useRouter();
   const pathname = usePathname();
@@ -60,13 +58,6 @@ export function TopNav() {
     const normalizedHref = href.split('?')[0].split('#')[0];
     if (href === '/') return pathname === '/';
     return pathname === normalizedHref || pathname.startsWith(`${normalizedHref}/`);
-  };
-
-  const submitGlobalSearch = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const query = globalQuery.trim();
-    router.push(query ? `/promotions?q=${encodeURIComponent(query)}` : '/promotions');
-    setMobileOpen(false);
   };
 
   const handleLogout = async () => {
@@ -136,17 +127,6 @@ export function TopNav() {
           })}
         </nav>
 
-        <form onSubmit={submitGlobalSearch} className="hidden min-w-0 max-w-[240px] flex-1 items-center lg:flex" role="search" aria-label="Buscador global">
-          <label className="sr-only" htmlFor="global-search">Buscar promociones, servicios o municipios</label>
-          <input
-            id="global-search"
-            value={globalQuery}
-            onChange={(event) => setGlobalQuery(event.target.value)}
-            placeholder="Buscar promociones..."
-            className="w-full rounded-full border border-[var(--stroke)] bg-white/86 px-4 py-2 text-sm text-[var(--ink)] shadow-sm outline-none transition focus:border-[var(--green-700)] focus:ring-2 focus:ring-[rgba(22,112,85,0.12)]"
-          />
-        </form>
-
         <nav className="hidden items-center gap-2 md:flex" aria-label="Acceso de usuario">
           {proIsExternal ? (
             <a
@@ -155,14 +135,14 @@ export function TopNav() {
               rel="noopener noreferrer"
               target="_blank"
             >
-              Radar VPO Pro
+              {proPlan.ctaLabel}
             </a>
           ) : (
             <Link
               href={proHref}
               className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-black text-white shadow-card transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
             >
-              Radar VPO Pro
+              {proPlan.ctaLabel}
             </Link>
           )}
           {me ? (
@@ -239,16 +219,25 @@ export function TopNav() {
         >
           <ul className="space-y-2">
             <li>
-              <form onSubmit={submitGlobalSearch} role="search" aria-label="Buscador global móvil">
-                <label className="sr-only" htmlFor="mobile-global-search">Buscar promociones, servicios o municipios</label>
-                <input
-                  id="mobile-global-search"
-                  value={globalQuery}
-                  onChange={(event) => setGlobalQuery(event.target.value)}
-                  placeholder="Buscar promociones, municipio..."
-                  className="w-full rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm font-semibold text-[var(--ink)] outline-none focus:ring-2 focus:ring-[var(--green-700)]"
-                />
-              </form>
+              {proIsExternal ? (
+                <a
+                  href={proHref}
+                  className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-black text-white"
+                  onClick={() => setMobileOpen(false)}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  {proPlan.ctaLabel}
+                </a>
+              ) : (
+                <Link
+                  href={proHref}
+                  className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-black text-white"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {proPlan.ctaLabel}
+                </Link>
+              )}
             </li>
             {primaryLinks.map((link) => (
               <li key={link.href}>
@@ -265,27 +254,6 @@ export function TopNav() {
                 </Link>
               </li>
             ))}
-            <li>
-              {proIsExternal ? (
-                <a
-                  href={proHref}
-                  className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-black text-white"
-                  onClick={() => setMobileOpen(false)}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  Radar VPO Pro
-                </a>
-              ) : (
-                <Link
-                  href={proHref}
-                  className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-black text-white"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Radar VPO Pro
-                </Link>
-              )}
-            </li>
             {me ? (
               <li>
                 <Link

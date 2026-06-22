@@ -1,40 +1,46 @@
 export const proPlan = {
-  name: 'Radar VPO Pro',
-  price: '9,99 €/mes',
-  priceAmount: 9.99,
+  name: 'VPO PRO',
+  brandName: 'Radar VPO',
+  price: 'Desde 7,99 €/mes',
+  priceAmount: 7.99,
   currency: 'EUR',
   stripeLink: process.env.NEXT_PUBLIC_STRIPE_PRO_LINK || '',
   fallbackHref: '/register?intent=pro',
-  courseLabel: 'Curso de iniciación a la vivienda pública',
-  smsLabel: 'Alertas SMS',
+  courseLabel: 'Curso de iniciación a la VPO',
+  smsLabel: 'Alertas prioritarias',
   emailLabel: 'Alertas por correo',
+  ctaLabel: 'Activar VPO PRO',
 };
 
 export const proHref = proPlan.stripeLink || proPlan.fallbackHref;
 
-export const freePlanFeatures = [
-  { label: 'Ver promociones publicadas', included: true },
-  { label: 'Guardar oportunidades y consultar el catálogo', included: true },
-  { label: 'Avisos básicos dentro de la web', included: true },
-  { label: 'Alertas SMS prioritarias', included: false },
-  { label: 'Alertas por correo de nuevas oportunidades', included: false },
-  { label: 'Curso de iniciación incluido', included: false },
+export const proIncludes = [
+  {
+    title: 'Alertas prioritarias',
+    description: 'SMS y correo cuando detectamos una oportunidad relevante.',
+    icon: '🔔',
+  },
+  {
+    title: 'Seguimiento de municipios',
+    description: 'Monitorizamos las zonas que te interesan para avisarte a tiempo.',
+    icon: '📍',
+  },
+  {
+    title: 'Curso de iniciación',
+    description: 'Aprende requisitos, documentación y errores frecuentes.',
+    icon: '📚',
+  },
+  {
+    title: 'Guía completa',
+    description: 'Todo el proceso explicado paso a paso, sin improvisar.',
+    icon: '🗺️',
+  },
 ];
 
-export const proPlanFeatures = [
-  { label: 'Ver promociones publicadas', included: true },
-  { label: 'Guardar oportunidades y consultar el catálogo', included: true },
-  { label: 'Avisos básicos dentro de la web', included: true },
-  { label: 'Alertas SMS prioritarias', included: true },
-  { label: 'Alertas por correo de nuevas oportunidades', included: true },
-  { label: 'Curso de iniciación incluido', included: true },
-];
-
-export const proBenefits = [
-  'Recibe avisos por SMS cuando detectemos oportunidades relevantes.',
-  'Recibe alertas por correo con contexto y siguiente paso recomendado.',
-  'Accede al curso de iniciación para entender requisitos, documentación y errores frecuentes.',
-  'Evita depender de revisar portales, boletines y webs municipales cada día.',
+export const proSolutionPoints = [
+  { title: 'Detecta avisos previos', description: 'Antes de que se publique la convocatoria.' },
+  { title: 'Monitoriza municipios', description: 'Sin revisar portales cada día.' },
+  { title: 'Avisa al abrir plazos', description: 'Para que actúes con margen.' },
 ];
 
 export const starterCourseKeywords = [

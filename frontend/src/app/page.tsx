@@ -1,197 +1,202 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { getDaysRemaining } from '@/lib/alert-countdown';
-import { proBenefits, proHref, proPlan, proPlanFeatures, freePlanFeatures } from '@/lib/pro';
-import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
-import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { proHref, proIncludes, proPlan, proSolutionPoints } from '@/lib/pro';
+import { ButtonLink, Eyebrow, SurfaceCard } from '@/components/design-system';
+import { StickyProCta } from '@/components/sticky-pro-cta';
 import { StructuredData } from '@/components/structured-data';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Radar VPO Pro: alertas SMS y curso de vivienda pública',
+  title: 'Recibe antes que nadie las promociones de vivienda protegida',
   description:
-    'Activa Radar VPO Pro por 9,99 €/mes y recibe alertas SMS y correo sobre vivienda protegida en Cataluña, con curso de iniciación incluido.',
+    'Radar VPO monitoriza promociones, adjudicaciones y próximas publicaciones en Cataluña. Activa VPO PRO y recibe alertas prioritarias.',
   path: '/',
-  keywords: ['Radar VPO Pro', 'alertas SMS vivienda protegida', 'alertas VPO Cataluña', 'curso vivienda pública'],
+  keywords: ['VPO PRO', 'alertas vivienda protegida', 'promociones VPO Cataluña'],
 });
 
 const faqs = [
   {
-    question: '¿Qué incluye Radar VPO Pro?',
-    answer:
-      'Incluye alertas por SMS, alertas por correo y acceso al curso de iniciación a la vivienda pública para entender requisitos, documentación y errores frecuentes.',
+    question: '¿Qué es Radar VPO?',
+    answer: 'Un radar que monitoriza vivienda protegida en Cataluña para avisarte antes de que cierren los plazos.',
   },
   {
-    question: '¿Radar VPO Pro garantiza conseguir una vivienda?',
-    answer:
-      'No. Radar VPO Pro te ayuda a detectar oportunidades y actuar con más margen, pero la solicitud y adjudicación dependen de los organismos oficiales.',
+    question: '¿Qué incluye VPO PRO?',
+    answer: 'Alertas prioritarias, seguimiento de municipios, curso de iniciación y guía completa del proceso.',
   },
   {
-    question: '¿Puedo usar Radar VPO gratis?',
-    answer:
-      'Sí. El plan gratis permite consultar promociones y avisos básicos. Pro está pensado para quien quiere avisos directos y formación incluida.',
+    question: '¿Garantiza conseguir vivienda?',
+    answer: 'No. Te ayuda a enterarte antes y actuar con más margen. La adjudicación depende de los organismos oficiales.',
   },
 ];
 
-const steps = [
-  ['Activa Pro', 'Usa el enlace de Stripe configurado o crea tu cuenta si todavía no estás registrado.'],
-  ['Configura tus datos', 'Mantén email y teléfono actualizados para recibir avisos por correo y SMS.'],
-  ['Aprende el proceso', `Empieza por el ${proPlan.courseLabel.toLowerCase()} incluido en Pro.`],
-  ['Actúa a tiempo', 'Cuando aparezca una oportunidad, recibes una alerta y un siguiente paso claro.'],
+const problemSteps = [
+  { label: 'Promoción publicada', state: 'done' },
+  { label: 'Plazo abierto', state: 'active' },
+  { label: 'Plazas agotadas', state: 'late' },
 ];
 
-function CompareCell({ included }: { included: boolean }) {
-  return (
-    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-black ${included ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-      {included ? 'Incluido' : 'No incluido'}
-    </span>
-  );
-}
+const testimonialsPlaceholder = [
+  { quote: 'Espacio reservado para testimonio de usuario Pro.', author: 'Próximamente' },
+  { quote: 'Espacio reservado para caso real de alerta a tiempo.', author: 'Próximamente' },
+  { quote: 'Espacio reservado para experiencia con el curso.', author: 'Próximamente' },
+];
 
 export default async function Home() {
-  const [alerts, courses, promotions] = await Promise.all([
-    api.getUpcomingAlerts().catch(() => []),
-    api.listCourses().catch(() => []),
-    api.getPromotions('?limit=6').catch(() => []),
-  ]);
-
-  const activeAlerts = alerts
-    .filter((promotion) => promotion.type === 'alert')
-    .map((promotion) => ({
-      promotion,
-      daysRemaining: getDaysRemaining(promotion.estimatedPublicationDate),
-    }))
-    .slice(0, 3);
-  const starterCourse = courses.find((course) => course.accessType === 'pro') || courses.find((course) => course.status === 'published');
-  const visiblePromotions = promotions.filter((promotion) => promotion.status !== 'archived').slice(0, 3);
+  const promotions = await api.getPromotions('?limit=4').catch(() => []);
+  const recentPromotions = promotions.filter((item) => item.status !== 'archived').slice(0, 4);
 
   return (
-    <main className="shell space-y-8 pb-16">
+    <main className="shell space-y-16 pb-28 md:pb-16">
       <StructuredData data={[organizationJsonLd(), websiteJsonLd(), faqJsonLd(faqs)]} />
-      <PageHero
-        eyebrow="Radar VPO Pro"
-        title="Alertas SMS y correo para no perder oportunidades de vivienda protegida"
-        description={`Por ${proPlan.price}, Radar VPO Pro vigila nuevas oportunidades, te avisa por SMS y correo, e incluye el curso de iniciación para saber qué hacer antes de que cierre el plazo.`}
-        tone="green"
-        actions={
-          <>
-            <ButtonLink href={proHref}>Activar Radar VPO Pro</ButtonLink>
-            <ButtonLink href="#comparativa" variant="secondary">Comparar Free vs Pro</ButtonLink>
-          </>
-        }
-      >
-        <SurfaceCard className="p-5">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Producto principal</p>
-          <p className="display-type mt-3 text-4xl font-black text-[var(--ink)]">{proPlan.price}</p>
-          <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
-            Incluye {proPlan.smsLabel.toLowerCase()}, {proPlan.emailLabel.toLowerCase()} y {proPlan.courseLabel.toLowerCase()}.
-          </p>
-          <div className="mt-5 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-eco)] p-4">
-            <p className="text-sm font-bold text-[var(--ink)]">El objetivo no es que entres cada día.</p>
-            <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">El objetivo es que Radar VPO te avise cuando haya algo que puede cambiar tu decisión.</p>
-          </div>
-        </SurfaceCard>
-      </PageHero>
+      <StickyProCta />
 
-      <section className="grid gap-4 md:grid-cols-4">
-        {steps.map(([title, copy], index) => (
-          <SurfaceCard key={title} className="p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Paso {index + 1}</p>
-            <h2 className="mt-3 text-xl font-black text-[var(--ink)]">{title}</h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{copy}</p>
-          </SurfaceCard>
-        ))}
+      {/* HERO */}
+      <section className="relative overflow-hidden rounded-[2rem] border border-[var(--stroke)] bg-white px-6 py-12 shadow-card md:px-10 md:py-16">
+        <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-[rgba(22,112,85,0.08)] blur-3xl" />
+        <div className="relative mx-auto max-w-3xl text-center">
+          <Eyebrow>VPO PRO</Eyebrow>
+          <h1 className="display-type mt-5 text-4xl font-black leading-[1.02] tracking-tight text-[var(--ink)] md:text-6xl">
+            Recibe antes que nadie las nuevas promociones de vivienda protegida en Cataluña
+          </h1>
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-7 text-[var(--ink-soft)] md:text-lg">
+            Radar VPO monitoriza promociones, adjudicaciones y próximas publicaciones para que no pierdas oportunidades.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
+            <ButtonLink href="/promotions" variant="secondary">Ver promociones</ButtonLink>
+          </div>
+          <p className="mt-5 text-sm font-bold text-[var(--green-700)]">{proPlan.price}</p>
+        </div>
       </section>
 
-      <section id="comparativa" className="space-y-4">
-        <SectionHeader
-          eyebrow="Free vs Pro"
-          title="Elige entre consultar cuando puedas o recibir avisos directos"
-          description="Free sirve para explorar. Pro está diseñado para usuarios que quieren enterarse antes y entender el proceso."
-          action={<ButtonLink href={proHref}>Activar Pro</ButtonLink>}
-        />
-        <SurfaceCard className="overflow-hidden p-0">
-          <div className="grid grid-cols-[1.2fr_0.8fr_0.8fr] border-b border-[var(--stroke)] bg-[var(--bg-app)] text-sm font-black text-[var(--ink)]">
-            <div className="p-4">Funcionalidad</div>
-            <div className="p-4 text-center">Free</div>
-            <div className="p-4 text-center">Pro</div>
-          </div>
-          {proPlanFeatures.map((feature, index) => (
-            <div key={feature.label} className="grid grid-cols-[1.2fr_0.8fr_0.8fr] border-b border-[var(--stroke)] last:border-b-0 text-sm">
-              <div className="p-4 font-semibold text-[var(--ink)]">{feature.label}</div>
-              <div className="p-4 text-center"><CompareCell included={freePlanFeatures[index]?.included || false} /></div>
-              <div className="p-4 text-center"><CompareCell included={feature.included} /></div>
+      {/* PROBLEMA */}
+      <section className="mx-auto max-w-4xl text-center">
+        <Eyebrow tone="ink">El problema</Eyebrow>
+        <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)] md:text-4xl">
+          La mayoría de personas llega tarde a las promociones
+        </h2>
+        <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+          {problemSteps.map((step, index) => (
+            <div key={step.label} className="flex items-center gap-3">
+              <div
+                className={`rounded-2xl border px-4 py-3 text-sm font-bold ${
+                  step.state === 'late'
+                    ? 'border-red-200 bg-red-50 text-red-700'
+                    : step.state === 'active'
+                      ? 'border-amber-200 bg-amber-50 text-amber-800'
+                      : 'border-[var(--stroke)] bg-[var(--bg-app)] text-[var(--ink-soft)]'
+                }`}
+              >
+                {step.label}
+              </div>
+              {index < problemSteps.length - 1 ? (
+                <span className="hidden text-[var(--ink-soft)] sm:inline" aria-hidden="true">→</span>
+              ) : null}
             </div>
           ))}
-        </SurfaceCard>
+        </div>
+        <p className="mt-5 text-sm text-[var(--ink-soft)]">Cuando lo descubres, el plazo ya está cerrado o las plazas agotadas.</p>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <SurfaceCard className="p-6">
-          <SectionHeader eyebrow="Qué incluye Pro" title="Alertas y formación en un solo plan" />
-          <div className="mt-4 space-y-3">
-            {proBenefits.map((benefit) => (
-              <div key={benefit} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm font-semibold leading-6 text-[var(--ink)]">
-                {benefit}
-              </div>
+      {/* SOLUCIÓN */}
+      <section className="space-y-6">
+        <div className="text-center">
+          <Eyebrow>La solución</Eyebrow>
+          <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)]">Radar VPO trabaja por ti</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {proSolutionPoints.map((point) => (
+            <SurfaceCard key={point.title} className="p-6 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-eco)] text-xl">✓</div>
+              <h3 className="mt-4 text-lg font-black text-[var(--ink)]">{point.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{point.description}</p>
+            </SurfaceCard>
+          ))}
+        </div>
+      </section>
+
+      {/* QUÉ INCLUYE VPO PRO */}
+      <section className="space-y-6">
+        <div className="text-center">
+          <Eyebrow tone="gold">VPO PRO</Eyebrow>
+          <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)]">Qué incluye VPO PRO</h2>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {proIncludes.map((item) => (
+            <SurfaceCard key={item.title} className="p-5">
+              <span className="text-2xl" aria-hidden="true">{item.icon}</span>
+              <h3 className="mt-3 text-base font-black text-[var(--ink)]">{item.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{item.description}</p>
+            </SurfaceCard>
+          ))}
+        </div>
+        <div className="text-center">
+          <ButtonLink href={proHref}>{proPlan.ctaLabel} · {proPlan.price}</ButtonLink>
+        </div>
+      </section>
+
+      {/* TESTIMONIOS */}
+      <section className="space-y-6">
+        <div className="text-center">
+          <Eyebrow tone="cyan">Testimonios</Eyebrow>
+          <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)]">Lo que dicen nuestros usuarios</h2>
+        </div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {testimonialsPlaceholder.map((item) => (
+            <SurfaceCard key={item.author} className="p-5">
+              <p className="text-sm italic leading-6 text-[var(--ink-soft)]">&ldquo;{item.quote}&rdquo;</p>
+              <p className="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">{item.author}</p>
+            </SurfaceCard>
+          ))}
+        </div>
+      </section>
+
+      {/* PROMOCIONES RECIENTES */}
+      <section className="space-y-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <Eyebrow>Radar activo</Eyebrow>
+            <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)]">Promociones recientes</h2>
+          </div>
+          <ButtonLink href="/promotions" variant="secondary">Ver todas</ButtonLink>
+        </div>
+        {recentPromotions.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {recentPromotions.map((promotion) => (
+              <Link
+                key={promotion.id}
+                href={`/promotions/${promotion.id}`}
+                className="group rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card transition hover:-translate-y-1"
+              >
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
+                  {promotion.municipality || 'Cataluña'}
+                </p>
+                <h3 className="mt-3 line-clamp-2 text-base font-black text-[var(--ink)] group-hover:text-[var(--green-700)]">
+                  {promotion.title}
+                </h3>
+              </Link>
             ))}
           </div>
-        </SurfaceCard>
-        <SurfaceCard className="p-6">
-          <SectionHeader eyebrow="Curso incluido" title={starterCourse?.title || proPlan.courseLabel} />
-          <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
-            Pro incluye un punto de partida para entender requisitos, documentación, plazos y errores habituales antes de presentarte a una convocatoria.
-          </p>
-          <div className="mt-5 flex flex-wrap gap-3">
-            <ButtonLink href={starterCourse ? `/cursos/${starterCourse.slug}` : '/cursos'}>Ver curso incluido</ButtonLink>
-            <ButtonLink href={proHref} variant="secondary">Activar Pro</ButtonLink>
-          </div>
-        </SurfaceCard>
+        ) : (
+          <SurfaceCard className="p-8 text-center text-sm text-[var(--ink-soft)]">
+            No hay promociones publicadas ahora mismo. Activa VPO PRO para recibir la próxima.
+          </SurfaceCard>
+        )}
       </section>
 
-      <section className="space-y-4">
-        <SectionHeader
-          eyebrow="Radar activo"
-          title="Oportunidades que demuestran por qué conviene tener alertas"
-          description="Las promociones y avisos públicos son la prueba del valor; Pro evita depender de revisarlos manualmente."
-        />
-        <div className="grid gap-4 lg:grid-cols-3">
-          {activeAlerts.map(({ promotion, daysRemaining }) => (
-            <SurfaceCard key={promotion.id} className="p-5">
-              <AlertCountdownBadge daysRemaining={daysRemaining} />
-              <h3 className="mt-4 text-lg font-black text-[var(--ink)]">{promotion.title}</h3>
-              <p className="mt-2 text-sm text-[var(--ink-soft)]">{promotion.municipality || 'Cataluña'}</p>
-              <div className="mt-4">
-                <ButtonLink href={proHref}>Recibir avisos Pro</ButtonLink>
-              </div>
-            </SurfaceCard>
-          ))}
-          {activeAlerts.length === 0
-            ? visiblePromotions.map((promotion) => (
-                <SurfaceCard key={promotion.id} className="p-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Promoción publicada</p>
-                  <h3 className="mt-3 text-lg font-black text-[var(--ink)]">{promotion.title}</h3>
-                  <p className="mt-2 text-sm text-[var(--ink-soft)]">{promotion.municipality || promotion.location || 'Cataluña'}</p>
-                  <Link href={`/promotions/${promotion.id}`} className="mt-4 inline-flex rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-xs font-bold text-[var(--ink)]">
-                    Ver ficha
-                  </Link>
-                </SurfaceCard>
-              ))
-            : null}
+      {/* CTA FINAL */}
+      <section className="rounded-[2rem] bg-[var(--ink)] px-6 py-12 text-center text-white md:px-10 md:py-16">
+        <h2 className="display-type text-3xl font-black md:text-5xl">Empieza hoy</h2>
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-white/75 md:text-base">
+          Deja de depender de revisar portales. Recibe alertas y aprende el proceso con VPO PRO.
+        </p>
+        <div className="mt-8">
+          <ButtonLink href={proHref} variant="dark" className="!bg-white !text-[var(--ink)] hover:!bg-[var(--bg-eco)]">
+            {proPlan.ctaLabel}
+          </ButtonLink>
         </div>
-      </section>
-
-      <section className="space-y-3">
-        <SectionHeader eyebrow="FAQ" title="Preguntas frecuentes sobre Radar VPO Pro" />
-        <div className="grid gap-3 md:grid-cols-3">
-          {faqs.map((item) => (
-            <SurfaceCard key={item.question} className="p-5">
-              <h2 className="text-base font-black text-[var(--ink)]">{item.question}</h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{item.answer}</p>
-            </SurfaceCard>
-          ))}
-        </div>
+        <p className="mt-4 text-sm font-semibold text-white/60">{proPlan.price}</p>
       </section>
     </main>
   );

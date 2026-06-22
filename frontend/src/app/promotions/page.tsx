@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
+import { proHref, proPlan } from '@/lib/pro';
 import { InlineAdCard } from '@/components/ads';
 import { PromotionCard } from '@/components/promotion-card';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
@@ -40,16 +41,25 @@ export default async function PromotionsPage({
         ])}
       />
       <PageHero
-        eyebrow="Oportunidades recientes"
-        title="Las 10 oportunidades de vivienda pública más recientes"
-        description="Consulta las promociones y avisos de vivienda más recientes, revisa su estado y entra rápido en la ficha oficial. Sin filtros aplicados mostramos automáticamente las últimas 10."
+        eyebrow="Promociones"
+        title="Oportunidades de vivienda protegida en Cataluña"
+        description="Consulta las promociones más recientes. Con VPO PRO recibes alertas cuando aparece una nueva oportunidad como estas."
         actions={
           <>
-            <ButtonLink href="/alerts">Ver avisos</ButtonLink>
-            <ButtonLink href="/services" variant="secondary">Explorar servicios</ButtonLink>
+            <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
+            <ButtonLink href="/alerts" variant="secondary">Ver avisos</ButtonLink>
           </>
         }
       />
+
+      <SurfaceCard className="flex flex-col gap-4 bg-[var(--bg-eco)] p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">{proPlan.name}</p>
+          <p className="mt-1 text-sm font-semibold text-[var(--ink)]">¿No quieres revisar esta página cada día?</p>
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">Recibe alertas prioritarias cuando detectemos promociones relevantes. {proPlan.price}</p>
+        </div>
+        <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
+      </SurfaceCard>
 
       <SurfaceCard className="p-4">
         <form className="grid gap-3 md:grid-cols-[1fr_auto]" action="/promotions" method="get" aria-label="Buscar promociones">
@@ -83,8 +93,8 @@ export default async function PromotionsPage({
             Puedes consultar avisos próximos o contratar seguimiento para que te avisemos cuando aparezcan nuevas oportunidades.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <ButtonLink href="/alerts">Consultar avisos</ButtonLink>
-            <ButtonLink href="/services" variant="secondary">Explorar servicios</ButtonLink>
+            <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
+            <ButtonLink href="/alerts" variant="secondary">Ver avisos</ButtonLink>
           </div>
         </SurfaceCard>
       ) : (

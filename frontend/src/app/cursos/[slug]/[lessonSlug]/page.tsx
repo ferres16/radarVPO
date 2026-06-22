@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import type { JSX as ReactJSX, ReactNode } from 'react';
 import { useParams } from 'next/navigation';
 import { CourseBlockRenderer } from '@/components/course-block-renderer';
+import { CourseTipTapRenderer } from '@/components/course-tiptap-renderer';
 import { api } from '@/lib/api';
+import { proHref, proPlan } from '@/lib/pro';
 import type { Course, CourseLesson, CourseModule } from '@/types';
 
 type LessonPayload = {
@@ -13,185 +14,6 @@ type LessonPayload = {
   lesson: CourseLesson;
   access: { canAccess: boolean; reason: string };
 };
-
-type RichNode = {
-  type?: string;
-  text?: string;
-  attrs?: Record<string, unknown>;
-  marks?: Array<Record<string, unknown>>;
-  content?: RichNode[];
-};
-
-function renderNodes(nodes?: RichNode[]) {
-  if (!nodes || nodes.length === 0) return null;
-
-  return nodes.map((node, index) => {
-    const key = `${node.type || 'node'}-${index}`;
-    const content = renderNodes(node.content || []);
-    const inline = renderInline(node.content || []);
-
-    if (node.type === 'paragraph') {
-      return <p key={key} className="text-sm leading-7 text-[var(--ink-soft)]">{inline}</p>;
-    }
-
-    if (node.type === 'heading') {
-      const level = Math.min(Math.max(Number(node.attrs?.level || 2), 2), 4);
-      const Tag = `h${level}` as keyof ReactJSX.IntrinsicElements;
-      return (
-        <Tag key={key} className="mt-6 text-xl font-bold text-[var(--ink)]">
-          {inline}
-        </Tag>
-      );
-    }
-
-    if (node.type === 'bullet_list' || node.type === 'bulletList') {
-      return (
-        <ul key={key} className="list-disc space-y-2 pl-5 text-sm text-[var(--ink-soft)]">
-          {content}
-        </ul>
-      );
-    }
-
-    if (node.type === 'ordered_list' || node.type === 'orderedList') {
-      return (
-        <ol key={key} className="list-decimal space-y-2 pl-5 text-sm text-[var(--ink-soft)]">
-          {content}
-        </ol>
-      );
-    }
-
-    if (node.type === 'list_item' || node.type === 'listItem') {
-      return <li key={key}>{content}</li>;
-    }
-
-    if (node.type === 'blockquote' || node.type === 'callout') {
-      return (
-        <blockquote key={key} className="rounded-2xl border border-[rgba(59,130,246,0.3)] bg-[rgba(59,130,246,0.08)] p-4 text-sm text-[var(--ink)]">
-          {content}
-        </blockquote>
-      );
-    }
-
-    if (node.type === 'image') {
-      const src = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
-      const alt = typeof node.attrs?.alt === 'string' ? node.attrs.alt : '';
-      if (!src) return null;
-      return (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img key={key} src={src} alt={alt} className="my-5 w-full rounded-3xl border border-[var(--stroke)] object-cover shadow-card" />
-      );
-    }
-
-    if (node.type === 'youtube') {
-      const src = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
-      if (!src) return null;
-      return (
-        <iframe
-          key={key}
-          src={src}
-          title="Video de la lección"
-          className="my-5 aspect-video w-full rounded-3xl border border-[var(--stroke)] shadow-card"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-        />
-      );
-    }
-
-    if (node.type === 'horizontalRule') {
-      return <hr key={key} className="my-6 border-[var(--stroke)]" />;
-    }
-
-    if (node.type === 'table') {
-      return (
-        <div key={key} className="my-5 overflow-x-auto rounded-2xl border border-[var(--stroke)] bg-white">
-          <table className="w-full min-w-[520px] text-sm">{content}</table>
-        </div>
-      );
-    }
-
-    if (node.type === 'tableRow') {
-      return <tr key={key} className="border-b border-[var(--stroke)] last:border-b-0">{content}</tr>;
-    }
-
-    if (node.type === 'tableHeader') {
-      return <th key={key} className="bg-[var(--bg-app)] px-3 py-2 text-left font-bold text-[var(--ink)]">{content}</th>;
-    }
-
-    if (node.type === 'tableCell') {
-      return <td key={key} className="px-3 py-2 text-[var(--ink-soft)]">{content}</td>;
-    }
-
-    if (node.type === 'taskList') {
-      return (
-        <ul key={key} className="space-y-2">
-          {content}
-        </ul>
-      );
-    }
-
-    if (node.type === 'taskItem') {
-      const checked = Boolean(node.attrs?.checked);
-      return (
-        <li key={key} className="flex items-center gap-2 text-sm text-[var(--ink-soft)]">
-          <span className={`h-4 w-4 rounded border ${checked ? 'bg-emerald-500 border-emerald-500' : 'border-[var(--stroke)]'}`} />
-          <span>{content}</span>
-        </li>
-      );
-    }
-
-    return <div key={key}>{content}</div>;
-  });
-}
-
-function renderInline(nodes?: RichNode[]) {
-  if (!nodes || nodes.length === 0) return null;
-
-  return nodes.map((node, index) => {
-    if (node.type === 'text') {
-      return applyMarks(node.text ?? '', node.marks ?? [], index);
-    }
-    if (node.type === 'hard_break' || node.type === 'hardBreak') {
-      return <br key={`br-${index}`} />;
-    }
-    return <span key={`inline-${index}`}>{renderNodes([node])}</span>;
-  });
-}
-
-function applyMarks(text: string, marks: Array<Record<string, unknown>>, index: number) {
-  if (!marks || marks.length === 0) {
-    return <span key={`text-${index}`}>{text}</span>;
-  }
-
-  return marks.reduce<ReactNode>((acc, mark, markIndex) => {
-    if (mark.type === 'bold') {
-      return <strong key={`${mark.type}-${index}-${markIndex}`}>{acc}</strong>;
-    }
-    if (mark.type === 'italic') {
-      return <em key={`${mark.type}-${index}-${markIndex}`}>{acc}</em>;
-    }
-    if (mark.type === 'strike') {
-      return <s key={`${mark.type}-${index}-${markIndex}`}>{acc}</s>;
-    }
-    if (mark.type === 'link') {
-      const attrs = mark.attrs && typeof mark.attrs === 'object'
-        ? (mark.attrs as { href?: unknown })
-        : {};
-      const href = typeof attrs.href === 'string' ? attrs.href : '#';
-      return (
-        <a
-          key={`${mark.type}-${index}-${markIndex}`}
-          href={href}
-          className="text-[var(--green-700)] underline"
-          rel="noopener noreferrer"
-          target={href.startsWith('http') ? '_blank' : undefined}
-        >
-          {acc}
-        </a>
-      );
-    }
-    return acc;
-  }, <span key={`text-${index}`}>{text}</span>);
-}
 
 export default function LessonPage() {
   const params = useParams<{ slug?: string; lessonSlug?: string }>();
@@ -314,9 +136,9 @@ export default function LessonPage() {
             </div>
             {locked ? (
               <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
-                Esta leccion esta bloqueada. Necesitas acceso activo para continuar.
-                <Link href="/services" className="ml-2 font-semibold underline">
-                  Ver planes
+                Esta lección está incluida en {proPlan.name}. Actívalo para continuar.
+                <Link href={proHref} className="ml-2 font-semibold underline">
+                  {proPlan.ctaLabel}
                 </Link>
               </div>
             ) : null}
@@ -329,19 +151,19 @@ export default function LessonPage() {
                 Esta leccion existe, pero el contenido solo se entrega cuando el acceso del usuario esta activo en la base de datos.
               </p>
               <Link
-                href={`/cursos/${payload.course.slug}`}
-                className="mt-4 inline-flex rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white"
+                href={proHref}
+                className="mt-4 inline-flex rounded-full bg-[var(--green-700)] px-5 py-2 text-sm font-semibold text-white"
               >
-                Ver opciones de acceso
+                {proPlan.ctaLabel}
               </Link>
             </article>
           ) : (
-            <article className="mt-6">
+            <article className="mx-auto mt-8 max-w-3xl">
               <div className="prose max-w-none">
-                {lesson?.blocks?.length ? (
+                {lesson?.contentJson ? (
+                  <CourseTipTapRenderer content={lesson.contentJson} />
+                ) : lesson?.blocks?.length ? (
                   <CourseBlockRenderer blocks={lesson.blocks} />
-                ) : lesson?.contentJson ? (
-                  renderNodes((lesson.contentJson as { content?: RichNode[] }).content)
                 ) : (
                   <p className="text-sm text-[var(--ink-soft)]">Contenido pendiente.</p>
                 )}
