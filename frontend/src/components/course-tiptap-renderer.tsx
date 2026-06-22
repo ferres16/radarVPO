@@ -1,12 +1,22 @@
 import type { JSX as ReactJSX, ReactNode } from 'react';
 
+type RichMark = {
+  type?: string;
+  attrs?: Record<string, unknown>;
+};
+
 type RichNode = {
   type?: string;
   text?: string;
   attrs?: Record<string, unknown>;
-  marks?: Array<Record<string, unknown>>;
+  marks?: RichMark[];
   content?: RichNode[];
 };
+
+function getMarkHref(attrs?: Record<string, unknown>) {
+  const href = attrs?.href;
+  return typeof href === 'string' ? href : null;
+}
 
 function renderInline(nodes?: RichNode[]): ReactNode {
   if (!nodes?.length) return null;
@@ -18,12 +28,15 @@ function renderInline(nodes?: RichNode[]): ReactNode {
         if (mark.type === 'bold') text = <strong key={`${key}-b`}>{text}</strong>;
         if (mark.type === 'italic') text = <em key={`${key}-i`}>{text}</em>;
         if (mark.type === 'highlight') text = <mark key={`${key}-h`} className="rounded bg-amber-100 px-1">{text}</mark>;
-        if (mark.type === 'link' && typeof mark.attrs?.href === 'string') {
-          text = (
-            <a key={`${key}-l`} href={mark.attrs.href} className="font-semibold text-[var(--green-700)] underline" target="_blank" rel="noopener noreferrer">
-              {text}
-            </a>
-          );
+        if (mark.type === 'link') {
+          const href = getMarkHref(mark.attrs);
+          if (href) {
+            text = (
+              <a key={`${key}-l`} href={href} className="font-semibold text-[var(--green-700)] underline" target="_blank" rel="noopener noreferrer">
+                {text}
+              </a>
+            );
+          }
         }
         if (mark.type === 'code') text = <code key={`${key}-c`} className="rounded bg-[var(--bg-app)] px-1.5 py-0.5 text-[0.9em]">{text}</code>;
       }
