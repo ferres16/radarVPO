@@ -19,5 +19,9 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "overrides": {
+    "@tiptap/core": "3.27.1",
+    "@tiptap/pm": "3.27.1"
+  }
 }

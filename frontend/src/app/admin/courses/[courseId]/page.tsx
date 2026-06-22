@@ -343,7 +343,16 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
       setModules((prev) =>
         prev.map((module) => ({
           ...module,
-          lessons: (module.lessons || []).map((item) => (item.id === lessonId ? updated : item)),
+          lessons: (module.lessons || []).map((item) =>
+            item.id === lessonId
+              ? {
+                  ...item,
+                  ...updated,
+                  resources: item.resources,
+                  blocks: item.blocks,
+                }
+              : item,
+          ),
         })),
       );
     } catch (err) {
@@ -991,6 +1000,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                                   <p className="mt-1 text-xs text-[var(--ink-soft)]">Escribe como en Notion: títulos, listas, imágenes, vídeos y tablas en un solo editor.</p>
                                   <div className="mt-4">
                                     <CourseLessonEditor
+                                      key={lesson.id}
                                       value={(lessonDraft.contentJson as Record<string, unknown> | null) || null}
                                       onChange={(next) =>
                                         setLessonDrafts((prev) => ({

@@ -863,7 +863,7 @@ export class BackofficeService {
       maxSizeBytes: Number(process.env.COURSE_ASSET_MAX_SIZE_BYTES || 50 * 1024 * 1024),
     });
 
-    return this.prisma.courseResource.create({
+    const created = await this.prisma.courseResource.create({
       data: {
         courseId: lesson.courseId,
         moduleId: lesson.moduleId,
@@ -876,6 +876,21 @@ export class BackofficeService {
         publicUrl: asset.url || '',
       },
     });
+
+    if (created.fileAssetId) {
+      try {
+        const access = await this.fileStorage.getAccessibleUrl(
+          created.fileAssetId,
+          true,
+          { preferSigned: true },
+        );
+        return { ...created, publicUrl: access.url || created.publicUrl };
+      } catch {
+        return created;
+      }
+    }
+
+    return created;
   }
 
   async uploadCourseBlockAsset(
