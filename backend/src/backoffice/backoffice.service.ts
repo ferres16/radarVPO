@@ -384,8 +384,30 @@ export class BackofficeService {
   }
 
   async deleteService(serviceId: string) {
+    const service = await this.prisma.service.findUnique({
+      where: { id: serviceId },
+    });
+
+    if (!service) {
+      throw new NotFoundException('Service not found');
+    }
+
+    const activeAccess = await this.prisma.userServiceAccess.count({
+      where: { serviceId, isActive: true },
+    });
+
+    if (activeAccess > 0) {
+      const archived = await this.prisma.service.update({
+        where: { id: serviceId },
+        data: { status: ServiceStatus.archived },
+      });
+      return { deleted: false, softDeleted: true, service: archived };
+    }
+
+    await this.fileStorage.deleteAssetsForEntity('service', serviceId);
+    await this.prisma.userServiceAccess.deleteMany({ where: { serviceId } });
     await this.prisma.service.delete({ where: { id: serviceId } });
-    return { deleted: true };
+    return { deleted: true, softDeleted: false };
   }
 
   async listAccessUsers(query: BackofficeListDto) {

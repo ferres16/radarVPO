@@ -56,47 +56,48 @@ export default async function Home() {
     .map((item) => ({ item, daysRemaining: getDaysRemaining(item.estimatedPublicationDate) }));
 
   return (
-    <main className="shell space-y-14 pb-28 md:space-y-20 md:pb-16">
+    <main className="shell space-y-8 pb-20 md:space-y-14 md:pb-16">
       <StructuredData data={[organizationJsonLd(), websiteJsonLd(), faqJsonLd(faqs)]} />
       <StickyProCta />
 
       {/* HERO */}
-      <section className="section-band mesh-bg relative overflow-hidden px-6 py-10 md:px-10 md:py-14">
+      <section className="section-band mesh-bg relative overflow-hidden px-4 py-6 sm:px-6 md:px-10 md:py-14">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[rgba(54,189,248,0.12)] blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-20 h-64 w-64 rounded-full bg-[rgba(22,112,85,0.14)] blur-3xl" />
-        <div className="relative grid items-center gap-10 lg:grid-cols-[1.05fr_0.95fr]">
-          <div>
+        <div className="relative grid items-center gap-5 md:gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="order-2 lg:order-1">
             <Eyebrow tone="cyan">Monitorización inteligente</Eyebrow>
-            <h1 className="display-type mt-5 text-4xl font-black leading-[1.02] tracking-tight text-[var(--ink)] md:text-5xl lg:text-6xl">
-              Detecta oportunidades de vivienda protegida antes que los demás
+            <h1 className="display-type mt-3 text-3xl font-black leading-[1.05] tracking-tight text-[var(--ink)] sm:text-4xl md:mt-5 md:text-5xl lg:text-6xl">
+              Detecta oportunidades de VPO antes que los demás
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-7 text-[var(--ink-soft)] md:text-lg">
-              Radar VPO rastrea próximos lanzamientos y promociones publicadas en Cataluña para que no llegues tarde al plazo.
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--ink-soft)] md:mt-5 md:text-lg md:leading-7">
+              <span className="md:hidden">Radar VPO monitoriza lanzamientos y promociones en Cataluña.</span>
+              <span className="hidden md:inline">Radar VPO rastrea próximos lanzamientos y promociones publicadas en Cataluña para que no llegues tarde al plazo.</span>
             </p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-5 flex flex-wrap gap-2.5 md:mt-8 md:gap-3">
               <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
-              <ButtonLink href="/alerts" variant="secondary">Ver próximos lanzamientos</ButtonLink>
+              <ButtonLink href="/alerts" variant="secondary">Ver lanzamientos</ButtonLink>
             </div>
-            <p className="mt-5 text-sm font-bold text-[var(--green-700)]">{proPlan.price}</p>
+            <p className="mt-3 text-xs font-bold text-[var(--green-700)] md:mt-5 md:text-sm">{proPlan.price}</p>
           </div>
-          <div className="relative">
+          <div className="relative order-1 max-w-[11rem] justify-self-center sm:max-w-[13rem] lg:order-2 lg:max-w-none lg:justify-self-auto">
             <RadarVisual className="mx-auto lg:ml-auto" />
-            <div className="absolute -bottom-4 left-1/2 w-[88%] -translate-x-1/2 rounded-2xl border border-[var(--stroke)] bg-white/90 p-4 shadow-card backdrop-blur-md lg:left-auto lg:translate-x-0 lg:translate-y-0 lg:bottom-6 lg:-left-8 lg:w-56">
+            <div className="absolute -bottom-3 left-1/2 hidden w-[88%] -translate-x-1/2 rounded-2xl border border-[var(--stroke)] bg-white/90 p-3 shadow-card backdrop-blur-md sm:block lg:left-auto lg:bottom-6 lg:-left-8 lg:w-56 lg:translate-x-0 lg:p-4">
               <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--cyan-700)]">Radar activo</p>
-              <p className="mt-1 text-sm font-black text-[var(--ink)]">Señales detectadas en tiempo real</p>
+              <p className="mt-1 text-sm font-black text-[var(--ink)]">Señales en tiempo real</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-4 sm:grid-cols-3">
+      <section className="grid gap-3 sm:grid-cols-3 sm:gap-4">
         <MetricCard label="Próximos lanzamientos" value={upcomingCount} detail="Señales monitorizadas antes de la publicación oficial" />
         <MetricCard label="Promociones publicadas" value={publishedCount} detail="Oportunidades abiertas con plazos y requisitos" />
         <MetricCard label="Radar activo" value="24/7" detail="Monitorización continua en Cataluña" />
       </section>
 
       {/* PRÓXIMOS LANZAMIENTOS */}
-      <section className="space-y-6">
+      <section className="space-y-4 md:space-y-6">
         <SectionHeader
           eyebrow="Anticipación"
           title={copy.upcomingLaunches}
@@ -160,7 +161,7 @@ export default async function Home() {
       <ProComparison />
 
       {/* CÓMO FUNCIONA */}
-      <section className="space-y-6">
+      <section className="space-y-4 md:space-y-6">
         <div className="text-center">
           <Eyebrow>{copy.howItWorks}</Eyebrow>
           <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)] md:text-4xl">
@@ -204,7 +205,7 @@ export default async function Home() {
       </SectionBand>
 
       {/* SOLUCIÓN */}
-      <section className="space-y-6">
+      <section className="space-y-4 md:space-y-6">
         <div className="text-center">
           <Eyebrow>La solución</Eyebrow>
           <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)]">Radar VPO trabaja por ti</h2>

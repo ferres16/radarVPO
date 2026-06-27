@@ -1,14 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { MotionCard, Stagger, StaggerItem } from '@/components/motion-primitives';
 import { api } from '@/lib/api';
 import type { BackofficeOverview, PromotionDetail } from '@/types';
 
-const statuses = ['pending_review', 'published_unreviewed', 'published_reviewed'] as const;
+const statuses = ['pending_review', 'published_unreviewed', 'published_reviewed', 'archived'] as const;
 const statusLabels: Record<PromotionDetail['status'], string> = {
   pending_review: 'Aviso pendiente',
   published_unreviewed: 'Publicada sin revisar',
@@ -22,7 +22,8 @@ function promotionTimestamp(promotion: PromotionDetail) {
 
 export default function AdminPromotionsPage() {
   const [promotions, setPromotions] = useState<PromotionDetail[]>([]);
-  const [query, setQuery] = useState('');
+  const [queryInput, setQueryInput] = useState('');
+  const [appliedQuery, setAppliedQuery] = useState('');
   const [status, setStatus] = useState('');
   const [overview, setOverview] = useState<BackofficeOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -30,26 +31,25 @@ export default function AdminPromotionsPage() {
   const [newPromotionTitle, setNewPromotionTitle] = useState('');
   const [creating, setCreating] = useState(false);
 
-  async function loadPromotions(shouldApply = () => true) {
-      try {
-        const [rows, overviewData] = await Promise.all([
-          api.getBackofficePromotions(status || undefined, query || undefined, 100),
-          api.getBackofficeOverview().catch(() => null),
-        ]);
-        if (!shouldApply()) return;
-        setPromotions(
-          rows
-            .sort((a, b) => promotionTimestamp(b) - promotionTimestamp(a))
-            .slice(0, 50),
-        );
-        setOverview(overviewData);
-      } catch (err) {
-        if (!shouldApply()) return;
-        setError(err instanceof Error ? err.message : 'No se pudieron cargar promociones');
-      } finally {
-        if (shouldApply()) setLoading(false);
-      }
-  }
+  const loadPromotions = useCallback(async (shouldApply: () => boolean = () => true) => {
+    try {
+      const [rows, overviewData] = await Promise.all([
+        api.getBackofficePromotions(status || undefined, appliedQuery || undefined, 500),
+        api.getBackofficeOverview().catch(() => null),
+      ]);
+      if (!shouldApply()) return;
+      setPromotions(rows.sort((a, b) => promotionTimestamp(b) - promotionTimestamp(a)));
+      setOverview(overviewData);
+      setError('');
+    } catch (err) {
+      if (!shouldApply()) return;
+      const message = err instanceof Error ? err.message : 'No se pudieron cargar promociones';
+      console.error('[admin/promotions] load failed:', message);
+      setError(message);
+    } finally {
+      if (shouldApply()) setLoading(false);
+    }
+  }, [appliedQuery, status]);
 
   useEffect(() => {
     let active = true;
@@ -59,7 +59,7 @@ export default function AdminPromotionsPage() {
     return () => {
       active = false;
     };
-  }, [status, query]);
+  }, [loadPromotions]);
 
   async function createPromotion() {
     if (!newPromotionTitle.trim()) {
@@ -74,7 +74,7 @@ export default function AdminPromotionsPage() {
         status: 'published_unreviewed',
       });
       setNewPromotionTitle('');
-      setPromotions((prev) => [created, ...prev].slice(0, 10));
+      setPromotions((prev) => [created, ...prev]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la promoción');
     } finally {
@@ -94,13 +94,12 @@ export default function AdminPromotionsPage() {
     }
   }
 
-  const filtered = useMemo(() => {
-    return promotions;
-  }, [promotions]);
+  const filtered = useMemo(() => promotions, [promotions]);
   const statusCounts = {
     pending_review: overview?.pendingReview ?? promotions.filter((promotion) => promotion.status === 'pending_review').length,
     published_unreviewed: overview?.publishedUnreviewed ?? promotions.filter((promotion) => promotion.status === 'published_unreviewed').length,
     published_reviewed: overview?.publishedReviewed ?? promotions.filter((promotion) => promotion.status === 'published_reviewed').length,
+    archived: promotions.filter((promotion) => promotion.status === 'archived').length,
   };
 
   return (
@@ -111,7 +110,7 @@ export default function AdminPromotionsPage() {
           <PageHero
             eyebrow="CMS de promociones"
             title="Promociones para gestionar"
-            description="Por defecto aparecen las promociones más recientes de cualquier estado. Usa el filtro si quieres ver solo una bandeja concreta."
+            description="Listado completo de promociones en cualquier estado. Usa el filtro para acotar por bandeja."
             actions={
               <>
                 <ButtonLink href="/admin/promotions/history" variant="secondary">Ver histórico</ButtonLink>
@@ -120,7 +119,7 @@ export default function AdminPromotionsPage() {
             }
           />
 
-          <section className="grid gap-3 md:grid-cols-3">
+          <section className="grid gap-3 md:grid-cols-4">
             {statuses.map((item) => (
               <SurfaceCard key={item} className="p-4">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">{statusLabels[item]}</p>
@@ -137,20 +136,32 @@ export default function AdminPromotionsPage() {
               title="Promociones"
               description="Base preparada para editor visual, multimedia, historial y programación de publicación."
             />
-            <div className="mt-4 grid gap-3 md:grid-cols-[1fr_260px]">
+            <form
+              className="mt-4 grid gap-3 md:grid-cols-[1fr_260px_auto]"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setAppliedQuery(queryInput.trim());
+              }}
+            >
               <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                value={queryInput}
+                onChange={(event) => setQueryInput(event.target.value)}
                 placeholder="Buscar por título, municipio, promotor o texto"
                 className="ds-control"
               />
               <select value={status} onChange={(event) => setStatus(event.target.value)} className="ds-control">
-                <option value="">Todas recientes</option>
+                <option value="">Todos los estados</option>
                 {statuses.map((item) => (
                   <option key={item} value={item}>{statusLabels[item]}</option>
                 ))}
               </select>
-            </div>
+              <button
+                type="submit"
+                className="rounded-2xl border border-[var(--stroke)] bg-white px-5 py-3 text-sm font-bold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
+              >
+                Buscar
+              </button>
+            </form>
             <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
               <input
                 value={newPromotionTitle}
@@ -172,7 +183,7 @@ export default function AdminPromotionsPage() {
           {error ? <SurfaceCard className="border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{error}</SurfaceCard> : null}
           {loading ? <SurfaceCard className="p-5 text-sm text-[var(--ink-soft)]">Cargando promociones...</SurfaceCard> : null}
 
-          {!loading && filtered.length === 0 ? (
+          {!loading && !error && filtered.length === 0 ? (
             <SurfaceCard className="p-6 text-center">
               <h2 className="display-type text-2xl font-black text-[var(--ink)]">No hay promociones con estos criterios</h2>
               <p className="mt-2 text-sm text-[var(--ink-soft)]">Prueba a limpiar la búsqueda o revisa el histórico.</p>

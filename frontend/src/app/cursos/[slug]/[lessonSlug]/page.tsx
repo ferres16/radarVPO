@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { CourseBlockRenderer } from '@/components/course-block-renderer';
@@ -16,6 +17,7 @@ type LessonPayload = {
 };
 
 export default function LessonPage() {
+  const router = useRouter();
   const params = useParams<{ slug?: string; lessonSlug?: string }>();
   const slug = typeof params.slug === 'string' ? params.slug : '';
   const lessonSlug = typeof params.lessonSlug === 'string' ? params.lessonSlug : '';
@@ -35,7 +37,13 @@ export default function LessonPage() {
         setError('');
       } catch (err) {
         if (!active) return;
-        setError(err instanceof Error ? err.message : 'No se pudo cargar la leccion');
+        const message = err instanceof Error ? err.message : 'No se pudo cargar la leccion';
+        if (message.includes('401') || message.toLowerCase().includes('unauthorized')) {
+          const next = `/cursos/${slug}/${lessonSlug}`;
+          router.replace(`/login?next=${encodeURIComponent(next)}`);
+          return;
+        }
+        setError(message);
       } finally {
         if (active) setLoading(false);
       }
@@ -44,7 +52,7 @@ export default function LessonPage() {
     return () => {
       active = false;
     };
-  }, [slug, lessonSlug]);
+  }, [lessonSlug, router, slug]);
 
   const modules = useMemo<CourseModule[]>(() => payload?.course.modules || [], [payload]);
   const lesson = payload?.lesson;

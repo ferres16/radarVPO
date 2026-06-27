@@ -138,7 +138,7 @@ export default function AdminFilesPage() {
                   <option value="module">Módulos</option>
                   <option value="lesson">Lecciones</option>
                   <option value="news">Noticias</option>
-                  <option value="service">Servicios</option>
+                  <option value="service">Acompañamiento</option>
                 </select>
               </label>
               <label className="text-sm font-semibold text-[var(--ink)]">

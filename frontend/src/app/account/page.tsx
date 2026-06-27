@@ -143,7 +143,7 @@ export default function AccountPage() {
   const activeServices = accessSummary?.services ?? [];
   const unlockedAccesses = [
     ...activeCourses.map((course) => ({ id: `course-${course.id}`, label: course.title, type: 'Curso' })),
-    ...activeServices.map((item) => ({ id: `service-${item.service.id}`, label: item.service.name, type: 'Servicio' })),
+    ...activeServices.map((item) => ({ id: `service-${item.service.id}`, label: item.service.name, type: 'Acompañamiento' })),
   ];
 
   return (
@@ -180,7 +180,7 @@ export default function AccountPage() {
               <p className="mt-1 text-lg font-semibold text-[var(--ink)]">{lastLoginLabel}</p>
             </div>
             <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Servicios activos</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Acompañamiento activo</p>
               <p className="mt-1 text-2xl font-bold text-[var(--ink)]">{activeServices.length}</p>
             </div>
             <div className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3">
@@ -225,10 +225,10 @@ export default function AccountPage() {
               Guardar nombre
             </button>
             <Link
-              href="/services"
+              href="/acompanamiento"
               className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
             >
-              Activar servicio
+              Activar acompañamiento
             </Link>
             <button
               type="button"
@@ -258,7 +258,7 @@ export default function AccountPage() {
           </div>
           {activeCourses.length === 0 ? (
             <p className="mt-4 rounded-2xl border border-dashed border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm text-[var(--ink-soft)]">
-              Todavía no tienes cursos activos. Puedes comprar un curso o activar un servicio para desbloquear contenido.
+              Todavía no tienes cursos activos. Puedes comprar un curso o activar acompañamiento para desbloquear contenido.
             </p>
           ) : (
             <div className="mt-4 space-y-3">
@@ -274,13 +274,13 @@ export default function AccountPage() {
         </ProfileCard>
 
         <ProfileCard className="bg-[linear-gradient(135deg,rgba(54,189,248,0.08),rgba(255,255,255,0.96))]">
-          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--cyan-700)]">Servicios contratados</p>
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--cyan-700)]">Acompañamiento contratado</p>
           <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Acompañamiento activo</h2>
           {activeServices.length === 0 ? (
             <div className="mt-4 rounded-2xl border border-dashed border-[var(--stroke)] bg-white/70 p-4">
-              <p className="text-sm leading-6 text-[var(--ink-soft)]">No hay servicios activos en tu cuenta.</p>
+              <p className="text-sm leading-6 text-[var(--ink-soft)]">No hay acompañamiento activo en tu cuenta.</p>
               <Link href={whatsappContactUrl} className="mt-3 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]">
-                Activar servicio
+                Activar acompañamiento
               </Link>
             </div>
           ) : (
@@ -320,13 +320,13 @@ export default function AccountPage() {
 
         <ProfileCard className="border-[rgba(47,107,36,0.25)] bg-[linear-gradient(130deg,rgba(47,107,36,0.08),rgba(255,255,255,0.96))]">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Siguientes pasos</p>
-          <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Compra cursos o activa servicios</h2>
+          <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Compra cursos o activa acompañamiento</h2>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link href="/cursos" className="inline-flex items-center justify-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]">
               Comprar curso
             </Link>
-            <Link href="/services" className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
-              Activar servicio
+            <Link href="/acompanamiento" className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
+              Activar acompañamiento
             </Link>
             {!hasPro && lockedCourses.length > 0 ? (
               <Link href={stripeCheckoutUrl} className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">

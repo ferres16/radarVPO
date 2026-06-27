@@ -162,7 +162,7 @@ export default function AdminAccessPage() {
           Stripe cobra mediante Payment Links. El acceso real vive en la base de datos y se activa manualmente aqui.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/admin/services" className="rounded-xl border border-[var(--stroke)] px-4 py-2 text-sm font-semibold text-[var(--ink)]">Servicios</Link>
+          <Link href="/admin/services" className="rounded-xl border border-[var(--stroke)] px-4 py-2 text-sm font-semibold text-[var(--ink)]">Acompañamiento</Link>
           <Link href="/admin/courses" className="rounded-xl border border-[var(--stroke)] px-4 py-2 text-sm font-semibold text-[var(--ink)]">Cursos</Link>
         </div>
       </header>
@@ -247,7 +247,7 @@ export default function AdminAccessPage() {
                 getMeta={(item) => `${(item as Course).accessType} · ${(item as Course).status}`}
               />
               <AccessGroup
-                title="Servicios"
+                title="Acompañamiento"
                 items={detail.services}
                 drafts={serviceDrafts}
                 savingPrefix="service"

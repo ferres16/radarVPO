@@ -204,6 +204,20 @@ h3,
   overflow: hidden;
 }
 
+@media (max-width: 767px) {
+  .radar-visual {
+    max-width: 168px;
+  }
+
+  .radar-visual__sweep {
+    animation-duration: 6s;
+  }
+
+  .radar-visual__blip {
+    transform: scale(0.75);
+  }
+}
+
 .radar-visual__grid {
   position: absolute;
   inset: 8%;

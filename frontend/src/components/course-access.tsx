@@ -7,9 +7,13 @@ import { api } from '@/lib/api';
 
 type CourseAccessContextValue = {
   canAccess: boolean;
+  resolved: boolean;
 };
 
-const CourseAccessContext = createContext<CourseAccessContextValue>({ canAccess: false });
+const CourseAccessContext = createContext<CourseAccessContextValue>({
+  canAccess: false,
+  resolved: false,
+});
 
 export function CourseAccessProvider({
   slug,
@@ -21,6 +25,7 @@ export function CourseAccessProvider({
   children: ReactNode;
 }) {
   const [canAccess, setCanAccess] = useState(Boolean(initialCanAccess));
+  const [resolved, setResolved] = useState(Boolean(initialCanAccess));
 
   useEffect(() => {
     let active = true;
@@ -30,11 +35,13 @@ export function CourseAccessProvider({
       .then((course) => {
         if (active) {
           setCanAccess(Boolean(course.access?.canAccess));
+          setResolved(true);
         }
       })
       .catch(() => {
         if (active) {
           setCanAccess(Boolean(initialCanAccess));
+          setResolved(true);
         }
       });
 
@@ -43,7 +50,7 @@ export function CourseAccessProvider({
     };
   }, [initialCanAccess, slug]);
 
-  const value = useMemo(() => ({ canAccess }), [canAccess]);
+  const value = useMemo(() => ({ canAccess, resolved }), [canAccess, resolved]);
 
   return <CourseAccessContext.Provider value={value}>{children}</CourseAccessContext.Provider>;
 }
@@ -61,7 +68,16 @@ export function CourseAccessLink({
   accessLabel?: string;
   className: string;
 }) {
-  const { canAccess } = useContext(CourseAccessContext);
+  const { canAccess, resolved } = useContext(CourseAccessContext);
+
+  if (!resolved) {
+    return (
+      <span className={`${className} pointer-events-none opacity-60`} aria-busy="true">
+        Comprobando acceso...
+      </span>
+    );
+  }
+
   const href = canAccess ? hrefWhenAccess : hrefWhenLocked;
   const label = canAccess ? accessLabel : lockedLabel;
 
@@ -91,9 +107,17 @@ export function CourseLessonAccessLink({
   className: string;
   children: ReactNode;
 }) {
-  const { canAccess } = useContext(CourseAccessContext);
+  const { canAccess, resolved } = useContext(CourseAccessContext);
   const lessonHref = `/cursos/${courseSlug}/${lessonSlug}`;
   const href = canAccess ? lessonHref : `/login?next=${encodeURIComponent(lessonHref)}`;
+
+  if (!resolved) {
+    return (
+      <span className={`${className} pointer-events-none opacity-60`} aria-busy="true">
+        {children}
+      </span>
+    );
+  }
 
   return (
     <Link href={href} className={className}>

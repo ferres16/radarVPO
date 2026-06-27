@@ -229,7 +229,7 @@ export default function AdminCoursesPage() {
         actions={
           <>
             <ButtonLink href="/admin/access">Compras y activaciones</ButtonLink>
-            <ButtonLink href="/admin/services" variant="secondary">Servicios</ButtonLink>
+            <ButtonLink href="/admin/services" variant="secondary">Acompañamiento</ButtonLink>
           </>
         }
       />
@@ -261,7 +261,7 @@ export default function AdminCoursesPage() {
                 Compras y activaciones
               </Link>
               <Link href="/admin/services" className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)]">
-                Servicios
+                Acompañamiento
               </Link>
             </div>
           </div>

@@ -25,7 +25,7 @@ export default function AdminPromotionHistoryPage() {
 
     (async () => {
       try {
-        const rows = await api.getBackofficePromotions(undefined, query || undefined, 200, 10);
+        const rows = await api.getBackofficePromotions(undefined, query || undefined, 500, 0);
         if (!active) return;
         setPromotions(rows);
       } catch (err) {

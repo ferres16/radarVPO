@@ -6,8 +6,9 @@ import { api } from '@/lib/api';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { CourseAccessLink, CourseAccessProvider, CourseLessonAccessLink } from '@/components/course-access';
 import { StructuredData } from '@/components/structured-data';
+import { buildCourseAccessTargets } from '@/lib/course-access-targets';
 import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
-import { proHref, proPlan } from '@/lib/pro';
+import { proPlan } from '@/lib/pro';
 import type { Course } from '@/types';
 
 const isOnSale = (salePrice?: string | number | null) => {
@@ -89,22 +90,10 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
 
   const modules = course.modules || [];
   const lessonCount = modules.reduce((count, module) => count + (module.lessons?.length || 0), 0);
-  const firstLesson = modules.flatMap((module) => module.lessons || [])[0];
   const canAccess = Boolean(course.access?.canAccess);
   const includedInPro = course.accessType === 'pro';
-  const courseEntryHref = firstLesson
-    ? `/cursos/${course.slug}/${firstLesson.slug}`
-    : `/account`;
-  const lockedAccessHref = includedInPro
-    ? proHref
-    : course.stripePaymentLink || `/login?next=${encodeURIComponent(`/cursos/${course.slug}`)}`;
-  const lockedAccessLabel = includedInPro
-    ? proPlan.ctaLabel
-    : course.stripePaymentLink
-    ? 'Comprar curso'
-    : course.pricingType === 'free'
-      ? 'Entrar al curso'
-      : 'Solicitar acceso';
+  const { accessHref: courseEntryHref, lockedHref: lockedAccessHref, lockedLabel: lockedAccessLabel } =
+    buildCourseAccessTargets(course);
   const salePrice = getCourseSalePrice(course);
   const onSale = isOnSale(salePrice);
   const displayedPrice = onSale ? salePrice : course.price;
@@ -286,10 +275,10 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           <SurfaceCard className="p-6">
             <SectionHeader eyebrow="Upsell" title="¿Tienes un caso concreto?" />
             <p className="mt-2 text-sm text-[var(--ink-soft)]">
-              Combina el curso con seguimiento o asesoría si necesitas revisar documentación, requisitos o estrategia.
+              Combina el curso con acompañamiento personalizado si necesitas revisar documentación, requisitos o estrategia.
             </p>
             <div className="mt-5">
-              <ButtonLink href="/services" variant="secondary">Ver servicios</ButtonLink>
+              <ButtonLink href="/acompanamiento" variant="secondary">Ver acompañamiento</ButtonLink>
             </div>
           </SurfaceCard>
         </aside>

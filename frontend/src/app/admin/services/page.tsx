@@ -58,6 +58,7 @@ export default function AdminServicesPage() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -77,7 +78,7 @@ export default function AdminServicesPage() {
         setDrafts(Object.fromEntries(rows.map((service) => [service.id, toDraft(service)])));
       } catch (err) {
         if (!active) return;
-        setError(err instanceof Error ? err.message : 'No se pudo cargar servicios');
+        setError(err instanceof Error ? err.message : 'No se pudo cargar acompañamientos');
       } finally {
         if (active) setLoading(false);
       }
@@ -151,12 +152,48 @@ export default function AdminServicesPage() {
   async function archiveService(service: Service) {
     setSavingId(service.id);
     setError('');
+    setSuccess('');
     try {
       const updated = await api.updateBackofficeService(service.id, { status: 'archived' });
       setServices((prev) => prev.map((item) => (item.id === service.id ? updated : item)));
       setDrafts((prev) => ({ ...prev, [service.id]: toDraft(updated) }));
+      setSuccess(`"${service.name}" archivado correctamente.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo archivar el servicio');
+      setError(err instanceof Error ? err.message : 'No se pudo archivar el acompañamiento');
+    } finally {
+      setSavingId('');
+    }
+  }
+
+  async function deleteService(service: Service) {
+    const accepted = window.confirm(
+      service.status === 'archived'
+        ? `¿Eliminar definitivamente "${service.name}"? Esta acción no se puede deshacer.`
+        : `¿Eliminar "${service.name}"? Si hay usuarios activos, se archivará en su lugar.`,
+    );
+    if (!accepted) return;
+
+    setSavingId(service.id);
+    setError('');
+    setSuccess('');
+    try {
+      const result = await api.deleteBackofficeService(service.id);
+      if (result.softDeleted) {
+        const rows = await api.getBackofficeServices(query);
+        setServices(rows);
+        setDrafts(Object.fromEntries(rows.map((item) => [item.id, toDraft(item)])));
+        setSuccess(`"${service.name}" tiene usuarios activos y se ha archivado.`);
+      } else {
+        setServices((prev) => prev.filter((item) => item.id !== service.id));
+        setDrafts((prev) => {
+          const next = { ...prev };
+          delete next[service.id];
+          return next;
+        });
+        setSuccess(`"${service.name}" eliminado correctamente.`);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar el acompañamiento');
     } finally {
       setSavingId('');
     }
@@ -176,7 +213,7 @@ export default function AdminServicesPage() {
     return (
       <main className="shell">
         <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-          <h1 className="text-2xl font-bold text-[var(--ink)]">Servicios</h1>
+          <h1 className="text-2xl font-bold text-[var(--ink)]">Acompañamiento</h1>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">{error}</p>
         </article>
       </main>
@@ -190,9 +227,9 @@ export default function AdminServicesPage() {
         <div className="space-y-4">
       <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--green-700)]">Backoffice</p>
-        <h1 className="display-type mt-2 text-3xl font-black text-[var(--ink)]">Servicios vendibles</h1>
+        <h1 className="display-type mt-2 text-3xl font-black text-[var(--ink)]">Acompañamiento vendible</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
-          Esta pantalla define los productos que vendes: seguimiento personalizado, asesorías 1:1, alertas PRO por WhatsApp y servicios manuales. Entra en juego cuando quieres poner precio, activar/desactivar el producto, añadir Payment Link de Stripe y después conceder acceso desde “Compras y Activaciones”.
+          Define los productos de acompañamiento que vendes: seguimiento personalizado, revisiones 1:1, alertas PRO y modalidades manuales. Pon precio, activa o desactiva el producto, añade Payment Link de Stripe y concede acceso desde “Compras y Activaciones”.
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Link href="/admin" className="rounded-xl border border-[var(--stroke)] px-4 py-2 text-sm font-semibold text-[var(--ink)]">Panel</Link>
@@ -214,10 +251,11 @@ export default function AdminServicesPage() {
       </section>
 
       {error ? <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">{error}</div> : null}
+      {success ? <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900">{success}</div> : null}
 
       <section className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
         <label className="text-sm font-semibold text-[var(--ink)]">
-          Buscar servicios
+          Buscar acompañamientos
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
@@ -229,7 +267,7 @@ export default function AdminServicesPage() {
       </section>
 
       <section className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
-        <h2 className="text-lg font-semibold text-[var(--ink)]">Nuevo servicio</h2>
+        <h2 className="text-lg font-semibold text-[var(--ink)]">Nuevo acompañamiento</h2>
         <ServiceFields value={newService} onChange={setNewService} />
         <button
           type="button"
@@ -237,12 +275,12 @@ export default function AdminServicesPage() {
           disabled={savingId === 'new'}
           className="mt-4 rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
         >
-          {savingId === 'new' ? 'Creando...' : 'Crear servicio'}
+          {savingId === 'new' ? 'Creando...' : 'Crear acompañamiento'}
         </button>
       </section>
 
       {visibleServices.length === 0 ? (
-        <EmptyState title="Sin servicios" description="Crea el primer servicio para poder asignarlo a usuarios." />
+        <EmptyState title="Sin acompañamientos" description="Crea el primer acompañamiento para poder asignarlo a usuarios." />
       ) : null}
 
       <section className="grid gap-4 lg:grid-cols-2">
@@ -277,6 +315,14 @@ export default function AdminServicesPage() {
                   className="rounded-xl border border-[var(--stroke)] px-4 py-2 text-sm font-semibold text-[var(--ink)] disabled:opacity-50"
                 >
                   Archivar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void deleteService(service)}
+                  disabled={savingId === service.id}
+                  className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-50"
+                >
+                  Eliminar
                 </button>
               </div>
             </article>

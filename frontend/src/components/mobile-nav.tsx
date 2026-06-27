@@ -1,9 +1,9 @@
 import Link from 'next/link';
 
+import { primaryNavLinks } from '@/lib/navigation';
+
 const links = [
-  { href: '/', label: 'Inicio' },
-  { href: '/promotions', label: 'Promos' },
-  { href: '/services', label: 'Servicios' },
+  ...primaryNavLinks.filter((link) => ['/','/promotions','/acompanamiento'].includes(link.href)),
   { href: '/account', label: 'Cuenta' },
 ];
 

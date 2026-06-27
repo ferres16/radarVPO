@@ -9,7 +9,7 @@ export const primaryNavLinks: NavLink[] = [
   { href: '/alerts', label: 'Próximos Lanzamientos', mobileLabel: 'Lanzamientos' },
   { href: '/promotions', label: 'Promociones Publicadas', mobileLabel: 'Publicadas' },
   { href: '/cursos', label: 'Cursos' },
-  { href: '/services', label: 'Servicios' },
+  { href: '/acompanamiento', label: 'Acompañamiento', mobileLabel: 'Acompañamiento' },
 ];
 
 export const copy = {
@@ -19,4 +19,7 @@ export const copy = {
   publishedPromotions: 'Promociones Publicadas',
   publishedPromotionsDesc: 'Promociones ya abiertas o publicadas oficialmente con requisitos y plazos.',
   howItWorks: 'Cómo funciona',
+  accompaniment: 'Acompañamiento',
+  accompanimentDesc:
+    'Acompañamiento personalizado para conseguir tu VPO: revisión de requisitos, preparación de documentación y seguimiento de oportunidades.',
 } as const;

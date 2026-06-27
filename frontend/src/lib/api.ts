@@ -385,7 +385,7 @@ export const api = {
       body: JSON.stringify(normalizeServicePayload(payload)),
     }),
   deleteBackofficeService: (id: string) =>
-    request<{ deleted: boolean }>(`/backoffice/services/${id}`, {
+    request<{ deleted: boolean; softDeleted?: boolean }>(`/backoffice/services/${id}`, {
       method: 'DELETE',
     }),
   getBackofficeAccessUsers: (q?: string) =>

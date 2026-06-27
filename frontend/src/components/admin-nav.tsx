@@ -9,7 +9,7 @@ const adminLinks = [
   { href: '/admin/promotions', label: 'Promociones' },
   { href: '/admin/promotions/history', label: 'Histórico promociones' },
   { href: '/admin/alerts', label: 'Avisos' },
-  { href: '/admin/services', label: 'Servicios' },
+  { href: '/admin/services', label: 'Acompañamiento' },
   { href: '/admin/news', label: 'Noticias' },
   { href: '/admin/files', label: 'Archivos' },
   { href: '/admin/users', label: 'Usuarios' },
