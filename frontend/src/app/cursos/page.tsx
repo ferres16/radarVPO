@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
-import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { ButtonLink, PageHero, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 import { proHref, proIncludes, proPlan, starterCourseKeywords } from '@/lib/pro';
@@ -60,10 +60,10 @@ export default async function CoursesPage() {
 
       <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {proIncludes.slice(0, 4).map((item) => (
-          <SurfaceCard key={item.title} premium className="p-5 text-center">
-            <span className="text-2xl" aria-hidden="true">{item.icon}</span>
-            <h2 className="mt-3 text-sm font-black text-[var(--ink)]">{item.title}</h2>
-          </SurfaceCard>
+          <article key={item.title} className="border-l-2 border-[var(--green-700)] pl-4">
+            <span className="text-xl" aria-hidden="true">{item.icon}</span>
+            <h2 className="mt-2 text-sm font-black text-[var(--ink)]">{item.title}</h2>
+          </article>
         ))}
       </section>
 

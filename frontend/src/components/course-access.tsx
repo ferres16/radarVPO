@@ -4,55 +4,99 @@ import Link from 'next/link';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { api } from '@/lib/api';
+import type { CourseAccessType, CoursePricingType } from '@/types';
 
 type CourseAccessContextValue = {
   canAccess: boolean;
   resolved: boolean;
+  initialCanAccess: boolean;
 };
 
 const CourseAccessContext = createContext<CourseAccessContextValue>({
   canAccess: false,
   resolved: false,
+  initialCanAccess: false,
 });
 
 export function CourseAccessProvider({
   slug,
-  initialCanAccess,
+  accessType,
+  pricingType,
+  initialCanAccess = false,
   children,
 }: {
   slug: string;
+  accessType: CourseAccessType;
+  pricingType?: CoursePricingType;
   initialCanAccess?: boolean;
   children: ReactNode;
 }) {
-  const [canAccess, setCanAccess] = useState(Boolean(initialCanAccess));
-  const [resolved, setResolved] = useState(Boolean(initialCanAccess));
+  const [canAccess, setCanAccess] = useState(initialCanAccess);
+  const [resolved, setResolved] = useState(initialCanAccess);
 
   useEffect(() => {
     let active = true;
 
-    api
-      .getCourseForUser(slug)
-      .then((course) => {
-        if (active) {
-          setCanAccess(Boolean(course.access?.canAccess));
-          setResolved(true);
+    if (initialCanAccess) {
+      setCanAccess(true);
+      setResolved(true);
+      return () => {
+        active = false;
+      };
+    }
+
+    (async () => {
+      try {
+        const course = await api.getCourseForUser(slug);
+        if (!active) return;
+        setCanAccess(Boolean(course.access?.canAccess));
+        setResolved(true);
+        return;
+      } catch {
+        // Continue with fallbacks below.
+      }
+
+      try {
+        const [me, courses] = await Promise.all([
+          api.getMe(),
+          api.listCoursesForUser(),
+        ]);
+        if (!active) return;
+
+        const match = courses.find((course) => course.slug === slug);
+        if (match?.access?.canAccess) {
+          setCanAccess(true);
+        } else if (accessType === 'pro' && me.plan === 'pro') {
+          setCanAccess(true);
+        } else if (accessType === 'free' || pricingType === 'free') {
+          setCanAccess(true);
+        } else {
+          setCanAccess(false);
         }
-      })
-      .catch(() => {
-        if (active) {
-          setCanAccess(Boolean(initialCanAccess));
-          setResolved(true);
-        }
-      });
+        setResolved(true);
+        return;
+      } catch {
+        if (!active) return;
+        setCanAccess(false);
+        setResolved(true);
+      }
+    })();
 
     return () => {
       active = false;
     };
-  }, [initialCanAccess, slug]);
+  }, [accessType, initialCanAccess, pricingType, slug]);
 
-  const value = useMemo(() => ({ canAccess, resolved }), [canAccess, resolved]);
+  const value = useMemo(
+    () => ({ canAccess, resolved, initialCanAccess }),
+    [canAccess, initialCanAccess, resolved],
+  );
 
   return <CourseAccessContext.Provider value={value}>{children}</CourseAccessContext.Provider>;
+}
+
+function pickHref(canAccess: boolean, hrefWhenAccess: string, hrefWhenLocked: string) {
+  return canAccess ? hrefWhenAccess : hrefWhenLocked;
 }
 
 export function CourseAccessLink({
@@ -68,30 +112,28 @@ export function CourseAccessLink({
   accessLabel?: string;
   className: string;
 }) {
-  const { canAccess, resolved } = useContext(CourseAccessContext);
-
-  if (!resolved) {
-    return (
-      <span className={`${className} pointer-events-none opacity-60`} aria-busy="true">
-        Comprobando acceso...
-      </span>
-    );
-  }
-
-  const href = canAccess ? hrefWhenAccess : hrefWhenLocked;
-  const label = canAccess ? accessLabel : lockedLabel;
+  const { canAccess, resolved, initialCanAccess } = useContext(CourseAccessContext);
+  const hasAccess = resolved ? canAccess : initialCanAccess;
+  const href = pickHref(hasAccess, hrefWhenAccess, hrefWhenLocked);
+  const label = hasAccess ? accessLabel : lockedLabel;
 
   if (/^https?:\/\//.test(href)) {
     return (
-      <a href={href} className={className} rel="noopener noreferrer" target="_blank">
-        {label}
+      <a
+        href={href}
+        className={className}
+        rel="noopener noreferrer"
+        target="_blank"
+        aria-busy={!resolved}
+      >
+        {!resolved ? 'Entrar al curso' : label}
       </a>
     );
   }
 
   return (
-    <Link href={href} className={className}>
-      {label}
+    <Link href={href} className={className} aria-busy={!resolved}>
+      {!resolved ? 'Entrar al curso' : label}
     </Link>
   );
 }
@@ -107,20 +149,13 @@ export function CourseLessonAccessLink({
   className: string;
   children: ReactNode;
 }) {
-  const { canAccess, resolved } = useContext(CourseAccessContext);
+  const { canAccess, resolved, initialCanAccess } = useContext(CourseAccessContext);
   const lessonHref = `/cursos/${courseSlug}/${lessonSlug}`;
-  const href = canAccess ? lessonHref : `/login?next=${encodeURIComponent(lessonHref)}`;
-
-  if (!resolved) {
-    return (
-      <span className={`${className} pointer-events-none opacity-60`} aria-busy="true">
-        {children}
-      </span>
-    );
-  }
+  const hasAccess = resolved ? canAccess : initialCanAccess;
+  const href = hasAccess ? lessonHref : `/login?next=${encodeURIComponent(lessonHref)}`;
 
   return (
-    <Link href={href} className={className}>
+    <Link href={href} className={className} aria-busy={!resolved}>
       {children}
     </Link>
   );

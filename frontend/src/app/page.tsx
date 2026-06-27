@@ -5,7 +5,7 @@ import { getDaysRemaining } from '@/lib/alert-countdown';
 import { copy } from '@/lib/navigation';
 import { howItWorksSteps, proHref, proIncludes, proPlan, proSolutionPoints } from '@/lib/pro';
 import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
-import { ButtonLink, Eyebrow, MetricCard, SectionBand, SectionHeader, StepCard, SurfaceCard } from '@/components/design-system';
+import { ButtonLink, Eyebrow, SectionBand, SectionHeader } from '@/components/design-system';
 import { ProComparison } from '@/components/pro-comparison';
 import { RadarVisual } from '@/components/radar-visual';
 import { StickyProCta } from '@/components/sticky-pro-cta';
@@ -56,48 +56,55 @@ export default async function Home() {
     .map((item) => ({ item, daysRemaining: getDaysRemaining(item.estimatedPublicationDate) }));
 
   return (
-    <main className="shell space-y-8 pb-20 md:space-y-14 md:pb-16">
+    <main className="shell space-y-10 pb-20 md:space-y-16 md:pb-16">
       <StructuredData data={[organizationJsonLd(), websiteJsonLd(), faqJsonLd(faqs)]} />
       <StickyProCta />
 
-      {/* HERO */}
-      <section className="section-band mesh-bg relative overflow-hidden px-4 py-6 sm:px-6 md:px-10 md:py-14">
+      <section className="section-band mesh-bg relative overflow-hidden px-4 py-8 sm:px-6 md:px-10 md:py-14">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[rgba(54,189,248,0.12)] blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-20 h-64 w-64 rounded-full bg-[rgba(22,112,85,0.14)] blur-3xl" />
-        <div className="relative grid items-center gap-5 md:gap-10 lg:grid-cols-[1.05fr_0.95fr]">
+        <div className="relative grid items-center gap-8 lg:grid-cols-[1.02fr_0.98fr] lg:gap-12">
           <div className="order-2 lg:order-1">
             <Eyebrow tone="cyan">Monitorización inteligente</Eyebrow>
-            <h1 className="display-type mt-3 text-3xl font-black leading-[1.05] tracking-tight text-[var(--ink)] sm:text-4xl md:mt-5 md:text-5xl lg:text-6xl">
+            <h1 className="display-type mt-3 text-3xl font-black leading-[1.05] tracking-tight text-[var(--ink)] sm:text-4xl md:mt-4 md:text-5xl lg:text-6xl">
               Detecta oportunidades de VPO antes que los demás
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-[var(--ink-soft)] md:mt-5 md:text-lg md:leading-7">
-              <span className="md:hidden">Radar VPO monitoriza lanzamientos y promociones en Cataluña.</span>
-              <span className="hidden md:inline">Radar VPO rastrea próximos lanzamientos y promociones publicadas en Cataluña para que no llegues tarde al plazo.</span>
+              Radar VPO rastrea próximos lanzamientos y promociones publicadas en Cataluña para que no llegues tarde al plazo.
             </p>
-            <div className="mt-5 flex flex-wrap gap-2.5 md:mt-8 md:gap-3">
+            <div className="mt-5 flex flex-wrap gap-2.5 md:mt-7 md:gap-3">
               <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
               <ButtonLink href="/alerts" variant="secondary">Ver lanzamientos</ButtonLink>
             </div>
-            <p className="mt-3 text-xs font-bold text-[var(--green-700)] md:mt-5 md:text-sm">{proPlan.price}</p>
+            <p className="mt-3 text-xs font-bold text-[var(--green-700)] md:text-sm">{proPlan.price}</p>
           </div>
-          <div className="relative order-1 max-w-[11rem] justify-self-center sm:max-w-[13rem] lg:order-2 lg:max-w-none lg:justify-self-auto">
-            <RadarVisual className="mx-auto lg:ml-auto" />
-            <div className="absolute -bottom-3 left-1/2 hidden w-[88%] -translate-x-1/2 rounded-2xl border border-[var(--stroke)] bg-white/90 p-3 shadow-card backdrop-blur-md sm:block lg:left-auto lg:bottom-6 lg:-left-8 lg:w-56 lg:translate-x-0 lg:p-4">
-              <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--cyan-700)]">Radar activo</p>
-              <p className="mt-1 text-sm font-black text-[var(--ink)]">Señales en tiempo real</p>
+          <div className="order-1 flex justify-center lg:order-2 lg:justify-end">
+            <div className="radar-shell">
+              <RadarVisual />
+              <p className="pointer-events-none absolute -bottom-1 left-1/2 w-max -translate-x-1/2 rounded-full border border-[var(--stroke)] bg-white/95 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--cyan-700)] shadow-sm md:hidden">
+                Radar activo
+              </p>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-3 sm:gap-4">
-        <MetricCard label="Próximos lanzamientos" value={upcomingCount} detail="Señales monitorizadas antes de la publicación oficial" />
-        <MetricCard label="Promociones publicadas" value={publishedCount} detail="Oportunidades abiertas con plazos y requisitos" />
-        <MetricCard label="Radar activo" value="24/7" detail="Monitorización continua en Cataluña" />
+      <section className="stat-strip" aria-label="Métricas clave">
+        <div className="stat-strip__item">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--ink-soft)]">Próximos lanzamientos</p>
+          <p className="display-type mt-2 text-3xl font-black text-[var(--ink)] md:text-4xl">{upcomingCount}</p>
+        </div>
+        <div className="stat-strip__item">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--ink-soft)]">Promociones publicadas</p>
+          <p className="display-type mt-2 text-3xl font-black text-[var(--ink)] md:text-4xl">{publishedCount}</p>
+        </div>
+        <div className="stat-strip__item">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--ink-soft)]">Monitorización</p>
+          <p className="display-type mt-2 text-3xl font-black text-[var(--ink)] md:text-4xl">24/7</p>
+        </div>
       </section>
 
-      {/* PRÓXIMOS LANZAMIENTOS */}
-      <section className="space-y-4 md:space-y-6">
+      <section className="space-y-4 md:space-y-5">
         <SectionHeader
           eyebrow="Anticipación"
           title={copy.upcomingLaunches}
@@ -105,30 +112,31 @@ export default async function Home() {
           action={<ButtonLink href="/alerts" variant="ghost">Ver todos</ButtonLink>}
         />
         {upcomingLaunches.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="content-list">
             {upcomingLaunches.map(({ item, daysRemaining }) => (
-              <SurfaceCard key={item.id} premium className="p-5">
-                <AlertCountdownBadge daysRemaining={daysRemaining} size="lg" />
-                <h3 className="mt-4 text-base font-black text-[var(--ink)]">{item.title}</h3>
-                <p className="mt-2 text-sm text-[var(--ink-soft)]">{item.municipality || 'Cataluña'}</p>
-                <Link href={`/promotions/${item.id}`} className="mt-5 inline-flex text-sm font-bold text-[var(--green-700)] hover:underline">
-                  Ver detalle →
-                </Link>
-              </SurfaceCard>
+              <Link key={item.id} href={`/promotions/${item.id}`} className="content-list__item group">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <AlertCountdownBadge daysRemaining={daysRemaining} size="lg" />
+                    <h3 className="mt-3 text-base font-black text-[var(--ink)] group-hover:text-[var(--green-700)]">{item.title}</h3>
+                    <p className="mt-1 text-sm text-[var(--ink-soft)]">{item.municipality || 'Cataluña'}</p>
+                  </div>
+                  <span className="text-sm font-bold text-[var(--green-700)]">Ver detalle →</span>
+                </div>
+              </Link>
             ))}
           </div>
         ) : (
-          <SurfaceCard premium className="p-8 text-center">
+          <div className="rounded-2xl border border-dashed border-[var(--stroke)] px-6 py-8 text-center">
             <p className="text-sm text-[var(--ink-soft)]">Ahora mismo no hay lanzamientos previstos visibles. Activa VPO PRO para recibir el siguiente.</p>
             <div className="mt-5">
               <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
             </div>
-          </SurfaceCard>
+          </div>
         )}
       </section>
 
-      {/* PROMOCIONES PUBLICADAS */}
-      <SectionBand variant="muted" className="space-y-6">
+      <SectionBand variant="muted" className="space-y-5">
         <SectionHeader
           eyebrow="Oportunidades abiertas"
           title={copy.publishedPromotions}
@@ -136,18 +144,11 @@ export default async function Home() {
           action={<ButtonLink href="/promotions" variant="secondary">Ver todas</ButtonLink>}
         />
         {recentPromotions.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="content-list border-none">
             {recentPromotions.map((promotion) => (
-              <Link
-                key={promotion.id}
-                href={`/promotions/${promotion.id}`}
-                className="premium-card group block p-5"
-              >
-                <span className="inline-flex rounded-full bg-[rgba(22,112,85,0.10)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--green-700)]">
-                  Publicada
-                </span>
-                <p className="mt-3 text-xs font-semibold text-[var(--ink-soft)]">{promotion.municipality || 'Cataluña'}</p>
-                <h3 className="mt-2 line-clamp-2 text-base font-black text-[var(--ink)] group-hover:text-[var(--green-700)]">
+              <Link key={promotion.id} href={`/promotions/${promotion.id}`} className="content-list__item group">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-soft)]">{promotion.municipality || 'Cataluña'}</p>
+                <h3 className="mt-1 line-clamp-2 text-base font-black text-[var(--ink)] group-hover:text-[var(--green-700)]">
                   {promotion.title}
                 </h3>
               </Link>
@@ -160,22 +161,24 @@ export default async function Home() {
 
       <ProComparison />
 
-      {/* CÓMO FUNCIONA */}
-      <section className="space-y-4 md:space-y-6">
-        <div className="text-center">
+      <section className="space-y-5">
+        <div>
           <Eyebrow>{copy.howItWorks}</Eyebrow>
-          <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)] md:text-4xl">
+          <h2 className="display-type mt-3 text-3xl font-black text-[var(--ink)] md:text-4xl">
             De la señal al plazo, en cuatro pasos
           </h2>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="step-line">
           {howItWorksSteps.map((step) => (
-            <StepCard key={step.step} step={step.step} title={step.title} description={step.description} />
+            <article key={step.step} className="step-line__item">
+              <span>Paso {step.step}</span>
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
+            </article>
           ))}
         </div>
       </section>
 
-      {/* PROBLEMA */}
       <SectionBand variant="alt" className="text-center">
         <Eyebrow tone="cyan">El problema</Eyebrow>
         <h2 className="display-type mt-4 text-3xl font-black text-white md:text-4xl">
@@ -185,7 +188,7 @@ export default async function Home() {
           {problemSteps.map((step, index) => (
             <div key={step.label} className="flex items-center gap-3">
               <div
-                className={`rounded-2xl border px-4 py-3 text-sm font-bold ${
+                className={`rounded-full border px-4 py-2 text-sm font-bold ${
                   step.state === 'late'
                     ? 'border-red-400/30 bg-red-500/15 text-red-200'
                     : step.state === 'active'
@@ -204,25 +207,22 @@ export default async function Home() {
         <p className="mt-5 text-sm text-white/65">Cuando lo descubres, el plazo ya está cerrado o las plazas agotadas.</p>
       </SectionBand>
 
-      {/* SOLUCIÓN */}
-      <section className="space-y-4 md:space-y-6">
-        <div className="text-center">
+      <section className="space-y-5">
+        <div>
           <Eyebrow>La solución</Eyebrow>
-          <h2 className="display-type mt-4 text-3xl font-black text-[var(--ink)]">Radar VPO trabaja por ti</h2>
+          <h2 className="display-type mt-3 text-3xl font-black text-[var(--ink)]">Radar VPO trabaja por ti</h2>
         </div>
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="feature-grid">
           {proSolutionPoints.map((point) => (
-            <SurfaceCard key={point.title} premium className="p-6 text-center">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--bg-eco)] text-lg font-black text-[var(--green-700)]">✓</div>
-              <h3 className="mt-4 text-lg font-black text-[var(--ink)]">{point.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{point.description}</p>
-            </SurfaceCard>
+            <article key={point.title} className="feature-grid__item">
+              <h3>{point.title}</h3>
+              <p>{point.description}</p>
+            </article>
           ))}
         </div>
       </section>
 
-      {/* VPO PRO */}
-      <SectionBand className="relative overflow-hidden space-y-8">
+      <SectionBand className="relative space-y-8 overflow-hidden">
         <div className="pointer-events-none absolute -right-16 top-0 h-48 w-48 rounded-full bg-[rgba(22,112,85,0.12)] blur-3xl" />
         <div className="relative text-center">
           <Eyebrow tone="gold">{proPlan.name}</Eyebrow>
@@ -230,16 +230,16 @@ export default async function Home() {
             Tu ventaja competitiva en vivienda protegida
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[var(--ink-soft)] md:text-base">
-            Notificaciones prioritarias, seguimiento de municipios, formación y guía completa. Todo lo que necesitas para actuar con cabeza.
+            Notificaciones prioritarias, seguimiento de municipios, formación y guía completa.
           </p>
         </div>
-        <div className="relative grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="relative grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {proIncludes.map((item) => (
-            <SurfaceCard key={item.title} premium className="p-5">
-              <span className="text-2xl" aria-hidden="true">{item.icon}</span>
-              <h3 className="mt-3 text-base font-black text-[var(--ink)]">{item.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{item.description}</p>
-            </SurfaceCard>
+            <article key={item.title} className="border-l-2 border-[var(--green-700)] pl-4">
+              <span className="text-xl" aria-hidden="true">{item.icon}</span>
+              <h3 className="mt-2 text-base font-black text-[var(--ink)]">{item.title}</h3>
+              <p className="mt-1.5 text-sm leading-6 text-[var(--ink-soft)]">{item.description}</p>
+            </article>
           ))}
         </div>
         <div className="relative text-center">
@@ -247,7 +247,6 @@ export default async function Home() {
         </div>
       </SectionBand>
 
-      {/* CTA FINAL */}
       <section className="section-band--alt section-band px-6 py-12 text-center md:px-10 md:py-16">
         <h2 className="display-type text-3xl font-black text-white md:text-5xl">Empieza hoy con ventaja</h2>
         <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-white/75 md:text-base">

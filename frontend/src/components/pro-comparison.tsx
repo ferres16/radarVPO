@@ -1,5 +1,5 @@
 import { proComparisonRows, proHref, proPlan } from '@/lib/pro';
-import { ButtonLink, SectionHeader, SurfaceCard } from './design-system';
+import { ButtonLink, SectionHeader } from './design-system';
 
 function CheckIcon({ active }: { active: boolean }) {
   return (
@@ -29,7 +29,7 @@ export function ProComparison({
         <h2 className="display-type text-xl font-black text-[var(--ink)] md:text-2xl">{title}</h2>
       ) : null}
       {!compact ? <SectionHeader title={title} description={description} /> : null}
-      <SurfaceCard premium className="overflow-hidden p-0">
+      <div className="overflow-hidden rounded-2xl border border-[var(--stroke)] bg-white/80 backdrop-blur-sm">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[520px] text-sm">
             <thead>
@@ -62,7 +62,7 @@ export function ProComparison({
           </p>
           <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
         </div>
-      </SurfaceCard>
+      </div>
     </section>
   );
 }

@@ -38,7 +38,12 @@ export default function LessonPage() {
       } catch (err) {
         if (!active) return;
         const message = err instanceof Error ? err.message : 'No se pudo cargar la leccion';
-        if (message.includes('401') || message.toLowerCase().includes('unauthorized')) {
+        const needsAuth =
+          message.includes('401') ||
+          message.includes('403') ||
+          message.toLowerCase().includes('unauthorized') ||
+          message.toLowerCase().includes('forbidden');
+        if (needsAuth) {
           const next = `/cursos/${slug}/${lessonSlug}`;
           router.replace(`/login?next=${encodeURIComponent(next)}`);
           return;

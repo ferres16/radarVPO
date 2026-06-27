@@ -44,12 +44,20 @@ async function getCourseWithAccess(slug: string) {
   const response = await fetch(`${API_BASE_URL}/courses/${slug}/access`, {
     headers: {
       Cookie: cookieHeader,
+      Accept: 'application/json',
     },
     cache: 'no-store',
   });
 
-  if (!response.ok) return null;
-  return response.json() as Promise<Course>;
+  if (response.ok) {
+    return response.json() as Promise<Course>;
+  }
+
+  if (response.status === 401) {
+    return null;
+  }
+
+  return null;
 }
 
 export async function generateMetadata({ params }: CourseDetailParams): Promise<Metadata> {
@@ -146,7 +154,12 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           courseJsonLd,
         ]}
       />
-      <CourseAccessProvider slug={course.slug} initialCanAccess={canAccess}>
+      <CourseAccessProvider
+        slug={course.slug}
+        accessType={course.accessType}
+        pricingType={course.pricingType}
+        initialCanAccess={canAccess}
+      >
       <header className="relative overflow-hidden rounded-[2.5rem] border border-[var(--stroke)] bg-white shadow-card">
         <div className="grid gap-0 lg:grid-cols-[1.3fr_0.7fr]">
           <div className="p-6 sm:p-8">
