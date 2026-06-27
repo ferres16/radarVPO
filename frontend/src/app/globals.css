@@ -37,10 +37,10 @@ html {
 
 body {
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(54, 189, 248, 0.14), transparent 55%),
-    radial-gradient(circle at 12% 18%, rgba(22, 112, 85, 0.10), transparent 32%),
-    radial-gradient(circle at 88% 8%, rgba(232, 184, 74, 0.08), transparent 28%),
-    linear-gradient(180deg, #f0f4f8 0%, var(--background) 42%, #e8edf3 100%);
+    radial-gradient(ellipse 90% 60% at 50% -15%, rgba(54, 189, 248, 0.16), transparent 58%),
+    radial-gradient(circle at 10% 20%, rgba(22, 112, 85, 0.12), transparent 34%),
+    radial-gradient(circle at 92% 6%, rgba(232, 184, 74, 0.08), transparent 30%),
+    linear-gradient(180deg, #e8edf4 0%, var(--background) 38%, #dfe6ee 100%);
   color: var(--foreground);
   font-family: var(--font-inter), sans-serif;
   min-height: 100vh;
@@ -716,4 +716,129 @@ h3,
   float: left;
   height: 0;
   pointer-events: none;
+}
+
+/* Product cards — marketplace premium */
+.product-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem;
+  border: 1px solid var(--stroke);
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.88));
+  box-shadow:
+    0 1px 2px rgba(11, 18, 32, 0.04),
+    0 12px 32px rgba(11, 18, 32, 0.07);
+  transition:
+    transform 240ms ease,
+    box-shadow 240ms ease,
+    border-color 240ms ease;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(54, 189, 248, 0.28);
+  box-shadow:
+    0 0 0 1px rgba(54, 189, 248, 0.08),
+    0 20px 48px rgba(11, 18, 32, 0.12),
+    0 0 56px rgba(22, 112, 85, 0.10);
+}
+
+.product-card__media {
+  position: relative;
+  overflow: hidden;
+}
+
+.product-card__overlay {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 35%, rgba(11, 18, 32, 0.55) 100%);
+}
+
+.product-card__shine {
+  pointer-events: none;
+  position: absolute;
+  inset: -40% auto auto -30%;
+  width: 55%;
+  height: 140%;
+  background: linear-gradient(115deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: rotate(12deg);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.product-card:hover .product-card__shine {
+  opacity: 1;
+}
+
+.product-card__badge {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  z-index: 2;
+  border-radius: 9999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.product-card__body {
+  padding: 1.25rem;
+}
+
+.benefit-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.75);
+  padding: 0.45rem 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ink);
+  backdrop-filter: blur(12px);
+}
+
+.problem-chip {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+}
+
+.conversion-panel {
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  background:
+    radial-gradient(circle at 0% 0%, rgba(54, 189, 248, 0.18), transparent 42%),
+    radial-gradient(circle at 100% 100%, rgba(22, 112, 85, 0.20), transparent 45%),
+    linear-gradient(155deg, #121a28 0%, #0b1220 50%, #102820 100%);
+  box-shadow: 0 24px 64px rgba(11, 18, 32, 0.28);
+}
+
+.glass-panel {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(16px);
+  border-radius: 1.25rem;
+}
+
+.marketplace-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 2rem;
+  border: 1px solid var(--stroke);
+  background:
+    radial-gradient(circle at 85% 15%, rgba(54, 189, 248, 0.14), transparent 38%),
+    radial-gradient(circle at 10% 80%, rgba(22, 112, 85, 0.12), transparent 40%),
+    linear-gradient(160deg, rgba(255, 255, 255, 0.92), rgba(236, 244, 250, 0.78));
+  box-shadow: 0 20px 50px rgba(11, 18, 32, 0.08);
 }

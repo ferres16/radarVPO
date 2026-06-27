@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { api } from '@/lib/api';
+import { isSafeExternalCheckoutUrl } from '@/lib/checkout-url';
 import type { CourseAccessType, CoursePricingType } from '@/types';
 
 type CourseAccessContextValue = {
@@ -99,6 +100,10 @@ function pickHref(canAccess: boolean, hrefWhenAccess: string, hrefWhenLocked: st
   return canAccess ? hrefWhenAccess : hrefWhenLocked;
 }
 
+function resolveExternalHref(href: string, fallback: string) {
+  return isSafeExternalCheckoutUrl(href) ? href : fallback;
+}
+
 export function CourseAccessLink({
   hrefWhenLocked,
   hrefWhenAccess,
@@ -114,7 +119,10 @@ export function CourseAccessLink({
 }) {
   const { canAccess, resolved, initialCanAccess } = useContext(CourseAccessContext);
   const hasAccess = resolved ? canAccess : initialCanAccess;
-  const href = pickHref(hasAccess, hrefWhenAccess, hrefWhenLocked);
+  const rawHref = pickHref(hasAccess, hrefWhenAccess, hrefWhenLocked);
+  const href = /^https?:\/\//.test(rawHref)
+    ? resolveExternalHref(rawHref, hasAccess ? hrefWhenAccess : `/login?next=${encodeURIComponent(hrefWhenAccess)}`)
+    : rawHref;
   const label = hasAccess ? accessLabel : lockedLabel;
 
   if (/^https?:\/\//.test(href)) {

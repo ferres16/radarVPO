@@ -1,42 +1,27 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
-import { ButtonLink, PageHero, SectionHeader } from '@/components/design-system';
+import { CourseProductCard } from '@/components/course-product-card';
+import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
-import { proHref, proIncludes, proPlan, starterCourseKeywords } from '@/lib/pro';
-import type { Course } from '@/types';
+import { proHref, proIncludes, proPlan } from '@/lib/pro';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Cursos de vivienda protegida incluidos con VPO PRO',
-  description: 'Formación premium para entender el proceso de vivienda protegida con el curso incluido en VPO PRO.',
+  title: 'Cursos VPO — Formación premium para conseguir vivienda protegida',
+  description: 'Marketplace de cursos VPO con temario visual, acceso por plan y compra directa. Prepárate antes del plazo.',
   path: '/cursos',
-  keywords: ['curso VPO', 'VPO PRO', 'vivienda protegida Cataluña'],
+  keywords: ['curso VPO', 'formación vivienda protegida', 'VPO PRO', 'Cataluña'],
 });
-
-const getCourseSalePrice = (course: Course) => {
-  const metadataSalePrice = course.seoMetadata?.salePrice;
-  if (typeof metadataSalePrice === 'string' || typeof metadataSalePrice === 'number') {
-    return metadataSalePrice;
-  }
-  return course.salePrice;
-};
 
 export default async function CoursesPage() {
   const courses = await api.listCourses().catch(() => []);
   const visibleCourses = [...courses].sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
-  const starterCourse =
-    visibleCourses.find((course) => course.accessType === 'pro') ||
-    visibleCourses.find((course) =>
-      starterCourseKeywords.some((keyword) =>
-        `${course.title} ${course.shortDescription || ''}`.toLowerCase().includes(keyword),
-      ),
-    ) ||
-    visibleCourses[0];
+  const proCourses = visibleCourses.filter((course) => course.accessType === 'pro');
+  const premiumCourses = visibleCourses.filter((course) => course.accessType !== 'pro');
 
   return (
-    <main className="shell space-y-12 pb-16">
+    <main className="shell space-y-10 pb-16 md:space-y-12">
       <StructuredData
         data={breadcrumbJsonLd([
           { name: 'Inicio', path: '/' },
@@ -44,25 +29,26 @@ export default async function CoursesPage() {
         ])}
       />
 
-      <PageHero
-        eyebrow="Formación premium"
-        title="Aprende el proceso sin improvisar"
-        description={`${proPlan.name} incluye el ${proPlan.courseLabel.toLowerCase()}. Contenido claro, visual y pensado para cuando llegue la convocatoria.`}
-        actions={
-          <>
-            <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
-            {starterCourse ? (
-              <ButtonLink href={`/cursos/${starterCourse.slug}`} variant="secondary">Ver curso</ButtonLink>
-            ) : null}
-          </>
-        }
-      />
+      <section className="marketplace-hero px-5 py-8 md:px-10 md:py-12">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--cyan-700)]">Marketplace premium</p>
+        <h1 className="display-type mt-3 max-w-3xl text-3xl font-black leading-[1.05] text-[var(--ink)] md:text-5xl">
+          Cursos para conseguir tu VPO con ventaja
+        </h1>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--ink-soft)] md:text-base md:leading-7">
+          Formación visual, progreso claro y acceso inmediato. Compra el curso o desbloquéalo con VPO PRO.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
+          <ButtonLink href="/acompanamiento" variant="secondary">Solicitar acompañamiento</ButtonLink>
+        </div>
+      </section>
 
-      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {proIncludes.slice(0, 4).map((item) => (
-          <article key={item.title} className="border-l-2 border-[var(--green-700)] pl-4">
+          <article key={item.title} className="glass-panel border-[var(--stroke)] bg-white/60 p-4">
             <span className="text-xl" aria-hidden="true">{item.icon}</span>
             <h2 className="mt-2 text-sm font-black text-[var(--ink)]">{item.title}</h2>
+            <p className="mt-1 text-xs leading-5 text-[var(--ink-soft)]">{item.description}</p>
           </article>
         ))}
       </section>
@@ -70,58 +56,51 @@ export default async function CoursesPage() {
       {visibleCourses.length === 0 ? (
         <EmptyState title="Sin cursos publicados" description="El catálogo aparecerá aquí cuando haya contenido disponible." />
       ) : (
-        <section id="catalogo" className="space-y-6">
-          <SectionHeader title="Catálogo de formación" description="Cursos con portadas, temario y acceso según tu plan." />
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {visibleCourses.map((course) => {
-              const includedInPro = course.id === starterCourse?.id || course.accessType === 'pro';
-              const lessonCount = course.modules?.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 0;
-              const salePrice = getCourseSalePrice(course);
+        <>
+          {proCourses.length > 0 ? (
+            <section id="catalogo" className="space-y-5">
+              <SectionHeader
+                eyebrow="Incluido en PRO"
+                title="Cursos con VPO PRO"
+                description="Desbloquea formación completa con tu suscripción."
+              />
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {proCourses.map((course) => (
+                  <CourseProductCard key={course.id} course={course} includedInPro showCta />
+                ))}
+              </div>
+            </section>
+          ) : null}
 
-              return (
-                <Link
-                  key={course.id}
-                  href={`/cursos/${course.slug}`}
-                  className="premium-card group block overflow-hidden"
-                >
-                  <div className="relative">
-                    {course.coverImage ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={course.coverImage} alt="" className="h-44 w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
-                    ) : (
-                      <div className="flex h-44 w-full items-center justify-center bg-gradient-to-br from-[var(--bg-eco)] to-[var(--bg-muted)] text-sm font-semibold text-[var(--ink-soft)]">
-                        Sin portada
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[rgba(11,18,32,0.55)] via-transparent to-transparent" />
-                    <span className={`absolute left-4 top-4 rounded-full px-3 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ${includedInPro ? 'bg-[var(--green-700)] text-white shadow-glow' : 'bg-white/90 text-[var(--ink)]'}`}>
-                      {includedInPro ? 'Incluido en VPO PRO' : 'Curso'}
-                    </span>
-                  </div>
-                  <div className="p-5">
-                    <h3 className="text-lg font-black text-[var(--ink)] group-hover:text-[var(--green-700)]">{course.title}</h3>
-                    <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--ink-soft)]">{course.shortDescription || 'Ver temario completo'}</p>
-                    <div className="mt-4 flex flex-wrap items-center gap-2 text-xs font-semibold text-[var(--ink-soft)]">
-                      {lessonCount > 0 ? <span className="rounded-full bg-[var(--bg-app)] px-2.5 py-1">{lessonCount} lecciones</span> : null}
-                      {salePrice ? <span className="rounded-full bg-[var(--bg-app)] px-2.5 py-1">Desde {salePrice} €</span> : null}
-                    </div>
-                    <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-[var(--bg-muted)]">
-                      <div className="h-full w-1/3 rounded-full bg-gradient-to-r from-[var(--green-700)] to-[var(--cyan-500)]" />
-                    </div>
-                    <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--green-700)]">Explorar curso →</p>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
+          {premiumCourses.length > 0 ? (
+            <section className="space-y-5">
+              <SectionHeader
+                eyebrow="Compra directa"
+                title="Cursos premium"
+                description="Acceso individual con pago seguro vía Stripe."
+              />
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {premiumCourses.map((course) => (
+                  <CourseProductCard key={course.id} course={course} showCta />
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </>
       )}
 
-      <section className="section-band section-band--alt px-6 py-10 text-center md:px-10">
-        <h2 className="display-type text-2xl font-black text-white md:text-3xl">Accede a toda la formación con VPO PRO</h2>
-        <p className="mt-3 text-sm text-white/70">{proPlan.price}</p>
-        <div className="mt-6">
-          <ButtonLink href={proHref} className="!bg-white !text-[var(--ink)] hover:!bg-[var(--bg-eco)]">{proPlan.ctaLabel}</ButtonLink>
+      <section className="conversion-panel px-6 py-10 text-center md:px-10 md:py-12">
+        <h2 className="display-type text-2xl font-black text-white md:text-3xl">
+          Desbloquea todo el catálogo con VPO PRO
+        </h2>
+        <p className="mx-auto mt-3 max-w-xl text-sm text-white/70">{proPlan.price}</p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <ButtonLink href={proHref} className="!bg-white !text-[var(--ink)] hover:!bg-[var(--bg-eco)]">
+            {proPlan.ctaLabel}
+          </ButtonLink>
+          <ButtonLink href="/alerts" variant="secondary" className="!border-white/25 !bg-white/10 !text-white hover:!bg-white/20">
+            Ver próximos lanzamientos
+          </ButtonLink>
         </div>
       </section>
     </main>

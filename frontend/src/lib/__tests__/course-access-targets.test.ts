@@ -58,4 +58,15 @@ describe('buildCourseAccessTargets', () => {
     expect(targets.lockedHref).toBe('https://buy.stripe.com/test');
     expect(targets.lockedLabel).toBe('Comprar curso');
   });
+
+  it('rejects storage urls as stripe checkout links', () => {
+    const targets = buildCourseAccessTargets({
+      ...baseCourse,
+      pricingType: 'premium',
+      accessType: 'paid',
+      stripePaymentLink: 'https://bucket.s3.amazonaws.com/courses/cover.jpg',
+    });
+    expect(targets.lockedHref).toBe('/login?next=%2Fcursos%2Fcurso-test%2Fleccion-1');
+    expect(targets.lockedLabel).toBe('Solicitar acceso');
+  });
 });

@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import type { Course, UserAccessSummary, UserProfile } from '@/types';
 import { ProfileCard } from '@/components/profile-card';
 import { StatusPill } from '@/components/status-pill';
+import { proHref, proPlan } from '@/lib/pro';
 
 export default function AccountPage() {
   const router = useRouter();
@@ -130,7 +131,6 @@ export default function AccountPage() {
   }
 
   const hasPro = me.plan === 'pro';
-  const stripeCheckoutUrl = process.env.NEXT_PUBLIC_STRIPE_CHECKOUT_URL || '/register';
   const whatsappContactUrl =
     process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
     'https://wa.me/34600111222?text=Hola%2C%20quiero%20activar%20el%20seguimiento%20individualizado%20de%20Radar%20VPO.';
@@ -323,14 +323,19 @@ export default function AccountPage() {
           <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Compra cursos o activa acompañamiento</h2>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link href="/cursos" className="inline-flex items-center justify-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]">
-              Comprar curso
+              Ver cursos
             </Link>
+            {!hasPro ? (
+              <Link href={proHref} className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
+                {proPlan.ctaLabel}
+              </Link>
+            ) : null}
             <Link href="/acompanamiento" className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
-              Activar acompañamiento
+              Solicitar acompañamiento
             </Link>
             {!hasPro && lockedCourses.length > 0 ? (
-              <Link href={stripeCheckoutUrl} className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
-                Mejorar plan
+              <Link href={proHref} className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
+                Desbloquear más
               </Link>
             ) : null}
           </div>

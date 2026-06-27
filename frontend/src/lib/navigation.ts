@@ -6,9 +6,9 @@ export type NavLink = {
 
 export const primaryNavLinks: NavLink[] = [
   { href: '/', label: 'Inicio' },
+  { href: '/cursos', label: 'Cursos' },
   { href: '/alerts', label: 'Próximos Lanzamientos', mobileLabel: 'Lanzamientos' },
   { href: '/promotions', label: 'Promociones Publicadas', mobileLabel: 'Publicadas' },
-  { href: '/cursos', label: 'Cursos' },
   { href: '/acompanamiento', label: 'Acompañamiento', mobileLabel: 'Acompañamiento' },
 ];
 

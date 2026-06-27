@@ -46,7 +46,7 @@ export class CoursesService {
   } satisfies Prisma.CourseLessonSelect;
 
   async listCourses() {
-    return this.prisma.course.findMany({
+    const courses = await this.prisma.course.findMany({
       where: { status: CourseStatus.published },
       orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
       include: {
@@ -72,6 +72,8 @@ export class CoursesService {
         },
       },
     });
+
+    return this.withPublicCoursesPresentation(courses);
   }
 
   async listCoursesForUser(userId: string) {
@@ -106,7 +108,9 @@ export class CoursesService {
       this.getAccessProfile(userId),
     ]);
 
-    return courses.map((course) => ({
+    const presented = await this.withPublicCoursesPresentation(courses);
+
+    return presented.map((course) => ({
       ...this.stripInternalCourseFields(course),
       access: this.evaluateAccess(course, profile),
     }));
@@ -153,7 +157,8 @@ export class CoursesService {
 
   async getCourseBySlug(slug: string) {
     const course = await this.getPublishedCourseBySlug(slug);
-    return this.stripInternalCourseFields(course);
+    const presented = await this.withPublicCoursePresentation(course);
+    return this.stripInternalCourseFields(presented);
   }
 
   async getCourseBySlugForUser(slug: string, userId: string) {
@@ -161,9 +166,10 @@ export class CoursesService {
       this.getPublishedCourseBySlug(slug, true),
       this.getAccessProfile(userId),
     ]);
+    const presented = await this.withPublicCoursePresentation(course);
 
     return {
-      ...this.stripInternalCourseFields(course),
+      ...this.stripInternalCourseFields(presented),
       access: this.evaluateAccess(course, profile),
     };
   }
@@ -210,8 +216,9 @@ export class CoursesService {
     }
 
     if (!access.canAccess) {
+      const presentedCourse = await this.withPublicCoursePresentation(course);
       return {
-        course: this.stripInternalCourseFields(course),
+        course: this.stripInternalCourseFields(presentedCourse),
         access,
         lesson: {
           ...lesson,
@@ -262,8 +269,10 @@ export class CoursesService {
       })),
     );
 
+    const presentedCourse = await this.withPublicCoursePresentation(course);
+
     return {
-      course: this.stripInternalCourseFields(course),
+      course: this.stripInternalCourseFields(presentedCourse),
       access,
       lesson: {
         ...lesson,
@@ -626,5 +635,93 @@ export class CoursesService {
     }
 
     return { canAccess: false, reason: 'locked' };
+  }
+
+  private looksLikeStorageUrl(url: string | null | undefined): boolean {
+    if (!url) return false;
+    return /amazonaws\.com|\.s3[.-]|cloudfront\.net/i.test(url);
+  }
+
+  private async resolveCoverImage(
+    courseId: string,
+    fallback: string | null | undefined,
+  ): Promise<string | null> {
+    const coverAsset = await this.prisma.courseAsset.findFirst({
+      where: { courseId, kind: 'cover' },
+      include: { fileAsset: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (coverAsset?.fileAssetId && coverAsset.fileAsset?.status !== 'deleted') {
+      try {
+        const access = await this.fileStorage.getAccessibleUrl(
+          coverAsset.fileAssetId,
+          true,
+          { preferSigned: true },
+        );
+        return access.url || null;
+      } catch {
+        return null;
+      }
+    }
+
+    if (fallback && !this.looksLikeStorageUrl(fallback)) {
+      return fallback;
+    }
+
+    return null;
+  }
+
+  private async withPublicCoursePresentation<
+    T extends { id: string; coverImage?: string | null },
+  >(course: T): Promise<T> {
+    const coverImage = await this.resolveCoverImage(course.id, course.coverImage);
+    return { ...course, coverImage };
+  }
+
+  private async withPublicCoursesPresentation<
+    T extends { id: string; coverImage?: string | null },
+  >(courses: T[]): Promise<T[]> {
+    if (courses.length === 0) {
+      return courses;
+    }
+
+    const courseIds = courses.map((course) => course.id);
+    const coverAssets = await this.prisma.courseAsset.findMany({
+      where: { courseId: { in: courseIds }, kind: 'cover' },
+      include: { fileAsset: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const coverByCourseId = new Map<string, (typeof coverAssets)[number]>();
+    for (const asset of coverAssets) {
+      if (!coverByCourseId.has(asset.courseId)) {
+        coverByCourseId.set(asset.courseId, asset);
+      }
+    }
+
+    return Promise.all(
+      courses.map(async (course) => {
+        const coverAsset = coverByCourseId.get(course.id);
+        let coverImage: string | null = course.coverImage ?? null;
+
+        if (coverAsset?.fileAssetId && coverAsset.fileAsset?.status !== 'deleted') {
+          try {
+            const access = await this.fileStorage.getAccessibleUrl(
+              coverAsset.fileAssetId,
+              true,
+              { preferSigned: true },
+            );
+            coverImage = access.url;
+          } catch {
+            coverImage = null;
+          }
+        } else if (this.looksLikeStorageUrl(coverImage)) {
+          coverImage = null;
+        }
+
+        return { ...course, coverImage };
+      }),
+    );
   }
 }
