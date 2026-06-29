@@ -1,7 +1,7 @@
 'use client';
 
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { CourseAccessContext } from '@/components/course-access';
+import { useEffect, useMemo, useState } from 'react';
+import { useCourseAccess } from '@/components/course-access';
 import { CourseHubProgress } from '@/components/course-hub-progress';
 import { api } from '@/lib/api';
 import type { Course } from '@/types';
@@ -29,7 +29,7 @@ function findLessonById(course: Course, lessonId?: string | null) {
 }
 
 export function CourseHubSection({ course, lessonCount }: CourseHubSectionProps) {
-  const { canAccess, resolved } = useContext(CourseAccessContext);
+  const { canAccess, resolved } = useCourseAccess();
   const [progress, setProgress] = useState<CourseProgressState | null>(null);
   const [loading, setLoading] = useState(false);
 

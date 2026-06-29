@@ -96,6 +96,10 @@ export function CourseAccessProvider({
   return <CourseAccessContext.Provider value={value}>{children}</CourseAccessContext.Provider>;
 }
 
+export function useCourseAccess() {
+  return useContext(CourseAccessContext);
+}
+
 function pickHref(canAccess: boolean, hrefWhenAccess: string, hrefWhenLocked: string) {
   return canAccess ? hrefWhenAccess : hrefWhenLocked;
 }
@@ -117,7 +121,7 @@ export function CourseAccessLink({
   accessLabel?: string;
   className: string;
 }) {
-  const { canAccess, resolved, initialCanAccess } = useContext(CourseAccessContext);
+  const { canAccess, resolved, initialCanAccess } = useCourseAccess();
   const hasAccess = resolved ? canAccess : initialCanAccess;
   const rawHref = pickHref(hasAccess, hrefWhenAccess, hrefWhenLocked);
   const href = /^https?:\/\//.test(rawHref)
@@ -157,7 +161,7 @@ export function CourseLessonAccessLink({
   className: string;
   children: ReactNode;
 }) {
-  const { canAccess, resolved, initialCanAccess } = useContext(CourseAccessContext);
+  const { canAccess, resolved, initialCanAccess } = useCourseAccess();
   const lessonHref = `/cursos/${courseSlug}/${lessonSlug}`;
   const hasAccess = resolved ? canAccess : initialCanAccess;
   const href = hasAccess ? lessonHref : `/login?next=${encodeURIComponent(lessonHref)}`;

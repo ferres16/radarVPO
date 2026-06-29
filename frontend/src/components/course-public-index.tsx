@@ -1,10 +1,10 @@
 'use client';
 
-import { useContext, type ReactNode } from 'react';
-import { CourseAccessContext } from '@/components/course-access';
+import type { ReactNode } from 'react';
+import { useCourseAccess } from '@/components/course-access';
 
 export function CoursePublicIndex({ children }: { children: ReactNode }) {
-  const { canAccess, resolved } = useContext(CourseAccessContext);
+  const { canAccess, resolved } = useCourseAccess();
 
   if (resolved && canAccess) {
     return null;
