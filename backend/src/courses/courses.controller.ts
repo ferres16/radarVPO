@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Redirect, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -28,6 +28,13 @@ export class CoursesController {
     @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.coursesService.getCourseAssetUrl(assetId, user.sub);
+  }
+
+  @Get(':slug/cover')
+  @Redirect()
+  async getCourseCover(@Param('slug') slug: string) {
+    const url = await this.coursesService.getCourseCoverRedirectUrl(slug);
+    return { url, statusCode: 302 };
   }
 
   @Get(':slug')

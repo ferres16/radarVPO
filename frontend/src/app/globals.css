@@ -670,6 +670,17 @@ h3,
   border: 1px solid var(--stroke);
 }
 
+.course-lesson-prosemirror video.course-editor-hosted-video,
+.course-lesson-prosemirror .course-editor-hosted-video {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 1rem 0;
+  border-radius: 1rem;
+  border: 1px solid var(--stroke);
+  background: #000;
+}
+
 .course-lesson-prosemirror table {
   width: 100%;
   border-collapse: collapse;

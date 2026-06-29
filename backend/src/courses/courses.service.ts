@@ -381,20 +381,68 @@ export class CoursesService {
       this.getAccessProfile(userId),
     ]);
 
+    const totalLessons = await this.prisma.courseLesson.count({
+      where: { courseId: course.id, status: 'published' },
+    });
+
     const access = this.evaluateAccess(course, profile);
     if (!access.canAccess) {
       return {
         courseId: course.id,
         progressPercent: 0,
         completedLessons: 0,
-        totalLessons: await this.prisma.courseLesson.count({
-          where: { courseId: course.id, status: 'published' },
-        }),
+        totalLessons,
         lastLessonId: null,
+        lessons: [] as Array<{ lessonId: string; status: LessonProgressStatus }>,
       };
     }
 
-    return this.recalculateCourseProgress(userId, course.id);
+    const [progress, lessonProgresses] = await Promise.all([
+      this.recalculateCourseProgress(userId, course.id),
+      this.prisma.lessonProgress.findMany({
+        where: { userId, courseId: course.id },
+        select: { lessonId: true, status: true },
+      }),
+    ]);
+
+    return {
+      ...progress,
+      lessons: lessonProgresses,
+    };
+  }
+
+  async getCourseCoverRedirectUrl(slug: string): Promise<string> {
+    const course = await this.prisma.course.findFirst({
+      where: { slug, status: CourseStatus.published },
+      select: { id: true, coverImage: true },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    const coverAsset = await this.prisma.courseAsset.findFirst({
+      where: { courseId: course.id, kind: 'cover' },
+      include: { fileAsset: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (coverAsset?.fileAssetId && coverAsset.fileAsset?.status !== 'deleted') {
+      const access = await this.fileStorage.getAccessibleUrl(
+        coverAsset.fileAssetId,
+        true,
+        { preferSigned: true },
+      );
+      if (access.url) {
+        return access.url;
+      }
+    }
+
+    if (course.coverImage && !this.looksLikeStorageUrl(course.coverImage)) {
+      return course.coverImage;
+    }
+
+    throw new NotFoundException('Cover not found');
   }
 
   private async recalculateCourseProgress(
@@ -642,29 +690,26 @@ export class CoursesService {
     return /amazonaws\.com|\.s3[.-]|cloudfront\.net/i.test(url);
   }
 
-  private async resolveCoverImage(
-    courseId: string,
-    fallback: string | null | undefined,
-  ): Promise<string | null> {
-    const coverAsset = await this.prisma.courseAsset.findFirst({
-      where: { courseId, kind: 'cover' },
-      include: { fileAsset: true },
-      orderBy: { createdAt: 'desc' },
-    });
+  private buildPublicCoverUrl(slug: string): string {
+    const base = (
+      process.env.PUBLIC_API_BASE_URL ||
+      process.env.API_BASE_URL ||
+      'http://localhost:3000/api/v1'
+    ).replace(/\/$/, '');
+    return `${base}/courses/${encodeURIComponent(slug)}/cover`;
+  }
 
+  private resolvePublicCoverImage<
+    T extends { slug: string; coverImage?: string | null },
+  >(
+    course: T,
+    coverAsset?: { fileAssetId: string | null; fileAsset?: { status: string } | null },
+  ): string | null {
     if (coverAsset?.fileAssetId && coverAsset.fileAsset?.status !== 'deleted') {
-      try {
-        const access = await this.fileStorage.getAccessibleUrl(
-          coverAsset.fileAssetId,
-          true,
-          { preferSigned: true },
-        );
-        return access.url || null;
-      } catch {
-        return null;
-      }
+      return this.buildPublicCoverUrl(course.slug);
     }
 
+    const fallback = course.coverImage ?? null;
     if (fallback && !this.looksLikeStorageUrl(fallback)) {
       return fallback;
     }
@@ -672,15 +717,27 @@ export class CoursesService {
     return null;
   }
 
+  private async resolveCoverImage<
+    T extends { id: string; slug: string; coverImage?: string | null },
+  >(course: T): Promise<string | null> {
+    const coverAsset = await this.prisma.courseAsset.findFirst({
+      where: { courseId: course.id, kind: 'cover' },
+      include: { fileAsset: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return this.resolvePublicCoverImage(course, coverAsset);
+  }
+
   private async withPublicCoursePresentation<
-    T extends { id: string; coverImage?: string | null },
+    T extends { id: string; slug: string; coverImage?: string | null },
   >(course: T): Promise<T> {
-    const coverImage = await this.resolveCoverImage(course.id, course.coverImage);
+    const coverImage = await this.resolveCoverImage(course);
     return { ...course, coverImage };
   }
 
   private async withPublicCoursesPresentation<
-    T extends { id: string; coverImage?: string | null },
+    T extends { id: string; slug: string; coverImage?: string | null },
   >(courses: T[]): Promise<T[]> {
     if (courses.length === 0) {
       return courses;
@@ -700,28 +757,12 @@ export class CoursesService {
       }
     }
 
-    return Promise.all(
-      courses.map(async (course) => {
-        const coverAsset = coverByCourseId.get(course.id);
-        let coverImage: string | null = course.coverImage ?? null;
-
-        if (coverAsset?.fileAssetId && coverAsset.fileAsset?.status !== 'deleted') {
-          try {
-            const access = await this.fileStorage.getAccessibleUrl(
-              coverAsset.fileAssetId,
-              true,
-              { preferSigned: true },
-            );
-            coverImage = access.url;
-          } catch {
-            coverImage = null;
-          }
-        } else if (this.looksLikeStorageUrl(coverImage)) {
-          coverImage = null;
-        }
-
-        return { ...course, coverImage };
-      }),
-    );
+    return courses.map((course) => ({
+      ...course,
+      coverImage: this.resolvePublicCoverImage(
+        course,
+        coverByCourseId.get(course.id),
+      ),
+    }));
   }
 }

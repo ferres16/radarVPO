@@ -9,6 +9,7 @@ import TaskItem from '@tiptap/extension-task-item';
 import Highlight from '@tiptap/extension-highlight';
 import Image from '@tiptap/extension-image';
 import Youtube from '@tiptap/extension-youtube';
+import { HostedVideo } from '@/lib/course-hosted-video';
 import { Table } from '@tiptap/extension-table';
 import { TableRow } from '@tiptap/extension-table-row';
 import { TableCell } from '@tiptap/extension-table-cell';
@@ -66,6 +67,7 @@ export function CourseLessonEditor({
   const [copyMessage, setCopyMessage] = useState('');
   const [uploadingKind, setUploadingKind] = useState<CourseResource['kind'] | ''>('');
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
   const lastSerializedRef = useRef('');
   const skipNextSyncRef = useRef(false);
 
@@ -91,6 +93,7 @@ export function CourseLessonEditor({
         nocookie: true,
         HTMLAttributes: { class: 'course-editor-video' },
       }),
+      HostedVideo,
       Table.configure({ resizable: true }),
       TableRow,
       TableHeader,
@@ -181,6 +184,37 @@ export function CourseLessonEditor({
     }
   };
 
+  const uploadInlineVideo = async (file: File) => {
+    if (!onUploadResource) {
+      insertVideo();
+      return;
+    }
+
+    setUploadingKind('video');
+    try {
+      const resource = await onUploadResource(file, 'video');
+      if (!resource?.publicUrl) return;
+      editorChain(editor).insertContent({
+        type: 'hostedVideo',
+        attrs: {
+          src: resource.publicUrl,
+          title: resource.originalName || 'Vídeo',
+        },
+      }).run();
+    } finally {
+      setUploadingKind('');
+    }
+  };
+
+  const insertHostedVideoUrl = () => {
+    const src = askForUrl('URL del vídeo (MP4 o enlace directo)');
+    if (!src) return;
+    editorChain(editor).insertContent({
+      type: 'hostedVideo',
+      attrs: { src, title: 'Vídeo' },
+    }).run();
+  };
+
   const insertVideo = () => {
     const src = askForUrl('URL de YouTube');
     if (!src) return;
@@ -217,7 +251,13 @@ export function CourseLessonEditor({
     }
 
     if (resource.kind === 'video' && resource.publicUrl) {
-      editorChain(editor).setYoutubeVideo({ src: resource.publicUrl, width: 960, height: 540 }).run();
+      editorChain(editor).insertContent({
+        type: 'hostedVideo',
+        attrs: {
+          src: resource.publicUrl,
+          title: resource.originalName || 'Vídeo',
+        },
+      }).run();
       return;
     }
 
@@ -245,7 +285,9 @@ export function CourseLessonEditor({
             { label: 'Texto', action: () => editorChain(editor).clearNodes().run() },
             { label: uploadingKind === 'image' ? 'Subiendo imagen...' : 'Subir imagen', action: () => imageInputRef.current?.click() },
             { label: 'Imagen por URL', action: insertImageUrl },
-            { label: 'Video', action: insertVideo },
+            { label: uploadingKind === 'video' ? 'Subiendo vídeo...' : 'Subir vídeo', action: () => videoInputRef.current?.click() },
+            { label: 'Vídeo por URL', action: insertHostedVideoUrl },
+            { label: 'YouTube', action: insertVideo },
             { label: 'Tabla', action: () => editorChain(editor).insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run() },
             { label: 'Cita', action: () => editorChain(editor).toggleBlockquote().run() },
             { label: 'Botón', action: insertCta },
@@ -255,7 +297,7 @@ export function CourseLessonEditor({
               key={item.label}
               type="button"
               onClick={item.action}
-              disabled={uploadingKind === 'image' && item.label.includes('Subiendo')}
+              disabled={(uploadingKind === 'image' && item.label.includes('Subiendo')) || (uploadingKind === 'video' && item.label.includes('Subiendo'))}
               className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
             >
               {item.label}
@@ -270,6 +312,18 @@ export function CourseLessonEditor({
               const file = event.target.files?.[0];
               if (!file) return;
               void uploadInlineImage(file);
+              event.currentTarget.value = '';
+            }}
+          />
+          <input
+            ref={videoInputRef}
+            type="file"
+            accept="video/mp4,video/quicktime,video/webm"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) return;
+              void uploadInlineVideo(file);
               event.currentTarget.value = '';
             }}
           />

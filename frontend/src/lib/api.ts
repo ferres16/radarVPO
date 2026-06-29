@@ -343,6 +343,7 @@ export const api = {
       completedLessons: number;
       totalLessons: number;
       lastLessonId?: string | null;
+      lessons: Array<{ lessonId: string; status: 'not_started' | 'in_progress' | 'completed' }>;
     }>(`/courses/${slug}/progress`),
   markLessonCompleted: (slug: string, lessonSlug: string) =>
     request<{ progressPercent: number }>(`/courses/${slug}/lessons/${lessonSlug}/progress`, {

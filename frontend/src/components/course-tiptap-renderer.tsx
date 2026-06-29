@@ -117,6 +117,22 @@ function renderNodes(nodes?: RichNode[]): ReactNode {
         />
       );
     }
+    if (node.type === 'hostedVideo') {
+      const src = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
+      const title = typeof node.attrs?.title === 'string' ? node.attrs.title : 'Vídeo de la lección';
+      if (!src) return null;
+      return (
+        <video
+          key={key}
+          src={src}
+          controls
+          playsInline
+          preload="metadata"
+          title={title}
+          className="my-8 aspect-video w-full rounded-2xl border border-[var(--stroke)] bg-black shadow-sm"
+        />
+      );
+    }
     if (node.type === 'horizontalRule') {
       return <hr key={key} className="my-10 border-[var(--stroke)]" />;
     }
