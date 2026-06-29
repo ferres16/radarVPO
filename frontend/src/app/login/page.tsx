@@ -32,21 +32,22 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="shell pb-16">
-      <section className="premium-card mx-auto grid max-w-5xl overflow-hidden md:grid-cols-[0.9fr_1.1fr] animate-fade-up">
-        <aside className="bg-[linear-gradient(145deg,var(--green-900),#0b1220)] p-6 text-white md:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/70">Área privada</p>
-          <h1 className="display-type mt-4 text-3xl font-black leading-tight md:text-4xl">
+    <main className="lp lp--inner">
+      <section className="shell py-10 md:py-14">
+        <section className="public-card mx-auto grid max-w-5xl overflow-hidden md:grid-cols-[0.9fr_1.1fr]">
+        <aside className="bg-[var(--ink)] p-6 text-white md:p-8">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/70">Área privada</p>
+          <h1 className="mt-4 text-3xl font-bold leading-tight md:text-4xl">
             Tus oportunidades, centralizadas
           </h1>
           <p className="mt-4 text-sm leading-6 text-white/78">
             Accede a tu perfil, revisa promociones guardadas y gestiona tu suscripción VPO PRO.
           </p>
-          <div className="mt-6 rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur">
+          <div className="mt-6 rounded-xl border border-white/15 bg-white/5 p-4">
             <p className="text-sm font-semibold">¿Aún no tienes PRO?</p>
             <p className="mt-2 text-sm text-white/74">Recibe notificaciones cuando detectemos próximos lanzamientos en tu zona.</p>
             <div className="mt-4">
-              <ButtonLink href={proHref} className="!bg-white !text-[var(--ink)] hover:!bg-[var(--bg-eco)]">
+              <ButtonLink href={proHref} variant="secondary" className="!border-white/20 !bg-white !text-[var(--ink)]">
                 {proPlan.ctaLabel}
               </ButtonLink>
             </div>
@@ -54,7 +55,7 @@ export default function LoginPage() {
         </aside>
 
         <div className="p-6 md:p-8">
-          <h2 className="display-type text-2xl font-black text-[var(--ink)]">Iniciar sesión</h2>
+          <h2 className="text-2xl font-bold text-[var(--ink)]">Iniciar sesión</h2>
           <p className="mt-1 text-sm text-[var(--ink-soft)]">Accede a tu cuenta y servicios.</p>
 
           <form className="mt-5 space-y-4" onSubmit={onSubmit}>
@@ -70,7 +71,7 @@ export default function LoginPage() {
               <input id="password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required className="ds-control mt-1 w-full" />
             </div>
             {error ? <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="alert" aria-live="polite">{error}</p> : null}
-            <button type="submit" disabled={loading} className="w-full rounded-2xl bg-[var(--green-700)] px-4 py-3 font-bold text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] disabled:opacity-60">
+            <button type="submit" disabled={loading} className="btn btn--primary btn--lg w-full disabled:opacity-60">
               {loading ? 'Entrando...' : 'Entrar'}
             </button>
           </form>
@@ -80,6 +81,7 @@ export default function LoginPage() {
             <Link href="/register" className="font-semibold text-[var(--green-700)]">Regístrate</Link>
           </p>
         </div>
+        </section>
       </section>
     </main>
   );

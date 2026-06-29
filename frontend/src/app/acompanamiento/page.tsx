@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { SkeletonCard } from '@/components/skeleton-card';
-import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { Stagger, StaggerItem } from '@/components/motion-primitives';
 import { api } from '@/lib/api';
 import type { Service } from '@/types';
@@ -154,27 +154,27 @@ export default function AccompanimentPage() {
     : fallbackOfferings;
 
   return (
-    <main className="shell space-y-8 pb-16">
-      <PageHero
-        eyebrow="Acompañamiento VPO"
-        title="Acompañamiento personalizado para conseguir tu vivienda protegida"
-        description="Ayuda durante el proceso, revisión de requisitos, preparación de documentación y seguimiento de oportunidades para que llegues preparado."
-        actions={
-          <>
-            <ButtonLink href="#hablemos">Hablar con Radar VPO</ButtonLink>
-            <ButtonLink href="/cursos" variant="secondary">Ver cursos</ButtonLink>
-          </>
-        }
-      >
-        <SurfaceCard className="p-5">
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)]">Qué incluye</p>
-          <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
-            Revisamos requisitos, preparamos documentación, vigilamos oportunidades y te orientamos para aumentar tus posibilidades en cada fase.
+    <main className="lp lp--inner">
+      <section className="lp-page-hero">
+        <div className="lp-page-hero__backdrop" aria-hidden="true" />
+        <div className="shell lp-page-hero__inner">
+          <span className="lp-hero__badge">Acompañamiento VPO</span>
+          <h1 className="lp-page-hero__title">
+            Acompañamiento personalizado
+            <span className="lp-hero__title-accent"> para conseguir tu vivienda protegida</span>
+          </h1>
+          <p className="lp-page-hero__subtitle">
+            Revisión de requisitos, preparación de documentación y seguimiento de oportunidades para llegar al plazo con criterio.
           </p>
-        </SurfaceCard>
-      </PageHero>
+          <div className="lp-hero__actions">
+            <ButtonLink href="#hablemos" size="lg">Hablar con Radar VPO</ButtonLink>
+            <ButtonLink href="/cursos" variant="secondary" size="lg">Ver cursos</ButtonLink>
+          </div>
+        </div>
+      </section>
 
-      <section className="space-y-4">
+      <section className="lp-section">
+        <div className="shell space-y-4">
         <SectionHeader eyebrow="Beneficios" title="Por qué el acompañamiento marca la diferencia" />
         <Stagger className="grid gap-4 md:grid-cols-3">
           {benefits.map((benefit) => (
@@ -186,16 +186,20 @@ export default function AccompanimentPage() {
             </StaggerItem>
           ))}
         </Stagger>
+        </div>
       </section>
 
       {loading ? (
-        <section className="grid gap-4 lg:grid-cols-3">
+        <section className="lp-section">
+          <div className="shell grid gap-4 lg:grid-cols-3">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
+        </div>
         </section>
       ) : (
-        <section className="space-y-4">
+        <section className="lp-section">
+          <div className="shell space-y-4">
           <SectionHeader
             eyebrow="Modalidades"
             title="Elige el nivel de acompañamiento que necesitas"
@@ -209,18 +213,14 @@ export default function AccompanimentPage() {
               const priceLabel = formatPrice(onSale ? offering.salePrice : offering.price, offering.currency);
               const originalPriceLabel = onSale ? formatPrice(offering.price, offering.currency) : null;
               return (
-                <article
-                  key={offering.title}
-                  className="group relative overflow-hidden rounded-[1.75rem] border border-[var(--stroke)] bg-gradient-to-br from-emerald-50 to-white p-5 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(30,31,28,0.12)]"
-                >
-                  <div className="absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#4E8F3A,#A7D08A,#4E8F3A)] opacity-70" />
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">{offering.eyebrow}</p>
+                <article key={offering.title} className="public-card public-card--hover p-5">
+                  <p className="lp-eyebrow">{offering.eyebrow}</p>
                   {onSale ? (
-                    <span className="mt-3 inline-flex rounded-full bg-[var(--green-700)] px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-white">
+                    <span className="mt-3 inline-flex rounded-full bg-[var(--green-700)] px-3 py-1 text-xs font-semibold text-white">
                       Oferta
                     </span>
                   ) : null}
-                  <h2 className="mt-3 text-2xl font-bold text-[var(--ink)]">{offering.title}</h2>
+                  <h2 className="mt-3 text-xl font-semibold text-[var(--ink)]">{offering.title}</h2>
                   {priceLabel ? (
                     <p className="mt-2 text-sm font-black text-[var(--ink)]">
                       {originalPriceLabel ? <span className="mr-2 text-[var(--ink-soft)] line-through">{originalPriceLabel}</span> : null}
@@ -229,18 +229,11 @@ export default function AccompanimentPage() {
                   ) : null}
                   <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{offering.copy}</p>
                   {external ? (
-                    <a
-                      href={href}
-                      className="mt-5 inline-flex rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-300 group-hover:bg-[var(--green-900)]"
-                      rel="noopener noreferrer"
-                    >
+                    <a href={href} className="btn btn--primary mt-5" rel="noopener noreferrer">
                       {offering.cta}
                     </a>
                   ) : (
-                    <Link
-                      href={href}
-                      className="mt-5 inline-flex rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-card transition duration-300 group-hover:bg-[var(--green-900)]"
-                    >
+                    <Link href={href} className="btn btn--primary mt-5">
                       {offering.cta}
                     </Link>
                   )}
@@ -248,10 +241,12 @@ export default function AccompanimentPage() {
               );
             })}
           </section>
+          </div>
         </section>
       )}
 
-      <section className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+      <section className="lp-section lp-section--muted">
+        <div className="shell grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
         <SurfaceCard className="p-5">
           <SectionHeader eyebrow="Casos prácticos" title="Cuándo te acompañamos" />
           <ul className="mt-4 space-y-3 text-sm leading-6 text-[var(--ink-soft)]">
@@ -269,9 +264,11 @@ export default function AccompanimentPage() {
             ))}
           </div>
         </SurfaceCard>
+        </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-[1fr_0.9fr]">
+      <section className="lp-section lp-section--border">
+        <div className="shell grid gap-4 lg:grid-cols-[1fr_0.9fr]">
         <SurfaceCard className="p-5">
           <SectionHeader eyebrow="FAQ" title="Dudas habituales" />
           <div className="mt-4 space-y-3">
@@ -290,7 +287,7 @@ export default function AccompanimentPage() {
             <input name="nombre" className="ds-control w-full" placeholder="Nombre" />
             <input name="email" type="email" className="ds-control w-full" placeholder="Email" />
             <textarea name="mensaje" className="ds-control min-h-28 w-full" placeholder="Explícanos tu caso" />
-            <button className="w-full rounded-full bg-[var(--green-700)] px-5 py-3 text-sm font-bold text-white transition hover:bg-[var(--green-900)]">Enviar consulta</button>
+            <button type="submit" className="btn btn--primary btn--lg w-full">Enviar consulta</button>
           </form>
           <div className="mt-4 flex flex-wrap gap-2">
             <ButtonLink href={whatsappContactUrl}>WhatsApp</ButtonLink>
@@ -298,6 +295,7 @@ export default function AccompanimentPage() {
             <ButtonLink href={whatsappContactUrl} variant="secondary">Reservar llamada</ButtonLink>
           </div>
         </SurfaceCard>
+        </div>
       </section>
     </main>
   );

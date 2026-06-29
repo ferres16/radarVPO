@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
 import Script from "next/script";
 import { MobileStickyAd } from "@/components/ads";
+import { SiteFooter } from "@/components/site-footer";
 import { TopNav } from "@/components/top-nav";
 import { adsConfig } from "@/lib/ads";
 import { siteConfig } from "@/lib/seo";
@@ -80,6 +81,7 @@ export default function RootLayout({
         ) : null}
         <TopNav />
         <div className="flex-1">{children}</div>
+        <SiteFooter />
         <MobileStickyAd />
       </body>
     </html>

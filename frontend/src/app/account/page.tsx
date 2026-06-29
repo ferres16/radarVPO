@@ -106,18 +106,21 @@ export default function AccountPage() {
 
   if (loading) {
     return (
-      <main className="shell">
-        <article className="rounded-2xl border border-[var(--stroke)] bg-white p-6 shadow-card">
+      <main className="lp lp--inner">
+        <div className="shell">
+          <article className="public-card p-6">
           <p className="text-sm text-[var(--ink-soft)]">Cargando tu cuenta...</p>
-        </article>
+          </article>
+        </div>
       </main>
     );
   }
 
   if (!me) {
     return (
-      <main className="shell">
-        <article className="rounded-2xl border border-[var(--stroke)] bg-white p-6 shadow-card">
+      <main className="lp lp--inner">
+        <div className="shell">
+          <article className="public-card p-6">
           <h1 className="text-2xl font-bold text-[var(--ink)]">Tu cuenta</h1>
           <p className="mt-2 text-[var(--ink-soft)]">
             {error || 'Para ver tus datos de perfil necesitas iniciar sesion.'}
@@ -125,7 +128,8 @@ export default function AccountPage() {
           <Link href="/login" className="mt-4 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]">
             Iniciar sesion
           </Link>
-        </article>
+          </article>
+        </div>
       </main>
     );
   }
@@ -147,7 +151,8 @@ export default function AccountPage() {
   ];
 
   return (
-    <main className="shell space-y-6 pb-16">
+    <main className="lp lp--inner space-y-6">
+      <div className="shell space-y-6 pb-8">
       <ProfileCard className="relative overflow-hidden bg-[linear-gradient(135deg,#f6fbff_0%,#eef6f8_50%,#ffffff_100%)]">
         <div className="pointer-events-none absolute -right-24 -top-20 h-56 w-56 rounded-full bg-[rgba(54,189,248,0.16)] blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-[rgba(47,107,36,0.12)] blur-3xl" />
@@ -341,6 +346,7 @@ export default function AccountPage() {
           </div>
         </ProfileCard>
       </section>
+      </div>
     </main>
   );
 }

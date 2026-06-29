@@ -69,7 +69,7 @@ export function CourseProductCard({
   const duration = lessonCount > 0 ? `${lessonCount} lecciones` : 'Próximamente';
 
   return (
-    <article className={`product-card group ${className}`}>
+    <article className={`product-card public-card public-card--hover group ${className}`}>
       <Link href={`/cursos/${course.slug}`} className="block">
         <div className="product-card__media">
           <CourseCoverImage

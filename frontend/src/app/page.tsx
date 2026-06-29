@@ -6,7 +6,6 @@ import { HomeTestimonials } from '@/components/conversion/home-testimonials';
 import { HeroProof } from '@/components/conversion/hero-proof';
 import { ButtonLink } from '@/components/design-system';
 import { ProComparison } from '@/components/pro-comparison';
-import { SiteFooter } from '@/components/site-footer';
 import { StickyProCta } from '@/components/sticky-pro-cta';
 import { StructuredData } from '@/components/structured-data';
 import { homeFaqs, homeProblemCards, homeSolutionBlocks } from '@/lib/conversion';
@@ -147,8 +146,6 @@ export default async function Home() {
           <HomeFaq />
         </div>
       </main>
-
-      <SiteFooter />
     </>
   );
 }

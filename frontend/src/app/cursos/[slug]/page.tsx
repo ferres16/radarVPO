@@ -6,6 +6,7 @@ import { api } from '@/lib/api';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { CourseAccessLink, CourseAccessProvider, CourseLessonAccessLink } from '@/components/course-access';
 import { CourseCoverImage } from '@/components/course-cover-image';
+import { PublicPage } from '@/components/conversion/public-shell';
 import { StructuredData } from '@/components/structured-data';
 import { buildCourseAccessTargets } from '@/lib/course-access-targets';
 import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
@@ -146,7 +147,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
   };
 
   return (
-    <main className="shell space-y-6 pb-16">
+    <PublicPage>
       <StructuredData
         data={[
           breadcrumbJsonLd([
@@ -163,8 +164,9 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
         pricingType={course.pricingType}
         initialCanAccess={canAccess}
       >
-        <header className="marketplace-hero overflow-hidden">
-          <div className="relative h-48 md:h-64">
+        <header className="lp-page-hero">
+          <div className="lp-page-hero__backdrop" aria-hidden="true" />
+          <div className="relative h-48 md:h-56">
             <CourseCoverImage
               src={course.coverImage}
               alt={course.title}
@@ -177,7 +179,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               <h1 className="display-type mt-2 text-3xl font-black text-white md:text-5xl">{course.title}</h1>
             </div>
           </div>
-          <div className="grid gap-6 p-5 md:grid-cols-[1.2fr_0.8fr] md:p-8">
+          <div className="shell grid gap-6 py-6 md:grid-cols-[1.2fr_0.8fr]">
             <div>
               <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
                 {course.longDescription || course.shortDescription || 'Formación práctica para prepararte antes del plazo.'}
@@ -194,7 +196,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                 )}
               </div>
             </div>
-            <aside className="conversion-panel flex flex-col justify-between p-5 md:p-6">
+            <aside className="public-card flex flex-col justify-between p-5 md:p-6">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/60">Precio</p>
                 <p className="display-type mt-2 text-3xl font-black text-white">
@@ -223,7 +225,8 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           </div>
         </header>
 
-        <section id="indice" className="grid gap-4 scroll-mt-28 lg:grid-cols-[0.95fr_1.05fr]">
+        <section id="indice" className="shell scroll-mt-28 pb-10">
+          <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
           <article className="premium-card p-6">
             <h2 className="text-lg font-black text-[var(--ink)]">Índice del curso</h2>
             <p className="mt-2 text-sm text-[var(--ink-soft)]">
@@ -294,8 +297,9 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               </div>
             </SurfaceCard>
           </aside>
+          </div>
         </section>
       </CourseAccessProvider>
-    </main>
+    </PublicPage>
   );
 }

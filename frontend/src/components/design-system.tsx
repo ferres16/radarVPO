@@ -62,8 +62,6 @@ export function PageHero({
   description,
   actions,
   children,
-  tone = 'green',
-  dark = false,
 }: {
   eyebrow: string;
   title: string;
@@ -75,19 +73,14 @@ export function PageHero({
 }) {
   return (
     <Reveal>
-      <section className={`ds-hero mesh-bg ${dark ? 'section-band--alt !border-white/10' : ''}`}>
-        <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-[rgba(232,184,74,0.14)] blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-20 h-56 w-56 rounded-full bg-[rgba(54,189,248,0.12)] blur-3xl" />
-        <div className="relative grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
-          <div>
-            <Eyebrow tone={dark ? 'cyan' : tone}>{eyebrow}</Eyebrow>
-            <h1 className={`display-type mt-4 max-w-4xl text-4xl font-black leading-[1.02] tracking-tight md:text-5xl lg:text-6xl ${dark ? 'text-white' : 'text-[var(--ink)]'}`}>
-              {title}
-            </h1>
-            <p className={`mt-4 max-w-2xl text-base leading-7 md:text-lg ${dark ? 'text-white/75' : 'text-[var(--ink-soft)]'}`}>{description}</p>
-            {actions ? <div className="mt-6 flex flex-wrap gap-3">{actions}</div> : null}
-          </div>
-          {children ? <div>{children}</div> : null}
+      <section className="lp-page-hero">
+        <div className="lp-page-hero__backdrop" aria-hidden="true" />
+        <div className="lp-page-hero__inner">
+          <span className="lp-hero__badge">{eyebrow}</span>
+          <h1 className="lp-page-hero__title">{title}</h1>
+          <p className="lp-page-hero__subtitle">{description}</p>
+          {actions ? <div className="lp-hero__actions">{actions}</div> : null}
+          {children ? <div className="mt-8">{children}</div> : null}
         </div>
       </section>
     </Reveal>
@@ -110,12 +103,10 @@ export function SectionHeader({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        {eyebrow ? (
-          <p className={`text-xs font-bold uppercase tracking-[0.16em] ${light ? 'text-emerald-300' : 'text-[var(--green-700)]'}`}>{eyebrow}</p>
-        ) : null}
-        <h2 className={`display-type mt-1 text-2xl font-black md:text-3xl ${light ? 'text-white' : 'text-[var(--ink)]'}`}>{title}</h2>
+        {eyebrow ? <p className="lp-eyebrow">{eyebrow}</p> : null}
+        <h2 className={`lp-title ${light ? '!text-white' : ''}`}>{title}</h2>
         {description ? (
-          <p className={`mt-2 max-w-2xl text-sm leading-6 ${light ? 'text-white/70' : 'text-[var(--ink-soft)]'}`}>{description}</p>
+          <p className={`lp-lead ${light ? '!text-white/70' : ''}`}>{description}</p>
         ) : null}
       </div>
       {action ? <div>{action}</div> : null}
@@ -130,7 +121,7 @@ export function SurfaceCard({
   ...props
 }: { children: ReactNode; className?: string; premium?: boolean } & HTMLAttributes<HTMLElement>) {
   return (
-    <article className={`${premium ? 'premium-card' : 'ds-card'} ${className}`} {...props}>
+    <article className={`public-card ${premium ? 'public-card--hover' : ''} ${className}`} {...props}>
       {children}
     </article>
   );

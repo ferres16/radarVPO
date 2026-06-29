@@ -49,13 +49,12 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="shell pb-16">
-      <section className="premium-card mx-auto grid max-w-5xl overflow-hidden md:grid-cols-[1.05fr_0.95fr] animate-fade-up">
+    <main className="lp lp--inner">
+      <section className="shell py-10 md:py-14">
+        <section className="public-card mx-auto grid max-w-5xl overflow-hidden md:grid-cols-[1.05fr_0.95fr]">
         <div className="p-6 md:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--green-700)]">
-            {isProIntent ? proPlan.name : 'Cuenta gratuita'}
-          </p>
-          <h1 className="display-type mt-3 text-2xl font-black text-[var(--ink)] md:text-3xl">
+          <span className="lp-hero__badge">{isProIntent ? proPlan.name : 'Cuenta gratuita'}</span>
+          <h1 className="lp-page-hero__title mt-4 text-2xl md:text-3xl">
             {isProIntent ? 'Activa tu ventaja competitiva' : 'Crea tu cuenta'}
           </h1>
           <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
@@ -88,7 +87,7 @@ export default function RegisterPage() {
               </div>
             </div>
             {error ? <p className="rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="alert" aria-live="polite">{error}</p> : null}
-            <button type="submit" disabled={loading} className="w-full rounded-2xl bg-[var(--green-700)] px-4 py-3 font-bold text-white shadow-glow transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] disabled:opacity-60">
+            <button type="submit" disabled={loading} className="btn btn--primary btn--lg w-full disabled:opacity-60">
               {loading ? 'Creando...' : isProIntent ? proPlan.ctaLabel : 'Crear cuenta'}
             </button>
           </form>
@@ -99,9 +98,9 @@ export default function RegisterPage() {
           </p>
         </div>
 
-        <aside className="section-band--muted border-0 bg-transparent p-6 md:p-8">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--green-700)]">Qué obtienes</p>
-          <h2 className="display-type mt-4 text-2xl font-black text-[var(--ink)] md:text-3xl">
+        <aside className="border-l border-[var(--stroke)] bg-[#f8faf9] p-6 md:p-8">
+          <p className="lp-eyebrow">Qué obtienes</p>
+          <h2 className="lp-title mt-3 text-2xl">
             {isProIntent ? 'Llega preparado al plazo' : 'Empieza gratis, sube a PRO cuando quieras'}
           </h2>
           <div className="mt-6 space-y-3">
@@ -109,7 +108,7 @@ export default function RegisterPage() {
               ? ['Notificaciones SMS prioritarias', 'Avisos por correo', proPlan.courseLabel, 'Seguimiento de municipios']
               : ['Próximos lanzamientos en web', 'Promociones publicadas', 'Perfil y favoritos', 'Upgrade a VPO PRO']
             ).map((item) => (
-              <div key={item} className="rounded-2xl border border-[var(--stroke)] bg-white/90 p-4 text-sm font-semibold text-[var(--ink)] shadow-sm">
+              <div key={item} className="public-card p-4 text-sm font-semibold text-[var(--ink)]">
                 {item}
               </div>
             ))}
@@ -120,6 +119,7 @@ export default function RegisterPage() {
             </div>
           )}
         </aside>
+        </section>
       </section>
     </main>
   );
