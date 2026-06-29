@@ -23,32 +23,34 @@ export function ButtonLink({
   href,
   children,
   variant = 'primary',
+  size = 'md',
   className = '',
 }: {
   href: string;
   children: ReactNode;
-  variant?: 'primary' | 'secondary' | 'dark' | 'ghost';
+  variant?: 'primary' | 'secondary';
+  size?: 'md' | 'lg';
   className?: string;
 }) {
-  const base =
-    'inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-bold transition duration-200 hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] focus-visible:ring-offset-2';
-  const variants = {
-    primary: 'bg-[var(--green-700)] text-white shadow-glow hover:bg-[var(--green-900)]',
-    secondary: 'border border-[var(--stroke-strong)] bg-white/90 text-[var(--ink)] shadow-sm hover:border-[rgba(22,112,85,0.22)] hover:bg-[var(--bg-eco)]',
-    dark: 'bg-[var(--ink)] text-white shadow-card hover:bg-black',
-    ghost: 'text-[var(--green-700)] hover:bg-[rgba(22,112,85,0.08)]',
-  };
+  const classes = [
+    'btn',
+    variant === 'primary' ? 'btn--primary' : 'btn--secondary',
+    size === 'lg' ? 'btn--lg' : '',
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   if (/^https?:\/\//.test(href)) {
     return (
-      <a href={href} className={`${base} ${variants[variant]} ${className}`} rel="noopener noreferrer" target="_blank">
+      <a href={href} className={classes} rel="noopener noreferrer" target="_blank">
         {children}
       </a>
     );
   }
 
   return (
-    <Link href={href} className={`${base} ${variants[variant]} ${className}`}>
+    <Link href={href} className={classes}>
       {children}
     </Link>
   );

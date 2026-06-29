@@ -79,7 +79,7 @@ export default function RootLayout({
           />
         ) : null}
         <TopNav />
-        {children}
+        <div className="flex-1">{children}</div>
         <MobileStickyAd />
       </body>
     </html>

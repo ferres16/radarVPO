@@ -1,67 +1,80 @@
-import { proComparisonRows, proHref, proPlan } from '@/lib/pro';
-import { ButtonLink, SectionHeader } from './design-system';
+import { proComparisonRows, proHref, proPlan, type ProComparisonCell } from '@/lib/pro';
+import { ButtonLink } from './design-system';
 
-function CheckIcon({ active }: { active: boolean }) {
+function ComparisonCell({ value, highlight = false }: { value: ProComparisonCell; highlight?: boolean }) {
+  if (typeof value === 'string') {
+    return (
+      <span className={`compare-table__text ${highlight ? 'compare-table__text--pro' : ''}`}>
+        {value}
+      </span>
+    );
+  }
+
   return (
     <span
-      className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold ${
-        active ? 'bg-[rgba(22,112,85,0.12)] text-[var(--green-700)]' : 'bg-[var(--bg-muted)] text-[var(--ink-soft)]'
-      }`}
-      aria-hidden="true"
+      className={`compare-table__icon ${value ? 'compare-table__icon--yes' : 'compare-table__icon--no'}`}
+      aria-label={value ? 'Incluido' : 'No incluido'}
     >
-      {active ? '✓' : '—'}
+      {value ? '✓' : '—'}
     </span>
   );
 }
 
 export function ProComparison({
   title = 'Gratis vs VPO PRO',
-  description = 'La web te informa. VPO PRO te avisa antes y te prepara para actuar.',
+  description = 'La versión gratuita informa. PRO te avisa antes, te prepara y te da ventaja real.',
   compact = false,
+  showHeader = true,
 }: {
   title?: string;
   description?: string;
   compact?: boolean;
+  showHeader?: boolean;
 }) {
   return (
-    <section className={compact ? 'space-y-4' : 'space-y-5'}>
-      {compact && title ? (
-        <h2 className="display-type text-xl font-black text-[var(--ink)] md:text-2xl">{title}</h2>
+    <section className={compact ? 'compare-block compare-block--compact' : 'compare-block'} aria-labelledby="compare-title">
+      {showHeader ? (
+        <div className="lp-section__head">
+          {!compact ? <p className="lp-eyebrow">Comparativa</p> : null}
+          <h2 id="compare-title" className={compact ? 'lp-title lp-title--sm' : 'lp-title'}>
+            {title}
+          </h2>
+          {!compact && description ? <p className="lp-lead">{description}</p> : null}
+        </div>
       ) : null}
-      {!compact ? <SectionHeader title={title} description={description} /> : null}
-      <div className="overflow-hidden rounded-2xl border border-[var(--stroke)] bg-white/80 backdrop-blur-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-sm">
-            <thead>
-              <tr className="border-b border-[var(--stroke)] bg-[var(--bg-app)]/80">
-                <th className="p-4 text-left font-bold text-[var(--ink)]">Qué incluye</th>
-                <th className="p-4 text-center font-bold text-[var(--ink-soft)]">Gratis</th>
-                <th className="p-4 text-center font-bold text-[var(--green-700)]">{proPlan.name}</th>
+
+      <div className="compare-table-wrap">
+        <table className="compare-table">
+          <thead>
+            <tr>
+              <th scope="col">Función</th>
+              <th scope="col">Free</th>
+              <th scope="col" className="compare-table__pro-col">
+                {proPlan.name}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {proComparisonRows.map((row) => (
+              <tr key={row.feature}>
+                <th scope="row">{row.feature}</th>
+                <td>
+                  <ComparisonCell value={row.free} />
+                </td>
+                <td className="compare-table__pro-col">
+                  <ComparisonCell value={row.pro} highlight />
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {proComparisonRows.map((row) => (
-                <tr key={row.feature} className="border-b border-[var(--stroke)] last:border-b-0">
-                  <td className="p-4 font-medium text-[var(--ink)]">{row.feature}</td>
-                  <td className="p-4 text-center">
-                    <CheckIcon active={row.free} />
-                    <span className="sr-only">{row.free ? 'Incluido' : 'No incluido'}</span>
-                  </td>
-                  <td className="bg-[rgba(22,112,85,0.04)] p-4 text-center">
-                    <CheckIcon active={row.pro} />
-                    <span className="sr-only">{row.pro ? 'Incluido' : 'No incluido'}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex flex-col items-center gap-2 border-t border-[var(--stroke)] bg-[var(--bg-eco)]/40 p-5 text-center sm:flex-row sm:justify-between sm:text-left">
-          <p className="text-sm font-semibold text-[var(--ink)]">
-            {proPlan.price} · ventaja real cuando abre un plazo
-          </p>
-          <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
-        </div>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="compare-block__cta">
+        <ButtonLink href={proHref} size="lg">
+          Empieza hoy por 7,99 €/mes
+        </ButtonLink>
+        <p className="compare-block__note">Cancela cuando quieras · Sin permanencia</p>
       </div>
     </section>
   );

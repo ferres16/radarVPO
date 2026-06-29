@@ -60,10 +60,15 @@ export const starterCourseKeywords = [
 ];
 
 export const proComparisonRows = [
-  { feature: 'Consultar próximos lanzamientos', free: true, pro: true },
-  { feature: 'Consultar promociones publicadas', free: true, pro: true },
-  { feature: 'Notificaciones SMS y correo prioritarias', free: false, pro: true },
-  { feature: 'Seguimiento de municipios', free: false, pro: true },
-  { feature: 'Curso de iniciación incluido', free: false, pro: true },
-  { feature: 'Guía completa del proceso', free: false, pro: true },
+  { feature: 'Ver promociones', free: true as const, pro: true as const },
+  { feature: 'Alertas', free: 'Limitadas', pro: 'Ilimitadas' },
+  { feature: 'Avisos por email', free: false as const, pro: true as const },
+  { feature: 'Avisos SMS', free: false as const, pro: true as const },
+  { feature: 'Próximos lanzamientos', free: false as const, pro: true as const },
+  { feature: 'Seguimiento municipios', free: false as const, pro: true as const },
+  { feature: 'Checklist', free: false as const, pro: true as const },
+  { feature: 'Curso VPO', free: false as const, pro: 'Completo' },
+  { feature: 'Soporte', free: false as const, pro: 'Prioritario' },
 ] as const;
+
+export type ProComparisonCell = boolean | string;
