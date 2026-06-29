@@ -3,7 +3,7 @@ import { api } from '@/lib/api';
 import { FeaturedCourseSpotlight } from '@/components/conversion/featured-course-spotlight';
 import { HomeFaq } from '@/components/conversion/home-faq';
 import { HomeTestimonials } from '@/components/conversion/home-testimonials';
-import { ProductShowcase } from '@/components/conversion/product-showcase';
+import { HeroProof } from '@/components/conversion/hero-proof';
 import { ButtonLink } from '@/components/design-system';
 import { ProComparison } from '@/components/pro-comparison';
 import { SiteFooter } from '@/components/site-footer';
@@ -41,29 +41,27 @@ export default async function Home() {
       <main className="lp">
         {/* 1. HERO */}
         <section className="lp-hero" aria-labelledby="hero-title">
-          <div className="shell lp-hero__grid">
-            <div className="lp-hero__copy">
-              <p className="lp-eyebrow">Vivienda protegida · Cataluña</p>
-              <h1 id="hero-title" className="lp-hero__title">
-                No vuelvas a llegar tarde a una promoción de VPO.
-              </h1>
-              <p className="lp-hero__subtitle">
-                Si quieres conseguir un piso protegido antes que el resto, necesitas alertas, preparación y ventaja.
-                Eso es {proPlan.name}.
-              </p>
-              <div className="lp-hero__actions">
-                <ButtonLink href={proHref} size="lg">
-                  Empieza con VPO PRO
-                </ButtonLink>
-                <ButtonLink href="/promotions" variant="secondary" size="lg">
-                  Ver promociones
-                </ButtonLink>
-              </div>
-              <p className="lp-hero__price">{proPlan.price} · cancela cuando quieras</p>
+          <div className="lp-hero__backdrop" aria-hidden="true" />
+          <div className="shell lp-hero__inner">
+            <span className="lp-hero__badge">VPO PRO · Cataluña</span>
+            <h1 id="hero-title" className="lp-hero__title">
+              No vuelvas a llegar tarde
+              <span className="lp-hero__title-accent"> a una promoción de VPO.</span>
+            </h1>
+            <p className="lp-hero__subtitle">
+              Alertas antes que el resto, preparación real y ventaja cuando abre el plazo.
+              Todo en una suscripción.
+            </p>
+            <div className="lp-hero__actions">
+              <ButtonLink href={proHref} size="lg">
+                Empieza con VPO PRO
+              </ButtonLink>
+              <ButtonLink href="/promotions" variant="secondary" size="lg">
+                Ver promociones
+              </ButtonLink>
             </div>
-            <div className="lp-hero__product">
-              <ProductShowcase />
-            </div>
+            <p className="lp-hero__price">{proPlan.price} · cancela cuando quieras</p>
+            <HeroProof />
           </div>
         </section>
 
