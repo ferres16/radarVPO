@@ -703,7 +703,10 @@ export class CoursesService {
     T extends { slug: string; coverImage?: string | null },
   >(
     course: T,
-    coverAsset?: { fileAssetId: string | null; fileAsset?: { status: string } | null },
+    coverAsset?: {
+      fileAssetId: string | null;
+      fileAsset?: { status: string } | null;
+    } | null,
   ): string | null {
     if (coverAsset?.fileAssetId && coverAsset.fileAsset?.status !== 'deleted') {
       return this.buildPublicCoverUrl(course.slug);
