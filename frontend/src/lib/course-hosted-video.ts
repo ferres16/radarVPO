@@ -1,4 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core';
+import { ReactNodeViewRenderer } from '@tiptap/react';
+import { CourseHostedVideoView } from '@/components/course-hosted-video-view';
 
 export const HostedVideo = Node.create({
   name: 'hostedVideo',
@@ -9,6 +11,9 @@ export const HostedVideo = Node.create({
 
   addAttributes() {
     return {
+      assetId: {
+        default: null,
+      },
       src: {
         default: null,
       },
@@ -32,5 +37,9 @@ export const HostedVideo = Node.create({
         class: 'course-editor-hosted-video',
       }),
     ];
+  },
+
+  addNodeView() {
+    return ReactNodeViewRenderer(CourseHostedVideoView);
   },
 });

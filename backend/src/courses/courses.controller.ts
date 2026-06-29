@@ -22,6 +22,20 @@ export class CoursesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('file-assets/:fileAssetId/media')
+  @Redirect()
+  async getFileAssetMedia(
+    @Param('fileAssetId') fileAssetId: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    const url = await this.coursesService.getFileAssetMediaRedirectUrl(
+      fileAssetId,
+      user,
+    );
+    return { url, statusCode: 302 };
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('assets/:assetId/url')
   getCourseAssetUrl(
     @Param('assetId') assetId: string,

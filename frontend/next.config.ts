@@ -9,11 +9,12 @@ const contentSecurityPolicy = [
   "object-src 'none'",
   "form-action 'self' mailto:",
   "img-src 'self' data: blob: https:",
+  "media-src 'self' blob: https:",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net",
   `connect-src 'self' https:${isProduction ? "" : " http://localhost:*"}`,
-  "frame-src https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
+  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
   isProduction ? "upgrade-insecure-requests" : "",
 ].filter(Boolean).join("; ");
 

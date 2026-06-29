@@ -1,4 +1,5 @@
 import type { JSX as ReactJSX, ReactNode } from 'react';
+import { getCourseMediaSrc } from '@/lib/course-media-url';
 
 type RichMark = {
   type?: string;
@@ -118,7 +119,9 @@ function renderNodes(nodes?: RichNode[]): ReactNode {
       );
     }
     if (node.type === 'hostedVideo') {
-      const src = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
+      const assetId = typeof node.attrs?.assetId === 'string' ? node.attrs.assetId : null;
+      const fallbackSrc = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
+      const src = getCourseMediaSrc(assetId, fallbackSrc);
       const title = typeof node.attrs?.title === 'string' ? node.attrs.title : 'Vídeo de la lección';
       if (!src) return null;
       return (

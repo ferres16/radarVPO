@@ -73,6 +73,7 @@ export function CourseProductCard({
       <Link href={`/cursos/${course.slug}`} className="block">
         <div className="product-card__media">
           <CourseCoverImage
+            slug={course.slug}
             src={course.coverImage}
             className="h-48 w-full object-cover transition duration-500 group-hover:scale-[1.03] md:h-52"
             label={course.title}

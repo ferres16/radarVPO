@@ -411,6 +411,84 @@ export class CoursesService {
     };
   }
 
+  async getFileAssetMediaRedirectUrl(
+    fileAssetId: string,
+    user: { sub: string; role: 'user' | 'admin' },
+  ): Promise<string> {
+    const fileAsset = await this.prisma.fileAsset.findUnique({
+      where: { id: fileAssetId },
+    });
+
+    if (!fileAsset || fileAsset.status !== 'active') {
+      throw new NotFoundException('File not found');
+    }
+
+    if (user.role !== 'admin') {
+      const courseId = await this.resolveCourseIdForFileAsset(fileAsset);
+      if (!courseId) {
+        throw new ForbiddenException('Access denied');
+      }
+
+      const course = await this.prisma.course.findUnique({
+        where: { id: courseId },
+        include: {
+          accessRules: { orderBy: { createdAt: 'asc' } },
+        },
+      });
+
+      if (!course) {
+        throw new NotFoundException('Course not found');
+      }
+
+      const profile = await this.getAccessProfile(user.sub);
+      const access = this.evaluateAccess(course, profile);
+      if (!access.canAccess) {
+        throw new ForbiddenException('Access denied');
+      }
+    }
+
+    const signed = await this.fileStorage.getAccessibleUrl(fileAssetId, true, {
+      preferSigned: true,
+    });
+    if (!signed.url) {
+      throw new NotFoundException('File not found');
+    }
+
+    return signed.url;
+  }
+
+  private async resolveCourseIdForFileAsset(fileAsset: {
+    id: string;
+    entityType: string;
+    entityId: string;
+  }): Promise<string | null> {
+    if (fileAsset.entityType === 'course') {
+      return fileAsset.entityId;
+    }
+
+    if (fileAsset.entityType === 'lesson') {
+      const lesson = await this.prisma.courseLesson.findUnique({
+        where: { id: fileAsset.entityId },
+        select: { courseId: true },
+      });
+      return lesson?.courseId ?? null;
+    }
+
+    const resource = await this.prisma.courseResource.findFirst({
+      where: { fileAssetId: fileAsset.id },
+      select: { courseId: true },
+    });
+    if (resource?.courseId) {
+      return resource.courseId;
+    }
+
+    const courseAsset = await this.prisma.courseAsset.findFirst({
+      where: { fileAssetId: fileAsset.id },
+      select: { courseId: true },
+    });
+    return courseAsset?.courseId ?? null;
+  }
+
   async getCourseCoverRedirectUrl(slug: string): Promise<string> {
     const course = await this.prisma.course.findFirst({
       where: { slug, status: CourseStatus.published },
@@ -691,12 +769,7 @@ export class CoursesService {
   }
 
   private buildPublicCoverUrl(slug: string): string {
-    const base = (
-      process.env.PUBLIC_API_BASE_URL ||
-      process.env.API_BASE_URL ||
-      'http://localhost:3000/api/v1'
-    ).replace(/\/$/, '');
-    return `${base}/courses/${encodeURIComponent(slug)}/cover`;
+    return `/courses/${encodeURIComponent(slug)}/cover`;
   }
 
   private resolvePublicCoverImage<

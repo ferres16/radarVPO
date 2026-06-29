@@ -6,7 +6,8 @@ import { api } from '@/lib/api';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { CourseAccessLink, CourseAccessProvider, CourseLessonAccessLink } from '@/components/course-access';
 import { CourseCoverImage } from '@/components/course-cover-image';
-import { CourseHubProgress } from '@/components/course-hub-progress';
+import { CourseHubSection } from '@/components/course-hub-section';
+import { CoursePublicIndex } from '@/components/course-public-index';
 import { PublicPage } from '@/components/conversion/public-shell';
 import { StructuredData } from '@/components/structured-data';
 import { buildCourseAccessTargets } from '@/lib/course-access-targets';
@@ -63,43 +64,6 @@ async function getCourseWithAccess(slug: string) {
   return null;
 }
 
-async function getCourseProgress(slug: string) {
-  const cookieHeader = (await cookies()).toString();
-  if (!cookieHeader) return null;
-
-  const response = await fetch(`${API_BASE_URL}/courses/${slug}/progress`, {
-    headers: {
-      Cookie: cookieHeader,
-      Accept: 'application/json',
-    },
-    cache: 'no-store',
-  });
-
-  if (!response.ok) {
-    return null;
-  }
-
-  return response.json() as Promise<{
-    progressPercent: number;
-    completedLessons: number;
-    totalLessons: number;
-    lastLessonId?: string | null;
-    lessons: Array<{ lessonId: string; status: 'not_started' | 'in_progress' | 'completed' }>;
-  }>;
-}
-
-function findLessonById(
-  course: Course,
-  lessonId?: string | null,
-) {
-  if (!lessonId) return null;
-  for (const module of course.modules || []) {
-    const lesson = (module.lessons || []).find((item) => item.id === lessonId);
-    if (lesson) return lesson;
-  }
-  return null;
-}
-
 export async function generateMetadata({ params }: CourseDetailParams): Promise<Metadata> {
   const { slug } = await params;
   const course = await getPublicCourse(slug);
@@ -126,10 +90,9 @@ export async function generateMetadata({ params }: CourseDetailParams): Promise<
 
 export default async function CourseDetailPage({ params }: CourseDetailParams) {
   const { slug } = await params;
-  const [publicCourse, courseWithAccess, courseProgress] = await Promise.all([
+  const [publicCourse, courseWithAccess] = await Promise.all([
     getPublicCourse(slug),
     getCourseWithAccess(slug),
-    getCourseProgress(slug),
   ]);
   const course = courseWithAccess || publicCourse;
 
@@ -164,25 +127,6 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
         maximumFractionDigits: 0,
       }).format(Number(course.price))
     : null;
-  const showProgressHub = canAccess && courseProgress && courseProgress.totalLessons > 0;
-  const continueLesson = findLessonById(course, courseProgress?.lastLessonId);
-  const firstIncompleteLesson = (() => {
-    if (!courseProgress) return null;
-    const completedIds = new Set(
-      courseProgress.lessons
-        .filter((entry) => entry.status === 'completed')
-        .map((entry) => entry.lessonId),
-    );
-    for (const module of modules) {
-      for (const lesson of module.lessons || []) {
-        if (!completedIds.has(lesson.id)) {
-          return lesson;
-        }
-      }
-    }
-    return null;
-  })();
-  const resumeLesson = continueLesson || firstIncompleteLesson;
 
   const courseJsonLd = {
     '@context': 'https://schema.org',
@@ -226,6 +170,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           <div className="lp-page-hero__backdrop" aria-hidden="true" />
           <div className="relative h-48 md:h-56">
             <CourseCoverImage
+              slug={course.slug}
               src={course.coverImage}
               alt={course.title}
               className="h-full w-full object-cover"
@@ -283,17 +228,9 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           </div>
         </header>
 
-        {showProgressHub ? (
-          <CourseHubProgress
-            course={course}
-            progressPercent={courseProgress.progressPercent}
-            completedLessons={courseProgress.completedLessons}
-            totalLessons={courseProgress.totalLessons}
-            lessonProgress={courseProgress.lessons}
-            continueLessonSlug={resumeLesson?.slug}
-            continueLessonTitle={resumeLesson?.title}
-          />
-        ) : (
+        <CourseHubSection course={course} lessonCount={lessonCount} />
+
+        <CoursePublicIndex>
         <section id="indice" className="shell scroll-mt-28 pb-10">
           <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
           <article className="premium-card p-6">
@@ -368,7 +305,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           </aside>
           </div>
         </section>
-        )}
+        </CoursePublicIndex>
       </CourseAccessProvider>
     </PublicPage>
   );

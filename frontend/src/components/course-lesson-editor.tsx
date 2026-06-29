@@ -193,11 +193,11 @@ export function CourseLessonEditor({
     setUploadingKind('video');
     try {
       const resource = await onUploadResource(file, 'video');
-      if (!resource?.publicUrl) return;
+      if (!resource?.fileAssetId && !resource?.publicUrl) return;
       editorChain(editor).insertContent({
         type: 'hostedVideo',
         attrs: {
-          src: resource.publicUrl,
+          assetId: resource.fileAssetId || null,
           title: resource.originalName || 'Vídeo',
         },
       }).run();
@@ -254,7 +254,7 @@ export function CourseLessonEditor({
       editorChain(editor).insertContent({
         type: 'hostedVideo',
         attrs: {
-          src: resource.publicUrl,
+          assetId: resource.fileAssetId || null,
           title: resource.originalName || 'Vídeo',
         },
       }).run();

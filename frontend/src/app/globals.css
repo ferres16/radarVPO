@@ -670,6 +670,11 @@ h3,
   border: 1px solid var(--stroke);
 }
 
+.course-lesson-prosemirror .course-editor-hosted-video-wrapper {
+  display: block;
+  margin: 1rem 0;
+}
+
 .course-lesson-prosemirror video.course-editor-hosted-video,
 .course-lesson-prosemirror .course-editor-hosted-video {
   display: block;

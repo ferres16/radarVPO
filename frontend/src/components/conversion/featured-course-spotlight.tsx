@@ -28,6 +28,7 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
     <article className="spotlight-course">
       <Link href={`/cursos/${course.slug}`} className="spotlight-course__media">
         <CourseCoverImage
+          slug={course.slug}
           src={course.coverImage}
           alt=""
           className="h-full w-full object-cover"
