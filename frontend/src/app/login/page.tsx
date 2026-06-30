@@ -2,13 +2,11 @@
 
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { proHref, proPlan } from '@/lib/pro';
 import { ButtonLink } from '@/components/design-system';
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -22,8 +20,7 @@ export default function LoginPage() {
     try {
       await api.login(email, password);
       const next = new URLSearchParams(window.location.search).get('next');
-      router.push(next && next.startsWith('/') ? next : '/account');
-      router.refresh();
+      window.location.assign(next && next.startsWith('/') ? next : '/account');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión');
     } finally {

@@ -26,11 +26,7 @@ import {
   DeliveryFailure,
   JobRun,
 } from '@/types';
-
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  process.env.API_URL ||
-  'http://localhost:3000/api/v1';
+import { getBrowserApiBaseUrl } from '@/lib/backend-url';
 
 type CourseMutationPayload = Partial<
   Pick<
@@ -114,8 +110,17 @@ function normalizeServicePayload(payload: ServiceMutationPayload) {
   };
 }
 
+async function parseErrorResponse(res: Response, fallback: string) {
+  try {
+    const payload = (await res.json()) as { error?: { message?: string } };
+    return payload.error?.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetch(`${getBrowserApiBaseUrl()}${path}`, {
     ...init,
     credentials: 'include',
     headers: {
@@ -126,24 +131,32 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    const fallback = `Request failed with status ${res.status}`;
-    let message = fallback;
+    throw new Error(await parseErrorResponse(res, `Request failed with status ${res.status}`));
+  }
 
-    try {
-      const payload = (await res.json()) as { error?: { message?: string } };
-      message = payload.error?.message || fallback;
-    } catch {
-      message = fallback;
-    }
+  return res.json() as Promise<T>;
+}
 
-    throw new Error(message);
+async function authRequest<T>(path: '/login' | '/register' | '/logout', init?: RequestInit): Promise<T> {
+  const res = await fetch(`/api/auth${path}`, {
+    ...init,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers || {}),
+    },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(await parseErrorResponse(res, `Request failed with status ${res.status}`));
   }
 
   return res.json() as Promise<T>;
 }
 
 async function requestForm<T>(path: string, body: FormData): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}${path}`, {
+  const res = await fetch(`${getBrowserApiBaseUrl()}${path}`, {
     method: 'POST',
     body,
     credentials: 'include',
@@ -155,14 +168,7 @@ async function requestForm<T>(path: string, body: FormData): Promise<T> {
       res.status === 413
         ? 'El archivo supera el límite permitido. Prueba con un vídeo más corto o comprimido (máx. 500 MB).'
         : `Request failed with status ${res.status}`;
-    let message = fallback;
-    try {
-      const payload = (await res.json()) as { error?: { message?: string } };
-      message = payload.error?.message || fallback;
-    } catch {
-      message = fallback;
-    }
-    throw new Error(message);
+    throw new Error(await parseErrorResponse(res, fallback));
   }
 
   return res.json() as Promise<T>;
@@ -538,18 +544,18 @@ export const api = {
       method: 'DELETE',
     }),
   login: async (email: string, password: string) => {
-    return request<{ user: { id: string; email: string } }>('/auth/login', {
+    return authRequest<{ user: { id: string; email: string } }>('/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
   },
   logout: async () => {
-    return request<{ success: boolean }>('/auth/logout', {
+    return authRequest<{ success: boolean }>('/logout', {
       method: 'POST',
     });
   },
   register: async (email: string, password: string, fullName: string, phone: string) => {
-    return request<{ user: { id: string; email: string } }>('/auth/register', {
+    return authRequest<{ user: { id: string; email: string } }>('/register', {
       method: 'POST',
       body: JSON.stringify({ email, password, fullName, phone }),
     });

@@ -2,13 +2,11 @@
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { proHref, proPlan } from '@/lib/pro';
 import { ButtonLink } from '@/components/design-system';
 
 export default function RegisterPage() {
-  const router = useRouter();
   const [intent, setIntent] = useState('');
   const isProIntent = intent === 'pro';
   const [fullName, setFullName] = useState('');
@@ -40,7 +38,7 @@ export default function RegisterPage() {
 
     try {
       await api.register(email, password, fullName, phone);
-      router.push(isProIntent ? proHref : '/account');
+      window.location.assign(isProIntent ? proHref : '/account');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta');
     } finally {

@@ -19,7 +19,7 @@ describe('api auth transport', () => {
 
     expect(setItemSpy).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('/auth/login'),
+      '/api/auth/login',
       expect.objectContaining({
         credentials: 'include',
         headers: expect.not.objectContaining({
