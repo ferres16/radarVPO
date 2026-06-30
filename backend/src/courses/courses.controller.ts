@@ -22,6 +22,15 @@ export class CoursesController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('file-assets/:fileAssetId/url')
+  getFileAssetUrl(
+    @Param('fileAssetId') fileAssetId: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.coursesService.getFileAssetAccessibleUrl(fileAssetId, user);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('file-assets/:fileAssetId/media')
   @Redirect()
   async getFileAssetMedia(

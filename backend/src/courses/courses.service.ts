@@ -415,6 +415,17 @@ export class CoursesService {
     fileAssetId: string,
     user: { sub: string; role: 'user' | 'admin' },
   ): Promise<string> {
+    const signed = await this.getFileAssetAccessibleUrl(fileAssetId, user);
+    if (!signed.url) {
+      throw new NotFoundException('File not found');
+    }
+    return signed.url;
+  }
+
+  async getFileAssetAccessibleUrl(
+    fileAssetId: string,
+    user: { sub: string; role: 'user' | 'admin' },
+  ) {
     const fileAsset = await this.prisma.fileAsset.findUnique({
       where: { id: fileAssetId },
     });
@@ -450,11 +461,7 @@ export class CoursesService {
     const signed = await this.fileStorage.getAccessibleUrl(fileAssetId, true, {
       preferSigned: true,
     });
-    if (!signed.url) {
-      throw new NotFoundException('File not found');
-    }
-
-    return signed.url;
+    return signed;
   }
 
   private async resolveCourseIdForFileAsset(fileAsset: {

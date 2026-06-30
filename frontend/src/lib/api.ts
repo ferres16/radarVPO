@@ -339,6 +339,10 @@ export const api = {
     ),
   getCourseAssetUrl: (assetId: string) =>
     request<{ url: string | null; expiresAt: string | null }>(`/courses/assets/${assetId}/url`),
+  getCourseFileAssetUrl: (fileAssetId: string) =>
+    request<{ url: string | null; expiresAt: string | null }>(
+      `/courses/file-assets/${fileAssetId}/url`,
+    ),
   getCourseProgress: (slug: string) =>
     request<{
       courseId: string;

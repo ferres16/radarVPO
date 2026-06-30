@@ -198,6 +198,7 @@ export function CourseLessonEditor({
         type: 'hostedVideo',
         attrs: {
           assetId: resource.fileAssetId || null,
+          src: resource.publicUrl || null,
           title: resource.originalName || 'Vídeo',
         },
       }).run();
@@ -255,6 +256,7 @@ export function CourseLessonEditor({
         type: 'hostedVideo',
         attrs: {
           assetId: resource.fileAssetId || null,
+          src: resource.publicUrl || null,
           title: resource.originalName || 'Vídeo',
         },
       }).run();

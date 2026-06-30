@@ -1,5 +1,5 @@
 import type { JSX as ReactJSX, ReactNode } from 'react';
-import { getCourseMediaSrc } from '@/lib/course-media-url';
+import { CourseHostedVideoPlayer } from '@/components/course-hosted-video-player';
 
 type RichMark = {
   type?: string;
@@ -120,19 +120,15 @@ function renderNodes(nodes?: RichNode[]): ReactNode {
     }
     if (node.type === 'hostedVideo') {
       const assetId = typeof node.attrs?.assetId === 'string' ? node.attrs.assetId : null;
-      const fallbackSrc = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
-      const src = getCourseMediaSrc(assetId, fallbackSrc);
+      const fallbackSrc = typeof node.attrs?.src === 'string' ? node.attrs.src : null;
       const title = typeof node.attrs?.title === 'string' ? node.attrs.title : 'Vídeo de la lección';
-      if (!src) return null;
       return (
-        <video
+        <CourseHostedVideoPlayer
           key={key}
-          src={src}
-          controls
-          playsInline
-          preload="metadata"
+          assetId={assetId}
+          fallbackSrc={fallbackSrc}
           title={title}
-          className="my-8 aspect-video w-full rounded-2xl border border-[var(--stroke)] bg-black shadow-sm"
+          wrapperClassName="my-8"
         />
       );
     }
