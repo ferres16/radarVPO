@@ -200,7 +200,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                 )}
               </div>
             </div>
-            <aside className="public-card flex flex-col justify-between p-5 md:p-6">
+            <aside className="course-progress-card flex flex-col gap-4 p-5 md:p-6">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/60">Precio</p>
                 <p className="display-type mt-2 text-3xl font-black text-white">
@@ -211,7 +211,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                 </p>
                 {onSale ? <p className="mt-1 text-xs font-bold uppercase tracking-[0.14em] text-emerald-300">Oferta activa</p> : null}
               </div>
-              <div className="mt-6 space-y-2">
+              <div className="space-y-2">
                 <CourseAccessLink
                   hrefWhenAccess={courseEntryHref}
                   hrefWhenLocked={lockedAccessHref}

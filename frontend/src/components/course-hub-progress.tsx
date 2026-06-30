@@ -59,7 +59,7 @@ export function CourseHubProgress({
   const modules = course.modules || [];
 
   return (
-    <section className="shell pb-4 pt-3 md:pb-6 md:pt-4">
+      <section className="shell pb-4 pt-2 md:pb-6 md:pt-3">
       <div className="course-progress-card grid gap-4 p-4 md:grid-cols-[auto_1fr] md:items-center md:gap-6 md:p-6">
         <ProgressRing percent={progressPercent} />
         <div className="min-w-0">

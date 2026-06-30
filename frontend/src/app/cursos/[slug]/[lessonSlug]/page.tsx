@@ -8,6 +8,7 @@ import { CourseBlockRenderer } from '@/components/course-block-renderer';
 import { CourseModuleIndex } from '@/components/course-module-index';
 import { CourseTipTapRenderer } from '@/components/course-tiptap-renderer';
 import { CollapsePanel } from '@/components/collapse-panel';
+import { filterLessonResourcesForDisplay } from '@/lib/course-lesson-resources';
 import { api } from '@/lib/api';
 import { proHref, proPlan } from '@/lib/pro';
 import type { Course, CourseLesson, CourseModule } from '@/types';
@@ -71,6 +72,10 @@ export default function LessonPage() {
   const currentIndex = lessonItems.findIndex((item) => item.slug === lesson?.slug);
   const previousLesson = currentIndex > 0 ? lessonItems[currentIndex - 1] : null;
   const nextLesson = currentIndex >= 0 && currentIndex < lessonItems.length - 1 ? lessonItems[currentIndex + 1] : null;
+  const displayResources = useMemo(
+    () => filterLessonResourcesForDisplay(lesson?.resources, lesson?.contentJson),
+    [lesson?.contentJson, lesson?.resources],
+  );
 
   async function markCompleted() {
     if (!lesson) return;
@@ -185,30 +190,26 @@ export default function LessonPage() {
                 ) : (
                   <p className="text-base text-[var(--ink-soft)]">Contenido pendiente.</p>
                 )}
-                {lesson?.resources?.length ? (
+                {displayResources.length ? (
                   <div className="mt-5 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 md:mt-6">
-                    <h2 className="text-sm font-bold text-[var(--ink)] md:text-base">Recursos adjuntos</h2>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      {lesson.resources.map((resource) => (
-                        <div key={resource.id} className="rounded-xl border border-[var(--stroke)] bg-white p-3">
-                          {resource.kind === 'image' && resource.publicUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={resource.publicUrl} alt={resource.originalName || ''} className="mb-3 h-40 w-full rounded-xl object-cover md:h-48" />
-                          ) : null}
-                          {resource.kind === 'video' && resource.publicUrl ? (
-                            <video src={resource.publicUrl} controls className="mb-3 aspect-video w-full rounded-xl" />
-                          ) : null}
+                    <h2 className="text-sm font-bold text-[var(--ink)] md:text-base">Descargas</h2>
+                    <ul className="mt-3 space-y-2">
+                      {displayResources.map((resource) => (
+                        <li key={resource.id}>
                           <a
                             href={resource.publicUrl}
-                            className="text-sm font-semibold text-[var(--ink)] underline"
+                            className="flex items-center justify-between gap-3 rounded-xl border border-[var(--stroke)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--ink)] transition hover:border-[rgba(22,112,85,0.22)]"
                             rel="noopener noreferrer"
                             target="_blank"
                           >
-                            {resource.originalName || resource.kind}
+                            <span className="min-w-0 truncate">{resource.originalName || resource.kind}</span>
+                            <span className="shrink-0 text-xs font-bold uppercase tracking-[0.12em] text-[var(--green-700)]">
+                              Descargar
+                            </span>
                           </a>
-                        </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   </div>
                 ) : null}
               </article>

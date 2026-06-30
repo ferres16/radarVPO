@@ -97,7 +97,7 @@ export function CourseHubSection({ course, lessonCount }: CourseHubSectionProps)
   if (loading && !progress) {
     return (
       <section className="shell -mt-2 pb-6">
-        <div className="public-card animate-pulse p-6">
+        <div className="course-progress-card animate-pulse p-4 md:p-6">
           <div className="h-28 w-28 rounded-full bg-white/10" />
           <p className="mt-4 text-sm text-white/70">Cargando tu progreso...</p>
         </div>
