@@ -1208,7 +1208,7 @@ export class BackofficeService {
         province: this.nullableText(dto.province),
         promotionType: dto.promotionType || 'desconocido',
         status,
-        alertDetectedAt: status === 'pending_review' ? new Date() : null,
+        ...(status === 'pending_review' ? { alertDetectedAt: new Date() } : {}),
         promoter: this.nullableText(dto.promoter),
         totalHomes: dto.totalHomes,
         publicDescription: this.nullableText(dto.publicDescription),
