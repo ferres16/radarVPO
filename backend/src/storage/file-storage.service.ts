@@ -9,6 +9,10 @@ import {
 import { FileAsset, FileEntityType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3StorageService } from './s3-storage.service';
+import {
+  ALLOWED_COURSE_ASSET_MIME_TYPES,
+  COURSE_ASSET_MAX_SIZE_BYTES,
+} from './upload-limits';
 
 const DEFAULT_MAX_FILE_SIZE = 25 * 1024 * 1024;
 const DEFAULT_ALLOWED_MIME_TYPES = [

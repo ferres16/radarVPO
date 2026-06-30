@@ -52,10 +52,14 @@ import { UploadCourseBlockAssetDto } from './dto/upload-course-block-asset.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpsertUnitDto } from './dto/upsert-unit.dto';
+import {
+  ALLOWED_COURSE_ASSET_MIME_TYPES,
+  ALLOWED_COURSE_COVER_MIME_TYPES,
+  COURSE_ASSET_MAX_SIZE_BYTES,
+  COURSE_COVER_MAX_SIZE_BYTES,
+} from '../storage/upload-limits';
 
 const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024;
-const MAX_COURSE_ASSET_SIZE = Number(process.env.COURSE_ASSET_MAX_SIZE_BYTES || 25 * 1024 * 1024);
-const MAX_COURSE_COVER_SIZE = Number(process.env.COURSE_COVER_MAX_SIZE_BYTES || 5 * 1024 * 1024);
 const ALLOWED_DOCUMENT_MIME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -65,15 +69,8 @@ const ALLOWED_DOCUMENT_MIME_TYPES = [
   'image/webp',
   'video/mp4',
   'video/quicktime',
+  'video/webm',
 ];
-const ALLOWED_COURSE_ASSET_MIME_TYPES = [
-  'application/pdf',
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'video/mp4',
-];
-const ALLOWED_COURSE_COVER_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 const createMimeFilter =
   (allowed: string[]) =>
@@ -228,7 +225,7 @@ export class BackofficeController {
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: MAX_COURSE_COVER_SIZE },
+      limits: { fileSize: COURSE_COVER_MAX_SIZE_BYTES },
       fileFilter: createMimeFilter(ALLOWED_COURSE_COVER_MIME_TYPES),
     }),
   )
@@ -331,7 +328,7 @@ export class BackofficeController {
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: MAX_COURSE_ASSET_SIZE },
+      limits: { fileSize: COURSE_ASSET_MAX_SIZE_BYTES },
       fileFilter: createMimeFilter(ALLOWED_COURSE_ASSET_MIME_TYPES),
     }),
   )
@@ -348,7 +345,7 @@ export class BackofficeController {
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: MAX_COURSE_ASSET_SIZE },
+      limits: { fileSize: COURSE_ASSET_MAX_SIZE_BYTES },
       fileFilter: createMimeFilter(ALLOWED_COURSE_ASSET_MIME_TYPES),
     }),
   )

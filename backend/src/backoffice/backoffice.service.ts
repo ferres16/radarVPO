@@ -16,6 +16,11 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FileStorageService } from '../storage/file-storage.service';
+import {
+  ALLOWED_COURSE_ASSET_MIME_TYPES,
+  COURSE_ASSET_MAX_SIZE_BYTES,
+  COURSE_COVER_MAX_SIZE_BYTES,
+} from '../storage/upload-limits';
 import { S3StorageService } from '../storage/s3-storage.service';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
 import { CreateCourseContentBlockDto } from './dto/create-course-content-block.dto';
@@ -872,17 +877,8 @@ export class BackofficeService {
       file,
       isPublic: dto.kind === 'image',
       uploadedByUserId,
-      allowedMimeTypes: [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'video/mp4',
-        'video/quicktime',
-      ],
-      maxSizeBytes: Number(process.env.COURSE_ASSET_MAX_SIZE_BYTES || 50 * 1024 * 1024),
+      allowedMimeTypes: ALLOWED_COURSE_ASSET_MIME_TYPES,
+      maxSizeBytes: COURSE_ASSET_MAX_SIZE_BYTES,
     });
 
     const created = await this.prisma.courseResource.create({
@@ -959,14 +955,8 @@ export class BackofficeService {
       file,
       isPublic,
       uploadedByUserId,
-      allowedMimeTypes: [
-        'application/pdf',
-        'image/jpeg',
-        'image/png',
-        'image/webp',
-        'video/mp4',
-      ],
-      maxSizeBytes: Number(process.env.COURSE_ASSET_MAX_SIZE_BYTES || 50 * 1024 * 1024),
+      allowedMimeTypes: ALLOWED_COURSE_ASSET_MIME_TYPES,
+      maxSizeBytes: COURSE_ASSET_MAX_SIZE_BYTES,
     });
 
     const courseAsset = await this.prisma.courseAsset.create({
@@ -1012,7 +1002,7 @@ export class BackofficeService {
       isPublic: true,
       uploadedByUserId,
       allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
-      maxSizeBytes: Number(process.env.COURSE_COVER_MAX_SIZE_BYTES || 5 * 1024 * 1024),
+      maxSizeBytes: COURSE_COVER_MAX_SIZE_BYTES,
     });
 
     await this.prisma.courseAsset.create({
