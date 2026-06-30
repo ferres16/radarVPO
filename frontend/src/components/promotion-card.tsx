@@ -47,7 +47,7 @@ export function PromotionCard({
           <span className="inline-flex rounded-full bg-[rgba(22,112,85,0.10)] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--green-700)]">
             Publicada
           </span>
-          <h3 className="mt-2 text-base font-bold leading-6 text-[var(--ink)] group-hover:text-[var(--green-700)]">
+          <h3 className="mt-2 text-lg font-bold leading-6 text-[var(--ink)] group-hover:text-[var(--green-700)] md:text-xl">
             {titleOverride || promotion.title}
           </h3>
         </div>

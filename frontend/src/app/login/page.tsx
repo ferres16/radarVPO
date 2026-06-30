@@ -30,7 +30,7 @@ export default function LoginPage() {
 
   return (
     <main className="lp lp--inner">
-      <section className="shell py-10 md:py-14">
+      <section className="shell py-6 md:py-14">
         <section className="public-card mx-auto grid max-w-5xl overflow-hidden md:grid-cols-[0.9fr_1.1fr]">
         <aside className="bg-[var(--ink)] p-6 text-white md:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/70">Área privada</p>

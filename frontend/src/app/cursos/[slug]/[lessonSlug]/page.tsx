@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { CourseBlockRenderer } from '@/components/course-block-renderer';
+import { CourseModuleIndex } from '@/components/course-module-index';
 import { CourseTipTapRenderer } from '@/components/course-tiptap-renderer';
+import { CollapsePanel } from '@/components/collapse-panel';
 import { api } from '@/lib/api';
 import { proHref, proPlan } from '@/lib/pro';
 import type { Course, CourseLesson, CourseModule } from '@/types';
@@ -84,9 +86,9 @@ export default function LessonPage() {
 
   if (loading) {
     return (
-      <main className="shell">
-        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-          <p className="text-sm text-[var(--ink-soft)]">Cargando leccion...</p>
+      <main className="shell py-4">
+        <article className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card md:rounded-3xl md:p-6">
+          <p className="text-sm text-[var(--ink-soft)]">Cargando lección...</p>
         </article>
       </main>
     );
@@ -94,13 +96,13 @@ export default function LessonPage() {
 
   if (!payload || error) {
     return (
-      <main className="shell">
-        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-          <h1 className="text-2xl font-bold text-[var(--ink)]">Leccion no disponible</h1>
-          <p className="mt-2 text-sm text-[var(--ink-soft)]">{error || 'No encontramos esta leccion.'}</p>
+      <main className="shell py-4">
+        <article className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card md:rounded-3xl md:p-6">
+          <h1 className="text-xl font-bold text-[var(--ink)] md:text-2xl">Lección no disponible</h1>
+          <p className="mt-2 text-sm text-[var(--ink-soft)]">{error || 'No encontramos esta lección.'}</p>
           <Link
             href="/cursos"
-            className="mt-4 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white"
+            className="mt-4 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2.5 text-sm font-semibold text-white"
           >
             Volver a cursos
           </Link>
@@ -110,144 +112,146 @@ export default function LessonPage() {
   }
 
   return (
-    <main className="shell h-[calc(100vh-96px)] min-h-[640px] overflow-hidden pb-6">
-      <div className="grid h-full gap-6 lg:grid-cols-[280px_1fr]">
-      <aside className="h-full overflow-y-auto rounded-3xl border border-[var(--stroke)] bg-white p-4 shadow-card">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Indice</p>
-        <div className="mt-3 space-y-3">
-          {modules.map((module) => (
-            <div key={module.id} className="space-y-2">
-              <p className="text-xs font-semibold text-[var(--ink)]">{module.title}</p>
-              <div className="space-y-1">
-                {(module.lessons || []).map((item) => (
-                  <Link
-                    key={item.id}
-                    href={`/cursos/${payload.course.slug}/${item.slug}`}
-                    className={`block rounded-xl px-3 py-2 text-xs font-semibold ${
-                      item.slug === lesson?.slug
-                        ? 'bg-[var(--green-500)] text-white'
-                        : 'border border-[var(--stroke)] text-[var(--ink)]'
-                    }`}
-                  >
-                    {item.title}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </aside>
+    <main className="shell lesson-page">
+      <div className="mb-3 lg:hidden">
+        <CollapsePanel
+          title="Índice del curso"
+          subtitle="Ver u ocultar módulos y lecciones"
+          meta={`${lessonItems.length} lecc.`}
+          className="shadow-card"
+        >
+          <CourseModuleIndex
+            courseSlug={payload.course.slug}
+            modules={modules}
+            mode="nav"
+            activeLessonSlug={lesson?.slug}
+            defaultOpenFirst
+          />
+        </CollapsePanel>
+      </div>
 
-      <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-[var(--stroke)] bg-white shadow-card">
-        <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
-          <header className="rounded-3xl border border-[var(--stroke)] bg-[var(--bg-app)] p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Leccion</p>
-            <h1 className="mt-2 text-3xl font-black text-[var(--ink)] display-type">{lesson?.title}</h1>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs text-[var(--ink-soft)]">
-              <span>{lesson?.durationMinutes ? `${lesson.durationMinutes} min` : 'Tiempo flexible'}</span>
-              <span>Tipo: {lesson?.type}</span>
-            </div>
+      <div className="grid gap-4 lg:h-full lg:grid-cols-[minmax(240px,280px)_1fr] lg:gap-6">
+        <aside className="hidden h-full overflow-y-auto rounded-2xl border border-[var(--stroke)] bg-white p-3 shadow-card lg:block lg:rounded-3xl lg:p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">Índice</p>
+          <div className="mt-3">
+            <CourseModuleIndex
+              courseSlug={payload.course.slug}
+              modules={modules}
+              mode="nav"
+              activeLessonSlug={lesson?.slug}
+              defaultOpenFirst
+            />
+          </div>
+        </aside>
+
+        <section className="lesson-page__content flex min-h-0 flex-col overflow-hidden rounded-2xl border border-[var(--stroke)] bg-white shadow-card lg:rounded-3xl">
+          <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-5 lg:p-6">
+            <header className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 md:p-5 lg:rounded-3xl lg:p-6">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)] md:text-xs">Lección</p>
+              <h1 className="display-type mt-1 text-2xl font-black leading-tight text-[var(--ink)] sm:text-3xl lg:mt-2">{lesson?.title}</h1>
+              <div className="mt-2 flex flex-wrap gap-2 text-xs text-[var(--ink-soft)] md:mt-3">
+                <span>{lesson?.durationMinutes ? `${lesson.durationMinutes} min` : 'Tiempo flexible'}</span>
+                <span>Tipo: {lesson?.type}</span>
+              </div>
+              {locked ? (
+                <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900 md:mt-4">
+                  Esta lección está incluida en {proPlan.name}. Actívalo para continuar.
+                  <Link href={proHref} className="ml-2 font-semibold underline">
+                    {proPlan.ctaLabel}
+                  </Link>
+                </div>
+              ) : null}
+            </header>
+
             {locked ? (
-              <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
-                Esta lección está incluida en {proPlan.name}. Actívalo para continuar.
-                <Link href={proHref} className="ml-2 font-semibold underline">
+              <article className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 md:mt-6 md:p-6 lg:rounded-3xl">
+                <h2 className="text-lg font-black text-amber-950 md:text-xl">Contenido bloqueado</h2>
+                <p className="mt-2 text-sm leading-6 text-amber-900 md:text-base">
+                  Esta lección existe, pero el contenido solo se entrega cuando el acceso del usuario está activo.
+                </p>
+                <Link
+                  href={proHref}
+                  className="mt-4 inline-flex rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-semibold text-white"
+                >
                   {proPlan.ctaLabel}
                 </Link>
-              </div>
-            ) : null}
-          </header>
-
-          {locked ? (
-            <article className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-6">
-              <h2 className="text-xl font-black text-amber-950">Contenido bloqueado</h2>
-              <p className="mt-2 text-sm leading-6 text-amber-900">
-                Esta leccion existe, pero el contenido solo se entrega cuando el acceso del usuario esta activo en la base de datos.
-              </p>
-              <Link
-                href={proHref}
-                className="mt-4 inline-flex rounded-full bg-[var(--green-700)] px-5 py-2 text-sm font-semibold text-white"
-              >
-                {proPlan.ctaLabel}
-              </Link>
-            </article>
-          ) : (
-            <article className="mx-auto mt-8 max-w-3xl">
-              <div className="prose max-w-none">
+              </article>
+            ) : (
+              <article className="mt-4 md:mt-6 lg:mx-auto lg:max-w-3xl">
                 {lesson?.contentJson ? (
                   <CourseTipTapRenderer content={lesson.contentJson} />
                 ) : lesson?.blocks?.length ? (
                   <CourseBlockRenderer blocks={lesson.blocks} />
                 ) : (
-                  <p className="text-sm text-[var(--ink-soft)]">Contenido pendiente.</p>
+                  <p className="text-base text-[var(--ink-soft)]">Contenido pendiente.</p>
                 )}
-              </div>
-              {lesson?.resources?.length ? (
-                <div className="mt-6 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-                  <h2 className="text-sm font-bold text-[var(--ink)]">Recursos adjuntos</h2>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                    {lesson.resources.map((resource) => (
-                      <div key={resource.id} className="rounded-xl border border-[var(--stroke)] bg-white p-3">
-                        {resource.kind === 'image' && resource.publicUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={resource.publicUrl} alt={resource.originalName || ''} className="mb-3 h-48 w-full rounded-xl object-cover" />
-                        ) : null}
-                        {resource.kind === 'video' && resource.publicUrl ? (
-                          <video src={resource.publicUrl} controls className="mb-3 aspect-video w-full rounded-xl" />
-                        ) : null}
-                        <a
-                          href={resource.publicUrl}
-                          className="text-sm font-semibold text-[var(--ink)] underline"
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          {resource.originalName || resource.kind}
-                        </a>
-                      </div>
-                    ))}
+                {lesson?.resources?.length ? (
+                  <div className="mt-5 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 md:mt-6">
+                    <h2 className="text-sm font-bold text-[var(--ink)] md:text-base">Recursos adjuntos</h2>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {lesson.resources.map((resource) => (
+                        <div key={resource.id} className="rounded-xl border border-[var(--stroke)] bg-white p-3">
+                          {resource.kind === 'image' && resource.publicUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={resource.publicUrl} alt={resource.originalName || ''} className="mb-3 h-40 w-full rounded-xl object-cover md:h-48" />
+                          ) : null}
+                          {resource.kind === 'video' && resource.publicUrl ? (
+                            <video src={resource.publicUrl} controls className="mb-3 aspect-video w-full rounded-xl" />
+                          ) : null}
+                          <a
+                            href={resource.publicUrl}
+                            className="text-sm font-semibold text-[var(--ink)] underline"
+                            rel="noopener noreferrer"
+                            target="_blank"
+                          >
+                            {resource.originalName || resource.kind}
+                          </a>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ) : null}
-            </article>
-          )}
-        </div>
+                ) : null}
+              </article>
+            )}
+          </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--stroke)] bg-white/95 p-4 backdrop-blur">
-          <div className="flex flex-wrap gap-2">
-            <Link
-              href={`/cursos/${payload.course.slug}`}
-              className="rounded-full border border-[var(--stroke)] bg-white px-5 py-2 text-sm font-semibold text-[var(--ink)]"
-            >
-              Volver al curso
-            </Link>
-            {previousLesson ? (
+          <div className="lesson-page__footer flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+            <div className="flex flex-wrap gap-2">
               <Link
-                href={`/cursos/${payload.course.slug}/${previousLesson.slug}`}
-                className="rounded-full border border-[var(--stroke)] bg-white px-5 py-2 text-sm font-semibold text-[var(--ink)]"
+                href={`/cursos/${payload.course.slug}`}
+                className="flex-1 rounded-full border border-[var(--stroke)] bg-white px-4 py-2.5 text-center text-sm font-semibold text-[var(--ink)] sm:flex-none sm:px-5"
               >
-                Anterior
+                Volver al curso
               </Link>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void markCompleted()}
-              disabled={locked || marking}
-              className="rounded-full bg-[var(--green-500)] px-5 py-2 text-sm font-semibold text-white disabled:opacity-50"
-            >
-              {marking ? 'Guardando...' : 'Marcar completada'}
-            </button>
-            {nextLesson ? (
-              <Link
-                href={`/cursos/${payload.course.slug}/${nextLesson.slug}`}
-                className="rounded-full bg-[var(--ink)] px-5 py-2 text-sm font-semibold text-white"
+              {previousLesson ? (
+                <Link
+                  href={`/cursos/${payload.course.slug}/${previousLesson.slug}`}
+                  className="flex-1 rounded-full border border-[var(--stroke)] bg-white px-4 py-2.5 text-center text-sm font-semibold text-[var(--ink)] sm:flex-none sm:px-5"
+                >
+                  Anterior
+                </Link>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => void markCompleted()}
+                disabled={locked || marking}
+                className="flex-1 rounded-full bg-[var(--green-500)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 sm:flex-none sm:px-5"
               >
-                Siguiente
-              </Link>
-            ) : null}
+                {marking ? 'Guardando...' : 'Completada'}
+              </button>
+              {nextLesson ? (
+                <Link
+                  href={`/cursos/${payload.course.slug}/${nextLesson.slug}`}
+                  className="flex-1 rounded-full bg-[var(--ink)] px-4 py-2.5 text-center text-sm font-semibold text-white sm:flex-none sm:px-5"
+                >
+                  Siguiente
+                </Link>
+              ) : null}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
       </div>
     </main>
   );

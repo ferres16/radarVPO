@@ -151,8 +151,8 @@ export default function AccountPage() {
   ];
 
   return (
-    <main className="lp lp--inner space-y-6">
-      <div className="shell space-y-6 pb-8">
+    <main className="lp lp--inner space-y-4 md:space-y-6">
+      <div className="shell space-y-4 pb-6 md:space-y-6 md:pb-8">
       <ProfileCard className="relative overflow-hidden bg-[linear-gradient(135deg,#f6fbff_0%,#eef6f8_50%,#ffffff_100%)]">
         <div className="pointer-events-none absolute -right-24 -top-20 h-56 w-56 rounded-full bg-[rgba(54,189,248,0.16)] blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-[rgba(47,107,36,0.12)] blur-3xl" />

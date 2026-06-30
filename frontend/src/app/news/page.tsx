@@ -101,7 +101,7 @@ export default async function NewsPage({
 
           <PublicSection border={Boolean(featured)}>
             <SectionHeader eyebrow="Recientes" title="Últimas publicaciones" />
-            <Stagger className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <Stagger className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 xl:grid-cols-3">
               {recent.map((item, index) => (
                 <Fragment key={item.id}>
                   {index === 3 ? <InlineAdCard className="md:col-span-2 xl:col-span-3" /> : null}

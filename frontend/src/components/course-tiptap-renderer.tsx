@@ -57,19 +57,19 @@ function renderNodes(nodes?: RichNode[]): ReactNode {
     const inline = renderInline(node.content || []);
 
     if (node.type === 'paragraph') {
-      return <p key={key} className="text-base leading-8 text-[var(--ink-soft)]">{inline}</p>;
+      return <p key={key} className="text-[1.0625rem] leading-8 text-[var(--ink-soft)] md:text-lg md:leading-9">{inline}</p>;
     }
     if (node.type === 'heading') {
       const level = Math.min(Math.max(Number(node.attrs?.level || 2), 2), 4);
-      const styles = { 2: 'text-3xl', 3: 'text-2xl', 4: 'text-xl' }[level] || 'text-2xl';
+      const styles = { 2: 'text-2xl md:text-3xl', 3: 'text-xl md:text-2xl', 4: 'text-lg md:text-xl' }[level] || 'text-2xl';
       const Tag = `h${level}` as keyof ReactJSX.IntrinsicElements;
       return <Tag key={key} className={`mt-10 font-black tracking-tight text-[var(--ink)] ${styles}`}>{inline}</Tag>;
     }
     if (node.type === 'bulletList' || node.type === 'bullet_list') {
-      return <ul key={key} className="my-4 list-disc space-y-2 pl-6 text-base leading-8 text-[var(--ink-soft)]">{content}</ul>;
+      return <ul key={key} className="my-4 list-disc space-y-2 pl-5 text-[1.0625rem] leading-8 text-[var(--ink-soft)] md:pl-6 md:text-lg md:leading-9">{content}</ul>;
     }
     if (node.type === 'orderedList' || node.type === 'ordered_list') {
-      return <ol key={key} className="my-4 list-decimal space-y-2 pl-6 text-base leading-8 text-[var(--ink-soft)]">{content}</ol>;
+      return <ol key={key} className="my-4 list-decimal space-y-2 pl-5 text-[1.0625rem] leading-8 text-[var(--ink-soft)] md:pl-6 md:text-lg md:leading-9">{content}</ol>;
     }
     if (node.type === 'listItem' || node.type === 'list_item') {
       return <li key={key}>{content}</li>;
@@ -80,7 +80,7 @@ function renderNodes(nodes?: RichNode[]): ReactNode {
     if (node.type === 'taskItem') {
       const checked = Boolean(node.attrs?.checked);
       return (
-        <li key={key} className="flex items-start gap-3 text-base leading-7 text-[var(--ink-soft)]">
+        <li key={key} className="flex items-start gap-3 text-[1.0625rem] leading-7 text-[var(--ink-soft)] md:text-lg">
           <span className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border text-xs ${checked ? 'border-[var(--green-700)] bg-[var(--green-700)] text-white' : 'border-[var(--stroke)]'}`}>
             {checked ? '✓' : ''}
           </span>
@@ -90,7 +90,7 @@ function renderNodes(nodes?: RichNode[]): ReactNode {
     }
     if (node.type === 'blockquote') {
       return (
-        <blockquote key={key} className="my-6 rounded-2xl border-l-4 border-[var(--green-700)] bg-[var(--bg-eco)] px-5 py-4 text-base leading-7 text-[var(--ink)]">
+        <blockquote key={key} className="my-5 rounded-2xl border-l-4 border-[var(--green-700)] bg-[var(--bg-eco)] px-4 py-3 text-[1.0625rem] leading-7 text-[var(--ink)] md:my-6 md:px-5 md:py-4 md:text-lg">
           {content}
         </blockquote>
       );
@@ -138,7 +138,7 @@ function renderNodes(nodes?: RichNode[]): ReactNode {
     if (node.type === 'table') {
       return (
         <div key={key} className="my-8 overflow-x-auto rounded-2xl border border-[var(--stroke)]">
-          <table className="w-full min-w-[520px] text-sm">{content}</table>
+          <table className="w-full min-w-[280px] text-sm md:min-w-[520px] md:text-base">{content}</table>
         </div>
       );
     }
@@ -162,5 +162,5 @@ export function CourseTipTapRenderer({ content }: { content?: Record<string, unk
   if (!nodes?.length) {
     return <p className="text-sm text-[var(--ink-soft)]">Contenido pendiente.</p>;
   }
-  return <article className="course-prose space-y-2">{renderNodes(nodes)}</article>;
+  return <article className="course-prose">{renderNodes(nodes)}</article>;
 }

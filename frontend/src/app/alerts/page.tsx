@@ -72,7 +72,7 @@ export default async function AlertsPage() {
             </div>
           </SurfaceCard>
         ) : (
-          <Stagger className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <Stagger className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 xl:grid-cols-3">
             {activeAlerts.map(({ item, daysRemaining }) => (
               <StaggerItem key={item.id}>
                 <MotionCard className="public-card public-card--hover h-full p-5">

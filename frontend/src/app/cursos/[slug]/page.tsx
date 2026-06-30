@@ -4,10 +4,12 @@ import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
-import { CourseAccessLink, CourseAccessProvider, CourseLessonAccessLink } from '@/components/course-access';
+import { CourseAccessLink, CourseAccessProvider } from '@/components/course-access';
 import { CourseCoverImage } from '@/components/course-cover-image';
 import { CourseHubSection } from '@/components/course-hub-section';
+import { CourseModuleIndex } from '@/components/course-module-index';
 import { CoursePublicIndex } from '@/components/course-public-index';
+import { CollapsePanel } from '@/components/collapse-panel';
 import { PublicPage } from '@/components/conversion/public-shell';
 import { StructuredData } from '@/components/structured-data';
 import { buildCourseAccessTargets } from '@/lib/course-access-targets';
@@ -166,9 +168,8 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
         pricingType={course.pricingType}
         initialCanAccess={canAccess}
       >
-        <header className="lp-page-hero">
-          <div className="lp-page-hero__backdrop" aria-hidden="true" />
-          <div className="relative h-48 md:h-56">
+        <header className="lp-page-hero lp-page-hero--flush">
+          <div className="relative h-40 sm:h-48 md:h-56">
             <CourseCoverImage
               slug={course.slug}
               src={course.coverImage}
@@ -177,12 +178,12 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               label={course.title}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[rgba(11,18,32,0.85)] via-[rgba(11,18,32,0.35)] to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-5 md:p-8">
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">Curso Radar VPO</p>
-              <h1 className="display-type mt-2 text-3xl font-black text-white md:text-5xl">{course.title}</h1>
+            <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70 md:text-[11px]">Curso Radar VPO</p>
+              <h1 className="display-type mt-1 text-2xl font-black text-white sm:mt-2 sm:text-3xl md:text-5xl">{course.title}</h1>
             </div>
           </div>
-          <div className="shell grid gap-6 py-6 md:grid-cols-[1.2fr_0.8fr]">
+          <div className="shell grid gap-4 py-4 md:grid-cols-[1.2fr_0.8fr] md:gap-6 md:py-5">
             <div>
               <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
                 {course.longDescription || course.shortDescription || 'Formación práctica para prepararte antes del plazo.'}
@@ -231,51 +232,21 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
         <CourseHubSection course={course} lessonCount={lessonCount} />
 
         <CoursePublicIndex>
-        <section id="indice" className="shell scroll-mt-28 pb-10">
-          <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-          <article className="premium-card p-6">
-            <h2 className="text-lg font-black text-[var(--ink)]">Índice del curso</h2>
-            <p className="mt-2 text-sm text-[var(--ink-soft)]">
-              {lessonCount > 0
-                ? 'Módulos y lecciones listos para empezar.'
-                : 'El contenido se publicará próximamente. Mientras tanto, revisa los beneficios y activa tu acceso.'}
-            </p>
-            <div className="mt-4 space-y-3">
-              {modules.map((module, index) => (
-                <details key={module.id} className="group rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)]/60 p-4" open={index === 0}>
-                  <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--ink-soft)]">
-                        Módulo {String(index + 1).padStart(2, '0')}
-                      </p>
-                      <h3 className="mt-1 text-base font-semibold text-[var(--ink)]">{module.title}</h3>
-                    </div>
-                    <span className="rounded-full bg-white px-2 py-1 text-xs font-semibold text-[var(--ink-soft)]">
-                      {module.lessons?.length || 0}
-                    </span>
-                  </summary>
-                  <div className="mt-3 space-y-2">
-                    {(module.lessons || []).map((lesson) => (
-                      <CourseLessonAccessLink
-                        key={lesson.id}
-                        courseSlug={course.slug}
-                        lessonSlug={lesson.slug}
-                        className="flex items-center justify-between rounded-xl border border-[var(--stroke)] bg-white/80 px-3 py-2.5 text-sm transition hover:border-[rgba(22,112,85,0.22)] hover:shadow-sm"
-                      >
-                        <span className="font-semibold text-[var(--ink)]">{lesson.title}</span>
-                        <span className="text-xs text-[var(--ink-soft)]">
-                          {lesson.durationMinutes ? `${lesson.durationMinutes} min` : 'Lección'}
-                        </span>
-                      </CourseLessonAccessLink>
-                    ))}
-                  </div>
-                </details>
-              ))}
-            </div>
-          </article>
+        <section id="indice" className="shell scroll-mt-24 pb-6 md:pb-8">
+          <div className="grid gap-3 md:gap-4 lg:grid-cols-[0.95fr_1.05fr]">
+          <CollapsePanel
+            title="Índice del curso"
+            subtitle={lessonCount > 0 ? 'Módulos y lecciones disponibles' : 'Contenido en preparación'}
+            meta={lessonCount > 0 ? `${lessonCount} lecc.` : undefined}
+            alwaysOpenFrom="lg"
+            className="premium-card !border-[var(--stroke)] !bg-[var(--surface-elevated)]"
+            bodyClassName="!border-t-0 !pt-3 lg:!pt-0"
+          >
+            <CourseModuleIndex courseSlug={course.slug} modules={modules} mode="access" defaultOpenFirst />
+          </CollapsePanel>
 
-          <aside className="space-y-4">
-            <SurfaceCard premium className="p-6">
+          <aside className="space-y-3 md:space-y-4">
+            <SurfaceCard premium className="p-4 md:p-6">
               <SectionHeader eyebrow="Qué aprenderás" title="Preparación real para el plazo" />
               <ul className="mt-4 space-y-2 text-sm text-[var(--ink-soft)]">
                 <li>Requisitos y documentación necesaria</li>
@@ -292,7 +263,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                 />
               </div>
             </SurfaceCard>
-            <SurfaceCard premium className="p-6">
+            <SurfaceCard premium className="p-4 md:p-6">
               <SectionHeader eyebrow="Acompañamiento" title="¿Necesitas revisar tu caso?" />
               <p className="mt-2 text-sm text-[var(--ink-soft)]">
                 Combina el curso con acompañamiento personalizado para documentación y estrategia.

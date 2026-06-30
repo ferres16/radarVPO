@@ -48,7 +48,7 @@ export default function RegisterPage() {
 
   return (
     <main className="lp lp--inner">
-      <section className="shell py-10 md:py-14">
+      <section className="shell py-6 md:py-14">
         <section className="public-card mx-auto grid max-w-5xl overflow-hidden md:grid-cols-[1.05fr_0.95fr]">
         <div className="p-6 md:p-8">
           <span className="lp-hero__badge">{isProIntent ? proPlan.name : 'Cuenta gratuita'}</span>

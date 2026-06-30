@@ -59,7 +59,13 @@ h3,
   margin-right: auto;
   width: 100%;
   max-width: 1180px;
-  padding: 1rem;
+  padding: 0.875rem;
+}
+
+@media (min-width: 768px) {
+  .shell {
+    padding: 1rem;
+  }
 }
 
 .hero-bg {
@@ -623,7 +629,26 @@ h3,
 }
 
 .course-lesson-prosemirror {
-  line-height: 1.7;
+  line-height: 1.75;
+  font-size: 1.0625rem;
+}
+
+.course-prose {
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  color: var(--ink-soft);
+}
+
+@media (min-width: 768px) {
+  .course-lesson-prosemirror,
+  .course-prose {
+    font-size: 1.125rem;
+    line-height: 1.8;
+  }
+}
+
+.course-prose > * + * {
+  margin-top: 0.875rem;
 }
 
 .course-lesson-prosemirror > * + * {
@@ -930,7 +955,13 @@ h3,
 }
 
 .lp-section {
-  padding: 4.5rem 0;
+  padding: 2rem 0;
+}
+
+@media (min-width: 768px) {
+  .lp-section {
+    padding: 3.25rem 0;
+  }
 }
 
 .lp-section--muted {
@@ -942,7 +973,13 @@ h3,
 }
 
 .lp-section__head {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .lp-section__head {
+    margin-bottom: 2rem;
+  }
 }
 
 .lp-section__head--center {
@@ -962,7 +999,7 @@ h3,
 .lp-hero {
   position: relative;
   overflow: hidden;
-  padding: clamp(3rem, 8vw, 6rem) 0 clamp(3.5rem, 9vw, 7rem);
+  padding: clamp(2rem, 6vw, 4rem) 0 clamp(2rem, 7vw, 5rem);
   border-bottom: 1px solid var(--stroke);
 }
 
@@ -1438,8 +1475,8 @@ h3,
 .site-footer {
   border-top: 1px solid var(--stroke);
   background: #fff;
-  padding: 3rem 0 1.5rem;
-  margin-top: 1rem;
+  padding: 2rem 0 1.25rem;
+  margin-top: 0;
 }
 
 .site-footer__inner {
@@ -1557,8 +1594,16 @@ h3,
 .lp-page-hero {
   position: relative;
   overflow: hidden;
-  padding: clamp(2.5rem, 6vw, 4rem) 0 clamp(2rem, 5vw, 3rem);
+  padding: clamp(1.5rem, 4vw, 2.5rem) 0 clamp(1.25rem, 3vw, 2rem);
   border-bottom: 1px solid var(--stroke);
+}
+
+.lp-page-hero--flush {
+  padding: 0;
+}
+
+.lp-page-hero--flush .lp-page-hero__backdrop {
+  display: none;
 }
 
 .lp-page-hero__backdrop {
@@ -1689,4 +1734,125 @@ h3,
   outline: none;
   border-color: rgba(22, 112, 85, 0.45);
   box-shadow: 0 0 0 3px rgba(22, 112, 85, 0.12);
+}
+
+/* Collapsible panels (mobile-first) */
+.collapse-panel {
+  border: 1px solid var(--stroke);
+  border-radius: 1rem;
+  background: var(--surface-elevated);
+  overflow: hidden;
+}
+
+.collapse-panel__summary {
+  display: flex;
+  list-style: none;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+}
+
+.collapse-panel__summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapse-panel__chevron {
+  flex-shrink: 0;
+  transition: transform 200ms ease;
+}
+
+.collapse-panel[open] .collapse-panel__chevron {
+  transform: rotate(180deg);
+}
+
+.collapse-panel__body {
+  padding: 0 1rem 1rem;
+  border-top: 1px solid var(--stroke);
+}
+
+@media (min-width: 768px) {
+  .collapse-panel--always-open-md {
+    border: none;
+    background: transparent;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .collapse-panel--always-open-md > summary {
+    display: none;
+  }
+
+  .collapse-panel--always-open-md > .collapse-panel__body {
+    display: block !important;
+    padding: 0;
+    border-top: none;
+  }
+}
+
+@media (min-width: 1024px) {
+  .collapse-panel--always-open-lg {
+    border: none;
+    background: transparent;
+    border-radius: 0;
+    overflow: visible;
+  }
+
+  .collapse-panel--always-open-lg > summary {
+    display: none;
+  }
+
+  .collapse-panel--always-open-lg > .collapse-panel__body {
+    display: block !important;
+    padding: 0;
+    border-top: none;
+  }
+}
+
+.course-module-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.course-progress-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  background: linear-gradient(160deg, #1a2332 0%, #0b1220 55%, #132a24 100%);
+  color: #fff;
+  box-shadow: 0 12px 32px rgba(11, 18, 32, 0.12);
+}
+
+.lesson-page {
+  padding-bottom: 1rem;
+}
+
+.lesson-page__content {
+  min-height: 0;
+}
+
+.lesson-page__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 20;
+  border-top: 1px solid var(--stroke);
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  padding: 0.75rem;
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+@media (min-width: 1024px) {
+  .lesson-page {
+    height: calc(100vh - 5rem);
+    min-height: 640px;
+    overflow: hidden;
+    padding-bottom: 1.5rem;
+  }
+
+  .lesson-page__footer {
+    position: static;
+    backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1rem;
+  }
 }

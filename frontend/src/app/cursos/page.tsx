@@ -58,7 +58,7 @@ export default async function CoursesPage() {
           {proCourses.length > 0 ? (
             <PublicSection id="catalogo">
               <SectionHeader eyebrow="Incluido en PRO" title="Cursos con VPO PRO" description="Desbloquea formación completa con tu suscripción." />
-              <Stagger className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              <Stagger className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 md:gap-5 xl:grid-cols-3">
                 {proCourses.map((course) => (
                   <StaggerItem key={course.id}>
                     <CourseProductCard course={course} includedInPro showCta />
@@ -71,7 +71,7 @@ export default async function CoursesPage() {
           {premiumCourses.length > 0 ? (
             <PublicSection muted={proCourses.length > 0}>
               <SectionHeader eyebrow="Compra directa" title="Cursos premium" description="Acceso individual con pago seguro vía Stripe." />
-              <Stagger className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              <Stagger className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 md:gap-5 xl:grid-cols-3">
                 {premiumCourses.map((course) => (
                   <StaggerItem key={course.id}>
                     <CourseProductCard course={course} showCta />

@@ -164,7 +164,7 @@ export default async function PromotionDetailPage({
   ];
 
   return (
-    <main className="shell space-y-6 pb-10">
+    <main className="shell space-y-4 pb-6 md:space-y-6 md:pb-8">
       <StructuredData
         data={breadcrumbJsonLd([
           { name: 'Inicio', path: '/' },
