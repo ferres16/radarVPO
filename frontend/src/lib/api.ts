@@ -151,7 +151,10 @@ async function requestForm<T>(path: string, body: FormData): Promise<T> {
   });
 
   if (!res.ok) {
-    const fallback = `Request failed with status ${res.status}`;
+    const fallback =
+      res.status === 413
+        ? 'El archivo supera el límite permitido. Prueba con un vídeo más corto o comprimido (máx. 500 MB).'
+        : `Request failed with status ${res.status}`;
     let message = fallback;
     try {
       const payload = (await res.json()) as { error?: { message?: string } };
