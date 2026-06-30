@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { buildBackendProxyHeaders } from '@/lib/backend-proxy-headers';
 import { getBackendApiUrl } from '@/lib/backend-url';
 
 type RouteContext = {
@@ -9,19 +10,7 @@ async function proxy(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
   const target = `${getBackendApiUrl()}/${path.join('/')}${request.nextUrl.search}`;
 
-  const headers = new Headers();
-  const contentType = request.headers.get('content-type');
-  if (contentType) {
-    headers.set('content-type', contentType);
-  }
-  const accept = request.headers.get('accept');
-  if (accept) {
-    headers.set('accept', accept);
-  }
-  const cookie = request.headers.get('cookie');
-  if (cookie) {
-    headers.set('cookie', cookie);
-  }
+  const headers = buildBackendProxyHeaders(request);
 
   const init: RequestInit = {
     method: request.method,

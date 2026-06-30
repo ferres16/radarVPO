@@ -20,10 +20,6 @@ async function bootstrap() {
     .filter(Boolean);
 
   const corsOrigins = [...new Set(configuredOrigins)];
-
-  const allowedOriginSet = new Set(corsOrigins);
-  const isSafeMethod = (method?: string) =>
-    !method || ['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
   const resolveOrigin = (value?: string) => {
     if (!value) return undefined;
     try {
@@ -32,6 +28,11 @@ async function bootstrap() {
       return undefined;
     }
   };
+  const allowedOriginSet = new Set(
+    corsOrigins.map((value) => resolveOrigin(value) || value).filter(Boolean),
+  );
+  const isSafeMethod = (method?: string) =>
+    !method || ['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
 
   app.setGlobalPrefix('api/v1');
   app.use(helmet());
@@ -58,7 +59,11 @@ async function bootstrap() {
 
     const origin = req.headers.origin;
     const referer = req.headers.referer;
-    const normalizedOrigin = resolveOrigin(origin) || resolveOrigin(referer);
+    const clientOrigin = req.headers['x-client-origin'];
+    const normalizedOrigin =
+      resolveOrigin(origin) ||
+      resolveOrigin(referer) ||
+      resolveOrigin(typeof clientOrigin === 'string' ? clientOrigin : undefined);
 
     if (!normalizedOrigin || !allowedOriginSet.has(normalizedOrigin)) {
       return res.status(403).json({
