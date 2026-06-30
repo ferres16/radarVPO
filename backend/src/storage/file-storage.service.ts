@@ -11,7 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { S3StorageService } from './s3-storage.service';
 import {
   ALLOWED_COURSE_ASSET_MIME_TYPES,
-  COURSE_ASSET_MAX_SIZE_BYTES,
+  getCourseAssetMaxSizeBytes,
 } from './upload-limits';
 
 const DEFAULT_MAX_FILE_SIZE = 25 * 1024 * 1024;
@@ -240,7 +240,8 @@ export class FileStorageService {
       options.maxSizeBytes ||
       Number(process.env.MAX_FILE_SIZE_BYTES || DEFAULT_MAX_FILE_SIZE);
     if (file.size > maxSizeBytes) {
-      throw new BadRequestException('File is too large');
+      const maxMb = Math.round(maxSizeBytes / (1024 * 1024));
+      throw new BadRequestException(`File is too large (max ${maxMb} MB)`);
     }
   }
 

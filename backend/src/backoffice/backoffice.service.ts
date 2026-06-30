@@ -18,8 +18,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FileStorageService } from '../storage/file-storage.service';
 import {
   ALLOWED_COURSE_ASSET_MIME_TYPES,
-  COURSE_ASSET_MAX_SIZE_BYTES,
-  COURSE_COVER_MAX_SIZE_BYTES,
+  getCourseAssetMaxSizeBytes,
+  getCourseCoverMaxSizeBytes,
 } from '../storage/upload-limits';
 import { S3StorageService } from '../storage/s3-storage.service';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
@@ -878,7 +878,7 @@ export class BackofficeService {
       isPublic: dto.kind === 'image',
       uploadedByUserId,
       allowedMimeTypes: ALLOWED_COURSE_ASSET_MIME_TYPES,
-      maxSizeBytes: COURSE_ASSET_MAX_SIZE_BYTES,
+      maxSizeBytes: getCourseAssetMaxSizeBytes(),
     });
 
     const created = await this.prisma.courseResource.create({
@@ -956,7 +956,7 @@ export class BackofficeService {
       isPublic,
       uploadedByUserId,
       allowedMimeTypes: ALLOWED_COURSE_ASSET_MIME_TYPES,
-      maxSizeBytes: COURSE_ASSET_MAX_SIZE_BYTES,
+      maxSizeBytes: getCourseAssetMaxSizeBytes(),
     });
 
     const courseAsset = await this.prisma.courseAsset.create({
@@ -1002,7 +1002,7 @@ export class BackofficeService {
       isPublic: true,
       uploadedByUserId,
       allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
-      maxSizeBytes: COURSE_COVER_MAX_SIZE_BYTES,
+      maxSizeBytes: getCourseCoverMaxSizeBytes(),
     });
 
     await this.prisma.courseAsset.create({

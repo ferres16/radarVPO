@@ -55,8 +55,8 @@ import { UpsertUnitDto } from './dto/upsert-unit.dto';
 import {
   ALLOWED_COURSE_ASSET_MIME_TYPES,
   ALLOWED_COURSE_COVER_MIME_TYPES,
-  COURSE_ASSET_MAX_SIZE_BYTES,
-  COURSE_COVER_MAX_SIZE_BYTES,
+  getCourseCoverMaxSizeBytes,
+  MULTER_COURSE_ASSET_MAX_BYTES,
 } from '../storage/upload-limits';
 
 const MAX_DOCUMENT_SIZE = 10 * 1024 * 1024;
@@ -225,7 +225,7 @@ export class BackofficeController {
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: COURSE_COVER_MAX_SIZE_BYTES },
+      limits: { fileSize: getCourseCoverMaxSizeBytes() },
       fileFilter: createMimeFilter(ALLOWED_COURSE_COVER_MIME_TYPES),
     }),
   )
@@ -328,7 +328,7 @@ export class BackofficeController {
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: COURSE_ASSET_MAX_SIZE_BYTES },
+      limits: { fileSize: MULTER_COURSE_ASSET_MAX_BYTES },
       fileFilter: createMimeFilter(ALLOWED_COURSE_ASSET_MIME_TYPES),
     }),
   )
@@ -345,7 +345,7 @@ export class BackofficeController {
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(
     FileInterceptor('file', {
-      limits: { fileSize: COURSE_ASSET_MAX_SIZE_BYTES },
+      limits: { fileSize: MULTER_COURSE_ASSET_MAX_BYTES },
       fileFilter: createMimeFilter(ALLOWED_COURSE_ASSET_MIME_TYPES),
     }),
   )
