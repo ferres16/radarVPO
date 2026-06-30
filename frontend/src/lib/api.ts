@@ -187,6 +187,10 @@ export const api = {
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
   getBackofficeJobs: () => request<JobRun[]>('/backoffice/jobs'),
   getBackofficeFailures: () => request<DeliveryFailure[]>('/backoffice/failures'),
+  dispatchProAlertNotifications: () =>
+    request<{ skipped: boolean; reason?: string; sent: number }>('/backoffice/notifications/pro-alerts/dispatch', {
+      method: 'POST',
+    }),
   getBackofficeFiles: (query?: string | FileAssetQuery) => {
     const params =
       typeof query === 'string'

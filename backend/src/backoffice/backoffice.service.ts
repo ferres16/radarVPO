@@ -22,6 +22,7 @@ import {
   getCourseCoverMaxSizeBytes,
 } from '../storage/upload-limits';
 import { S3StorageService } from '../storage/s3-storage.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
 import { CreateCourseContentBlockDto } from './dto/create-course-content-block.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -58,6 +59,7 @@ export class BackofficeService {
     private readonly prisma: PrismaService,
     private readonly storage: S3StorageService,
     private readonly fileStorage: FileStorageService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async overview() {
@@ -113,6 +115,10 @@ export class BackofficeService {
       take: limit,
       skip: offset,
     });
+  }
+
+  async dispatchPendingProAlertNotifications() {
+    return this.notificationsService.notifyProUsersForPendingAlerts();
   }
 
   async listFiles(query: BackofficeListFilesDto) {
@@ -1188,6 +1194,7 @@ export class BackofficeService {
 
   async createPromotion(dto: CreatePromotionDto) {
     const source = await this.getManualSource();
+    const status = dto.status || 'pending_review';
     const promotion = await this.prisma.promotion.create({
       data: {
         sourceId: source.id,
@@ -1200,7 +1207,8 @@ export class BackofficeService {
         municipality: this.nullableText(dto.municipality),
         province: this.nullableText(dto.province),
         promotionType: dto.promotionType || 'desconocido',
-        status: dto.status || 'pending_review',
+        status,
+        alertDetectedAt: status === 'pending_review' ? new Date() : null,
         promoter: this.nullableText(dto.promoter),
         totalHomes: dto.totalHomes,
         publicDescription: this.nullableText(dto.publicDescription),
@@ -1210,6 +1218,11 @@ export class BackofficeService {
         units: { orderBy: { rowOrder: 'asc' } },
       },
     });
+
+    if (status === 'pending_review') {
+      void this.notificationsService.notifyProUsersForPromotion(promotion.id).catch(() => undefined);
+    }
+
     return this.withSignedPromotionDocuments(promotion);
   }
 
@@ -1304,14 +1317,29 @@ export class BackofficeService {
     promotionId: string,
     dto: UpdatePromotionStatusDto,
   ) {
-    await this.ensurePromotion(promotionId);
+    const current = await this.prisma.promotion.findUnique({
+      where: { id: promotionId },
+      select: { status: true },
+    });
+    if (!current) {
+      throw new NotFoundException('Promotion not found');
+    }
 
-    return this.prisma.promotion.update({
+    const promotion = await this.prisma.promotion.update({
       where: { id: promotionId },
       data: {
         status: dto.status,
+        ...(dto.status === 'pending_review' && current.status !== 'pending_review'
+          ? { alertDetectedAt: new Date() }
+          : {}),
       },
     });
+
+    if (dto.status === 'pending_review' && current.status !== 'pending_review') {
+      void this.notificationsService.notifyProUsersForPromotion(promotionId).catch(() => undefined);
+    }
+
+    return promotion;
   }
 
   async createUnit(promotionId: string, dto: UpsertUnitDto) {

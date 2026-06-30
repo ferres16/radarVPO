@@ -196,3 +196,36 @@ Secrets esperados:
 2. Añadir canal Telegram/email/push real sobre `published_posts`.
 3. Añadir observabilidad completa (OpenTelemetry + dashboards + alerting).
 4. Endurecer seguridad con rotacion de secretos y politica CSP por entorno.
+
+## Alertas PRO con Brevo (email + SMS)
+
+El backend envia notificaciones a usuarios `plan=pro` cuando hay alertas nuevas (`pending_review`, pagina `/alerts`).
+
+### Configuracion en Brevo
+
+1. Crear cuenta y obtener **API key** (SMTP & API).
+2. Verificar **remitente de email** (dominio o email en Brevo → Remitentes).
+3. Activar **SMS transaccional** y configurar remitente (`BREVO_SMS_SENDER`).
+4. **No activar bloqueo por IP** hasta tener IP fija en Railway (ver conversacion de despliegue).
+
+### Variables en Railway (backend)
+
+```env
+BREVO_API_KEY=xkeysib-...
+BREVO_PRO_ALERTS_ENABLED=true
+BREVO_EMAIL_SENDER=Radar VPO <info@radarvpo.com>
+BREVO_SMS_SENDER=RadarVPO
+FRONTEND_URL=https://radar-vpo-frontend-ten.vercel.app
+```
+
+### Cuando se envia
+
+- Cron del scraper (`CRON_CHECK_PROMOTIONS`) revisa alertas pendientes sin notificar.
+- Admin crea un aviso o lo deja en `pending_review`.
+- Admin puede forzar envio: `POST /api/v1/backoffice/notifications/pro-alerts/dispatch` o boton en `/admin/alerts`.
+
+### Prueba
+
+1. Marcar un usuario como **PRO** en `/admin/users` (email + movil espanol).
+2. Crear aviso pendiente o usar boton **Enviar alertas PRO (Brevo)**.
+3. Revisar fallos en `GET /backoffice/failures` si no llega nada.

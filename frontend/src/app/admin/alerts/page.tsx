@@ -24,6 +24,29 @@ export default function AdminAlertsPage() {
   const [savingId, setSavingId] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [dispatchMessage, setDispatchMessage] = useState('');
+  const [dispatching, setDispatching] = useState(false);
+
+  async function dispatchProNotifications() {
+    setDispatching(true);
+    setDispatchMessage('');
+    try {
+      const result = await api.dispatchProAlertNotifications();
+      if (result.skipped) {
+        setDispatchMessage(
+          result.reason === 'brevo_not_configured'
+            ? 'Brevo no está activo. Revisa BREVO_API_KEY y BREVO_PRO_ALERTS_ENABLED en Railway.'
+            : `Sin envíos: ${result.reason || 'omitido'}`,
+        );
+      } else {
+        setDispatchMessage(`Notificaciones PRO enviadas: ${result.sent} entregas (email/SMS).`);
+      }
+    } catch (err) {
+      setDispatchMessage(err instanceof Error ? err.message : 'No se pudieron enviar las notificaciones');
+    } finally {
+      setDispatching(false);
+    }
+  }
 
   async function load(nextQuery = query, nextStatus = statusFilter) {
     const status = nextStatus === 'all' ? undefined : nextStatus;
@@ -92,8 +115,26 @@ export default function AdminAlertsPage() {
             eyebrow="Avisos pendientes"
             title="Gestiona avisos detectados y su publicación"
             description="Filtra por estado, revisa cada aviso y decide si publicarlo, marcarlo como revisado, archivarlo o eliminarlo definitivamente."
-            actions={<ButtonLink href="/admin/promotions">Ver promociones publicadas</ButtonLink>}
+            actions={
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={dispatching}
+                  onClick={() => void dispatchProNotifications()}
+                  className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-bold text-[var(--ink)] disabled:opacity-60"
+                >
+                  {dispatching ? 'Enviando PRO...' : 'Enviar alertas PRO (Brevo)'}
+                </button>
+                <ButtonLink href="/admin/promotions">Ver promociones publicadas</ButtonLink>
+              </div>
+            }
           />
+
+          {dispatchMessage ? (
+            <SurfaceCard className="border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm text-[var(--ink)]">
+              {dispatchMessage}
+            </SurfaceCard>
+          ) : null}
 
           <SurfaceCard className="space-y-4 p-4">
             <div className="flex flex-wrap gap-2">

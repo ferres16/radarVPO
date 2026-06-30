@@ -48,10 +48,7 @@ export class JobsService implements OnApplicationBootstrap {
       this.logger.log(
         `Checked active sources=${count}; registre scanned=${registre.scanned}, created=${registre.promotionsCreated}, docs=${registre.documentsCreated}, merged=${registre.duplicatesMerged}`,
       );
-      const proAlerts =
-        registre.promotionsCreated > 0
-          ? await this.notificationsService.notifyProUsersForPendingAlerts()
-          : { skipped: true, reason: 'no_new_promotions', sent: 0 };
+      const proAlerts = await this.notificationsService.notifyProUsersForPendingAlerts();
 
       return {
         checkedSources: count,

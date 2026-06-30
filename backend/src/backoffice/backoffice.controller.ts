@@ -108,6 +108,11 @@ export class BackofficeController {
     return this.backofficeService.failures(query);
   }
 
+  @Post('notifications/pro-alerts/dispatch')
+  dispatchProAlertNotifications() {
+    return this.backofficeService.dispatchPendingProAlertNotifications();
+  }
+
   @Get('files')
   listFiles(@Query() query: BackofficeListFilesDto) {
     return this.backofficeService.listFiles(query);
