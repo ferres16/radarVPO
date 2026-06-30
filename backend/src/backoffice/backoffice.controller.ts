@@ -109,8 +109,8 @@ export class BackofficeController {
   }
 
   @Post('notifications/pro-alerts/dispatch')
-  dispatchProAlertNotifications() {
-    return this.backofficeService.dispatchPendingProAlertNotifications();
+  dispatchProAlertNotifications(@Query('force') force?: string) {
+    return this.backofficeService.dispatchPendingProAlertNotifications(force === 'true');
   }
 
   @Get('files')

@@ -28,6 +28,29 @@ type NotifyResult = {
   sent: number;
   channels?: string[];
   promotionId?: string;
+  title?: string;
+  proUsers?: number;
+  emailsSent?: number;
+  smsSent?: number;
+};
+
+export type ProAlertDispatchResult = {
+  skipped: boolean;
+  reason?: string;
+  sent: number;
+  configured: boolean;
+  hasApiKey: boolean;
+  proAlertsEnabled: boolean;
+  pendingAlerts: number;
+  proUsers: number;
+  proUsersWithPhone: number;
+  promotions: NotifyResult[];
+  recentFailures: Array<{
+    channel: string;
+    target: string;
+    errorCode: string;
+    createdAt: Date;
+  }>;
 };
 
 @Injectable()
@@ -47,14 +70,85 @@ export class NotificationsService {
     return Boolean(this.proAlertsEnabled && this.apiKey);
   }
 
+  async getProAlertsDiagnostics() {
+    const [pendingAlerts, proUsers, proUserRows, recentFailures] = await Promise.all([
+      this.prisma.promotion.count({ where: { status: 'pending_review' } }),
+      this.prisma.user.count({
+        where: {
+          OR: [
+            { plan: 'pro' },
+            {
+              subscriptions: {
+                some: {
+                  planKey: 'pro',
+                  status: { in: [SubscriptionStatus.active, SubscriptionStatus.trialing] },
+                },
+              },
+            },
+          ],
+        },
+      }),
+      this.prisma.user.findMany({
+        where: {
+          OR: [
+            { plan: 'pro' },
+            {
+              subscriptions: {
+                some: {
+                  planKey: 'pro',
+                  status: { in: [SubscriptionStatus.active, SubscriptionStatus.trialing] },
+                },
+              },
+            },
+          ],
+        },
+        select: { phone: true },
+      }),
+      this.prisma.deliveryFailure.findMany({
+        where: { sourceRef: 'radar_vpo_pro' },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          channel: true,
+          target: true,
+          errorCode: true,
+          createdAt: true,
+        },
+      }),
+    ]);
+
+    const proUsersWithPhone = proUserRows.filter((user) => normalizePhoneForSms(user.phone)).length;
+
+    return {
+      configured: this.isProAlertsConfigured(),
+      hasApiKey: Boolean(this.apiKey),
+      proAlertsEnabled: this.proAlertsEnabled,
+      pendingAlerts,
+      proUsers,
+      proUsersWithPhone,
+      recentFailures,
+    };
+  }
+
   getAlertsPageUrl() {
     return `${this.frontendUrl}/alerts`;
   }
 
-  async notifyProUsersForPendingAlerts(limit = 20): Promise<NotifyResult> {
+  async notifyProUsersForPendingAlerts(
+    limit = 20,
+    options: { force?: boolean } = {},
+  ): Promise<ProAlertDispatchResult> {
+    const diagnostics = await this.getProAlertsDiagnostics();
+
     if (!this.isProAlertsConfigured()) {
       this.logger.log('Brevo Pro alerts skipped: missing BREVO_API_KEY or BREVO_PRO_ALERTS_ENABLED=true');
-      return { skipped: true, reason: 'brevo_not_configured', sent: 0 };
+      return {
+        ...diagnostics,
+        skipped: true,
+        reason: 'brevo_not_configured',
+        sent: 0,
+        promotions: [],
+      };
     }
 
     const promotions = await this.prisma.promotion.findMany({
@@ -70,18 +164,54 @@ export class NotificationsService {
       },
     });
 
+    if (promotions.length === 0) {
+      return {
+        ...diagnostics,
+        skipped: true,
+        reason: 'no_pending_alerts',
+        sent: 0,
+        promotions: [],
+      };
+    }
+
+    const promotionResults: NotifyResult[] = [];
     let sent = 0;
+
     for (const promotion of promotions) {
-      const result = await this.notifyProUsersForPromotion(promotion.id);
+      const result = await this.notifyProUsersForPromotion(promotion.id, options);
+      promotionResults.push({ ...result, title: promotion.title });
       if (!result.skipped) {
         sent += result.sent;
       }
     }
 
-    return { skipped: false, sent };
+    const skippedResults = promotionResults.filter((result) => result.skipped);
+    const failedResults = promotionResults.filter((result) => !result.skipped && result.sent === 0);
+
+    let reason: string | undefined;
+    if (sent === 0) {
+      if (skippedResults.length === promotionResults.length) {
+        reason = skippedResults[0]?.reason || 'all_skipped';
+      } else if (failedResults.length > 0) {
+        reason = 'brevo_delivery_failed';
+      } else {
+        reason = 'no_deliveries';
+      }
+    }
+
+    return {
+      ...diagnostics,
+      skipped: sent === 0,
+      reason,
+      sent,
+      promotions: promotionResults,
+    };
   }
 
-  async notifyProUsersForPromotion(promotionId: string): Promise<NotifyResult> {
+  async notifyProUsersForPromotion(
+    promotionId: string,
+    options: { force?: boolean } = {},
+  ): Promise<NotifyResult> {
     if (!this.isProAlertsConfigured()) {
       return { skipped: true, reason: 'brevo_not_configured', sent: 0, promotionId };
     }
@@ -113,28 +243,44 @@ export class NotificationsService {
       select: { id: true },
     });
 
-    if (existing) {
-      return { skipped: true, reason: 'already_sent', sent: 0, promotionId };
+    if (existing && !options.force) {
+      return { skipped: true, reason: 'already_sent', sent: 0, promotionId, title: promotion.title };
     }
 
     const result = await this.sendProAlert(promotion);
     if (result.sent > 0) {
-      await this.prisma.publishedPost.create({
-        data: {
-          sourceKind: 'promotion_alert',
-          sourceId: promotion.id,
-          audience: AudienceType.pro,
-          channel: 'brevo',
-          payloadJson: {
-            title: promotion.title,
-            sent: result.sent,
-            channels: result.channels,
-            alertsUrl: this.getAlertsPageUrl(),
-          } as Prisma.InputJsonValue,
-          status: 'sent',
-          sentAt: new Date(),
-        },
-      });
+      if (existing && options.force) {
+        await this.prisma.publishedPost.update({
+          where: { id: existing.id },
+          data: {
+            payloadJson: {
+              title: promotion.title,
+              sent: result.sent,
+              channels: result.channels,
+              alertsUrl: this.getAlertsPageUrl(),
+              forced: true,
+            } as Prisma.InputJsonValue,
+            sentAt: new Date(),
+          },
+        });
+      } else {
+        await this.prisma.publishedPost.create({
+          data: {
+            sourceKind: 'promotion_alert',
+            sourceId: promotion.id,
+            audience: AudienceType.pro,
+            channel: 'brevo',
+            payloadJson: {
+              title: promotion.title,
+              sent: result.sent,
+              channels: result.channels,
+              alertsUrl: this.getAlertsPageUrl(),
+            } as Prisma.InputJsonValue,
+            status: 'sent',
+            sentAt: new Date(),
+          },
+        });
+      }
       this.logger.log(
         `Pro alert notification sent for promotion ${promotion.id}: ${result.sent} deliveries (${result.channels.join(', ')})`,
       );
@@ -143,10 +289,20 @@ export class NotificationsService {
     }
 
     return {
-      skipped: false,
+      skipped: result.sent === 0,
+      reason:
+        result.sent === 0
+          ? result.proUsers === 0
+            ? 'no_pro_users'
+            : 'brevo_delivery_failed'
+          : undefined,
       sent: result.sent,
       channels: result.channels,
       promotionId,
+      title: promotion.title,
+      proUsers: result.proUsers,
+      emailsSent: result.emailsSent,
+      smsSent: result.smsSent,
     };
   }
 
@@ -170,6 +326,8 @@ export class NotificationsService {
 
     const channels: string[] = [];
     let sent = 0;
+    let emailsSent = 0;
+    let smsSent = 0;
     const alertsUrl = this.getAlertsPageUrl();
     const location = [promotion.municipality, promotion.province].filter(Boolean).join(', ') || 'Cataluña';
     const estimatedDate = promotion.estimatedPublicationDate
@@ -196,25 +354,33 @@ export class NotificationsService {
       });
       if (emailSent) {
         sent += 1;
+        emailsSent += 1;
         channels.push('email');
       }
 
       const normalizedPhone = normalizePhoneForSms(user.phone);
       if (normalizedPhone) {
-        const smsSent = await this.sendSms({
+        const smsSentForUser = await this.sendSms({
           sender: this.smsSender,
           recipient: normalizedPhone,
           content: sms,
           type: 'transactional',
         });
-        if (smsSent) {
+        if (smsSentForUser) {
           sent += 1;
+          smsSent += 1;
           channels.push('sms');
         }
       }
     }
 
-    return { sent, channels: [...new Set(channels)] };
+    return {
+      sent,
+      channels: [...new Set(channels)],
+      proUsers: users.length,
+      emailsSent,
+      smsSent,
+    };
   }
 
   private buildSmsMessage({ location, alertsUrl }: { location: string; alertsUrl: string }) {

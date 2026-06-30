@@ -187,8 +187,34 @@ export const api = {
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
   getBackofficeJobs: () => request<JobRun[]>('/backoffice/jobs'),
   getBackofficeFailures: () => request<DeliveryFailure[]>('/backoffice/failures'),
-  dispatchProAlertNotifications: () =>
-    request<{ skipped: boolean; reason?: string; sent: number }>('/backoffice/notifications/pro-alerts/dispatch', {
+  dispatchProAlertNotifications: (force = false) =>
+    request<{
+      skipped: boolean;
+      reason?: string;
+      sent: number;
+      configured: boolean;
+      hasApiKey: boolean;
+      proAlertsEnabled: boolean;
+      pendingAlerts: number;
+      proUsers: number;
+      proUsersWithPhone: number;
+      promotions: Array<{
+        promotionId?: string;
+        title?: string;
+        skipped: boolean;
+        reason?: string;
+        sent: number;
+        proUsers?: number;
+        emailsSent?: number;
+        smsSent?: number;
+      }>;
+      recentFailures: Array<{
+        channel: string;
+        target: string;
+        errorCode: string;
+        createdAt: string;
+      }>;
+    }>(`/backoffice/notifications/pro-alerts/dispatch${force ? '?force=true' : ''}`, {
       method: 'POST',
     }),
   getBackofficeFiles: (query?: string | FileAssetQuery) => {

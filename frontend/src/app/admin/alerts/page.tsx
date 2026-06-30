@@ -17,6 +17,53 @@ const statusLabels: Record<AlertStatusFilter, string> = {
   all: 'Todas',
 };
 
+function formatDispatchResult(result: Awaited<ReturnType<typeof api.dispatchProAlertNotifications>>) {
+  const lines: string[] = [];
+
+  if (!result.configured) {
+    lines.push('Brevo no está activo en Railway.');
+    lines.push(`API key: ${result.hasApiKey ? 'sí' : 'no'} · PRO alerts: ${result.proAlertsEnabled ? 'sí' : 'no'}`);
+    lines.push('Revisa BREVO_API_KEY y BREVO_PRO_ALERTS_ENABLED=true.');
+    return lines.join(' ');
+  }
+
+  lines.push(`Pendientes: ${result.pendingAlerts} · Usuarios PRO: ${result.proUsers} · Con teléfono: ${result.proUsersWithPhone}`);
+
+  if (result.sent > 0) {
+    lines.push(`Enviadas ${result.sent} entregas (email/SMS).`);
+  } else if (result.reason === 'already_sent') {
+    lines.push('Sin envíos: esa alerta ya se notificó antes. Marca "Forzar reenvío" o crea una alerta nueva.');
+  } else if (result.reason === 'no_pending_alerts') {
+    lines.push('No hay alertas pendientes para enviar.');
+  } else if (result.reason === 'brevo_delivery_failed') {
+    lines.push('Brevo rechazó el envío. Revisa errores abajo (remitente, API key, SMS).');
+  } else if (result.reason === 'no_pro_users') {
+    lines.push('No hay usuarios PRO a los que notificar.');
+  } else {
+    lines.push(`Sin entregas (${result.reason || 'desconocido'}).`);
+  }
+
+  for (const promotion of result.promotions) {
+    if (!promotion.title) continue;
+    if (promotion.skipped && promotion.reason) {
+      lines.push(`· ${promotion.title}: omitida (${promotion.reason}).`);
+    } else if (promotion.sent === 0) {
+      lines.push(`· ${promotion.title}: 0 envíos (email ${promotion.emailsSent ?? 0}, SMS ${promotion.smsSent ?? 0}).`);
+    } else {
+      lines.push(`· ${promotion.title}: ${promotion.sent} envíos (email ${promotion.emailsSent ?? 0}, SMS ${promotion.smsSent ?? 0}).`);
+    }
+  }
+
+  if (result.recentFailures.length > 0) {
+    lines.push('Errores Brevo recientes:');
+    for (const failure of result.recentFailures.slice(0, 3)) {
+      lines.push(`· [${failure.channel}] ${failure.target}: ${failure.errorCode}`);
+    }
+  }
+
+  return lines.join('\n');
+}
+
 export default function AdminAlertsPage() {
   const [alerts, setAlerts] = useState<PromotionDetail[]>([]);
   const [query, setQuery] = useState('');
@@ -26,21 +73,14 @@ export default function AdminAlertsPage() {
   const [error, setError] = useState('');
   const [dispatchMessage, setDispatchMessage] = useState('');
   const [dispatching, setDispatching] = useState(false);
+  const [forceResend, setForceResend] = useState(false);
 
   async function dispatchProNotifications() {
     setDispatching(true);
     setDispatchMessage('');
     try {
-      const result = await api.dispatchProAlertNotifications();
-      if (result.skipped) {
-        setDispatchMessage(
-          result.reason === 'brevo_not_configured'
-            ? 'Brevo no está activo. Revisa BREVO_API_KEY y BREVO_PRO_ALERTS_ENABLED en Railway.'
-            : `Sin envíos: ${result.reason || 'omitido'}`,
-        );
-      } else {
-        setDispatchMessage(`Notificaciones PRO enviadas: ${result.sent} entregas (email/SMS).`);
-      }
+      const result = await api.dispatchProAlertNotifications(forceResend);
+      setDispatchMessage(formatDispatchResult(result));
     } catch (err) {
       setDispatchMessage(err instanceof Error ? err.message : 'No se pudieron enviar las notificaciones');
     } finally {
@@ -116,7 +156,15 @@ export default function AdminAlertsPage() {
             title="Gestiona avisos detectados y su publicación"
             description="Filtra por estado, revisa cada aviso y decide si publicarlo, marcarlo como revisado, archivarlo o eliminarlo definitivamente."
             actions={
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <label className="inline-flex items-center gap-2 rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)]">
+                  <input
+                    type="checkbox"
+                    checked={forceResend}
+                    onChange={(event) => setForceResend(event.target.checked)}
+                  />
+                  Forzar reenvío
+                </label>
                 <button
                   type="button"
                   disabled={dispatching}
@@ -131,7 +179,7 @@ export default function AdminAlertsPage() {
           />
 
           {dispatchMessage ? (
-            <SurfaceCard className="border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm text-[var(--ink)]">
+            <SurfaceCard className="border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm whitespace-pre-line text-[var(--ink)]">
               {dispatchMessage}
             </SurfaceCard>
           ) : null}

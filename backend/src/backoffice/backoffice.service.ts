@@ -117,8 +117,8 @@ export class BackofficeService {
     });
   }
 
-  async dispatchPendingProAlertNotifications() {
-    return this.notificationsService.notifyProUsersForPendingAlerts();
+  async dispatchPendingProAlertNotifications(force = false) {
+    return this.notificationsService.notifyProUsersForPendingAlerts(20, { force });
   }
 
   async listFiles(query: BackofficeListFilesDto) {
