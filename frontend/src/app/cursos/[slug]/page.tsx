@@ -183,12 +183,12 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               <h1 className="display-type mt-1 text-2xl font-black text-white sm:mt-2 sm:text-3xl md:text-5xl">{course.title}</h1>
             </div>
           </div>
-          <div className="shell grid gap-4 py-4 md:grid-cols-[1.2fr_0.8fr] md:gap-6 md:py-5">
-            <div>
+          <div className={`shell py-4 md:py-5 ${canAccess ? '' : 'md:grid md:grid-cols-[1.15fr_0.85fr] md:items-start md:gap-8'}`}>
+            <div className="min-w-0">
               <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
                 {course.longDescription || course.shortDescription || 'Formación práctica para prepararte antes del plazo.'}
               </p>
-              <div className="mt-5 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-soft)]">
+              <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-soft)] md:mt-5">
                 <span className="rounded-full bg-[var(--bg-app)] px-3 py-1">{lessonCount} lecciones</span>
                 <span className="rounded-full bg-[var(--bg-app)] px-3 py-1">
                   {includedInPro ? 'Incluido en PRO' : course.accessType}
@@ -199,7 +199,19 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                   <span className="rounded-full bg-[rgba(232,184,74,0.16)] px-3 py-1 text-[#7a5600]">Bloqueado</span>
                 )}
               </div>
+              {canAccess && hasLessons ? (
+                <div className="mt-5 lg:hidden">
+                  <CourseAccessLink
+                    hrefWhenAccess={courseEntryHref}
+                    hrefWhenLocked={lockedAccessHref}
+                    lockedLabel={lockedAccessLabel}
+                    accessLabel="Empezar curso"
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[var(--green-700)] px-5 py-3 text-sm font-bold text-white shadow-glow transition hover:bg-[var(--green-900)] sm:w-auto"
+                  />
+                </div>
+              ) : null}
             </div>
+            {!canAccess ? (
             <aside className="course-progress-card flex flex-col gap-4 p-5 md:p-6">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/60">Precio</p>
@@ -219,13 +231,14 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                   accessLabel={hasLessons ? 'Empezar curso' : 'Ver índice'}
                   className="flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
                 />
-                {!canAccess && includedInPro ? (
+                {includedInPro ? (
                   <ButtonLink href={proHref} variant="secondary" className="w-full !border-white/20 !bg-white/10 !text-white">
                     {proPlan.ctaLabel}
                   </ButtonLink>
                 ) : null}
               </div>
             </aside>
+            ) : null}
           </div>
         </header>
 

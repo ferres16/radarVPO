@@ -1841,6 +1841,20 @@ h3,
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
 
+.course-hub-grid {
+  display: grid;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (min-width: 1024px) {
+  .course-hub-grid {
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+    gap: 1.25rem;
+    align-items: start;
+  }
+}
+
 @media (min-width: 1024px) {
   .lesson-page {
     height: calc(100vh - 5rem);

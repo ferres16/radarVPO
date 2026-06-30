@@ -66,7 +66,7 @@ export function CollapsePanel({
 
   if (breakpoint) {
     return (
-      <>
+      <div className="w-full min-w-0">
         <details className={`collapse-panel ${breakpoint.mobile} ${className}`.trim()} open={defaultOpen || undefined}>
           <summary className="collapse-panel__summary">
             <span className="min-w-0">
@@ -87,11 +87,11 @@ export function CollapsePanel({
           <div className={`collapse-panel__body ${bodyClassName}`.trim()}>{children}</div>
         </details>
 
-        <div className={`${breakpoint.desktop} ${className}`.trim()}>
+        <div className={`${breakpoint.desktop} w-full min-w-0 ${className}`.trim()}>
           <PanelHeader title={title} subtitle={subtitle} meta={meta} />
           <div className={`mt-3 ${bodyClassName}`.trim()}>{children}</div>
         </div>
-      </>
+      </div>
     );
   }
 
