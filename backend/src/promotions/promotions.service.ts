@@ -5,6 +5,11 @@ import { ListPromotionsDto } from './dto/list-promotions.dto';
 import { withPromotionView } from '../common/promotion-view.util';
 import { FileStorageService } from '../storage/file-storage.service';
 
+const PUBLIC_PROMOTION_STATUSES: PromotionStatus[] = [
+  'published_unreviewed',
+  'published_reviewed',
+];
+
 @Injectable()
 export class PromotionsService {
   constructor(
@@ -15,16 +20,11 @@ export class PromotionsService {
   async list(filters: ListPromotionsDto) {
     const limit = Math.min(filters.limit ?? 10, 50);
     const offset = filters.offset ?? 0;
-    const visibleStatuses: PromotionStatus[] = [
-      'pending_review',
-      'published_unreviewed',
-      'published_reviewed',
-    ];
     const statusFilter = filters.status
-      ? visibleStatuses.includes(filters.status as PromotionStatus)
+      ? PUBLIC_PROMOTION_STATUSES.includes(filters.status as PromotionStatus)
         ? (filters.status as PromotionStatus)
         : null
-      : { in: visibleStatuses };
+      : { in: PUBLIC_PROMOTION_STATUSES };
 
     if (statusFilter === null) {
       return [];
@@ -40,6 +40,9 @@ export class PromotionsService {
         : undefined,
       promotionType: filters.promotionType,
       status: statusFilter,
+      NOT: {
+        title: { contains: 'alerta', mode: 'insensitive' },
+      },
       OR: search
         ? [
             { title: { contains: search, mode: 'insensitive' } },

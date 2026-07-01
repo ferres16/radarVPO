@@ -1,14 +1,11 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
-import { getDaysRemaining } from '@/lib/alert-countdown';
 import { copy } from '@/lib/navigation';
 import { proHref, proPlan } from '@/lib/pro';
-import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
-import { PublicPage, PublicProBanner, PublicSection } from '@/components/conversion/public-shell';
+import { PublicPage, PublicPageHero, PublicProBanner, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
-import { MotionCard, Stagger, StaggerItem } from '@/components/motion-primitives';
-import { ProComparison } from '@/components/pro-comparison';
+import { AlertTimeline } from '@/components/saas/alert-timeline';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
@@ -22,13 +19,7 @@ export const metadata: Metadata = createMetadata({
 
 export default async function AlertsPage() {
   const alerts = await api.getAlerts().catch(() => []);
-
-  const activeAlerts = alerts
-    .filter((item) => item.type === 'alert')
-    .map((item) => ({
-      item,
-      daysRemaining: getDaysRemaining(item.estimatedPublicationDate),
-    }));
+  const activeAlerts = alerts.filter((item) => item.type === 'alert');
 
   return (
     <PublicPage>
@@ -39,66 +30,53 @@ export default async function AlertsPage() {
         ])}
       />
 
-      <section className="lp-page-hero">
-        <div className="lp-page-hero__backdrop" aria-hidden="true" />
-        <div className="shell lp-page-hero__inner">
-          <span className="lp-hero__badge">{copy.upcomingLaunches}</span>
-          <h1 className="lp-page-hero__title">
-            Sabe qué puede salir
-            <span className="lp-hero__title-accent"> antes de que se publique</span>
-          </h1>
-          <p className="lp-page-hero__subtitle">
-            Monitorizamos señales de vivienda protegida en Cataluña. Con VPO PRO recibes alertas por SMS y email al instante.
-          </p>
-          <div className="lp-hero__actions">
+      <PublicPageHero
+        badge={copy.upcomingLaunches}
+        title="Sabe qué puede salir"
+        titleAccent="antes de que se publique"
+        description="Monitorizamos señales de vivienda protegida en Cataluña. Con VPO PRO recibes alertas por SMS y email al instante."
+        actions={
+          <>
             <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>
-            <ButtonLink href="/promotions" variant="secondary" size="lg">Ver promociones publicadas</ButtonLink>
-          </div>
-        </div>
-      </section>
+            <ButtonLink href="/promotions" variant="secondary" size="lg">Ver publicadas</ButtonLink>
+          </>
+        }
+      />
 
       <PublicProBanner />
 
       <PublicSection id="lanzamientos">
         <SectionHeader
-          title="Lanzamientos monitorizados"
-          description="Oportunidades que aún no tienen convocatoria oficial pero muestran señales de publicación próxima."
+          title="Timeline de lanzamientos"
+          description="Cuenta atrás, ubicación y acceso a ficha en un solo vistazo."
         />
+
         {activeAlerts.length === 0 ? (
-          <SurfaceCard premium className="mt-6 p-8 text-center">
-            <p className="text-sm text-[var(--ink-soft)]">Sin lanzamientos previstos visibles ahora mismo.</p>
+          <SurfaceCard premium className="empty-illus mt-6 border-0 shadow-none">
+            <span className="empty-illus__icon" aria-hidden="true">⏱</span>
+            <p className="mt-4 text-sm text-[var(--ink-soft)]">Sin lanzamientos previstos visibles ahora mismo.</p>
             <div className="mt-6">
               <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>
             </div>
           </SurfaceCard>
         ) : (
-          <Stagger className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 xl:grid-cols-3">
-            {activeAlerts.map(({ item, daysRemaining }) => (
-              <StaggerItem key={item.id}>
-                <MotionCard className="public-card public-card--hover h-full p-5">
-                  <AlertCountdownBadge daysRemaining={daysRemaining} size="lg" />
-                  <p className="mt-4 text-base font-semibold text-[var(--ink)]">{item.title}</p>
-                  <p className="mt-2 text-sm text-[var(--ink-soft)]">{item.municipality || 'Cataluña'}</p>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    <Link href={`/promotions/${item.id}`} className="btn btn--primary">
-                      Ver ficha
-                    </Link>
-                    <Link href={proHref} className="btn btn--secondary">
-                      Recibir notificación
-                    </Link>
-                  </div>
-                </MotionCard>
-              </StaggerItem>
-            ))}
-          </Stagger>
+          <div className="mt-6">
+            <AlertTimeline alerts={activeAlerts} />
+          </div>
         )}
       </PublicSection>
 
       <PublicSection muted border>
-        <ProComparison
+        <SectionHeader
           title="¿Por qué activar VPO PRO?"
           description="Entra cuando quieras a ver lanzamientos. PRO te avisa al móvil y al correo para no depender de acordarte."
         />
+        <div className="mt-4 flex flex-wrap gap-3">
+          <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>
+          <Link href="/register?intent=pro" className="btn btn--secondary btn--lg min-h-11">
+            Crear cuenta
+          </Link>
+        </div>
       </PublicSection>
     </PublicPage>
   );

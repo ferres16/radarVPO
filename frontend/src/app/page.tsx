@@ -6,7 +6,8 @@ import { HomeTestimonials } from '@/components/conversion/home-testimonials';
 import { HeroProof } from '@/components/conversion/hero-proof';
 import { ButtonLink } from '@/components/design-system';
 import { ProComparison } from '@/components/pro-comparison';
-import { StickyProCta } from '@/components/sticky-pro-cta';
+import { ProductPreview } from '@/components/saas/product-preview';
+import { TrustMetrics } from '@/components/saas/trust-metrics';
 import { StructuredData } from '@/components/structured-data';
 import { homeFaqs, homeProblemCards, homeSolutionBlocks } from '@/lib/conversion';
 import { proHref, proPlan } from '@/lib/pro';
@@ -35,39 +36,46 @@ export default async function Home() {
   return (
     <>
       <StructuredData data={[organizationJsonLd(), websiteJsonLd(), faqJsonLd([...homeFaqs])]} />
-      <StickyProCta />
 
-      <main className="lp">
-        {/* 1. HERO */}
+      <main className="lp lp--app">
         <section className="lp-hero" aria-labelledby="hero-title">
           <div className="lp-hero__backdrop" aria-hidden="true" />
-          <div className="shell lp-hero__inner">
-            <span className="lp-hero__badge">VPO PRO · Cataluña</span>
-            <h1 id="hero-title" className="lp-hero__title">
-              No vuelvas a llegar tarde
-              <span className="lp-hero__title-accent"> a una promoción de VPO.</span>
-            </h1>
-            <p className="lp-hero__subtitle">
-              Alertas antes que el resto, preparación real y ventaja cuando abre el plazo.
-              Todo en una suscripción.
-            </p>
-            <div className="lp-hero__actions">
-              <ButtonLink href={proHref} size="lg">
-                Empieza con VPO PRO
-              </ButtonLink>
-              <ButtonLink href="/promotions" variant="secondary" size="lg">
-                Ver promociones
-              </ButtonLink>
+          <div className="shell">
+            <div className="hero-split">
+              <div className="lp-hero__inner">
+                <span className="lp-hero__badge">VPO PRO · Cataluña</span>
+                <h1 id="hero-title" className="lp-hero__title">
+                  Llega antes
+                  <span className="lp-hero__title-accent"> a cada promoción VPO.</span>
+                </h1>
+                <p className="lp-hero__subtitle">
+                  Alertas instantáneas, lanzamientos monitorizados y preparación real. Una app pensada para no perder plazos.
+                </p>
+                <div className="lp-hero__actions">
+                  <ButtonLink href={proHref} size="lg">
+                    {proPlan.ctaLabel}
+                  </ButtonLink>
+                  <ButtonLink href="/alerts" variant="secondary" size="lg">
+                    Ver lanzamientos
+                  </ButtonLink>
+                </div>
+                <p className="lp-hero__price">{proPlan.price} · cancela cuando quieras</p>
+                <HeroProof />
+              </div>
+              <ProductPreview />
             </div>
-            <p className="lp-hero__price">{proPlan.price} · cancela cuando quieras</p>
-            <HeroProof />
           </div>
         </section>
 
-        {/* 2. PROBLEMA */}
+        <section className="lp-section lp-section--muted" aria-label="Métricas">
+          <div className="shell">
+            <TrustMetrics />
+          </div>
+        </section>
+
         <section className="lp-section" aria-labelledby="problem-title">
           <div className="shell">
-            <div className="lp-section__head lp-section__head--center">
+            <div className="lp-section__head">
               <p className="lp-eyebrow">El problema</p>
               <h2 id="problem-title" className="lp-title">
                 La mayoría pierde la oportunidad antes de empezar
@@ -85,8 +93,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 3. SOLUCIÓN */}
-        <section className="lp-section lp-section--muted" aria-labelledby="solution-title">
+        <section className="lp-section lp-section--border" aria-labelledby="solution-title">
           <div className="shell">
             <div className="lp-section__head">
               <p className="lp-eyebrow">La solución</p>
@@ -111,16 +118,14 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* 4. COMPARATIVA */}
         <section className="lp-section">
           <div className="shell">
             <ProComparison />
           </div>
         </section>
 
-        {/* 5. CURSOS */}
         {featuredCourse ? (
-          <section className="lp-section lp-section--border" aria-labelledby="courses-title">
+          <section className="lp-section lp-section--muted" aria-labelledby="courses-title">
             <div className="shell">
               <div className="lp-section__head">
                 <p className="lp-eyebrow">Formación incluida</p>
@@ -136,15 +141,33 @@ export default async function Home() {
           </section>
         ) : null}
 
-        {/* 6. TESTIMONIOS */}
-        <div className="shell">
-          <HomeTestimonials />
-        </div>
+        <section className="lp-section">
+          <div className="shell">
+            <HomeTestimonials />
+          </div>
+        </section>
 
-        {/* 7. FAQ */}
-        <div className="shell">
-          <HomeFaq />
-        </div>
+        <section className="lp-section lp-section--border">
+          <div className="shell">
+            <HomeFaq />
+          </div>
+        </section>
+
+        <section className="lp-section lp-section--muted">
+          <div className="shell">
+            <div className="public-cta-band">
+              <div>
+                <h2 className="lp-title lp-title--sm">Empieza hoy con VPO PRO</h2>
+                <p className="lp-lead">Recibe alertas por SMS y email cuando detectemos oportunidades en tu zona.</p>
+              </div>
+              <div className="public-cta-band__actions">
+                <ButtonLink href={proHref} size="lg">
+                  {proPlan.ctaLabel}
+                </ButtonLink>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </>
   );

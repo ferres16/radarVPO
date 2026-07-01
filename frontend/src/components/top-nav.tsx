@@ -87,7 +87,7 @@ export function TopNav() {
 
         <button
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--stroke)] bg-white/90 text-[var(--ink)] shadow-sm transition hover:bg-[var(--bg-eco)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] md:hidden"
+          className="hidden h-11 w-11 items-center justify-center rounded-full border border-[var(--stroke)] bg-white/90 text-[var(--ink)] shadow-sm transition hover:bg-[var(--bg-eco)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] md:inline-flex lg:hidden"
           onClick={() => setMobileOpen((value) => !value)}
           aria-expanded={mobileOpen}
           aria-controls="mobile-navigation"
@@ -100,6 +100,30 @@ export function TopNav() {
             <span className={`block h-0.5 w-5 rounded-full bg-current transition ${mobileOpen ? '-translate-y-2 -rotate-45' : ''}`} />
           </span>
         </button>
+
+        <div className="flex items-center gap-2 md:hidden" aria-label="Acceso rápido móvil">
+          {proIsExternal ? (
+            <a
+              href={proHref}
+              className="inline-flex min-h-11 items-center rounded-full bg-[var(--green-700)] px-3.5 text-xs font-black text-white"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              PRO
+            </a>
+          ) : (
+            <Link href={proHref} className="inline-flex min-h-11 items-center rounded-full bg-[var(--green-700)] px-3.5 text-xs font-black text-white">
+              PRO
+            </Link>
+          )}
+          <Link
+            href={me ? '/account' : '/login'}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--stroke)] bg-white text-xs font-bold text-[var(--green-700)]"
+            aria-label={me ? 'Ir a tu cuenta' : 'Iniciar sesión'}
+          >
+            {me ? initials : '→'}
+          </Link>
+        </div>
 
         <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Navegación principal">
           {primaryLinks.map((link) => {
@@ -203,13 +227,13 @@ export function TopNav() {
       </div>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 top-0 z-[-1] bg-[rgba(16,24,40,0.32)] backdrop-blur-sm md:hidden" onClick={() => setMobileOpen(false)} />
+        <div className="fixed inset-0 top-0 z-[-1] bg-[rgba(16,24,40,0.32)] backdrop-blur-sm lg:hidden" onClick={() => setMobileOpen(false)} />
       ) : null}
 
       {mobileOpen ? (
         <nav
           id="mobile-navigation"
-          className="mx-auto mt-3 max-w-[1180px] rounded-[1.75rem] border border-white/70 bg-white p-3 shadow-[0_18px_50px_rgba(16,24,40,0.18)] animate-slide-down md:hidden"
+          className="mx-auto mt-3 max-w-[1180px] rounded-[1.75rem] border border-white/70 bg-white p-3 shadow-[0_18px_50px_rgba(16,24,40,0.18)] animate-slide-down lg:hidden"
           aria-label="Navegación móvil"
         >
           <ul className="space-y-2">

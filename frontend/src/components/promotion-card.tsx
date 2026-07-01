@@ -34,12 +34,47 @@ export function PromotionCard({
   hideDetail = false,
   hideStatus = false,
   titleOverride,
+  layout = 'grid',
 }: {
   promotion: Promotion;
   hideDetail?: boolean;
   hideStatus?: boolean;
   titleOverride?: string;
+  layout?: 'grid' | 'rail';
 }) {
+  if (layout === 'rail') {
+    return (
+      <MotionCard className="saas-card-rail group h-full">
+        <div className="flex items-start justify-between gap-2">
+          <span className="inline-flex rounded-full bg-[rgba(22,112,85,0.10)] px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--green-700)]">
+            VPO
+          </span>
+          {!hideStatus ? (
+            <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${statusTone(promotion.status)}`}>
+              {statusLabel(promotion.status)}
+            </span>
+          ) : null}
+        </div>
+        <h3 className="mt-2 line-clamp-2 text-base font-bold leading-snug text-[var(--ink)] group-hover:text-[var(--green-700)]">
+          {titleOverride || promotion.title}
+        </h3>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">
+          {promotion.municipality || 'Catalunya'}
+          {promotion.province ? ` · ${promotion.province}` : ''}
+        </p>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          <span className="chip text-[11px]">{promotionTypeLabel(promotion.promotionType)}</span>
+          {displayDate(promotion) ? <span className="chip text-[11px]">{displayDate(promotion)}</span> : null}
+        </div>
+        {!hideDetail ? (
+          <Link href={`/promotions/${promotion.id}`} className="btn btn--primary mt-auto min-h-11 w-full py-2 text-sm">
+            Ver ficha
+          </Link>
+        ) : null}
+      </MotionCard>
+    );
+  }
+
   return (
     <MotionCard className="premium-card group flex h-full flex-col p-5">
       <div className="mb-3 flex items-start justify-between gap-2">
@@ -70,7 +105,7 @@ export function PromotionCard({
       {!hideDetail ? (
         <Link
           href={`/promotions/${promotion.id}`}
-          className="mt-auto inline-flex w-fit rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-sm outline-none transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-900)] hover:shadow-glow focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+          className="mt-auto inline-flex min-h-11 w-fit items-center rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-sm outline-none transition duration-200 hover:-translate-y-0.5 hover:bg-[var(--green-900)] hover:shadow-glow focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
         >
           Ver ficha
         </Link>

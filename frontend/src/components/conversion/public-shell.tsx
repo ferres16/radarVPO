@@ -4,7 +4,7 @@ import { ButtonLink } from '@/components/design-system';
 import { proHref, proPlan } from '@/lib/pro';
 
 export function PublicPage({ children }: { children: ReactNode }) {
-  return <main className="lp lp--inner">{children}</main>;
+  return <main className="lp lp--inner lp--app">{children}</main>;
 }
 
 export function PublicPageHero({
