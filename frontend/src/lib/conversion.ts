@@ -95,3 +95,51 @@ export const homeFaqs = [
       'Sí. Puedes consultar promociones publicadas con la versión gratuita. PRO desbloquea alertas ilimitadas, próximos lanzamientos y preparación completa.',
   },
 ] as const;
+
+export const courseFaqs = [
+  {
+    question: '¿Los cursos están incluidos en VPO PRO?',
+    answer:
+      'Los programas marcados como "Incluido en PRO" se desbloquean con tu suscripción. Otros cursos premium pueden comprarse por separado.',
+  },
+  {
+    question: '¿Necesito experiencia previa?',
+    answer:
+      'No. Los cursos están pensados para personas que buscan su primera vivienda protegida y quieren entender requisitos y plazos sin tecnicismos.',
+  },
+  {
+    question: '¿Puedo comprar un curso sin PRO?',
+    answer:
+      'Sí. Los programas premium tienen compra directa. PRO es la opción más completa si también quieres alertas y lanzamientos.',
+  },
+  {
+    question: '¿Garantiza conseguir una vivienda?',
+    answer:
+      'No. La formación te ayuda a prepararte y evitar errores. La adjudicación depende siempre de los organismos oficiales.',
+  },
+] as const;
+
+export const accompanimentProblem = {
+  title: 'El plazo no espera a que estés listo',
+  description:
+    'Muchas personas descubren la convocatoria tarde, sin documentación preparada ni claridad sobre requisitos. Eso reduce opciones reales de presentarse a tiempo.',
+} as const;
+
+export const accompanimentSteps = [
+  { step: '01', title: 'Cuéntanos tu caso', description: 'Revisamos tu situación, municipio y objetivos.' },
+  { step: '02', title: 'Preparamos contigo', description: 'Requisitos, documentación y señales a vigilar.' },
+  { step: '03', title: 'Llegas al plazo con criterio', description: 'Sin improvisar cuando se abre la solicitud.' },
+] as const;
+
+export const accompanimentIncludes = [
+  'Revisión de requisitos económicos y familiares',
+  'Orientación sobre documentación necesaria',
+  'Seguimiento de oportunidades relevantes',
+  'Traducción de plazos y pasos en lenguaje claro',
+] as const;
+
+export const accompanimentExcludes = [
+  'No garantizamos adjudicación de vivienda',
+  'No presentamos solicitudes en tu nombre salvo acuerdo específico',
+  'No sustituimos resoluciones de organismos oficiales',
+] as const;

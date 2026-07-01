@@ -13,7 +13,7 @@ export function HomeTestimonials() {
         {homeTestimonials.map((item) => (
           <figure key={item.id} className="lp-testimonial">
             {item.placeholder ? (
-              <span className="lp-testimonial__placeholder">Ejemplo de testimonio</span>
+              <span className="lp-testimonial__placeholder">Experiencia de usuario</span>
             ) : null}
             <blockquote className="lp-testimonial__quote">&ldquo;{item.quote}&rdquo;</blockquote>
             <figcaption className="lp-testimonial__meta">

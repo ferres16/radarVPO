@@ -8,6 +8,7 @@ import { PublicPage, PublicPageHero, PublicProBanner, PublicSection } from '@/co
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { HorizontalRail, HorizontalRailItem } from '@/components/saas/horizontal-rail';
 import { FilterChips } from '@/components/saas/filter-chips';
+import { PromotionsHeroVisual } from '@/components/saas/hero-visuals';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
@@ -44,10 +45,13 @@ export default async function PromotionsPage({
       />
 
       <PublicPageHero
-        badge={copy.publishedPromotions}
-        title="Promociones ya abiertas"
-        titleAccent="con plazos y requisitos"
-        description={copy.publishedPromotionsDesc}
+        badge="Oportunidades activas"
+        title="Encuentra promociones"
+        titleAccent="antes de que cierre el plazo"
+        description="Promociones publicadas con requisitos, plazos y documentación. Revisa rápido y entra preparado."
+        proof={['Actualizadas por el equipo Radar VPO', 'Filtros por municipio y tipo', 'Ficha completa en un clic']}
+        trustNote="Gratis para consultar · PRO te avisa al instante"
+        visual={<PromotionsHeroVisual />}
         actions={
           <div className="lp-hero__actions lp-hero__actions--stack">
             <ButtonLink href={proHref} size="lg" block>
@@ -88,7 +92,7 @@ export default async function PromotionsPage({
         <div className="mt-4 flex flex-col gap-2 rounded-xl border border-[var(--stroke)] bg-[#f8faf9] p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-[var(--ink)]">{visiblePromotions.length} promociones publicadas</p>
-            <p className="mt-1 text-sm text-[var(--ink-soft)]">{q ? 'Resultados filtrados por búsqueda.' : 'Últimas oportunidades activas.'}</p>
+            <p className="mt-1 text-sm text-[var(--ink-soft)]">{q ? 'Resultados filtrados por búsqueda.' : 'Revisa plazos antes de que cierren.'}</p>
           </div>
           <Link href="/promotions" className="btn btn--secondary min-h-11">
             Limpiar filtros

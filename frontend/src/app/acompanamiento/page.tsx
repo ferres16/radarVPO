@@ -5,7 +5,14 @@ import { useEffect, useState } from 'react';
 import { SkeletonCard } from '@/components/skeleton-card';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { Stagger, StaggerItem } from '@/components/motion-primitives';
+import { AccompanimentHeroVisual } from '@/components/saas/hero-visuals';
 import { api } from '@/lib/api';
+import {
+  accompanimentExcludes,
+  accompanimentIncludes,
+  accompanimentProblem,
+  accompanimentSteps,
+} from '@/lib/conversion';
 import type { Service } from '@/types';
 
 const whatsappContactUrl =
@@ -155,41 +162,80 @@ export default function AccompanimentPage() {
 
   return (
     <main className="lp lp--inner lp--app">
-      <section className="lp-page-hero">
+      <section className="lp-page-hero lp-page-hero--split">
         <div className="lp-page-hero__backdrop" aria-hidden="true" />
-        <div className="shell lp-page-hero__inner">
-          <span className="lp-hero__badge">Acompañamiento VPO</span>
-          <h1 className="lp-page-hero__title">
-            Acompañamiento personalizado
-            <span className="lp-hero__title-accent"> para conseguir tu vivienda protegida</span>
-          </h1>
-          <p className="lp-page-hero__subtitle">
-            Revisión de requisitos, preparación de documentación y seguimiento de oportunidades para llegar al plazo con criterio.
-          </p>
-          <div className="lp-hero__actions lp-hero__actions--stack">
-            <ButtonLink href={whatsappContactUrl} size="lg" block>
-              Hablar por WhatsApp
-            </ButtonLink>
-            <ButtonLink href="#hablemos" variant="secondary" size="lg" block>
-              Enviar consulta
-            </ButtonLink>
+        <div className="shell">
+          <div className="page-hero-split">
+            <div className="page-hero-split__copy">
+              <span className="lp-hero__badge">Acompañamiento VPO</span>
+              <h1 className="lp-page-hero__title">
+                Llega preparado
+                <span className="lp-hero__title-accent"> con acompañamiento humano</span>
+              </h1>
+              <p className="lp-page-hero__subtitle">
+                Revisamos requisitos, documentación y plazos contigo. Sin garantizar adjudicación, sí maximizar tu preparación.
+              </p>
+              <ul className="lp-hero__proof lp-hero__proof--compact" aria-label="Beneficios">
+                <li><span className="lp-hero__proof-mark" aria-hidden="true" />Revisión personalizada de tu caso</li>
+                <li><span className="lp-hero__proof-mark" aria-hidden="true" />Seguimiento de oportunidades</li>
+                <li><span className="lp-hero__proof-mark" aria-hidden="true" />Respuesta rápida por WhatsApp</li>
+              </ul>
+              <div className="lp-hero__actions lp-hero__actions--stack">
+                <ButtonLink href={whatsappContactUrl} size="lg" block>
+                  Hablar por WhatsApp
+                </ButtonLink>
+                <ButtonLink href="#hablemos" variant="secondary" size="lg" block>
+                  Enviar consulta
+                </ButtonLink>
+              </div>
+            </div>
+            <div className="page-hero-split__visual order-first md:order-none">
+              <AccompanimentHeroVisual />
+            </div>
           </div>
         </div>
       </section>
 
       <section className="lp-section">
+        <div className="shell">
+          <div className="lp-section__head">
+            <p className="lp-eyebrow">El problema</p>
+            <h2 className="lp-title">{accompanimentProblem.title}</h2>
+            <p className="lp-lead">{accompanimentProblem.description}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="lp-section lp-section--muted">
         <div className="shell space-y-4">
-        <SectionHeader eyebrow="Beneficios" title="Por qué el acompañamiento marca la diferencia" />
-        <Stagger className="grid gap-4 md:grid-cols-3">
-          {benefits.map((benefit) => (
-            <StaggerItem key={benefit.title}>
-              <SurfaceCard className="h-full p-5">
-                <h2 className="display-type text-2xl font-black text-[var(--ink)]">{benefit.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{benefit.copy}</p>
-              </SurfaceCard>
-            </StaggerItem>
-          ))}
-        </Stagger>
+          <SectionHeader eyebrow="Qué hacemos" title="Te ayudamos si…" />
+          <Stagger className="grid gap-4 md:grid-cols-3">
+            {benefits.map((benefit) => (
+              <StaggerItem key={benefit.title}>
+                <SurfaceCard className="h-full p-5">
+                  <h2 className="text-lg font-bold text-[var(--ink)]">{benefit.title}</h2>
+                  <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{benefit.copy}</p>
+                </SurfaceCard>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </div>
+      </section>
+
+      <section className="lp-section">
+        <div className="shell">
+          <SectionHeader eyebrow="Proceso" title="Cómo funciona en 3 pasos" />
+          <Stagger className="how-steps mt-4">
+            {accompanimentSteps.map((step) => (
+              <StaggerItem key={step.step}>
+                <article className="how-step-card">
+                  <span className="how-step-card__num">{step.step}</span>
+                  <h3 className="how-step-card__title">{step.title}</h3>
+                  <p className="how-step-card__text">{step.description}</p>
+                </article>
+              </StaggerItem>
+            ))}
+          </Stagger>
         </div>
       </section>
 
@@ -250,24 +296,31 @@ export default function AccompanimentPage() {
       )}
 
       <section className="lp-section lp-section--muted">
-        <div className="shell grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <SurfaceCard className="p-5">
-          <SectionHeader eyebrow="Casos prácticos" title="Cuándo te acompañamos" />
-          <ul className="mt-4 space-y-3 text-sm leading-6 text-[var(--ink-soft)]">
-            {useCases.map((item) => <li key={item} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">{item}</li>)}
-          </ul>
-        </SurfaceCard>
-        <SurfaceCard className="p-5">
-          <SectionHeader eyebrow="Testimonios" title="Lo que buscamos conseguir" />
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {['Me enteré de una promoción que no tenía controlada.', 'Llegué a la solicitud con documentación preparada.'].map((quote) => (
-              <blockquote key={quote} className="rounded-2xl border border-[var(--stroke)] bg-white p-4 text-sm font-semibold leading-6 text-[var(--ink)]">
-                “{quote}”
-                <footer className="mt-3 text-xs font-normal text-[var(--ink-soft)]">Usuario Radar VPO</footer>
-              </blockquote>
-            ))}
-          </div>
-        </SurfaceCard>
+        <div className="shell grid gap-4 lg:grid-cols-2">
+          <SurfaceCard className="p-5">
+            <SectionHeader eyebrow="Para quién es" title="Te ayudamos si…" />
+            <ul className="mt-4 space-y-3 text-sm leading-6 text-[var(--ink-soft)]">
+              {useCases.map((item) => (
+                <li key={item} className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">{item}</li>
+              ))}
+            </ul>
+          </SurfaceCard>
+          <SurfaceCard className="p-5">
+            <SectionHeader eyebrow="Qué incluye" title="Revisamos requisitos, documentación y plazos" />
+            <ul className="mt-4 space-y-2 text-sm text-[var(--ink-soft)]">
+              {accompanimentIncludes.map((item) => (
+                <li key={item} className="flex gap-2"><span className="text-[var(--green-700)]">✓</span>{item}</li>
+              ))}
+            </ul>
+            <div className="mt-5 border-t border-[var(--stroke)] pt-4">
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--ink-soft)]">Qué no incluye</p>
+              <ul className="mt-2 space-y-2 text-sm text-[var(--ink-soft)]">
+                {accompanimentExcludes.map((item) => (
+                  <li key={item} className="flex gap-2"><span>—</span>{item}</li>
+                ))}
+              </ul>
+            </div>
+          </SurfaceCard>
         </div>
       </section>
 
@@ -299,6 +352,22 @@ export default function AccompanimentPage() {
             <ButtonLink href={whatsappContactUrl} variant="secondary" block>Reservar llamada</ButtonLink>
           </div>
         </SurfaceCard>
+        </div>
+      </section>
+
+      <section className="lp-section lp-section--muted">
+        <div className="shell">
+          <div className="public-cta-band">
+            <div>
+              <h2 className="lp-title lp-title--sm">¿Listo para hablar con el equipo?</h2>
+              <p className="lp-lead">Cuéntanos tu caso por WhatsApp y te orientamos sobre el siguiente paso.</p>
+            </div>
+            <div className="public-cta-band__actions lp-hero__actions--stack">
+              <ButtonLink href={whatsappContactUrl} size="lg" block>
+                Hablar por WhatsApp
+              </ButtonLink>
+            </div>
+          </div>
         </div>
       </section>
     </main>

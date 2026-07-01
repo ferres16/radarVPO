@@ -6,8 +6,11 @@ import { PublicCtaBand, PublicPage, PublicPageHero, PublicSection } from '@/comp
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { HorizontalRail, HorizontalRailItem } from '@/components/saas/horizontal-rail';
 import { TrustMetrics } from '@/components/saas/trust-metrics';
+import { AcademyHeroVisual } from '@/components/saas/hero-visuals';
+import { CoursesFaq } from '@/components/conversion/courses-faq';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
+import { isDraftCourse } from '@/lib/course-display';
 import { proHref, proPlan } from '@/lib/pro';
 
 export const metadata: Metadata = createMetadata({
@@ -19,7 +22,9 @@ export const metadata: Metadata = createMetadata({
 
 export default async function CoursesPage() {
   const courses = await api.listCourses().catch(() => []);
-  const visibleCourses = [...courses].sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
+  const visibleCourses = [...courses]
+    .filter((course) => !isDraftCourse(course))
+    .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
   const proCourses = visibleCourses.filter((course) => course.accessType === 'pro');
   const premiumCourses = visibleCourses.filter((course) => course.accessType !== 'pro');
   const totalLessons = visibleCourses.reduce(
@@ -38,9 +43,12 @@ export default async function CoursesPage() {
 
       <PublicPageHero
         badge="Academia VPO"
-        title="Formación profesional"
-        titleAccent="para conseguir tu vivienda"
-        description="No es una tienda de PDFs. Es una academia práctica para entender requisitos, documentación y estrategia antes del plazo."
+        title="Formación premium"
+        titleAccent="para llegar preparado al plazo"
+        description="Programas prácticos sobre requisitos, documentación y estrategia. Incluidos en PRO o compra directa."
+        proof={['Lecciones accionables', 'Incluido en VPO PRO', 'Pago seguro en programas premium']}
+        trustNote="Cancela PRO cuando quieras"
+        visual={<AcademyHeroVisual />}
         actions={
           <div className="lp-hero__actions lp-hero__actions--stack">
             <ButtonLink href={proHref} size="lg" block>
@@ -130,6 +138,10 @@ export default async function CoursesPage() {
           Ver próximos lanzamientos
         </ButtonLink>
       </PublicCtaBand>
+
+      <PublicSection border>
+        <CoursesFaq />
+      </PublicSection>
     </PublicPage>
   );
 }

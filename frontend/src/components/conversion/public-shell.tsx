@@ -13,25 +13,49 @@ export function PublicPageHero({
   titleAccent,
   description,
   actions,
+  proof,
+  visual,
+  trustNote,
 }: {
   badge: string;
   title: string;
   titleAccent?: string;
   description: string;
   actions?: ReactNode;
+  proof?: readonly string[];
+  visual?: ReactNode;
+  trustNote?: string;
 }) {
+  const hasSplit = Boolean(visual);
+
   return (
     <Reveal>
-      <section className="lp-page-hero">
+      <section className={`lp-page-hero ${hasSplit ? 'lp-page-hero--split' : ''}`}>
         <div className="lp-page-hero__backdrop" aria-hidden="true" />
-        <div className="shell lp-page-hero__inner">
-          <span className="lp-hero__badge">{badge}</span>
-          <h1 className="lp-page-hero__title">
-            {title}
-            {titleAccent ? <span className="lp-hero__title-accent"> {titleAccent}</span> : null}
-          </h1>
-          <p className="lp-page-hero__subtitle">{description}</p>
-          {actions ? <div className="lp-hero__actions lp-hero__actions--stack">{actions}</div> : null}
+        <div className="shell">
+          <div className={hasSplit ? 'page-hero-split' : 'lp-page-hero__inner'}>
+            <div className="page-hero-split__copy">
+              <span className="lp-hero__badge">{badge}</span>
+              <h1 className="lp-page-hero__title">
+                {title}
+                {titleAccent ? <span className="lp-hero__title-accent"> {titleAccent}</span> : null}
+              </h1>
+              <p className="lp-page-hero__subtitle">{description}</p>
+              {proof && proof.length > 0 ? (
+                <ul className="lp-hero__proof lp-hero__proof--compact" aria-label="Beneficios">
+                  {proof.map((item) => (
+                    <li key={item}>
+                      <span className="lp-hero__proof-mark" aria-hidden="true" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {actions ? <div className="lp-hero__actions lp-hero__actions--stack">{actions}</div> : null}
+              {trustNote ? <p className="lp-hero__price">{trustNote}</p> : null}
+            </div>
+            {visual ? <div className="page-hero-split__visual order-first md:order-none">{visual}</div> : null}
+          </div>
         </div>
       </section>
     </Reveal>
@@ -79,7 +103,7 @@ export function PublicProBanner({
               {description || `Recibe alertas por SMS y email cuando detectemos oportunidades. ${proPlan.price}`}
             </p>
           </div>
-          <ButtonLink href={proHref} size="lg">
+          <ButtonLink href={proHref} size="lg" block className="shrink-0 md:!inline-flex">
             {proPlan.ctaLabel}
           </ButtonLink>
         </aside>

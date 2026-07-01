@@ -1,3 +1,7 @@
+'use client';
+
+import { motion, useReducedMotion } from 'framer-motion';
+
 const metrics = [
   { value: '120+', label: 'Promociones monitorizadas' },
   { value: '3.2k', label: 'Usuarios activos' },
@@ -6,13 +10,22 @@ const metrics = [
 ] as const;
 
 export function TrustMetrics() {
+  const prefersReducedMotion = useReducedMotion();
+
   return (
     <div className="trust-strip" aria-label="Métricas de confianza">
-      {metrics.map((metric) => (
-        <div key={metric.label} className="trust-strip__item">
+      {metrics.map((metric, index) => (
+        <motion.div
+          key={metric.label}
+          className="trust-strip__item"
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
+          whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.4 }}
+          transition={{ duration: 0.4, delay: index * 0.06, ease: 'easeOut' }}
+        >
           <p className="trust-strip__value">{metric.value}</p>
           <p className="trust-strip__label">{metric.label}</p>
-        </div>
+        </motion.div>
       ))}
     </div>
   );
