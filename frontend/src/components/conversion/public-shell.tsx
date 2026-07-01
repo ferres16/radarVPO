@@ -3,8 +3,8 @@ import { Reveal } from '@/components/motion-primitives';
 import { ButtonLink } from '@/components/design-system';
 import { proHref, proPlan } from '@/lib/pro';
 
-export function PublicPage({ children }: { children: ReactNode }) {
-  return <main className="lp lp--inner lp--app">{children}</main>;
+export function PublicPage({ children, className }: { children: ReactNode; className?: string }) {
+  return <main className={['lp', 'lp--inner', 'lp--app', className].filter(Boolean).join(' ')}>{children}</main>;
 }
 
 export function PublicPageHero({
@@ -31,7 +31,7 @@ export function PublicPageHero({
             {titleAccent ? <span className="lp-hero__title-accent"> {titleAccent}</span> : null}
           </h1>
           <p className="lp-page-hero__subtitle">{description}</p>
-          {actions ? <div className="lp-hero__actions">{actions}</div> : null}
+          {actions ? <div className="lp-hero__actions lp-hero__actions--stack">{actions}</div> : null}
         </div>
       </section>
     </Reveal>

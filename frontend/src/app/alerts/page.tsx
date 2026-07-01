@@ -36,10 +36,14 @@ export default async function AlertsPage() {
         titleAccent="antes de que se publique"
         description="Monitorizamos señales de vivienda protegida en Cataluña. Con VPO PRO recibes alertas por SMS y email al instante."
         actions={
-          <>
-            <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>
-            <ButtonLink href="/promotions" variant="secondary" size="lg">Ver publicadas</ButtonLink>
-          </>
+          <div className="lp-hero__actions lp-hero__actions--stack">
+            <ButtonLink href={proHref} size="lg" block>
+              {proPlan.ctaLabel}
+            </ButtonLink>
+            <ButtonLink href="/promotions" variant="secondary" size="lg" block>
+              Ver publicadas
+            </ButtonLink>
+          </div>
         }
       />
 

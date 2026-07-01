@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import type { Course, UserAccessSummary, UserProfile } from '@/types';
+import { ButtonLink } from '@/components/design-system';
 import { ProfileCard } from '@/components/profile-card';
 import { StatusPill } from '@/components/status-pill';
 import { proHref, proPlan } from '@/lib/pro';
@@ -125,7 +126,7 @@ export default function AccountPage() {
           <p className="mt-2 text-[var(--ink-soft)]">
             {error || 'Para ver tus datos de perfil necesitas iniciar sesion.'}
           </p>
-          <Link href="/login" className="mt-4 inline-flex rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]">
+          <Link href="/login" className="btn btn--primary btn--block mt-4">
             Iniciar sesion
           </Link>
           </article>
@@ -151,8 +152,23 @@ export default function AccountPage() {
   ];
 
   return (
-    <main className="lp lp--inner space-y-4 md:space-y-6">
+    <main className="lp lp--inner lp--app space-y-4 md:space-y-6">
       <div className="shell space-y-4 pb-6 md:space-y-6 md:pb-8">
+      {!hasPro ? (
+        <div className="public-cta-band">
+          <div>
+            <p className="lp-eyebrow">VPO PRO</p>
+            <h2 className="lp-title lp-title--sm">Recibe alertas antes que nadie</h2>
+            <p className="lp-lead">SMS y email cuando detectemos lanzamientos y promociones en tu zona.</p>
+          </div>
+          <div className="public-cta-band__actions lp-hero__actions--stack">
+            <ButtonLink href={proHref} size="lg" block>
+              {proPlan.ctaLabel}
+            </ButtonLink>
+            <p className="text-center text-xs text-[var(--ink-soft)]">{proPlan.price}</p>
+          </div>
+        </div>
+      ) : null}
       <ProfileCard className="relative overflow-hidden bg-[linear-gradient(135deg,#f6fbff_0%,#eef6f8_50%,#ffffff_100%)]">
         <div className="pointer-events-none absolute -right-24 -top-20 h-56 w-56 rounded-full bg-[rgba(54,189,248,0.16)] blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-[rgba(47,107,36,0.12)] blur-3xl" />
@@ -200,7 +216,7 @@ export default function AccountPage() {
               <input
                 value={fullNameDraft}
                 onChange={(e) => setFullNameDraft(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-[var(--stroke)] bg-white px-3 py-2"
+                className="ds-control mt-1 w-full"
               />
             </label>
             <label className="text-sm">
@@ -208,7 +224,7 @@ export default function AccountPage() {
               <input
                 value={me.email}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-[var(--ink-soft)]"
+                className="ds-control mt-1 w-full bg-[var(--bg-app)] text-[var(--ink-soft)]"
               />
             </label>
             <label className="text-sm">
@@ -216,30 +232,27 @@ export default function AccountPage() {
               <input
                 value={me.phone || ''}
                 readOnly
-                className="mt-1 w-full rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-[var(--ink-soft)]"
+                className="ds-control mt-1 w-full bg-[var(--bg-app)] text-[var(--ink-soft)]"
               />
             </label>
           </div>
-          <div className="mt-3 flex flex-wrap items-center gap-3">
+          <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             <button
               type="button"
               onClick={() => void saveProfile()}
               disabled={savingProfile}
-              className="inline-flex items-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)] disabled:opacity-60"
+              className="btn btn--primary btn--block"
             >
               Guardar nombre
             </button>
-            <Link
-              href="/acompanamiento"
-              className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
-            >
+            <Link href="/acompanamiento" className="btn btn--secondary btn--block">
               Activar acompañamiento
             </Link>
             <button
               type="button"
               onClick={() => void logout()}
               disabled={loggingOut}
-              className="inline-flex items-center rounded-xl border border-red-100 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+              className="btn btn--secondary btn--block !border-red-100 !text-red-700"
             >
               {loggingOut ? 'Cerrando...' : 'Cerrar sesión'}
             </button>
@@ -326,20 +339,20 @@ export default function AccountPage() {
         <ProfileCard className="border-[rgba(47,107,36,0.25)] bg-[linear-gradient(130deg,rgba(47,107,36,0.08),rgba(255,255,255,0.96))]">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Siguientes pasos</p>
           <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">Compra cursos o activa acompañamiento</h2>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Link href="/cursos" className="inline-flex items-center justify-center rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)]">
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            <Link href="/cursos" className="btn btn--primary btn--block">
               Ver cursos
             </Link>
             {!hasPro ? (
-              <Link href={proHref} className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
+              <Link href={proHref} className="btn btn--secondary btn--block">
                 {proPlan.ctaLabel}
               </Link>
             ) : null}
-            <Link href="/acompanamiento" className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
+            <Link href="/acompanamiento" className="btn btn--secondary btn--block">
               Solicitar acompañamiento
             </Link>
             {!hasPro && lockedCourses.length > 0 ? (
-              <Link href={proHref} className="inline-flex items-center justify-center rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-eco)]">
+              <Link href={proHref} className="btn btn--secondary btn--block">
                 Desbloquear más
               </Link>
             ) : null}

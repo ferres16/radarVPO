@@ -49,14 +49,14 @@ export default async function PromotionsPage({
         titleAccent="con plazos y requisitos"
         description={copy.publishedPromotionsDesc}
         actions={
-          <>
-            <ButtonLink href={proHref} size="lg">
+          <div className="lp-hero__actions lp-hero__actions--stack">
+            <ButtonLink href={proHref} size="lg" block>
               {proPlan.ctaLabel}
             </ButtonLink>
-            <ButtonLink href="/alerts" variant="secondary" size="lg">
+            <ButtonLink href="/alerts" variant="secondary" size="lg" block>
               Ver lanzamientos
             </ButtonLink>
-          </>
+          </div>
         }
       />
 

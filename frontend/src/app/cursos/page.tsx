@@ -2,9 +2,10 @@ import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
 import { CourseProductCard } from '@/components/course-product-card';
-import { PublicCtaBand, PublicPage, PublicSection } from '@/components/conversion/public-shell';
+import { PublicCtaBand, PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
-import { Stagger, StaggerItem } from '@/components/motion-primitives';
+import { HorizontalRail, HorizontalRailItem } from '@/components/saas/horizontal-rail';
+import { TrustMetrics } from '@/components/saas/trust-metrics';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 import { proHref, proPlan } from '@/lib/pro';
@@ -21,6 +22,10 @@ export default async function CoursesPage() {
   const visibleCourses = [...courses].sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
   const proCourses = visibleCourses.filter((course) => course.accessType === 'pro');
   const premiumCourses = visibleCourses.filter((course) => course.accessType !== 'pro');
+  const totalLessons = visibleCourses.reduce(
+    (acc, course) => acc + (course.modules?.reduce((m, mod) => m + (mod.lessons?.length || 0), 0) || 0),
+    0,
+  );
 
   return (
     <PublicPage>
@@ -31,23 +36,39 @@ export default async function CoursesPage() {
         ])}
       />
 
-      <section className="lp-page-hero">
-        <div className="lp-page-hero__backdrop" aria-hidden="true" />
-        <div className="shell lp-page-hero__inner">
-          <span className="lp-hero__badge">Formación VPO</span>
-          <h1 className="lp-page-hero__title">
-            Cursos para llegar preparado
-            <span className="lp-hero__title-accent"> al plazo</span>
-          </h1>
-          <p className="lp-page-hero__subtitle">
-            Formación clara y acceso inmediato. Compra el curso o desbloquéalo con VPO PRO.
-          </p>
-          <div className="lp-hero__actions">
-            <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>
-            <ButtonLink href="/acompanamiento" variant="secondary" size="lg">Solicitar acompañamiento</ButtonLink>
+      <PublicPageHero
+        badge="Academia VPO"
+        title="Formación profesional"
+        titleAccent="para conseguir tu vivienda"
+        description="No es una tienda de PDFs. Es una academia práctica para entender requisitos, documentación y estrategia antes del plazo."
+        actions={
+          <div className="lp-hero__actions lp-hero__actions--stack">
+            <ButtonLink href={proHref} size="lg" block>
+              {proPlan.ctaLabel}
+            </ButtonLink>
+            <ButtonLink href="/acompanamiento" variant="secondary" size="lg" block>
+              Solicitar acompañamiento
+            </ButtonLink>
           </div>
+        }
+      />
+
+      <PublicSection muted>
+        <div className="academy-hero-stats">
+          <span className="academy-stat">
+            <strong>{visibleCourses.length}</strong> programas
+          </span>
+          <span className="academy-stat">
+            <strong>{totalLessons || '—'}</strong> lecciones
+          </span>
+          <span className="academy-stat">
+            <strong>PRO</strong> incluye catálogo
+          </span>
         </div>
-      </section>
+        <div className="mt-4">
+          <TrustMetrics />
+        </div>
+      </PublicSection>
 
       {visibleCourses.length === 0 ? (
         <PublicSection>
@@ -57,35 +78,57 @@ export default async function CoursesPage() {
         <>
           {proCourses.length > 0 ? (
             <PublicSection id="catalogo">
-              <SectionHeader eyebrow="Incluido en PRO" title="Cursos con VPO PRO" description="Desbloquea formación completa con tu suscripción." />
-              <Stagger className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 md:gap-5 xl:grid-cols-3">
+              <SectionHeader
+                eyebrow="Incluido en PRO"
+                title="Programas con VPO PRO"
+                description="Formación completa desbloqueada con tu suscripción."
+              />
+              <div className="mt-4 md:hidden">
+                <HorizontalRail>
+                  {proCourses.map((course) => (
+                    <HorizontalRailItem key={course.id}>
+                      <CourseProductCard course={course} includedInPro showCta layout="rail" />
+                    </HorizontalRailItem>
+                  ))}
+                </HorizontalRail>
+              </div>
+              <div className="mt-4 hidden gap-4 md:grid md:grid-cols-2 md:gap-5 xl:grid-cols-3">
                 {proCourses.map((course) => (
-                  <StaggerItem key={course.id}>
-                    <CourseProductCard course={course} includedInPro showCta />
-                  </StaggerItem>
+                  <CourseProductCard key={course.id} course={course} includedInPro showCta />
                 ))}
-              </Stagger>
+              </div>
             </PublicSection>
           ) : null}
 
           {premiumCourses.length > 0 ? (
             <PublicSection muted={proCourses.length > 0}>
-              <SectionHeader eyebrow="Compra directa" title="Cursos premium" description="Acceso individual con pago seguro vía Stripe." />
-              <Stagger className="mt-4 grid gap-4 md:mt-6 md:grid-cols-2 md:gap-5 xl:grid-cols-3">
+              <SectionHeader eyebrow="Compra directa" title="Programas premium" description="Acceso individual con pago seguro." />
+              <div className="mt-4 md:hidden">
+                <HorizontalRail>
+                  {premiumCourses.map((course) => (
+                    <HorizontalRailItem key={course.id}>
+                      <CourseProductCard course={course} showCta layout="rail" />
+                    </HorizontalRailItem>
+                  ))}
+                </HorizontalRail>
+              </div>
+              <div className="mt-4 hidden gap-4 md:grid md:grid-cols-2 md:gap-5 xl:grid-cols-3">
                 {premiumCourses.map((course) => (
-                  <StaggerItem key={course.id}>
-                    <CourseProductCard course={course} showCta />
-                  </StaggerItem>
+                  <CourseProductCard key={course.id} course={course} showCta />
                 ))}
-              </Stagger>
+              </div>
             </PublicSection>
           ) : null}
         </>
       )}
 
-      <PublicCtaBand title="Desbloquea todo el catálogo con VPO PRO" description={proPlan.price}>
-        <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>
-        <ButtonLink href="/alerts" variant="secondary" size="lg">Ver próximos lanzamientos</ButtonLink>
+      <PublicCtaBand title="Desbloquea toda la academia con VPO PRO" description={proPlan.price}>
+        <ButtonLink href={proHref} size="lg" block>
+          {proPlan.ctaLabel}
+        </ButtonLink>
+        <ButtonLink href="/alerts" variant="secondary" size="lg" block>
+          Ver próximos lanzamientos
+        </ButtonLink>
       </PublicCtaBand>
     </PublicPage>
   );

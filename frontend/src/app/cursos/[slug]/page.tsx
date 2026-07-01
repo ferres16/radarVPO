@@ -9,6 +9,7 @@ import { CourseCoverImage } from '@/components/course-cover-image';
 import { CourseHubSection } from '@/components/course-hub-section';
 import { CourseModuleIndex } from '@/components/course-module-index';
 import { CoursePublicIndex } from '@/components/course-public-index';
+import { CourseStickyBuyBar } from '@/components/course-sticky-buy-bar';
 import { CollapsePanel } from '@/components/collapse-panel';
 import { PublicPage } from '@/components/conversion/public-shell';
 import { StructuredData } from '@/components/structured-data';
@@ -151,7 +152,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
   };
 
   return (
-    <PublicPage>
+    <PublicPage className={canAccess ? undefined : 'course-detail--locked'}>
       <StructuredData
         data={[
           breadcrumbJsonLd([
@@ -290,6 +291,14 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           </div>
         </section>
         </CoursePublicIndex>
+        {!canAccess ? (
+          <CourseStickyBuyBar
+            priceLabel={priceLabel}
+            lockedHref={lockedAccessHref}
+            lockedLabel={lockedAccessLabel}
+            includedInPro={includedInPro}
+          />
+        ) : null}
       </CourseAccessProvider>
     </PublicPage>
   );

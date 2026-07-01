@@ -9,7 +9,7 @@ export type CourseBadge = 'nuevo' | 'pro' | 'incluido' | 'premium' | 'curso';
 const badgeStyles: Record<CourseBadge, string> = {
   nuevo: 'bg-[var(--cyan-500)] text-[var(--ink)]',
   pro: 'bg-[var(--accent-gold)] text-[var(--ink)]',
-  incluido: 'bg-[var(--green-700)] text-white shadow-glow',
+  incluido: 'bg-[var(--green-700)] text-white',
   premium: 'bg-white/95 text-[var(--ink)]',
   curso: 'bg-white/90 text-[var(--ink)]',
 };
@@ -19,7 +19,7 @@ const badgeLabels: Record<CourseBadge, string> = {
   pro: 'PRO',
   incluido: 'Incluido en PRO',
   premium: 'Premium',
-  curso: 'Curso',
+  curso: 'Academia',
 };
 
 function getCourseSalePrice(course: Course) {
@@ -55,6 +55,7 @@ type CourseProductCardProps = {
   includedInPro?: boolean;
   showCta?: boolean;
   className?: string;
+  layout?: 'grid' | 'rail';
 };
 
 export function CourseProductCard({
@@ -62,51 +63,57 @@ export function CourseProductCard({
   includedInPro = course.accessType === 'pro',
   showCta = false,
   className = '',
+  layout = 'grid',
 }: CourseProductCardProps) {
   const lessonCount = course.modules?.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 0;
   const badge = resolveBadge(course, includedInPro);
   const targets = buildCourseAccessTargets(course);
   const duration = lessonCount > 0 ? `${lessonCount} lecciones` : 'Próximamente';
+  const ctaHref = includedInPro ? `/cursos/${course.slug}` : targets.lockedHref.startsWith('http') ? targets.lockedHref : `/cursos/${course.slug}`;
+  const ctaLabel = includedInPro ? 'Acceder con PRO' : targets.lockedLabel;
+
+  const shellClass = layout === 'rail' ? 'saas-card-rail h-full' : 'product-card public-card public-card--hover group';
 
   return (
-    <article className={`product-card public-card public-card--hover group ${className}`}>
+    <article className={`${shellClass} ${className}`}>
       <Link href={`/cursos/${course.slug}`} className="block">
-        <div className="product-card__media">
+        <div className={layout === 'rail' ? 'relative overflow-hidden rounded-xl' : 'product-card__media'}>
           <CourseCoverImage
             slug={course.slug}
             src={course.coverImage}
-            className="h-48 w-full object-cover transition duration-500 group-hover:scale-[1.03] md:h-52"
+            className={layout === 'rail' ? 'h-36 w-full object-cover' : 'h-44 w-full object-cover transition duration-500 group-hover:scale-[1.03] md:h-48'}
             label={course.title}
           />
-          <div className="product-card__shine" aria-hidden="true" />
-          <div className="product-card__overlay" />
+          {layout === 'grid' ? (
+            <>
+              <div className="product-card__shine" aria-hidden="true" />
+              <div className="product-card__overlay" />
+            </>
+          ) : null}
           <span className={`product-card__badge ${badgeStyles[badge]}`}>{badgeLabels[badge]}</span>
         </div>
-        <div className="product-card__body">
-          <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
+        <div className={layout === 'rail' ? 'mt-3' : 'product-card__body'}>
+          <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
             <span>{duration}</span>
+            <span>·</span>
+            <span>Formación práctica</span>
           </div>
-          <h3 className="mt-2 text-lg font-black text-[var(--ink)] transition group-hover:text-[var(--green-700)] md:text-xl">
+          <h3 className="mt-2 line-clamp-2 text-base font-bold leading-snug text-[var(--ink)] transition group-hover:text-[var(--green-700)] md:text-lg">
             {course.title}
           </h3>
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-[var(--ink-soft)]">
-            {course.shortDescription || 'Formación práctica para prepararte antes del plazo.'}
+          <p className="mt-1.5 line-clamp-2 text-sm leading-5 text-[var(--ink-soft)]">
+            {course.shortDescription || 'Preparación clara antes de abrir el plazo.'}
           </p>
-          <div className="mt-4 flex items-end justify-between gap-3">
-            <p className="text-xl font-black text-[var(--ink)]">{formatPrice(course)}</p>
-            <span className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--green-700)]">
-              Ver curso →
-            </span>
+          <div className="mt-3 flex items-end justify-between gap-2">
+            <p className="text-lg font-black text-[var(--ink)]">{formatPrice(course)}</p>
+            <span className="text-xs font-bold text-[var(--green-700)]">Ver programa →</span>
           </div>
         </div>
       </Link>
       {showCta ? (
-        <div className="border-t border-[var(--stroke)] px-5 py-4">
-          <Link
-            href={targets.lockedHref.startsWith('http') ? targets.lockedHref : `/cursos/${course.slug}`}
-            className="inline-flex w-full items-center justify-center rounded-full bg-[var(--ink)] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-black"
-          >
-            {includedInPro ? proPlan.ctaLabel : targets.lockedLabel}
+        <div className={layout === 'rail' ? 'mt-3 pt-0' : 'border-t border-[var(--stroke)] px-5 py-4'}>
+          <Link href={ctaHref} className="btn btn--primary btn--block text-sm">
+            {ctaLabel}
           </Link>
         </div>
       ) : null}

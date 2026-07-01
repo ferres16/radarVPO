@@ -154,7 +154,7 @@ export default function AccompanimentPage() {
     : fallbackOfferings;
 
   return (
-    <main className="lp lp--inner">
+    <main className="lp lp--inner lp--app">
       <section className="lp-page-hero">
         <div className="lp-page-hero__backdrop" aria-hidden="true" />
         <div className="shell lp-page-hero__inner">
@@ -166,9 +166,13 @@ export default function AccompanimentPage() {
           <p className="lp-page-hero__subtitle">
             Revisión de requisitos, preparación de documentación y seguimiento de oportunidades para llegar al plazo con criterio.
           </p>
-          <div className="lp-hero__actions">
-            <ButtonLink href="#hablemos" size="lg">Hablar con Radar VPO</ButtonLink>
-            <ButtonLink href="/cursos" variant="secondary" size="lg">Ver cursos</ButtonLink>
+          <div className="lp-hero__actions lp-hero__actions--stack">
+            <ButtonLink href={whatsappContactUrl} size="lg" block>
+              Hablar por WhatsApp
+            </ButtonLink>
+            <ButtonLink href="#hablemos" variant="secondary" size="lg" block>
+              Enviar consulta
+            </ButtonLink>
           </div>
         </div>
       </section>
@@ -229,11 +233,11 @@ export default function AccompanimentPage() {
                   ) : null}
                   <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">{offering.copy}</p>
                   {external ? (
-                    <a href={href} className="btn btn--primary mt-5" rel="noopener noreferrer">
+                    <a href={href} className="btn btn--primary btn--block mt-5" rel="noopener noreferrer">
                       {offering.cta}
                     </a>
                   ) : (
-                    <Link href={href} className="btn btn--primary mt-5">
+                    <Link href={href} className="btn btn--primary btn--block mt-5">
                       {offering.cta}
                     </Link>
                   )}
@@ -287,12 +291,12 @@ export default function AccompanimentPage() {
             <input name="nombre" className="ds-control w-full" placeholder="Nombre" />
             <input name="email" type="email" className="ds-control w-full" placeholder="Email" />
             <textarea name="mensaje" className="ds-control min-h-28 w-full" placeholder="Explícanos tu caso" />
-            <button type="submit" className="btn btn--primary btn--lg w-full">Enviar consulta</button>
+            <button type="submit" className="btn btn--primary btn--lg btn--block">Enviar consulta</button>
           </form>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <ButtonLink href={whatsappContactUrl}>WhatsApp</ButtonLink>
-            <ButtonLink href="mailto:info@radarvpo.com" variant="secondary">Email</ButtonLink>
-            <ButtonLink href={whatsappContactUrl} variant="secondary">Reservar llamada</ButtonLink>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            <ButtonLink href={whatsappContactUrl} block>WhatsApp</ButtonLink>
+            <ButtonLink href="mailto:info@radarvpo.com" variant="secondary" block>Email</ButtonLink>
+            <ButtonLink href={whatsappContactUrl} variant="secondary" block>Reservar llamada</ButtonLink>
           </div>
         </SurfaceCard>
         </div>

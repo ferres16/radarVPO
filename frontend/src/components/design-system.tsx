@@ -25,17 +25,20 @@ export function ButtonLink({
   variant = 'primary',
   size = 'md',
   className = '',
+  block = false,
 }: {
   href: string;
   children: ReactNode;
   variant?: 'primary' | 'secondary';
   size?: 'md' | 'lg';
   className?: string;
+  block?: boolean;
 }) {
   const classes = [
     'btn',
     variant === 'primary' ? 'btn--primary' : 'btn--secondary',
     size === 'lg' ? 'btn--lg' : '',
+    block ? 'btn--block' : '',
     className,
   ]
     .filter(Boolean)
@@ -168,5 +171,27 @@ export function MetricCard({ label, value, detail }: { label: string; value: Rea
       <p className="display-type mt-2 text-4xl font-black text-[var(--ink)]">{value}</p>
       {detail ? <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{detail}</p> : null}
     </SurfaceCard>
+  );
+}
+
+export function FormField({
+  id,
+  label,
+  hint,
+  children,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="form-field">
+      <label htmlFor={id} className="form-field__label">
+        {label}
+      </label>
+      {children}
+      {hint ? <p className="form-field__hint">{hint}</p> : null}
+    </div>
   );
 }

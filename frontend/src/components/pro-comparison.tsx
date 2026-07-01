@@ -20,6 +20,11 @@ function ComparisonCell({ value, highlight = false }: { value: ProComparisonCell
   );
 }
 
+function cellLabel(value: ProComparisonCell) {
+  if (typeof value === 'string') return value;
+  return value ? 'Incluido' : 'No incluido';
+}
+
 export function ProComparison({
   title = 'Gratis vs VPO PRO',
   description = 'La versión gratuita informa. PRO te avisa antes, te prepara y te da ventaja real.',
@@ -43,7 +48,25 @@ export function ProComparison({
         </div>
       ) : null}
 
-      <div className="compare-table-wrap">
+      <div className="compare-mobile" aria-label="Comparativa móvil Free vs PRO">
+        {proComparisonRows.map((row) => (
+          <article key={row.feature} className="compare-mobile__card">
+            <p className="compare-mobile__feature">{row.feature}</p>
+            <div className="compare-mobile__row">
+              <div className="compare-mobile__plan">
+                <p className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">Free</p>
+                <p className="mt-1">{cellLabel(row.free)}</p>
+              </div>
+              <div className="compare-mobile__plan compare-mobile__plan--pro">
+                <p className="text-[10px] uppercase tracking-wide">PRO</p>
+                <p className="mt-1 font-semibold">{cellLabel(row.pro)}</p>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="compare-table-wrap compare-table-wrap--desktop">
         <table className="compare-table">
           <thead>
             <tr>
@@ -71,8 +94,8 @@ export function ProComparison({
       </div>
 
       <div className="compare-block__cta">
-        <ButtonLink href={proHref} size="lg">
-          Empieza hoy por 7,99 €/mes
+        <ButtonLink href={proHref} size="lg" className="btn--block sm:!w-auto">
+          {proPlan.ctaLabel} · {proPlan.price}
         </ButtonLink>
         <p className="compare-block__note">Cancela cuando quieras · Sin permanencia</p>
       </div>

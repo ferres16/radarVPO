@@ -42,7 +42,7 @@ export default async function Home() {
           <div className="lp-hero__backdrop" aria-hidden="true" />
           <div className="shell">
             <div className="hero-split">
-              <div className="lp-hero__inner">
+              <div className="lp-hero__inner order-2 md:order-1">
                 <span className="lp-hero__badge">VPO PRO · Cataluña</span>
                 <h1 id="hero-title" className="lp-hero__title">
                   Llega antes
@@ -51,18 +51,20 @@ export default async function Home() {
                 <p className="lp-hero__subtitle">
                   Alertas instantáneas, lanzamientos monitorizados y preparación real. Una app pensada para no perder plazos.
                 </p>
-                <div className="lp-hero__actions">
-                  <ButtonLink href={proHref} size="lg">
+                <div className="lp-hero__actions lp-hero__actions--stack">
+                  <ButtonLink href={proHref} size="lg" block>
                     {proPlan.ctaLabel}
                   </ButtonLink>
-                  <ButtonLink href="/alerts" variant="secondary" size="lg">
-                    Ver lanzamientos
+                  <ButtonLink href="/register" variant="secondary" size="lg" block>
+                    Crear cuenta gratis
                   </ButtonLink>
                 </div>
                 <p className="lp-hero__price">{proPlan.price} · cancela cuando quieras</p>
                 <HeroProof />
               </div>
-              <ProductPreview />
+              <div className="order-1 md:order-2">
+                <ProductPreview />
+              </div>
             </div>
           </div>
         </section>
@@ -160,9 +162,12 @@ export default async function Home() {
                 <h2 className="lp-title lp-title--sm">Empieza hoy con VPO PRO</h2>
                 <p className="lp-lead">Recibe alertas por SMS y email cuando detectemos oportunidades en tu zona.</p>
               </div>
-              <div className="public-cta-band__actions">
-                <ButtonLink href={proHref} size="lg">
+              <div className="public-cta-band__actions lp-hero__actions--stack">
+                <ButtonLink href={proHref} size="lg" block>
                   {proPlan.ctaLabel}
+                </ButtonLink>
+                <ButtonLink href="/register" variant="secondary" size="lg" block>
+                  Crear cuenta gratis
                 </ButtonLink>
               </div>
             </div>

@@ -12,23 +12,24 @@ export function SiteFooter() {
   }
 
   return (
-    <footer className="site-footer">
+    <footer className="site-footer pb-[calc(var(--mobile-nav-h)+0.5rem)] md:pb-0">
       <div className="shell site-footer__inner">
         <div>
           <p className="site-footer__brand">Radar VPO</p>
           <p className="site-footer__tagline">
-            Alertas y preparación para conseguir vivienda protegida en Cataluña antes que el resto.
+            La plataforma de referencia para detectar y preparar tu solicitud VPO en Cataluña.
           </p>
         </div>
         <nav className="site-footer__nav" aria-label="Enlaces del sitio">
           {primaryNavLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              {link.label}
+              {link.mobileLabel ?? link.label}
             </Link>
           ))}
+          <Link href="/login">Entrar</Link>
         </nav>
         <div className="site-footer__cta">
-          <Link href={proHref} className="btn btn--primary">
+          <Link href={proHref} className="btn btn--primary btn--block md:!inline-flex">
             {proPlan.ctaLabel}
           </Link>
           <p className="site-footer__price">{proPlan.price}</p>
