@@ -1281,11 +1281,11 @@ export class BackofficeService {
       publicDescription: dto.publicDescription,
       availableUnitsText: dto.availableUnitsText,
       statusMessage: dto.statusMessage,
-      importantDates: this.parseJsonField(dto.importantDatesJson),
-      requirements: this.parseJsonField(dto.requirementsJson),
-      economicInfo: this.parseJsonField(dto.economicInfoJson),
-      feesAndReservations: this.parseJsonField(dto.feesAndReservationsJson),
-      contactInfo: this.parseJsonField(dto.contactInfoJson),
+      importantDates: this.parseJsonField(dto.importantDatesJson) as Prisma.InputJsonValue | undefined,
+      requirements: this.parseJsonField(dto.requirementsJson) as Prisma.InputJsonValue | undefined,
+      economicInfo: this.parseJsonField(dto.economicInfoJson) as Prisma.InputJsonValue | undefined,
+      feesAndReservations: this.parseJsonField(dto.feesAndReservationsJson) as Prisma.InputJsonValue | undefined,
+      contactInfo: this.parseJsonField(dto.contactInfoJson) as Prisma.InputJsonValue | undefined,
     };
 
     return this.prisma.promotion.update({
