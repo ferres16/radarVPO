@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { adsConfig, shouldRenderAdPlaceholder, shouldShowAds } from '@/lib/ads';
+import { adsConfig, isUsableAdSlot, shouldRenderAdPlaceholder, shouldShowAds } from '@/lib/ads';
 
 declare global {
   interface Window {
@@ -27,7 +27,7 @@ export function AdSlot({
 }: AdSlotProps) {
   const pathname = usePathname();
   const slotId = adsConfig.slots[slot];
-  const canShowRealAd = Boolean(shouldShowAds(pathname) && adsConfig.clientId && slotId);
+  const canShowRealAd = Boolean(shouldShowAds(pathname) && adsConfig.clientId && isUsableAdSlot(slotId));
   const canShowPlaceholder = shouldRenderAdPlaceholder(pathname);
 
   useEffect(() => {

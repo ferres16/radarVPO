@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
-import { MobileStickyAd, PublicAdFrame } from "@/components/ads";
+import { PublicAdFrame } from "@/components/ads";
 import { MobileNav } from "@/components/mobile-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { TopNav } from "@/components/top-nav";
@@ -90,7 +90,6 @@ export default function RootLayout({
         </div>
         <SiteFooter />
         <MobileNav />
-        <MobileStickyAd />
       </body>
     </html>
   );

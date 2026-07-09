@@ -1,160 +1,60 @@
-'use client';
-
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
-import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
-import { MotionCard, Stagger, StaggerItem } from '@/components/motion-primitives';
+import { ButtonLink } from '@/components/design-system';
 import { api } from '@/lib/api';
-import type { BackofficeOverview, PromotionDetail } from '@/types';
+import { CreatePromotionForm } from './create-promotion-form';
+import { DeletePromotionButton } from './delete-promotion-button';
 
-const statuses = ['pending_review', 'published_unreviewed', 'published_reviewed', 'archived'] as const;
-const statusLabels: Record<PromotionDetail['status'], string> = {
-  pending_review: 'Aviso pendiente',
-  published_unreviewed: 'Publicada sin revisar',
-  published_reviewed: 'Publicada revisada',
-  archived: 'Archivada',
-};
+export const dynamic = 'force-dynamic';
 
-function promotionTimestamp(promotion: PromotionDetail) {
-  return new Date(promotion.createdAt || promotion.publishedAt || promotion.alertDetectedAt || 0).getTime();
-}
+export default async function AdminPromotionsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = (await searchParams) || {};
+  const q = typeof sp.q === 'string' ? sp.q : '';
 
-export default function AdminPromotionsPage() {
-  const [promotions, setPromotions] = useState<PromotionDetail[]>([]);
-  const [queryInput, setQueryInput] = useState('');
-  const [appliedQuery, setAppliedQuery] = useState('');
-  const [status, setStatus] = useState('');
-  const [overview, setOverview] = useState<BackofficeOverview | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [newPromotionTitle, setNewPromotionTitle] = useState('');
-  const [creating, setCreating] = useState(false);
+  const query = new URLSearchParams();
+  if (q) query.set('q', q);
+  query.set('limit', '10');
 
-  const loadPromotions = useCallback(async (shouldApply: () => boolean = () => true) => {
-    try {
-      const [rows, overviewData] = await Promise.all([
-        api.getBackofficePromotions(status || undefined, appliedQuery || undefined, 500),
-        api.getBackofficeOverview().catch(() => null),
-      ]);
-      if (!shouldApply()) return;
-      setPromotions(rows.sort((a, b) => promotionTimestamp(b) - promotionTimestamp(a)));
-      setOverview(overviewData);
-      setError('');
-    } catch (err) {
-      if (!shouldApply()) return;
-      const message = err instanceof Error ? err.message : 'No se pudieron cargar promociones';
-      console.error('[admin/promotions] load failed:', message);
-      setError(message);
-    } finally {
-      if (shouldApply()) setLoading(false);
-    }
-  }, [appliedQuery, status]);
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    void loadPromotions(() => active);
-
-    return () => {
-      active = false;
-    };
-  }, [loadPromotions]);
-
-  async function createPromotion() {
-    if (!newPromotionTitle.trim()) {
-      setError('El título de la promoción es obligatorio.');
-      return;
-    }
-    setCreating(true);
-    setError('');
-    try {
-      const created = await api.createBackofficePromotion({
-        title: newPromotionTitle.trim(),
-        status: 'published_unreviewed',
-      });
-      setNewPromotionTitle('');
-      setPromotions((prev) => [created, ...prev]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo crear la promoción');
-    } finally {
-      setCreating(false);
-    }
-  }
-
-  async function deletePromotion(promotionId: string) {
-    const accepted = window.confirm('Se eliminara la promoción y todos sus archivos asociados en S3. ¿Continuar?');
-    if (!accepted) return;
-    setError('');
-    try {
-      await api.deleteBackofficePromotion(promotionId);
-      setPromotions((prev) => prev.filter((promotion) => promotion.id !== promotionId));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo eliminar la promoción');
-    }
-  }
-
-  const filtered = useMemo(() => promotions, [promotions]);
-  const statusCounts = {
-    pending_review: overview?.pendingReview ?? promotions.filter((promotion) => promotion.status === 'pending_review').length,
-    published_unreviewed: overview?.publishedUnreviewed ?? promotions.filter((promotion) => promotion.status === 'published_unreviewed').length,
-    published_reviewed: overview?.publishedReviewed ?? promotions.filter((promotion) => promotion.status === 'published_reviewed').length,
-    archived: promotions.filter((promotion) => promotion.status === 'archived').length,
-  };
+  const promotions = await api.getPromotions(`?${query.toString()}`).catch(() => []);
+  const visiblePromotions = promotions.filter((item) => item.status !== 'archived');
 
   return (
     <main className="shell pb-16">
       <div className="admin-shell">
         <AdminNav />
         <div className="space-y-6">
-          <PageHero
-            eyebrow="CMS de promociones"
-            title="Promociones para gestionar"
-            description="Listado completo de promociones en cualquier estado. Usa el filtro para acotar por bandeja."
-            actions={
-              <>
-                <ButtonLink href="/admin/promotions/history" variant="secondary">Ver histórico</ButtonLink>
-                <ButtonLink href="/admin/alerts" variant="secondary">Gestionar avisos</ButtonLink>
-              </>
-            }
-          />
-
-          <section className="grid gap-3 md:grid-cols-4">
-            {statuses.map((item) => (
-              <SurfaceCard key={item} className="p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">{statusLabels[item]}</p>
-                <p className="display-type mt-2 text-3xl font-black text-[var(--ink)]">
-                  {statusCounts[item]}
-                </p>
-              </SurfaceCard>
-            ))}
-          </section>
+          <header className="rounded-[1.5rem] border border-[var(--stroke)] bg-white p-6 shadow-card">
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">CMS de promociones</p>
+            <h1 className="display-type mt-2 text-3xl font-black text-[var(--ink)]">Promociones en la web</h1>
+            <p className="mt-2 text-sm text-[var(--ink-soft)]">
+              Las mismas {visiblePromotions.length} promociones visibles en{' '}
+              <Link href="/promotions" className="font-semibold text-[var(--green-700)] underline">
+                /promotions
+              </Link>
+              .
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <ButtonLink href="/promotions" variant="secondary">
+                Ver web pública
+              </ButtonLink>
+              <ButtonLink href="/admin/alerts" variant="secondary">
+                Gestionar avisos
+              </ButtonLink>
+            </div>
+          </header>
 
           <section className="rounded-[1.5rem] border border-[var(--stroke)] bg-white p-4 shadow-card">
-            <SectionHeader
-              eyebrow="Flujo de edición"
-              title="Promociones"
-              description="Base preparada para editor visual, multimedia, historial y programación de publicación."
-            />
-            <form
-              className="mt-4 grid gap-3 md:grid-cols-[1fr_260px_auto]"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setAppliedQuery(queryInput.trim());
-              }}
-            >
+            <form method="get" action="/admin/promotions" className="grid gap-3 md:grid-cols-[1fr_auto]">
               <input
-                value={queryInput}
-                onChange={(event) => setQueryInput(event.target.value)}
-                placeholder="Buscar por título, municipio, promotor o texto"
+                name="q"
+                defaultValue={q}
+                placeholder="Buscar (igual que en /promotions)"
                 className="ds-control"
               />
-              <select value={status} onChange={(event) => setStatus(event.target.value)} className="ds-control">
-                <option value="">Todos los estados</option>
-                {statuses.map((item) => (
-                  <option key={item} value={item}>{statusLabels[item]}</option>
-                ))}
-              </select>
               <button
                 type="submit"
                 className="rounded-2xl border border-[var(--stroke)] bg-white px-5 py-3 text-sm font-bold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
@@ -162,72 +62,47 @@ export default function AdminPromotionsPage() {
                 Buscar
               </button>
             </form>
-            <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
-              <input
-                value={newPromotionTitle}
-                onChange={(event) => setNewPromotionTitle(event.target.value)}
-                placeholder="Nueva promoción manual"
-                className="ds-control"
-              />
-              <button
-                type="button"
-                onClick={() => void createPromotion()}
-                disabled={creating}
-                className="rounded-2xl bg-[var(--green-700)] px-5 py-3 text-sm font-bold text-white hover:bg-[var(--green-900)] disabled:opacity-60"
-              >
-                {creating ? 'Creando...' : 'Crear promoción'}
-              </button>
-            </div>
+            <CreatePromotionForm />
           </section>
 
-          {error ? <SurfaceCard className="border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{error}</SurfaceCard> : null}
-          {loading ? <SurfaceCard className="p-5 text-sm text-[var(--ink-soft)]">Cargando promociones...</SurfaceCard> : null}
-
-          {!loading && !error && filtered.length === 0 ? (
-            <SurfaceCard className="p-6 text-center">
-              <h2 className="display-type text-2xl font-black text-[var(--ink)]">No hay promociones con estos criterios</h2>
-              <p className="mt-2 text-sm text-[var(--ink-soft)]">Prueba a limpiar la búsqueda o revisa el histórico.</p>
-            </SurfaceCard>
-          ) : null}
-
-          <Stagger className="grid gap-4 lg:grid-cols-2">
-            {filtered.map((promotion) => (
-              <StaggerItem key={promotion.id}>
-                <MotionCard className="ds-card p-5">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">{statusLabels[promotion.status] || promotion.status}</p>
-                      <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">{promotion.title}</h2>
-                      <p className="mt-2 text-sm text-[var(--ink-soft)]">{promotion.municipality || 'Catalunya'} · {promotion.promotionType}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      <Link href={`/admin/promotions/${promotion.id}`} className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white transition hover:bg-[var(--green-900)]">
-                        Editar ficha
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => void deletePromotion(promotion.id)}
-                        className="rounded-full border border-red-100 bg-white px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-50"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
+          {visiblePromotions.length === 0 ? (
+            <section className="rounded-[1.5rem] border border-[var(--stroke)] bg-white p-6 text-center shadow-card">
+              <h2 className="display-type text-2xl font-black text-[var(--ink)]">No hay promociones publicadas</h2>
+              <p className="mt-2 text-sm text-[var(--ink-soft)]">La API no devolvió resultados con los criterios actuales.</p>
+            </section>
+          ) : (
+            <ul className="grid list-none gap-4 p-0 lg:grid-cols-2">
+              {visiblePromotions.map((promotion) => (
+                <li
+                  key={promotion.id}
+                  className="rounded-[1.5rem] border border-[var(--stroke)] bg-white p-5 shadow-card"
+                >
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">
+                    {promotion.status}
+                  </p>
+                  <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)]">{promotion.title}</h2>
+                  <p className="mt-2 text-sm text-[var(--ink-soft)]">
+                    {promotion.municipality || 'Catalunya'} · {promotion.promotionType}
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <Link
+                      href={`/admin/promotions/${promotion.id}`}
+                      className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white hover:bg-[var(--green-900)]"
+                    >
+                      Editar
+                    </Link>
+                    <Link
+                      href={`/promotions/${promotion.id}`}
+                      className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-bold text-[var(--ink)] hover:bg-[var(--bg-eco)]"
+                    >
+                      Ver pública
+                    </Link>
+                    <DeletePromotionButton promotionId={promotion.id} />
                   </div>
-                  <div className="mt-4 grid gap-2 sm:grid-cols-4">
-                    <span className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3 text-xs font-semibold text-[var(--ink-soft)]">Docs {promotion.documents?.length || 0}</span>
-                    <span className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3 text-xs font-semibold text-[var(--ink-soft)]">Unidades {promotion.units?.length || 0}</span>
-                    <span className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3 text-xs font-semibold text-[var(--ink-soft)]">{promotion.requirements ? 'Requisitos OK' : 'Sin requisitos'}</span>
-                    <span className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3 text-xs font-semibold text-[var(--ink-soft)]">{promotion.publicDescription ? 'Descripción OK' : 'Sin descripción'}</span>
-                  </div>
-                  <div className="mt-4 grid gap-2 sm:grid-cols-3">
-                    <Link href={`/admin/promotions/${promotion.id}`} className="rounded-2xl border border-[var(--stroke)] bg-white px-3 py-2 text-center text-xs font-bold text-[var(--ink)] hover:bg-[var(--bg-eco)]">Contenido</Link>
-                    <Link href={`/admin/promotions/${promotion.id}#documentos`} className="rounded-2xl border border-[var(--stroke)] bg-white px-3 py-2 text-center text-xs font-bold text-[var(--ink)] hover:bg-[var(--bg-eco)]">Multimedia</Link>
-                    <Link href={`/admin/promotions/${promotion.id}#unidades`} className="rounded-2xl border border-[var(--stroke)] bg-white px-3 py-2 text-center text-xs font-bold text-[var(--ink)] hover:bg-[var(--bg-eco)]">Viviendas</Link>
-                  </div>
-                </MotionCard>
-              </StaggerItem>
-            ))}
-          </Stagger>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </main>

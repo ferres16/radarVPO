@@ -21,16 +21,23 @@ const excludedPrefixes = [
   '/cursos/',
 ];
 
+const placeholderSlotPattern = /^123456789\d$/;
+
+export function isUsableAdSlot(slotId?: string) {
+  const id = slotId?.trim();
+  if (!id) return false;
+  return !placeholderSlotPattern.test(id);
+}
+
 export function shouldShowAds(pathname: string) {
   if (!adsConfig.enabled || !adsConfig.clientId) return false;
   return !excludedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
 }
 
 export function shouldRenderAdPlaceholder(pathname: string) {
+  if (process.env.NODE_ENV === 'production') return false;
   if (!shouldShowAds(pathname)) {
-    return process.env.NODE_ENV !== 'production' && !excludedPrefixes.some((prefix) => pathname.startsWith(prefix));
+    return !excludedPrefixes.some((prefix) => pathname.startsWith(prefix));
   }
-
-  const hasAnySlot = Object.values(adsConfig.slots).some(Boolean);
-  return !hasAnySlot || process.env.NODE_ENV !== 'production';
+  return true;
 }

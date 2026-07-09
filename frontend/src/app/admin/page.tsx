@@ -96,7 +96,6 @@ export default function AdminPage() {
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               {[
                 ['/admin/promotions', '10 promociones principales'],
-                ['/admin/promotions/history', 'Histórico'],
                 ['/admin/alerts', 'Avisos pendientes'],
                 ['/admin/courses', 'Cursos'],
                 ['/admin/services', 'Acompañamiento'],

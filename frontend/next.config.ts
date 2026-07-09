@@ -24,6 +24,7 @@ const nextConfig: NextConfig = {
       { source: '/proximos-lanzamientos', destination: '/alerts', permanent: true },
       { source: '/promociones-publicadas', destination: '/promotions', permanent: true },
       { source: '/services', destination: '/acompanamiento', permanent: true },
+      { source: '/admin/promotions/history', destination: '/admin/promotions', permanent: true },
     ];
   },
   async headers() {

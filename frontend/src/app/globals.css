@@ -665,6 +665,36 @@ h3,
   color: var(--ink);
 }
 
+.course-lesson-prosemirror ul:not([data-type='taskList']),
+.course-prose ul:not([data-type='taskList']) {
+  list-style-type: disc;
+  list-style-position: outside;
+  padding-left: 1.5rem;
+}
+
+.course-lesson-prosemirror ol,
+.course-prose ol {
+  list-style-type: decimal;
+  list-style-position: outside;
+  padding-left: 1.5rem;
+}
+
+.course-lesson-prosemirror ul[data-type='taskList'],
+.course-prose ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.course-lesson-prosemirror li,
+.course-prose li {
+  display: list-item;
+}
+
+.course-lesson-prosemirror li p,
+.course-prose li p {
+  margin: 0;
+}
+
 .course-lesson-prosemirror ul,
 .course-lesson-prosemirror ol {
   padding-left: 1.25rem;

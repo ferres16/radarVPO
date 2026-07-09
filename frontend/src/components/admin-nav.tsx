@@ -7,7 +7,6 @@ const adminLinks = [
   { href: '/admin', label: 'Dashboard' },
   { href: '/admin/courses', label: 'Cursos CMS' },
   { href: '/admin/promotions', label: 'Promociones' },
-  { href: '/admin/promotions/history', label: 'Histórico promociones' },
   { href: '/admin/alerts', label: 'Avisos' },
   { href: '/admin/services', label: 'Acompañamiento' },
   { href: '/admin/news', label: 'Noticias' },
@@ -27,7 +26,7 @@ export function AdminNav() {
           const active =
             pathname === link.href ||
             (link.href === '/admin/promotions'
-              ? pathname.startsWith('/admin/promotions/') && !pathname.startsWith('/admin/promotions/history')
+              ? pathname.startsWith('/admin/promotions/')
               : pathname.startsWith(`${link.href}/`));
           return (
             <Link
