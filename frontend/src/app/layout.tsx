@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
 import Script from "next/script";
-import { MobileStickyAd } from "@/components/ads";
+import { MobileStickyAd, PublicAdFrame } from "@/components/ads";
 import { MobileNav } from "@/components/mobile-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { TopNav } from "@/components/top-nav";
@@ -81,7 +81,9 @@ export default function RootLayout({
           />
         ) : null}
         <TopNav />
-        <div className="flex-1">{children}</div>
+        <div className="flex-1">
+          <PublicAdFrame>{children}</PublicAdFrame>
+        </div>
         <SiteFooter />
         <MobileNav />
         <MobileStickyAd />

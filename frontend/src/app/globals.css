@@ -2430,3 +2430,51 @@ h3,
   0% { background-position: 100% 0; }
   100% { background-position: -100% 0; }
 }
+
+.public-ad-frame {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  padding-inline: 0.5rem;
+}
+
+.public-ad-frame__main {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: 1180px;
+}
+
+.public-ad-frame__rail {
+  display: none;
+  flex: 0 0 160px;
+  width: 160px;
+}
+
+.public-ad-frame__rail > aside {
+  position: sticky;
+  top: 6rem;
+}
+
+.public-ad-frame__mobile-banner {
+  margin-bottom: 0.75rem;
+}
+
+@media (min-width: 1280px) {
+  .public-ad-frame {
+    padding-inline: 1rem;
+  }
+
+  .public-ad-frame__rail {
+    display: block;
+  }
+}
+
+@media (min-width: 1536px) {
+  .public-ad-frame__rail {
+    flex-basis: 180px;
+    width: 180px;
+  }
+}

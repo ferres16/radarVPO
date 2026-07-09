@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
-import { InlineAdCard, SidebarAds } from '@/components/ads';
+import { InlineAdCard } from '@/components/ads';
 import { StructuredData } from '@/components/structured-data';
 import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
@@ -70,7 +70,6 @@ export default async function NewsDetailPage({ params }: NewsDetailParams) {
           articleJsonLd,
         ]}
       />
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
       <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
         <h1 className="text-2xl font-bold text-[var(--ink)]">{item.title}</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">{item.sourceName} - {item.publishedAt.slice(0, 10)}</p>
@@ -78,8 +77,6 @@ export default async function NewsDetailPage({ params }: NewsDetailParams) {
         <InlineAdCard className="mt-5" />
         <p className="mt-4 whitespace-pre-wrap text-sm text-[var(--ink)]">{item.body || 'Sin desarrollo adicional.'}</p>
       </article>
-      <SidebarAds />
-      </section>
     </main>
   );
 }

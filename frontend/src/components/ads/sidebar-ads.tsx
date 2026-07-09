@@ -1,5 +1,6 @@
 import { AdSlot } from './ad-slot';
 
+/** @deprecated Use PublicAdFrame in root layout for lateral ads. Kept for optional in-content placement. */
 export function SidebarAds() {
   return (
     <div className="hidden lg:block">

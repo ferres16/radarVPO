@@ -12,7 +12,7 @@ export function MobileStickyAd() {
   }
 
   return (
-    <div className="fixed inset-x-3 bottom-3 z-30 md:hidden">
+    <div className="fixed inset-x-3 bottom-[calc(var(--mobile-nav-h,4.25rem)+env(safe-area-inset-bottom,0px)+0.75rem)] z-30 md:hidden">
       <AdSlot
         slot="mobileSticky"
         className="rounded-2xl border border-[var(--stroke)] bg-white/95 p-2 shadow-[0_16px_48px_rgba(30,31,28,0.18)] backdrop-blur"

@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { proHref, proPlan } from '@/lib/pro';
-import { InlineAdCard, SidebarAds } from '@/components/ads';
+import { InlineAdCard } from '@/components/ads';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { ProComparison } from '@/components/pro-comparison';
 import { Reveal } from '@/components/motion-primitives';
@@ -224,7 +224,7 @@ export default async function PromotionDetailPage({
         </section>
       </Reveal>
 
-      <section className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <section className="grid gap-6">
       <article className="premium-card p-5 md:p-6">
         <SectionHeader
           eyebrow="Ficha estructurada"
@@ -364,7 +364,6 @@ export default async function PromotionDetailPage({
           )}
         </div>
       </article>
-      <SidebarAds />
       </section>
 
       <ProComparison compact title="¿Te interesa llegar antes la próxima vez?" />
