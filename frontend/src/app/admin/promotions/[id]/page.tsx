@@ -7,6 +7,7 @@ import { AdminNav } from '@/components/admin-nav';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { api } from '@/lib/api';
 import { PromotionDetail, PromotionDocument, PromotionUnit } from '@/types';
+import { PromotionJsonImporter } from './promotion-json-importer';
 
 const STATUS_OPTIONS: PromotionDetail['status'][] = [
   'pending_review',
@@ -360,6 +361,13 @@ export default function AdminPromotionEditPage() {
 
       {activeTab === 'content' ? (
         <section id="contenido" className="space-y-4">
+          <PromotionJsonImporter
+            sections={sections}
+            onSectionsChange={setSections}
+            formPatch={form}
+            onFormPatch={(patch) => setForm((current) => ({ ...current, ...patch }))}
+          />
+
           <SurfaceCard className="p-5">
             <SectionHeader eyebrow="Ficha base" title="Información general" description="Estos datos alimentan el hero, tarjetas y resumen público." />
             <div className="mt-4 grid gap-3 md:grid-cols-2">
