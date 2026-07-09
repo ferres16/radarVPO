@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
-import Script from "next/script";
 import { MobileStickyAd, PublicAdFrame } from "@/components/ads";
 import { MobileNav } from "@/components/mobile-nav";
 import { SiteFooter } from "@/components/site-footer";
@@ -68,18 +67,23 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const adsenseClientId = adsConfig.clientId;
+
   return (
     <html lang="es" className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col pt-14 md:pt-20">
-        {adsConfig.enabled && adsConfig.clientId ? (
-          <Script
-            id="adsense-script"
-            async
-            strategy="afterInteractive"
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsConfig.clientId}`}
-            crossOrigin="anonymous"
-          />
+      <head>
+        {adsConfig.enabled && adsenseClientId ? (
+          <>
+            <meta name="google-adsense-account" content={adsenseClientId} />
+            <script
+              async
+              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
+              crossOrigin="anonymous"
+            />
+          </>
         ) : null}
+      </head>
+      <body className="min-h-full flex flex-col pt-14 md:pt-20">
         <TopNav />
         <div className="flex-1">
           <PublicAdFrame>{children}</PublicAdFrame>
