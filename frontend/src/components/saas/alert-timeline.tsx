@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
 import { getDaysRemaining } from '@/lib/alert-countdown';
+import { proHref } from '@/lib/pro';
 import type { Promotion } from '@/types';
 
 export function AlertTimeline({ alerts }: { alerts: Promotion[] }) {
@@ -19,12 +20,9 @@ export function AlertTimeline({ alerts }: { alerts: Promotion[] }) {
               <AlertCountdownBadge daysRemaining={daysRemaining} size="sm" />
               <h3 className="mt-3 text-base font-bold leading-snug text-[var(--ink)]">{alert.title}</h3>
               <p className="mt-1 text-sm text-[var(--ink-soft)]">{alert.municipality || 'Cataluña'}</p>
-              <div className="mt-auto flex flex-wrap gap-2 pt-4">
-                <Link href={`/promotions/${alert.id}`} className="btn btn--primary min-h-11 px-4 py-2 text-sm">
-                  Ver ficha
-                </Link>
-                <Link href="/register?intent=pro" className="btn btn--secondary min-h-11 px-4 py-2 text-sm">
-                  Avisarme
+              <div className="mt-auto pt-4">
+                <Link href={proHref} className="btn btn--primary min-h-11 w-full px-4 py-2.5 text-sm">
+                  Avisarme con VPO PRO
                 </Link>
               </div>
             </div>

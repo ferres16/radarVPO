@@ -8,6 +8,7 @@ import { PublicPage, PublicPageHero, PublicProBanner, PublicSection } from '@/co
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { FilterChips } from '@/components/saas/filter-chips';
 import { StructuredData } from '@/components/structured-data';
+import { hasPublicFicha } from '@/lib/promotion-access';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
@@ -31,7 +32,7 @@ export default async function PromotionsPage({
   query.set('limit', '10');
 
   const promotions = await api.getPromotions(`?${query.toString()}`).catch(() => []);
-  const visiblePromotions = promotions.filter((item) => item.status !== 'archived');
+  const visiblePromotions = promotions.filter((item) => item.status !== 'archived' && hasPublicFicha(item));
 
   return (
     <PublicPage>

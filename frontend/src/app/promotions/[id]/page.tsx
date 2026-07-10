@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
+import { hasPublicFicha, isAlertPromotion } from '@/lib/promotion-access';
 import { proHref, proPlan } from '@/lib/pro';
 import { InlineAdCard } from '@/components/ads';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
@@ -208,6 +209,8 @@ export default async function PromotionDetailPage({
     (doc) => !doc.fileType?.startsWith('image/') && !doc.fileType?.startsWith('video/'),
   );
   const heroImage = documentsByType.images[0]?.publicUrl;
+  const isAlert = isAlertPromotion(promotion);
+  const showFicha = hasPublicFicha(promotion);
   const keyFacts = [
     { label: 'Municipio', value: promotion.municipality || 'Catalunya' },
     { label: 'Régimen', value: promotion.promotionType },
@@ -220,64 +223,81 @@ export default async function PromotionDetailPage({
       <StructuredData
         data={breadcrumbJsonLd([
           { name: 'Inicio', path: '/' },
-          { name: copy.publishedPromotions, path: '/promotions' },
+          { name: isAlert ? copy.upcomingLaunches : copy.publishedPromotions, path: isAlert ? '/alerts' : '/promotions' },
           { name: promotion.title, path: `/promotions/${promotion.id}` },
         ])}
       />
-      <section className="premium-card grid overflow-hidden lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="relative min-h-[220px] bg-[linear-gradient(135deg,rgba(11,18,32,0.92),rgba(22,112,85,0.55))] p-5 md:min-h-[340px] md:p-8">
-            {heroImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-85" />
-            ) : null}
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(16,24,40,0.08),rgba(16,24,40,0.52))]" />
-            <div className="relative flex h-full min-h-[240px] flex-col justify-end">
-              <span className="w-fit rounded-full border border-white/45 bg-white/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)] shadow-sm backdrop-blur">
-                {statusLabel(promotion.status)}
-              </span>
-              <h1 className="display-type mt-4 max-w-3xl text-3xl font-black leading-tight text-white sm:text-4xl md:text-5xl">{promotion.title}</h1>
-              <p className="mt-2 text-sm font-semibold text-white/86">
-                {promotion.municipality || 'Catalunya'}{promotion.province ? `, ${promotion.province}` : ''}
-              </p>
-            </div>
+      <section className="premium-card promo-detail-hero overflow-hidden">
+        <div className="promo-detail-hero__banner relative">
+          {heroImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-35" />
+          ) : null}
+          <div className="promo-detail-hero__banner-overlay" aria-hidden="true" />
+          <div className="relative p-4 md:p-5">
+            <span className="w-fit rounded-full border border-white/45 bg-white/90 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--green-700)] shadow-sm backdrop-blur">
+              {statusLabel(promotion.status)}
+            </span>
+            <h1 className="display-type mt-3 text-xl font-black leading-snug text-white sm:text-2xl md:text-[1.75rem]">
+              {promotion.title}
+            </h1>
+            <p className="mt-2 text-sm font-medium text-white/88">
+              {promotion.municipality || 'Catalunya'}{promotion.province ? `, ${promotion.province}` : ''}
+            </p>
           </div>
-          <aside className="p-4 md:p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Resumen rápido</p>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {keyFacts.map((fact) => (
-                <div key={fact.label} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">{fact.label}</p>
-                  <p className="mt-1 text-lg font-black text-[var(--ink)]">{fact.value}</p>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-              <p className="font-semibold text-[var(--ink)]">Estado: {statusLabel(promotion.status)}</p>
-              <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-                {promotion.statusMessage || 'Estamos analizando esta promoción y actualizando la información.'}
-              </p>
-            </div>
-            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <ButtonLink href={promotion.sourceUrl} variant="primary" block className="sm:!inline-flex sm:w-auto">
-                Fuente oficial
-              </ButtonLink>
+        </div>
+
+        <div className="p-4 md:p-5">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Resumen rápido</p>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {keyFacts.map((fact) => (
+              <div key={fact.label} className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--ink-soft)]">{fact.label}</p>
+                <p className="mt-1 text-sm font-bold leading-snug text-[var(--ink)]">{fact.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-3 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3.5">
+            <p className="text-sm font-semibold text-[var(--ink)]">Estado: {statusLabel(promotion.status)}</p>
+            <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
+              {promotion.statusMessage ||
+                (isAlert
+                  ? 'Aviso detectado. Aún no hay ficha completa; te avisamos cuando haya más información.'
+                  : 'Estamos analizando esta promoción y actualizando la información.')}
+            </p>
+          </div>
+
+          <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            <ButtonLink href={promotion.sourceUrl} variant="primary" block className="sm:!inline-flex sm:w-auto">
+              Fuente oficial
+            </ButtonLink>
+            {showFicha && downloadableDocuments.length > 0 ? (
               <ButtonLink href="#documentos" variant="secondary" block className="sm:!inline-flex sm:w-auto">
                 Ver documentos
               </ButtonLink>
-            </div>
-            <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-eco)]/60 p-4">
-              <p className="text-sm font-bold text-[var(--ink)]">¿Quieres enterarte del siguiente antes?</p>
-              <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-                Con {proPlan.name} recibes avisos por email y SMS, y el curso Guía VPO.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2">
-                <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
-                <ButtonLink href="/alerts" variant="secondary">Ver próximos lanzamientos</ButtonLink>
-              </div>
-            </div>
-          </aside>
-        </section>
+            ) : null}
+            {isAlert ? (
+              <ButtonLink href="/alerts" variant="secondary" block className="sm:!inline-flex sm:w-auto">
+                Volver a lanzamientos
+              </ButtonLink>
+            ) : null}
+          </div>
 
+          <div className="mt-3 rounded-xl border border-[var(--stroke)] bg-[var(--bg-eco)]/60 p-3.5">
+            <p className="text-sm font-bold text-[var(--ink)]">¿Quieres enterarte del siguiente antes?</p>
+            <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
+              Con {proPlan.name} recibes avisos por email y SMS, y el curso Guía VPO.
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
+              <ButtonLink href="/alerts" variant="secondary">Ver próximos lanzamientos</ButtonLink>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {showFicha ? (
       <section className="grid gap-4 md:gap-6">
       <article className="premium-card p-4 md:p-6">
         <SectionHeader
@@ -424,6 +444,7 @@ export default async function PromotionDetailPage({
         </div>
       </article>
       </section>
+      ) : null}
 
       <ProComparison compact title="¿Te interesa llegar antes la próxima vez?" />
     </main>
