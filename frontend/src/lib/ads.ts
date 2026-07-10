@@ -3,6 +3,12 @@ const defaultPublisherId = 'pub-9530052824706142';
 
 export const adsTxtContent = `google.com, ${defaultPublisherId}, DIRECT, f08c47fec0942fa0`;
 
+export const adUnitPlacements = {
+  sidebar: 'Rail izquierdo en desktop (pantalla >= 1280px), todas las páginas públicas',
+  card: 'Rail derecho en desktop (pantalla >= 1280px), todas las páginas públicas',
+  inline: 'Bloque horizontal en listados y fichas (promociones, noticias)',
+} as const;
+
 export const adsConfig = {
   enabled: process.env.NEXT_PUBLIC_ADSENSE_ENABLED !== 'false',
   clientId: process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || defaultClientId,

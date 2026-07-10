@@ -4,9 +4,14 @@
   "buildCommand": "npm run build",
   "redirects": [
     {
-      "source": "/:path*",
+      "source": "/",
       "has": [{ "type": "host", "value": "radarvpo.com" }],
-      "missing": [{ "type": "path", "value": "/ads.txt" }],
+      "destination": "https://www.radarvpo.com/",
+      "permanent": true
+    },
+    {
+      "source": "/:path((?!ads\\.txt$).*)",
+      "has": [{ "type": "host", "value": "radarvpo.com" }],
       "destination": "https://www.radarvpo.com/:path*",
       "permanent": true
     }

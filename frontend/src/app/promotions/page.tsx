@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { proHref, proPlan } from '@/lib/pro';
 import { PromotionCard } from '@/components/promotion-card';
+import { InlineAdCard } from '@/components/ads';
 import { PublicPage, PublicPageHero, PublicProBanner, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
@@ -75,6 +76,7 @@ export default async function PromotionsPage() {
               <PromotionCard key={promotion.id} promotion={promotion} layout="grid" animated={false} />
             ))}
           </div>
+          <InlineAdCard className="mt-6" />
         </PublicSection>
       )}
 
