@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { proHref, proPlan } from '@/lib/pro';
 import { InlineAdCard } from '@/components/ads';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { ProComparison } from '@/components/pro-comparison';
-import { Reveal } from '@/components/motion-primitives';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
@@ -37,6 +37,73 @@ function stringifyValue(value: unknown) {
   } catch {
     return 'n/d';
   }
+}
+
+function renderStructuredValue(value: unknown, depth = 0): ReactNode {
+  if (value === null || value === undefined || value === '') {
+    return <span className="text-sm text-[var(--ink-soft)]">n/d</span>;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return (
+      <span className="block break-words text-[0.9375rem] leading-relaxed text-[var(--ink)]">
+        {String(value)}
+      </span>
+    );
+  }
+
+  if (Array.isArray(value)) {
+    const allPrimitive = value.every(
+      (item) => item === null || ['string', 'number', 'boolean'].includes(typeof item),
+    );
+
+    if (allPrimitive) {
+      return (
+        <ul className="space-y-1.5 text-[0.9375rem] leading-relaxed text-[var(--ink)]">
+          {value.map((item, index) => (
+            <li key={index} className="flex gap-2 break-words">
+              <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" aria-hidden="true" />
+              <span>{item === null ? 'n/d' : String(item)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {value.map((item, index) => (
+          <div key={index} className="rounded-xl bg-white/70 px-3 py-2.5">
+            {renderStructuredValue(item, depth + 1)}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (isJsonMap(value)) {
+    const entries = Object.entries(value);
+    if (entries.length === 0) {
+      return <span className="text-sm text-[var(--ink-soft)]">n/d</span>;
+    }
+
+    return (
+      <dl className={depth > 0 ? 'space-y-2.5 border-l-2 border-[var(--stroke)] pl-3' : 'space-y-2.5'}>
+        {entries.map(([key, nestedValue]) => (
+          <div key={key} className="min-w-0">
+            <dt className="text-xs font-semibold text-[var(--green-700)]">{prettyLabel(key)}</dt>
+            <dd className="mt-1 min-w-0">{renderStructuredValue(nestedValue, depth + 1)}</dd>
+          </div>
+        ))}
+      </dl>
+    );
+  }
+
+  return (
+    <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-white/70 p-3 font-mono text-xs leading-relaxed text-[var(--ink)]">
+      {stringifyValue(value)}
+    </pre>
+  );
 }
 
 function prettyLabel(key: string) {
@@ -99,37 +166,22 @@ function DataBlock({
 
   return (
     <section
-      className={`rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 ${wide ? 'md:col-span-2' : ''}`}
+      className={`promo-data-block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 md:p-5 ${wide ? 'md:col-span-2' : ''}`}
     >
       <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">{title}</h2>
 
       {!isMap || entries.length === 0 ? (
-        <p className="mt-2 text-sm text-[var(--ink-soft)]">Sin datos disponibles.</p>
+        <p className="mt-3 text-sm leading-relaxed text-[var(--ink-soft)]">Sin datos disponibles.</p>
       ) : (
-        <dl className="mt-3 space-y-2">
-          {entries.map(([key, value]) => {
-            const printable = stringifyValue(value);
-            const formattedKey = prettyLabel(key);
-            const isComplex = typeof value === 'object' && value !== null;
-
-            return (
-              <div
-                key={key}
-                className="rounded-xl border border-[var(--stroke)] bg-white/80 px-3 py-2"
-              >
-                <dt className="text-[11px] font-semibold uppercase tracking-wide text-[var(--green-700)]">
-                  {formattedKey}
-                </dt>
-                {isComplex ? (
-                  <dd className="mt-1 overflow-x-auto rounded-lg bg-[var(--bg-app)] p-2 font-mono text-xs text-[var(--ink)]">
-                    <pre className="whitespace-pre-wrap">{printable}</pre>
-                  </dd>
-                ) : (
-                  <dd className="mt-1 text-sm text-[var(--ink)]">{printable}</dd>
-                )}
-              </div>
-            );
-          })}
+        <dl className="mt-3 divide-y divide-[var(--stroke)]">
+          {entries.map(([key, value]) => (
+            <div key={key} className="min-w-0 py-3 first:pt-0 last:pb-0">
+              <dt className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--green-700)]">
+                {prettyLabel(key)}
+              </dt>
+              <dd className="mt-2 min-w-0">{renderStructuredValue(value)}</dd>
+            </div>
+          ))}
         </dl>
       )}
     </section>
@@ -172,9 +224,8 @@ export default async function PromotionDetailPage({
           { name: promotion.title, path: `/promotions/${promotion.id}` },
         ])}
       />
-      <Reveal>
-        <section className="premium-card grid overflow-hidden lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="relative min-h-[340px] bg-[linear-gradient(135deg,rgba(11,18,32,0.92),rgba(22,112,85,0.55))] p-6 md:p-8">
+      <section className="premium-card grid overflow-hidden lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="relative min-h-[220px] bg-[linear-gradient(135deg,rgba(11,18,32,0.92),rgba(22,112,85,0.55))] p-5 md:min-h-[340px] md:p-8">
             {heroImage ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={heroImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-85" />
@@ -184,15 +235,15 @@ export default async function PromotionDetailPage({
               <span className="w-fit rounded-full border border-white/45 bg-white/90 px-3 py-1 text-xs font-bold uppercase tracking-[0.22em] text-[var(--green-700)] shadow-sm backdrop-blur">
                 {statusLabel(promotion.status)}
               </span>
-              <h1 className="display-type mt-4 max-w-3xl text-4xl font-black leading-tight text-white md:text-5xl">{promotion.title}</h1>
+              <h1 className="display-type mt-4 max-w-3xl text-3xl font-black leading-tight text-white sm:text-4xl md:text-5xl">{promotion.title}</h1>
               <p className="mt-2 text-sm font-semibold text-white/86">
                 {promotion.municipality || 'Catalunya'}{promotion.province ? `, ${promotion.province}` : ''}
               </p>
             </div>
           </div>
-          <aside className="p-5 md:p-6">
+          <aside className="p-4 md:p-6">
             <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">Resumen rápido</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="mt-4 grid grid-cols-2 gap-3">
               {keyFacts.map((fact) => (
                 <div key={fact.label} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">{fact.label}</p>
@@ -206,9 +257,13 @@ export default async function PromotionDetailPage({
                 {promotion.statusMessage || 'Estamos analizando esta promoción y actualizando la información.'}
               </p>
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <ButtonLink href={promotion.sourceUrl} variant="primary">Fuente oficial</ButtonLink>
-              <ButtonLink href="#documentos" variant="secondary">Ver documentos</ButtonLink>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <ButtonLink href={promotion.sourceUrl} variant="primary" block className="sm:!inline-flex sm:w-auto">
+                Fuente oficial
+              </ButtonLink>
+              <ButtonLink href="#documentos" variant="secondary" block className="sm:!inline-flex sm:w-auto">
+                Ver documentos
+              </ButtonLink>
             </div>
             <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-eco)]/60 p-4">
               <p className="text-sm font-bold text-[var(--ink)]">¿Quieres enterarte del siguiente antes?</p>
@@ -222,33 +277,34 @@ export default async function PromotionDetailPage({
             </div>
           </aside>
         </section>
-      </Reveal>
 
-      <section className="grid gap-6">
-      <article className="premium-card p-5 md:p-6">
+      <section className="grid gap-4 md:gap-6">
+      <article className="premium-card p-4 md:p-6">
         <SectionHeader
           eyebrow="Ficha estructurada"
           title="Información, requisitos, ubicación y documentación"
           description={promotion.publicDescription || 'Estamos completando esta ficha para ofrecerte la información más útil posible.'}
         />
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 transition hover:-translate-y-0.5">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
             <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Informacion general</h2>
-            <p className="mt-2 text-sm text-[var(--ink)]">Tipo: {promotion.promotionType}</p>
-            <p className="text-sm text-[var(--ink)]">Promotor: {promotion.promoter || 'n/d'}</p>
-            <p className="text-sm text-[var(--ink)]">Total viviendas: {promotion.totalHomes ?? 'n/d'}</p>
+            <div className="mt-3 space-y-1.5 text-[0.9375rem] leading-relaxed text-[var(--ink)]">
+              <p>Tipo: {promotion.promotionType}</p>
+              <p>Promotor: {promotion.promoter || 'n/d'}</p>
+              <p>Total viviendas: {promotion.totalHomes ?? 'n/d'}</p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 transition hover:-translate-y-0.5">
+          <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
             <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Descripcion</h2>
-            <p className="mt-2 text-sm text-[var(--ink)]">
+            <p className="mt-3 text-[0.9375rem] leading-relaxed text-[var(--ink)]">
               {promotion.publicDescription ||
                 'Estamos completando esta ficha para ofrecerte la información más útil posible.'}
             </p>
           </div>
         </div>
 
-        <section className="mt-4 grid gap-3 md:grid-cols-4" aria-label="Galería multimedia">
+        <section className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Galería multimedia">
           <SurfaceCard className="p-4">
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--green-700)]">Imágenes</p>
             <p className="mt-2 text-2xl font-black text-[var(--ink)]">{documentsByType.images.length}</p>
@@ -295,7 +351,7 @@ export default async function PromotionDetailPage({
           </section>
         ) : null}
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
           <DataBlock title="Fechas" payload={promotion.importantDates} />
           <DataBlock title="Requisitos" payload={promotion.requirements} />
           <DataBlock title="Economia" payload={promotion.economicInfo} />
@@ -310,7 +366,9 @@ export default async function PromotionDetailPage({
           {promotion.units.length === 0 ? (
             <p className="mt-2 text-sm text-[var(--ink-soft)]">Pendiente de revision manual.</p>
           ) : (
-            <div className="mt-3 overflow-x-auto rounded-2xl border border-[var(--stroke)] bg-white/90">
+            <>
+              <p className="mt-2 text-xs text-[var(--ink-soft)] md:hidden">Desliza horizontalmente para ver todas las columnas.</p>
+              <div className="mt-3 overflow-x-auto rounded-2xl border border-[var(--stroke)] bg-white/90">
               <table className="w-full min-w-[760px] text-sm">
                 <thead>
                   <tr className="border-b border-[var(--stroke)] bg-[var(--bg-app)]">
@@ -340,6 +398,7 @@ export default async function PromotionDetailPage({
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
 

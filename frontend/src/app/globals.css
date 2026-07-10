@@ -2499,3 +2499,13 @@ h3,
     width: 180px;
   }
 }
+
+.promo-data-block {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.promo-data-block dd,
+.promo-data-block pre {
+  max-width: 100%;
+}
