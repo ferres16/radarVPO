@@ -6,51 +6,63 @@ export const proPlan = {
   currency: 'EUR',
   stripeLink: process.env.NEXT_PUBLIC_STRIPE_PRO_LINK || '',
   fallbackHref: '/register?intent=pro',
-  courseLabel: 'Curso de iniciación a la VPO',
-  smsLabel: 'Notificaciones prioritarias',
-  emailLabel: 'Avisos por correo',
+  courseLabel: 'Curso Guía VPO',
+  smsLabel: 'Avisos por SMS',
+  emailLabel: 'Avisos por email',
   ctaLabel: 'Activar VPO PRO',
 };
 
 export const proHref = proPlan.stripeLink || proPlan.fallbackHref;
 
+export const freePlanFeatures = [
+  'Consultar promociones publicadas',
+  'Ver próximos lanzamientos en la web',
+  'Cuenta y perfil',
+] as const;
+
+export const proExclusiveFeatures = [
+  'Avisos por email',
+  'Avisos por SMS',
+  'Curso Guía VPO',
+] as const;
+
+export const freeVsProDescription =
+  'La cuenta gratuita te deja consultar promociones y lanzamientos en la web. VPO PRO añade avisos por email y SMS, y el curso Guía VPO.';
+
 export const proIncludes = [
   {
-    title: 'Notificaciones prioritarias',
-    description: 'SMS y correo cuando detectamos un próximo lanzamiento o promoción relevante.',
-    icon: '🔔',
+    title: 'Avisos por email',
+    description: 'Te avisamos al correo cuando detectamos un lanzamiento o se abre un plazo relevante.',
+    icon: '📧',
   },
   {
-    title: 'Seguimiento de municipios',
-    description: 'Monitorizamos las zonas que te interesan para avisarte antes que el resto.',
-    icon: '📍',
+    title: 'Avisos por SMS',
+    description: 'Recibe el aviso en el móvil para no depender de revisar la web cada día.',
+    icon: '📱',
   },
   {
-    title: 'Curso de iniciación',
-    description: 'Aprende requisitos, documentación y errores frecuentes del proceso.',
+    title: 'Curso Guía VPO',
+    description: 'Formación práctica para entender requisitos, documentación y errores frecuentes del proceso.',
     icon: '📚',
   },
-  {
-    title: 'Guía completa',
-    description: 'Todo el proceso explicado paso a paso, sin improvisar cuando abra el plazo.',
-    icon: '🗺️',
-  },
-];
+] as const;
 
 export const proSolutionPoints = [
-  { title: 'Detectamos próximos lanzamientos', description: 'Antes de que se publique la convocatoria oficial.' },
-  { title: 'Monitorizamos tu zona', description: 'Sin revisar portales cada día a mano.' },
-  { title: 'Te avisamos al abrir plazos', description: 'Para que te prepares y presentes con ventaja.' },
-];
+  { title: 'Consultas gratis en la web', description: 'Promociones publicadas y próximos lanzamientos sin pagar.' },
+  { title: 'PRO te avisa por email y SMS', description: 'Cuando detectamos una oportunidad relevante en tu zona.' },
+  { title: 'Incluye el curso Guía VPO', description: 'Para llegar al plazo preparado, sin improvisar.' },
+] as const;
 
 export const howItWorksSteps = [
-  { step: '01', title: 'Detectamos próximos lanzamientos', description: 'Rastreamos señales de promociones que aún no han salido oficialmente.' },
-  { step: '02', title: 'Te avisamos a tiempo', description: 'Recibes notificaciones por SMS y correo cuando hay novedad relevante.' },
-  { step: '03', title: 'Te preparas antes que el resto', description: 'Revisas requisitos, documentación y estrategia con nuestros recursos.' },
-  { step: '04', title: 'Presentas tu solicitud', description: 'Llegas al plazo con margen, sin depender de enterarte tarde.' },
-];
+  { step: '01', title: 'Consultas gratis en la web', description: 'Revisa promociones publicadas y próximos lanzamientos cuando quieras.' },
+  { step: '02', title: 'Activa VPO PRO', description: 'Desbloquea avisos por email y SMS, y el curso Guía VPO.' },
+  { step: '03', title: 'Recibes los avisos', description: 'Te notificamos cuando hay novedad relevante en tu zona.' },
+  { step: '04', title: 'Te preparas con la Guía VPO', description: 'Usa el curso incluido para revisar requisitos y documentación antes del plazo.' },
+] as const;
 
 export const starterCourseKeywords = [
+  'guía',
+  'guia',
   'iniciación',
   'iniciacion',
   'vivienda pública',
@@ -60,15 +72,11 @@ export const starterCourseKeywords = [
 ];
 
 export const proComparisonRows = [
-  { feature: 'Ver promociones', free: true as const, pro: true as const },
-  { feature: 'Alertas', free: 'Limitadas', pro: 'Ilimitadas' },
+  { feature: 'Ver promociones publicadas', free: true as const, pro: true as const },
+  { feature: 'Ver próximos lanzamientos', free: true as const, pro: true as const },
   { feature: 'Avisos por email', free: false as const, pro: true as const },
-  { feature: 'Avisos SMS', free: false as const, pro: true as const },
-  { feature: 'Próximos lanzamientos', free: false as const, pro: true as const },
-  { feature: 'Seguimiento municipios', free: false as const, pro: true as const },
-  { feature: 'Checklist', free: false as const, pro: true as const },
-  { feature: 'Curso VPO', free: false as const, pro: 'Completo' },
-  { feature: 'Soporte', free: false as const, pro: 'Prioritario' },
+  { feature: 'Avisos por SMS', free: false as const, pro: true as const },
+  { feature: 'Curso Guía VPO', free: false as const, pro: true as const },
 ] as const;
 
 export type ProComparisonCell = boolean | string;

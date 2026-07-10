@@ -1,4 +1,4 @@
-import { proComparisonRows, proHref, proPlan, type ProComparisonCell } from '@/lib/pro';
+import { proComparisonRows, proHref, proPlan, freeVsProDescription, type ProComparisonCell } from '@/lib/pro';
 import { ButtonLink } from './design-system';
 
 function ComparisonCell({ value, highlight = false }: { value: ProComparisonCell; highlight?: boolean }) {
@@ -27,7 +27,7 @@ function cellLabel(value: ProComparisonCell) {
 
 export function ProComparison({
   title = 'Gratis vs VPO PRO',
-  description = 'La versión gratuita informa. PRO te avisa antes, te prepara y te da ventaja real.',
+  description = freeVsProDescription,
   compact = false,
   showHeader = true,
 }: {

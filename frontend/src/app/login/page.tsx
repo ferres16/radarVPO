@@ -3,7 +3,7 @@
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { proHref, proPlan } from '@/lib/pro';
+import { proHref, proPlan, proExclusiveFeatures } from '@/lib/pro';
 import { ButtonLink, FormField } from '@/components/design-system';
 
 export default function LoginPage() {
@@ -34,7 +34,7 @@ export default function LoginPage() {
         <section className="public-card mx-auto grid max-w-5xl overflow-hidden md:grid-cols-[1.1fr_0.9fr]">
           <div className="order-1 p-5 md:order-2 md:p-8">
             <h1 className="text-2xl font-bold text-[var(--ink)]">Iniciar sesión</h1>
-            <p className="mt-1 text-sm text-[var(--ink-soft)]">Accede a alertas, cursos y tu perfil.</p>
+            <p className="mt-1 text-sm text-[var(--ink-soft)]">Accede a tu perfil, promociones y cursos.</p>
 
             <form className="mt-5 space-y-4" onSubmit={onSubmit}>
               <FormField id="email" label="Email">
@@ -81,12 +81,12 @@ export default function LoginPage() {
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/70">Radar VPO</p>
             <h2 className="mt-3 text-xl font-bold leading-tight md:text-2xl">Tu ventaja para conseguir VPO</h2>
             <p className="mt-3 text-sm leading-6 text-white/78">
-              Centraliza alertas, promociones y formación. Con PRO recibes avisos antes que el resto.
+              Gratis consultas promociones y lanzamientos. PRO añade avisos por email y SMS, y el curso Guía VPO.
             </p>
             <ul className="mt-5 space-y-2 text-sm text-white/85">
-              <li>✓ Alertas SMS y email</li>
-              <li>✓ Próximos lanzamientos</li>
-              <li>✓ Curso VPO incluido</li>
+              {proExclusiveFeatures.map((item) => (
+                <li key={item}>✓ {item}</li>
+              ))}
             </ul>
             <div className="mt-6">
               <ButtonLink href={proHref} variant="secondary" block className="!border-white/20 !bg-white !text-[var(--ink)]">

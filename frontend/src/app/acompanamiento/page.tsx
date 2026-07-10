@@ -37,9 +37,9 @@ const fallbackOfferings = [
   },
   {
     eyebrow: '03 · VPO PRO',
-    title: 'Seguimiento de oportunidades con VPO PRO',
+    title: 'Avisos y curso Guía VPO',
     copy:
-      'Recibe avisos prioritarios cuando haya nuevos lanzamientos, promociones publicadas o cambios importantes.',
+      'VPO PRO añade avisos por email y SMS cuando detectamos lanzamientos o promociones relevantes, e incluye el curso Guía VPO.',
     cta: 'Activar VPO PRO',
     href: '/register?intent=pro',
     price: null,

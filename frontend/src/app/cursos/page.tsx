@@ -62,7 +62,7 @@ export default async function CoursesPage() {
             <strong>{totalLessons || '—'}</strong> lecciones
           </span>
           <span className="academy-stat">
-            <strong>PRO</strong> incluye catálogo
+            <strong>PRO</strong> incluye Guía VPO
           </span>
         </div>
         <div className="mt-4">
@@ -80,8 +80,8 @@ export default async function CoursesPage() {
             <PublicSection id="catalogo">
               <SectionHeader
                 eyebrow="Incluido en PRO"
-                title="Programas con VPO PRO"
-                description="Formación completa desbloqueada con tu suscripción."
+                title="Curso Guía VPO con VPO PRO"
+                description="Desbloqueado con tu suscripción PRO junto a los avisos por email y SMS."
               />
               <div className="mt-4 md:hidden">
                 <HorizontalRail>
@@ -122,7 +122,7 @@ export default async function CoursesPage() {
         </>
       )}
 
-      <PublicCtaBand title="Desbloquea toda la academia con VPO PRO" description={proPlan.price}>
+      <PublicCtaBand title="Activa VPO PRO: avisos y Guía VPO" description={`${proPlan.price} · avisos por email y SMS, y curso Guía VPO incluido`}>
         <ButtonLink href={proHref} size="lg" block>
           {proPlan.ctaLabel}
         </ButtonLink>

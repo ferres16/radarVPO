@@ -69,7 +69,7 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
         </div>
         <div className="spotlight-course__actions">
           <ButtonLink href={`/cursos/${course.slug}`} size="lg">
-            {includedInPro ? 'Ver curso incluido en PRO' : 'Comprar curso'}
+            {includedInPro ? 'Ver Guía VPO incluida en PRO' : 'Comprar curso'}
           </ButtonLink>
         </div>
         <p className="spotlight-course__note">Valoración y alumnos: datos orientativos de lanzamiento.</p>

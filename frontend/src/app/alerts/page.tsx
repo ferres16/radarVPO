@@ -34,7 +34,7 @@ export default async function AlertsPage() {
         badge={copy.upcomingLaunches}
         title="Sabe qué puede salir"
         titleAccent="antes de que se publique"
-        description="Monitorizamos señales de vivienda protegida en Cataluña. Con VPO PRO recibes alertas por SMS y email al instante."
+        description="Monitorizamos señales de vivienda protegida en Cataluña. Gratis puedes consultar lanzamientos en la web; con VPO PRO recibes avisos por SMS y email."
         actions={
           <div className="lp-hero__actions lp-hero__actions--stack">
             <ButtonLink href={proHref} size="lg" block>
@@ -73,7 +73,7 @@ export default async function AlertsPage() {
       <PublicSection muted border>
         <SectionHeader
           title="¿Por qué activar VPO PRO?"
-          description="Entra cuando quieras a ver lanzamientos. PRO te avisa al móvil y al correo para no depender de acordarte."
+          description="La web es gratis para consultar. PRO añade avisos por email y SMS, y el curso Guía VPO."
         />
         <div className="mt-4 flex flex-wrap gap-3">
           <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>

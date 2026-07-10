@@ -158,8 +158,8 @@ export default function AccountPage() {
         <div className="public-cta-band">
           <div>
             <p className="lp-eyebrow">VPO PRO</p>
-            <h2 className="lp-title lp-title--sm">Recibe alertas antes que nadie</h2>
-            <p className="lp-lead">SMS y email cuando detectemos lanzamientos y promociones en tu zona.</p>
+            <h2 className="lp-title lp-title--sm">Recibe avisos y desbloquea la Guía VPO</h2>
+            <p className="lp-lead">PRO añade avisos por email y SMS, y el curso Guía VPO.</p>
           </div>
           <div className="public-cta-band__actions lp-hero__actions--stack">
             <ButtonLink href={proHref} size="lg" block>

@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { proHref, proPlan } from '@/lib/pro';
+import { proHref, proPlan, freePlanFeatures, proExclusiveFeatures } from '@/lib/pro';
 import { ButtonLink, FormField } from '@/components/design-system';
 
 export default function RegisterPage() {
@@ -57,8 +57,8 @@ export default function RegisterPage() {
             </h1>
             <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
               {isProIntent
-                ? `${proPlan.price}. Alertas prioritarias y curso incluido.`
-                : 'Gratis para empezar. Sube a PRO cuando quieras ventaja real.'}
+                ? `${proPlan.price}. Avisos por email y SMS, y ${proPlan.courseLabel} incluido.`
+                : 'Gratis para consultar promociones y lanzamientos. PRO añade avisos y el curso Guía VPO.'}
             </p>
 
             <form className="mt-5 space-y-4" onSubmit={onSubmit}>
@@ -116,8 +116,8 @@ export default function RegisterPage() {
             </h2>
             <div className="mt-4 space-y-2">
               {(isProIntent
-                ? ['SMS + email al instante', 'Monitorización continua', proPlan.courseLabel, 'Sin permanencia']
-                : ['Lanzamientos en web', 'Promociones publicadas', 'Perfil y favoritos', 'Upgrade a PRO']
+                ? [...proExclusiveFeatures, 'Sin permanencia']
+                : [...freePlanFeatures, 'Upgrade a PRO']
               ).map((item) => (
                 <div key={item} className="flex items-center gap-2 rounded-xl border border-[var(--stroke)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--ink)]">
                   <span className="text-[var(--green-700)]" aria-hidden="true">✓</span>

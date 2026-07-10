@@ -12,7 +12,7 @@ export function HomeFaq() {
           Todo lo que necesitas saber sobre VPO PRO
         </h2>
         <p className="lp-lead">
-          Respuestas claras sobre alertas, promociones y formación en Cataluña.
+          Respuestas claras sobre la cuenta gratuita, VPO PRO, avisos y el curso Guía VPO.
         </p>
       </div>
       <div className="lp-faq">

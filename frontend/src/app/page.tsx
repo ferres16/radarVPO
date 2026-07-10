@@ -16,7 +16,7 @@ import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/
 export const metadata: Metadata = createMetadata({
   title: 'Alertas VPO y vivienda protegida en Cataluña — llega antes con VPO PRO',
   description:
-    'No vuelvas a llegar tarde a una promoción de VPO. Alertas por email y SMS, próximos lanzamientos, curso VPO y checklist para pisos protegidos en Cataluña.',
+    'Consulta promociones y próximos lanzamientos gratis. Con VPO PRO recibes avisos por email y SMS, y el curso Guía VPO.',
   path: '/',
   keywords: [
     'vivienda protegida Cataluña',
@@ -49,7 +49,7 @@ export default async function Home() {
                   <span className="lp-hero__title-accent"> a cada promoción VPO.</span>
                 </h1>
                 <p className="lp-hero__subtitle">
-                  Alertas instantáneas, lanzamientos monitorizados y preparación real. Una app pensada para no perder plazos.
+                  Gratis consultas promociones y lanzamientos en la web. Con PRO recibes avisos por email y SMS, y el curso Guía VPO.
                 </p>
                 <div className="lp-hero__actions lp-hero__actions--stack">
                   <ButtonLink href={proHref} size="lg" block>
@@ -135,7 +135,7 @@ export default async function Home() {
                   El curso que te prepara para el plazo
                 </h2>
                 <p className="lp-lead">
-                  Incluido en VPO PRO. Aprende requisitos, documentación y errores frecuentes sin improvisar.
+                  Incluido en VPO PRO. El curso Guía VPO te prepara requisitos, documentación y errores frecuentes.
                 </p>
               </div>
               <FeaturedCourseSpotlight course={featuredCourse} />
@@ -160,7 +160,7 @@ export default async function Home() {
             <div className="public-cta-band">
               <div>
                 <h2 className="lp-title lp-title--sm">Empieza hoy con VPO PRO</h2>
-                <p className="lp-lead">Recibe alertas por SMS y email cuando detectemos oportunidades en tu zona.</p>
+                <p className="lp-lead">Avisos por email y SMS, y curso Guía VPO incluido. {proPlan.price}</p>
               </div>
               <div className="public-cta-band__actions lp-hero__actions--stack">
                 <ButtonLink href={proHref} size="lg" block>

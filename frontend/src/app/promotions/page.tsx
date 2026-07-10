@@ -102,7 +102,7 @@ export default async function PromotionsPage({
             <span className="empty-illus__icon" aria-hidden="true">◎</span>
             <h2 className="lp-title mt-4 text-xl">No hay promociones publicadas ahora mismo</h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-[var(--ink-soft)]">
-              Consulta próximos lanzamientos o activa VPO PRO para recibir notificaciones.
+              Consulta próximos lanzamientos o activa VPO PRO para avisos por email y SMS, y el curso Guía VPO.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>
@@ -124,7 +124,7 @@ export default async function PromotionsPage({
       <PublicSection animated={false} muted border>
         <SectionHeader
           title="No revises esta página cada día"
-          description="Con VPO PRO recibes notificaciones cuando detectamos promociones relevantes o próximos lanzamientos en tu zona."
+          description="Con VPO PRO recibes avisos por email y SMS, y acceso al curso Guía VPO."
         />
         <div className="mt-4">
           <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>

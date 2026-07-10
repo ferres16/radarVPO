@@ -21,18 +21,18 @@ export const homeSolutionBlocks = [
   },
   {
     step: '02',
-    title: 'Enviamos alertas',
-    description: 'Email y SMS cuando abre un plazo o detectamos un próximo lanzamiento en tu zona.',
+    title: 'PRO te avisa por email y SMS',
+    description: 'Cuando detectamos un próximo lanzamiento o se abre un plazo relevante en tu zona.',
   },
   {
     step: '03',
-    title: 'Te preparamos',
-    description: 'Curso VPO, checklist y guía para llegar al plazo con documentación y criterio.',
+    title: 'Te preparas con la Guía VPO',
+    description: 'El curso incluido en PRO te ayuda con requisitos, documentación y errores frecuentes.',
   },
   {
     step: '04',
-    title: 'Te acompañamos',
-    description: 'Revisión de tu caso y estrategia si necesitas apoyo personalizado.',
+    title: 'Acompañamiento opcional',
+    description: 'Si necesitas ayuda personalizada, puedes contratar acompañamiento aparte.',
   },
 ] as const;
 
@@ -67,7 +67,7 @@ export const homeFaqs = [
   {
     question: '¿Qué es Radar VPO PRO?',
     answer:
-      'Es la suscripción que te avisa antes que el resto sobre promociones y próximos lanzamientos de vivienda protegida en Cataluña, con curso, checklist y soporte prioritario.',
+      'Es la suscripción que añade avisos por email y SMS cuando detectamos lanzamientos o promociones relevantes, e incluye el curso Guía VPO.',
   },
   {
     question: '¿Sirve para VPO y HPO en Cataluña?',
@@ -82,7 +82,7 @@ export const homeFaqs = [
   {
     question: '¿Incluye curso para solicitar una VPO?',
     answer:
-      'Sí. VPO PRO incluye el curso completo para entender requisitos, documentación y errores frecuentes del proceso.',
+      'Sí. VPO PRO incluye el curso Guía VPO para entender requisitos, documentación y errores frecuentes del proceso.',
   },
   {
     question: '¿Garantiza conseguir un piso protegido?',
@@ -92,6 +92,6 @@ export const homeFaqs = [
   {
     question: '¿Puedo ver promociones sin pagar?',
     answer:
-      'Sí. Puedes consultar promociones publicadas con la versión gratuita. PRO desbloquea alertas ilimitadas, próximos lanzamientos y preparación completa.',
+      'Sí. Con la cuenta gratuita puedes consultar promociones publicadas y próximos lanzamientos en la web. VPO PRO añade avisos por email y SMS, y el curso Guía VPO.',
   },
 ] as const;

@@ -86,9 +86,9 @@ export function PublicProBanner({
         <div>
           <p className="public-pro-banner__label">{proPlan.name}</p>
           <p className="public-pro-banner__title">{title}</p>
-          <p className="public-pro-banner__text">
-            {description || `Recibe alertas por SMS y email cuando detectemos oportunidades. ${proPlan.price}`}
-          </p>
+            <p className="public-pro-banner__text">
+              {description || `Avisos por email y SMS, y curso Guía VPO incluido. ${proPlan.price}`}
+            </p>
         </div>
         <ButtonLink href={proHref} size="lg">
           {proPlan.ctaLabel}

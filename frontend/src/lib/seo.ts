@@ -6,7 +6,7 @@ export const siteConfig = {
   locale: 'es_ES',
   title: 'Radar VPO | Próximos lanzamientos y promociones de vivienda protegida',
   description:
-    'Detecta próximos lanzamientos de vivienda protegida en Cataluña, consulta promociones publicadas y actúa antes con VPO PRO.',
+    'Consulta promociones y próximos lanzamientos gratis. VPO PRO añade avisos por email y SMS, y el curso Guía VPO.',
   keywords: [
     'vivienda protegida cataluña',
     'vivienda pública cataluña',

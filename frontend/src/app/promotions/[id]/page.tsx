@@ -268,7 +268,7 @@ export default async function PromotionDetailPage({
             <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-eco)]/60 p-4">
               <p className="text-sm font-bold text-[var(--ink)]">¿Quieres enterarte del siguiente antes?</p>
               <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-                Con {proPlan.name} recibes notificaciones cuando detectemos próximos lanzamientos o promociones similares en tu zona.
+                Con {proPlan.name} recibes avisos por email y SMS, y el curso Guía VPO.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
