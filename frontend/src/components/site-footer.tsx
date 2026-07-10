@@ -12,7 +12,7 @@ export function SiteFooter() {
   }
 
   return (
-    <footer className="site-footer pb-[calc(var(--mobile-nav-h)+0.5rem)] md:pb-0">
+    <footer className="site-footer">
       <div className="shell site-footer__inner">
         <div>
           <p className="site-footer__brand">Radar VPO</p>

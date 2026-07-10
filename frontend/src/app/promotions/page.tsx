@@ -60,7 +60,7 @@ export default async function PromotionsPage({
         }
       />
 
-      <PublicProBanner title="¿No quieres revisar esta página cada día?" />
+      <PublicProBanner title="¿No quieres revisar esta página cada día?" className="hidden md:block" />
 
       <PublicSection>
         <SurfaceCard className="space-y-4 p-4">
@@ -112,8 +112,13 @@ export default async function PromotionsPage({
         </PublicSection>
       ) : (
         <PublicSection>
-          <SectionHeader title="Últimas promociones" description="Desliza en móvil o explora el listado completo." />
-          <div className="mt-4 md:mt-6">
+          <SectionHeader title="Últimas promociones" description="Listado actualizado con las promociones activas en Cataluña." />
+          <div className="mt-4 grid gap-4 md:hidden">
+            {visiblePromotions.map((promotion) => (
+              <PromotionCard key={promotion.id} promotion={promotion} layout="grid" />
+            ))}
+          </div>
+          <div className="mt-4 hidden md:mt-6 md:block">
             <HorizontalRail columns={3}>
               {visiblePromotions.map((promotion) => (
                 <HorizontalRailItem key={promotion.id}>

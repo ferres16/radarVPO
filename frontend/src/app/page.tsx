@@ -62,7 +62,7 @@ export default async function Home() {
                 <p className="lp-hero__price">{proPlan.price} · cancela cuando quieras</p>
                 <HeroProof />
               </div>
-              <div className="order-1 md:order-2">
+              <div className="order-1 hidden md:block md:order-2">
                 <ProductPreview />
               </div>
             </div>

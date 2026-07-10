@@ -64,12 +64,14 @@ export function PublicSection({
 export function PublicProBanner({
   title = '¿No quieres revisar cada día?',
   description,
+  className,
 }: {
   title?: string;
   description?: string;
+  className?: string;
 }) {
   return (
-    <Reveal>
+    <Reveal className={className}>
       <div className="shell">
         <aside className="public-pro-banner">
           <div>
