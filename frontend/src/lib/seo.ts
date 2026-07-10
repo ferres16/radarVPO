@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const siteConfig = {
   name: 'Radar VPO',
-  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://radarvpo.com',
+  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.radarvpo.com',
   locale: 'es_ES',
   title: 'Radar VPO | Próximos lanzamientos y promociones de vivienda protegida',
   description:

@@ -1,4 +1,7 @@
 const defaultClientId = 'ca-pub-9530052824706142';
+const defaultPublisherId = 'pub-9530052824706142';
+
+export const adsTxtContent = `google.com, ${defaultPublisherId}, DIRECT, f08c47fec0942fa0`;
 
 export const adsConfig = {
   enabled: process.env.NEXT_PUBLIC_ADSENSE_ENABLED !== 'false',
