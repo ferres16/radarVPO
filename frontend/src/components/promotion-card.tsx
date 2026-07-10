@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { ReactNode } from 'react';
 import { Promotion } from '@/types';
 import { MotionCard } from './motion-primitives';
 
@@ -29,22 +30,40 @@ function promotionTypeLabel(type: Promotion['promotionType']) {
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
+function CardShell({
+  animated,
+  className,
+  children,
+}: {
+  animated: boolean;
+  className: string;
+  children: ReactNode;
+}) {
+  if (animated) {
+    return <MotionCard className={className}>{children}</MotionCard>;
+  }
+
+  return <article className={className}>{children}</article>;
+}
+
 export function PromotionCard({
   promotion,
   hideDetail = false,
   hideStatus = false,
   titleOverride,
   layout = 'grid',
+  animated = true,
 }: {
   promotion: Promotion;
   hideDetail?: boolean;
   hideStatus?: boolean;
   titleOverride?: string;
   layout?: 'grid' | 'rail';
+  animated?: boolean;
 }) {
   if (layout === 'rail') {
     return (
-      <MotionCard className="saas-card-rail group h-full">
+      <CardShell animated={animated} className="saas-card-rail group h-full">
         <div className="flex items-start justify-between gap-2">
           <span className="inline-flex rounded-full bg-[rgba(22,112,85,0.10)] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--green-700)]">
             VPO
@@ -71,12 +90,12 @@ export function PromotionCard({
             Ver ficha completa
           </Link>
         ) : null}
-      </MotionCard>
+      </CardShell>
     );
   }
 
   return (
-    <MotionCard className="premium-card group flex h-full flex-col p-4 md:p-5">
+    <CardShell animated={animated} className="premium-card group flex h-full flex-col p-4 md:p-5">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
           <span className="inline-flex rounded-full bg-[rgba(22,112,85,0.10)] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--green-700)]">
@@ -110,6 +129,6 @@ export function PromotionCard({
           Ver ficha completa
         </Link>
       ) : null}
-    </MotionCard>
+    </CardShell>
   );
 }

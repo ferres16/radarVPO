@@ -6,7 +6,6 @@ import { proHref, proPlan } from '@/lib/pro';
 import { PromotionCard } from '@/components/promotion-card';
 import { PublicPage, PublicPageHero, PublicProBanner, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
-import { HorizontalRail, HorizontalRailItem } from '@/components/saas/horizontal-rail';
 import { FilterChips } from '@/components/saas/filter-chips';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
@@ -44,6 +43,7 @@ export default async function PromotionsPage({
       />
 
       <PublicPageHero
+        animated={false}
         badge={copy.publishedPromotions}
         title="Promociones ya abiertas"
         titleAccent="con plazos y requisitos"
@@ -60,9 +60,9 @@ export default async function PromotionsPage({
         }
       />
 
-      <PublicProBanner title="¿No quieres revisar esta página cada día?" className="hidden md:block" />
+      <PublicProBanner animated={false} title="¿No quieres revisar esta página cada día?" className="hidden md:block" />
 
-      <PublicSection>
+      <PublicSection animated={false}>
         <SurfaceCard className="space-y-4 p-4">
           <form className="grid gap-3 md:grid-cols-[1fr_auto]" action="/promotions" method="get" aria-label="Buscar promociones publicadas">
             <label className="text-sm font-semibold text-[var(--ink)]">
@@ -97,7 +97,7 @@ export default async function PromotionsPage({
       </PublicSection>
 
       {visiblePromotions.length === 0 ? (
-        <PublicSection>
+        <PublicSection animated={false}>
           <div className="empty-illus">
             <span className="empty-illus__icon" aria-hidden="true">◎</span>
             <h2 className="lp-title mt-4 text-xl">No hay promociones publicadas ahora mismo</h2>
@@ -111,26 +111,17 @@ export default async function PromotionsPage({
           </div>
         </PublicSection>
       ) : (
-        <PublicSection>
+        <PublicSection animated={false}>
           <SectionHeader title="Últimas promociones" description="Listado actualizado con las promociones activas en Cataluña." />
-          <div className="mt-4 grid gap-4 md:hidden">
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {visiblePromotions.map((promotion) => (
-              <PromotionCard key={promotion.id} promotion={promotion} layout="grid" />
+              <PromotionCard key={promotion.id} promotion={promotion} layout="grid" animated={false} />
             ))}
-          </div>
-          <div className="mt-4 hidden md:mt-6 md:block">
-            <HorizontalRail columns={3}>
-              {visiblePromotions.map((promotion) => (
-                <HorizontalRailItem key={promotion.id}>
-                  <PromotionCard promotion={promotion} layout="rail" />
-                </HorizontalRailItem>
-              ))}
-            </HorizontalRail>
           </div>
         </PublicSection>
       )}
 
-      <PublicSection muted border>
+      <PublicSection animated={false} muted border>
         <SectionHeader
           title="No revises esta página cada día"
           description="Con VPO PRO recibes notificaciones cuando detectamos promociones relevantes o próximos lanzamientos en tu zona."
