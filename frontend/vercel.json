@@ -1,19 +1,5 @@
 {
   "framework": "nextjs",
   "installCommand": "npm install --include=optional",
-  "buildCommand": "npm run build",
-  "redirects": [
-    {
-      "source": "/",
-      "has": [{ "type": "host", "value": "radarvpo.com" }],
-      "destination": "https://www.radarvpo.com/",
-      "permanent": true
-    },
-    {
-      "source": "/:path((?!ads\\.txt$).*)",
-      "has": [{ "type": "host", "value": "radarvpo.com" }],
-      "destination": "https://www.radarvpo.com/:path*",
-      "permanent": true
-    }
-  ]
+  "buildCommand": "npm run build"
 }

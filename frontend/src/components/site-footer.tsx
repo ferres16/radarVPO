@@ -17,12 +17,16 @@ export function SiteFooter() {
         <div>
           <p className="site-footer__brand">Radar VPO</p>
           <p className="site-footer__tagline">
-            La plataforma de referencia para detectar y preparar tu solicitud VPO en Cataluña.
+            Vivienda pública y protegida (VPO/HPO) en Cataluña: promociones, lanzamientos y actualidad en un solo sitio.
           </p>
         </div>
         <nav className="site-footer__nav" aria-label="Enlaces del sitio">
           {primaryNavLinks.map((link) => (
-            <Link key={link.href} href={link.href}>
+            <Link
+              key={link.href}
+              href={link.href}
+              className={link.emphasis === 'secondary' ? 'site-footer__nav-link--secondary' : undefined}
+            >
               {link.mobileLabel ?? link.label}
             </Link>
           ))}

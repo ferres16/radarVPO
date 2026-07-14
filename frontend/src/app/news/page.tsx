@@ -12,11 +12,11 @@ import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 import { proHref } from '@/lib/pro';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Noticias de vivienda protegida y pública',
+  title: 'Noticias de vivienda pública en Cataluña',
   description:
-    'Actualidad sobre vivienda protegida, vivienda pública, ayudas, normativa, adjudicaciones y promociones VPO/HPO en Cataluña.',
+    'Actualidad sobre vivienda pública y protegida en Cataluña: ayudas, normativa, adjudicaciones y promociones VPO/HPO.',
   path: '/news',
-  keywords: ['vivienda social cataluña', 'adjudicaciones vivienda protegida', 'noticias vivienda pública'],
+  keywords: ['vivienda pública cataluña', 'vivienda publica catalunya', 'noticias vivienda pública', 'vivienda social cataluña'],
 });
 
 export default async function NewsPage({

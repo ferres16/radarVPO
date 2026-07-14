@@ -4,12 +4,13 @@ export const siteConfig = {
   name: 'Radar VPO',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.radarvpo.com',
   locale: 'es_ES',
-  title: 'Radar VPO | Próximos lanzamientos y promociones de vivienda protegida',
+  title: 'Radar VPO | Vivienda pública Cataluña — promociones VPO y lanzamientos',
   description:
-    'Consulta promociones y próximos lanzamientos gratis. VPO PRO añade avisos por email y SMS, y el curso Guía VPO.',
+    'Vivienda pública y protegida en Cataluña. Consulta promociones VPO/HPO abiertas, próximos lanzamientos y noticias. Avisos por email y SMS con VPO PRO.',
   keywords: [
-    'vivienda protegida cataluña',
     'vivienda pública cataluña',
+    'vivienda publica catalunya',
+    'vivienda protegida cataluña',
     'próximos lanzamientos VPO',
     'promociones publicadas VPO',
     'pisos protegidos cataluña',
@@ -92,11 +93,8 @@ export function websiteJsonLd() {
     '@type': 'WebSite',
     name: siteConfig.name,
     url: siteConfig.url,
-    potentialAction: {
-      '@type': 'SearchAction',
-      target: `${absoluteUrl('/promotions')}?q={search_term_string}`,
-      'query-input': 'required name=search_term_string',
-    },
+    description: siteConfig.description,
+    inLanguage: 'es-ES',
   };
 }
 

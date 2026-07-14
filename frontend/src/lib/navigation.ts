@@ -2,6 +2,7 @@ export type NavLink = {
   href: string;
   label: string;
   mobileLabel?: string;
+  emphasis?: 'primary' | 'secondary';
 };
 
 export const primaryNavLinks: NavLink[] = [
@@ -9,6 +10,7 @@ export const primaryNavLinks: NavLink[] = [
   { href: '/cursos', label: 'Cursos' },
   { href: '/alerts', label: 'Próximos Lanzamientos', mobileLabel: 'Lanzamientos' },
   { href: '/promotions', label: 'Promociones Publicadas', mobileLabel: 'Publicadas' },
+  { href: '/news', label: 'Noticias', mobileLabel: 'Noticias', emphasis: 'secondary' },
   { href: '/acompanamiento', label: 'Acompañamiento', mobileLabel: 'Acompañamiento' },
 ];
 

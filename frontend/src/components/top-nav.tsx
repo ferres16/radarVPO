@@ -104,19 +104,24 @@ export function TopNav() {
         <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Navegación principal">
           {primaryLinks.map((link) => {
             const active = isActive(link.href);
+            const secondary = link.emphasis === 'secondary';
             return (
             <Link
               key={link.href}
               href={link.href}
               aria-current={active ? 'page' : undefined}
-              className={`relative rounded-full px-2.5 py-2 text-[13px] font-semibold transition duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-3 xl:text-sm ${
-                active
-                  ? 'bg-[rgba(22,112,85,0.10)] text-[var(--green-700)]'
-                  : 'text-[var(--ink)] hover:bg-white/80'
+              className={`relative rounded-full px-2.5 py-2 transition duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-3 ${
+                secondary
+                  ? `text-[12px] font-medium ${active ? 'text-[var(--green-700)]' : 'text-[var(--ink-soft)] hover:text-[var(--ink)]'}`
+                  : `text-[13px] font-semibold xl:text-sm ${
+                      active
+                        ? 'bg-[rgba(22,112,85,0.10)] text-[var(--green-700)]'
+                        : 'text-[var(--ink)] hover:bg-white/80'
+                    }`
               }`}
             >
               {link.label}
-              {active ? <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[var(--cyan-500)]" /> : null}
+              {active && !secondary ? <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[var(--cyan-500)]" /> : null}
             </Link>
             );
           })}
@@ -234,21 +239,28 @@ export function TopNav() {
                 </Link>
               )}
             </li>
-            {primaryLinks.map((link) => (
+            {primaryLinks.map((link) => {
+              const secondary = link.emphasis === 'secondary';
+              return (
               <li key={link.href}>
                 <Link
                   href={link.href}
-                  className={`block rounded-2xl border px-4 py-3 text-sm font-semibold transition ${
-                    isActive(link.href)
-                      ? 'border-[rgba(22,112,85,0.22)] bg-[var(--bg-eco)] text-[var(--green-700)]'
-                      : 'border-[var(--stroke)] bg-[var(--bg-app)] text-[var(--ink)]'
+                  className={`block rounded-2xl border px-4 py-3 text-sm transition ${
+                    secondary
+                      ? isActive(link.href)
+                        ? 'border-[rgba(22,112,85,0.18)] bg-[var(--bg-eco)]/70 font-medium text-[var(--green-700)]'
+                        : 'border-[var(--stroke)] bg-white font-medium text-[var(--ink-soft)]'
+                      : isActive(link.href)
+                        ? 'border-[rgba(22,112,85,0.22)] bg-[var(--bg-eco)] font-semibold text-[var(--green-700)]'
+                        : 'border-[var(--stroke)] bg-[var(--bg-app)] font-semibold text-[var(--ink)]'
                   }`}
                   onClick={() => setMobileOpen(false)}
                 >
                   {link.mobileLabel ?? link.label}
                 </Link>
               </li>
-            ))}
+              );
+            })}
             {me ? (
               <li>
                 <Link

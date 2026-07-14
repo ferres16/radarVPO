@@ -14,11 +14,13 @@ import { proHref, proPlan } from '@/lib/pro';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Alertas VPO y vivienda protegida en Cataluña — llega antes con VPO PRO',
+  title: 'Vivienda pública Cataluña — promociones VPO, lanzamientos y alertas',
   description:
-    'Consulta promociones y próximos lanzamientos gratis. Con VPO PRO recibes avisos por email y SMS, y el curso Guía VPO.',
+    'Encuentra vivienda pública y protegida en Cataluña. Promociones VPO/HPO abiertas, próximos lanzamientos, noticias y avisos por email y SMS con VPO PRO.',
   path: '/',
   keywords: [
+    'vivienda pública cataluña',
+    'vivienda publica catalunya',
     'vivienda protegida Cataluña',
     'VPO Cataluña',
     'HPO Cataluña',
@@ -45,11 +47,11 @@ export default async function Home() {
               <div className="lp-hero__inner order-2 md:order-1">
                 <span className="lp-hero__badge">VPO PRO · Cataluña</span>
                 <h1 id="hero-title" className="lp-hero__title">
-                  Llega antes
-                  <span className="lp-hero__title-accent"> a cada promoción VPO.</span>
+                  Vivienda pública en Cataluña.
+                  <span className="lp-hero__title-accent"> Llega antes a cada promoción VPO.</span>
                 </h1>
                 <p className="lp-hero__subtitle">
-                  Gratis consultas promociones y lanzamientos en la web. Con PRO recibes avisos por email y SMS, y el curso Guía VPO.
+                  Promociones abiertas, próximos lanzamientos y noticias de vivienda protegida (VPO/HPO). Gratis en la web; con PRO, avisos por email y SMS y el curso Guía VPO.
                 </p>
                 <div className="lp-hero__actions lp-hero__actions--stack">
                   <ButtonLink href={proHref} size="lg" block>
