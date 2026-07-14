@@ -22,11 +22,7 @@ export function SiteFooter() {
         </div>
         <nav className="site-footer__nav" aria-label="Enlaces del sitio">
           {primaryNavLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={link.emphasis === 'secondary' ? 'site-footer__nav-link--secondary' : undefined}
-            >
+            <Link key={link.href} href={link.href}>
               {link.mobileLabel ?? link.label}
             </Link>
           ))}

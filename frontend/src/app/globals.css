@@ -1706,11 +1706,6 @@ h3,
   color: var(--green-700);
 }
 
-.site-footer__nav-link--secondary {
-  font-size: 0.8125rem;
-  color: rgba(92, 103, 120, 0.85);
-}
-
 .site-footer__cta {
   display: flex;
   flex-direction: column;
