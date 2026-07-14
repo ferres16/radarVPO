@@ -178,16 +178,18 @@ enum ServiceType {
 }
 
 model User {
-  id            String              @id @default(cuid())
-  email         String              @unique
-  fullName      String              @map("full_name")
-  phone         String              @map("phone")
-  passwordHash  String              @map("password_hash")
-  role          UserRole            @default(user)
-  plan          UserPlan            @default(free)
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
-  lastLoginAt   DateTime?           @map("last_login_at")
+  id                         String              @id @default(cuid())
+  email                      String              @unique
+  fullName                   String              @map("full_name")
+  phone                      String              @map("phone")
+  passwordHash               String              @map("password_hash")
+  role                       UserRole            @default(user)
+  plan                       UserPlan            @default(free)
+  stripeCustomerId           String?             @map("stripe_customer_id")
+  proCancellationRequestedAt DateTime?           @map("pro_cancellation_requested_at")
+  createdAt                  DateTime            @default(now()) @map("created_at")
+  updatedAt                  DateTime            @updatedAt @map("updated_at")
+  lastLoginAt                DateTime?           @map("last_login_at")
   sessions      Session[]
   savedSearches SavedSearch[]
   alerts        UserAlert[]

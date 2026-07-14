@@ -10,7 +10,8 @@ import { CourseTipTapRenderer } from '@/components/course-tiptap-renderer';
 import { CollapsePanel } from '@/components/collapse-panel';
 import { filterLessonResourcesForDisplay } from '@/lib/course-lesson-resources';
 import { api } from '@/lib/api';
-import { proHref, proPlan } from '@/lib/pro';
+import { ProCta, ProCtaLink } from '@/components/pro/pro-cta';
+import { proPlan } from '@/lib/pro';
 import type { Course, CourseLesson, CourseModule } from '@/types';
 
 type LessonPayload = {
@@ -161,9 +162,7 @@ export default function LessonPage() {
               {locked ? (
                 <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900 md:mt-4">
                   Esta lección está incluida en {proPlan.name}. Actívalo para continuar.
-                  <Link href={proHref} className="ml-2 font-semibold underline">
-                    {proPlan.ctaLabel}
-                  </Link>
+                  <ProCtaLink className="ml-2 font-semibold underline" />
                 </div>
               ) : null}
             </header>
@@ -174,12 +173,7 @@ export default function LessonPage() {
                 <p className="mt-2 text-sm leading-6 text-amber-900 md:text-base">
                   Esta lección existe, pero el contenido solo se entrega cuando el acceso del usuario está activo.
                 </p>
-                <Link
-                  href={proHref}
-                  className="mt-4 inline-flex rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-semibold text-white"
-                >
-                  {proPlan.ctaLabel}
-                </Link>
+                <ProCta className="mt-4 inline-flex rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-semibold text-white" />
               </article>
             ) : (
               <article className="mt-4 md:mt-6 lg:mx-auto lg:max-w-3xl">

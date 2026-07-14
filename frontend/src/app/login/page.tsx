@@ -3,8 +3,9 @@
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { proHref, proPlan, proExclusiveFeatures } from '@/lib/pro';
-import { ButtonLink, FormField } from '@/components/design-system';
+import { proExclusiveFeatures } from '@/lib/pro';
+import { ProCta } from '@/components/pro/pro-cta';
+import { FormField } from '@/components/design-system';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -89,9 +90,7 @@ export default function LoginPage() {
               ))}
             </ul>
             <div className="mt-6">
-              <ButtonLink href={proHref} variant="secondary" block className="!border-white/20 !bg-white !text-[var(--ink)]">
-                {proPlan.ctaLabel}
-              </ButtonLink>
+              <ProCta variant="secondary" block className="!border-white/20 !bg-white !text-[var(--ink)]" />
             </div>
           </aside>
         </section>

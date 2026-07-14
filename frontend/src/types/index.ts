@@ -28,7 +28,34 @@ export type UserProfile = {
   phone?: string | null;
   role: string;
   plan: string;
+  createdAt?: string;
   lastLoginAt?: string | null;
+  proAccess?: {
+    hasAccess: boolean;
+    status: 'active' | 'inactive' | 'cancel_pending' | 'canceled' | 'expired';
+    activatedAt: string | null;
+    nextRenewalAt: string | null;
+    cancellationRequestedAt: string | null;
+    canManageViaStripe: boolean;
+    managementMethod: 'stripe_portal' | 'manual_request' | null;
+  };
+};
+
+export type UserCourseProgress = {
+  id: string;
+  slug: string;
+  title: string;
+  shortDescription?: string | null;
+  coverImage?: string | null;
+  progressPercent: number;
+  completedLessons: number;
+  totalLessons: number;
+  isCompleted: boolean;
+  lastLesson: {
+    id: string;
+    title: string;
+    slug: string;
+  } | null;
 };
 
 export type PromotionDocument = {

@@ -1,43 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { primaryNavLinks } from '@/lib/navigation';
-import { proHref, proPlan } from '@/lib/pro';
-import type { UserProfile } from '@/types';
+import { ProCtaLink } from '@/components/pro/pro-cta';
+import { useProAccess } from '@/components/pro-access-provider';
 
 const primaryLinks = primaryNavLinks;
 
 export function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [me, setMe] = useState<UserProfile | null>(null);
+  const { me, hasPro } = useProAccess();
   const router = useRouter();
   const pathname = usePathname();
-  const proIsExternal = /^https?:\/\//.test(proHref);
-
-  useEffect(() => {
-    let active = true;
-
-    (async () => {
-      try {
-        const profile = await api.getMe();
-        if (active) {
-          setMe(profile);
-        }
-      } catch {
-        if (active) {
-          setMe(null);
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [pathname]);
 
   const initials = useMemo(() => {
     if (!me?.fullName) return me?.email?.slice(0, 2).toUpperCase() || 'RV';
@@ -123,23 +101,9 @@ export function TopNav() {
         </nav>
 
         <nav className="hidden items-center gap-2 md:flex" aria-label="Acceso de usuario">
-          {proIsExternal ? (
-            <a
-              href={proHref}
-              className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-black text-white shadow-card transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              {proPlan.ctaLabel}
-            </a>
-          ) : (
-            <Link
-              href={proHref}
-              className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-black text-white shadow-card transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
-            >
-              {proPlan.ctaLabel}
-            </Link>
-          )}
+          {!hasPro ? (
+            <ProCtaLink className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-black text-white shadow-card transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
+          ) : null}
           {me ? (
             <div className="relative">
               <button
@@ -213,27 +177,11 @@ export function TopNav() {
           aria-label="Navegación móvil"
         >
           <ul className="space-y-2">
-            <li>
-              {proIsExternal ? (
-                <a
-                  href={proHref}
-                  className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-black text-white"
-                  onClick={() => setMobileOpen(false)}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  {proPlan.ctaLabel}
-                </a>
-              ) : (
-                <Link
-                  href={proHref}
-                  className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-black text-white"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  {proPlan.ctaLabel}
-                </Link>
-              )}
-            </li>
+            {!hasPro ? (
+              <li>
+                <ProCtaLink className="block rounded-2xl bg-[var(--green-700)] px-4 py-3 text-center text-sm font-black text-white" />
+              </li>
+            ) : null}
             {primaryLinks.map((link) => (
               <li key={link.href}>
                 <Link

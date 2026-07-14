@@ -15,6 +15,8 @@ import { ServicesModule } from './services/services.module';
 import { BackofficeModule } from './backoffice/backoffice.module';
 import { JobsModule } from './jobs/jobs.module';
 import { HealthModule } from './health/health.module';
+import { ProAccessModule } from './common/pro-access/pro-access.module';
+import { BillingModule } from './billing/billing.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
 
@@ -42,6 +44,8 @@ import { RequestLoggingInterceptor } from './common/interceptors/request-logging
     BackofficeModule,
     JobsModule,
     HealthModule,
+    ProAccessModule,
+    BillingModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

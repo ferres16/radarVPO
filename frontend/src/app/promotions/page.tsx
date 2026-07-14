@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
-import { proHref, proPlan } from '@/lib/pro';
 import { PromotionCard } from '@/components/promotion-card';
 import { InlineAdCard } from '@/components/ads';
 import { PublicPage, PublicPageHero, PublicProBanner, PublicSection } from '@/components/conversion/public-shell';
+import { PublicHeroProActions, PublicInlineProCta } from '@/components/conversion/public-pro-actions';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
 import { hasPublicFicha } from '@/lib/promotion-access';
@@ -38,14 +38,10 @@ export default async function PromotionsPage() {
         titleAccent="con plazos y requisitos"
         description={copy.publishedPromotionsDesc}
         actions={
-          <div className="lp-hero__actions lp-hero__actions--stack">
-            <ButtonLink href={proHref} size="lg" block>
-              {proPlan.ctaLabel}
-            </ButtonLink>
-            <ButtonLink href="/alerts" variant="secondary" size="lg" block>
-              Ver lanzamientos
-            </ButtonLink>
-          </div>
+          <PublicHeroProActions
+            secondaryHref="/alerts"
+            secondaryLabel="Ver lanzamientos"
+          />
         }
       />
 
@@ -60,7 +56,7 @@ export default async function PromotionsPage() {
               Consulta próximos lanzamientos o activa VPO PRO para avisos por email y SMS, y el curso Guía VPO.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>
+              <PublicInlineProCta />
               <ButtonLink href="/alerts" variant="secondary" size="lg">Ver próximos lanzamientos</ButtonLink>
             </div>
           </div>
@@ -86,7 +82,7 @@ export default async function PromotionsPage() {
           description="Con VPO PRO recibes avisos por email y SMS, y acceso al curso Guía VPO."
         />
         <div className="mt-4">
-          <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>
+          <PublicInlineProCta />
         </div>
       </PublicSection>
     </PublicPage>

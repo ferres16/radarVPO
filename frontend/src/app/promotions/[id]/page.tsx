@@ -4,7 +4,8 @@ import type { ReactNode } from 'react';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { hasPublicFicha, isAlertPromotion } from '@/lib/promotion-access';
-import { proHref, proPlan } from '@/lib/pro';
+import { proPlan } from '@/lib/pro';
+import { ProCta } from '@/components/pro/pro-cta';
 import { InlineAdCard } from '@/components/ads';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { ProComparison } from '@/components/pro-comparison';
@@ -290,7 +291,7 @@ export default async function PromotionDetailPage({
               Con {proPlan.name} recibes avisos por email y SMS, y el curso Guía VPO.
             </p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <ButtonLink href={proHref}>{proPlan.ctaLabel}</ButtonLink>
+              <ProCta />
               <ButtonLink href="/alerts" variant="secondary">Ver próximos lanzamientos</ButtonLink>
             </div>
           </div>

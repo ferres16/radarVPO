@@ -182,6 +182,7 @@ export const api = {
   getNews: () => request<NewsItem[]>('/news'),
   getNewsById: (id: string) => request<NewsItem & { rawText?: string }>(`/news/${id}`),
   getMe: () => request<UserProfile>('/users/me'),
+  getMyCourses: () => request<import('@/types').UserCourseProgress[]>('/users/me/courses'),
   getMyAccess: () => request<UserAccessSummary>('/users/access'),
   getFavorites: () => request<Array<{ id: string; promotion: Promotion }>>('/promotions/user/favorites'),
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
@@ -590,9 +591,17 @@ export const api = {
       body: JSON.stringify({ email, password, fullName, phone }),
     });
   },
-  updateMe: (payload: Pick<UserProfile, 'fullName'>) =>
+  updateMe: (payload: { fullName?: string; phone?: string }) =>
     request<UserProfile>('/users/me', {
       method: 'PATCH',
       body: JSON.stringify(payload),
+    }),
+  createBillingPortalSession: () =>
+    request<{ url: string }>('/billing/create-portal-session', {
+      method: 'POST',
+    }),
+  requestProCancellation: () =>
+    request<{ success: true }>('/billing/request-cancellation', {
+      method: 'POST',
     }),
 };

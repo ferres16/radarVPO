@@ -1,7 +1,8 @@
-import Link from 'next/link';
+'use client';
+
 import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
+import { ProCtaLink } from '@/components/pro/pro-cta';
 import { getDaysRemaining } from '@/lib/alert-countdown';
-import { proHref } from '@/lib/pro';
 import type { Promotion } from '@/types';
 
 export function AlertTimeline({ alerts }: { alerts: Promotion[] }) {
@@ -21,9 +22,10 @@ export function AlertTimeline({ alerts }: { alerts: Promotion[] }) {
               <h3 className="mt-3 text-base font-bold leading-snug text-[var(--ink)]">{alert.title}</h3>
               <p className="mt-1 text-sm text-[var(--ink-soft)]">{alert.municipality || 'Cataluña'}</p>
               <div className="mt-auto pt-4">
-                <Link href={proHref} className="btn btn--primary min-h-11 w-full px-4 py-2.5 text-sm">
-                  Avisarme con VPO PRO
-                </Link>
+                <ProCtaLink
+                  className="btn btn--primary min-h-11 w-full px-4 py-2.5 text-sm"
+                  label="Avisarme con VPO PRO"
+                />
               </div>
             </div>
           </article>

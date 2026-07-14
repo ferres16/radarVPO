@@ -3,12 +3,14 @@ import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
 import { CourseProductCard } from '@/components/course-product-card';
 import { PublicCtaBand, PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
+import { PublicHeroProActions } from '@/components/conversion/public-pro-actions';
+import { ProCta } from '@/components/pro/pro-cta';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { HorizontalRail, HorizontalRailItem } from '@/components/saas/horizontal-rail';
 import { TrustMetrics } from '@/components/saas/trust-metrics';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
-import { proHref, proPlan } from '@/lib/pro';
+import { proPlan } from '@/lib/pro';
 
 export const metadata: Metadata = createMetadata({
   title: 'Cursos VPO — Formación para conseguir vivienda protegida',
@@ -42,14 +44,10 @@ export default async function CoursesPage() {
         titleAccent="para conseguir tu vivienda"
         description="No es una tienda de PDFs. Es una academia práctica para entender requisitos, documentación y estrategia antes del plazo."
         actions={
-          <div className="lp-hero__actions lp-hero__actions--stack">
-            <ButtonLink href={proHref} size="lg" block>
-              {proPlan.ctaLabel}
-            </ButtonLink>
-            <ButtonLink href="/acompanamiento" variant="secondary" size="lg" block>
-              Solicitar acompañamiento
-            </ButtonLink>
-          </div>
+          <PublicHeroProActions
+            secondaryHref="/acompanamiento"
+            secondaryLabel="Solicitar acompañamiento"
+          />
         }
       />
 
@@ -123,9 +121,7 @@ export default async function CoursesPage() {
       )}
 
       <PublicCtaBand title="Activa VPO PRO: avisos y Guía VPO" description={`${proPlan.price} · avisos por email y SMS, y curso Guía VPO incluido`}>
-        <ButtonLink href={proHref} size="lg" block>
-          {proPlan.ctaLabel}
-        </ButtonLink>
+        <ProCta size="lg" block />
         <ButtonLink href="/alerts" variant="secondary" size="lg" block>
           Ver próximos lanzamientos
         </ButtonLink>

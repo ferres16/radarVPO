@@ -848,4 +848,53 @@ export class CoursesService {
       ),
     }));
   }
+
+  async listAccessibleCoursesWithProgress(userId: string) {
+    const courses = await this.listCoursesForUser(userId);
+    const accessible = courses.filter((course) => course.access?.canAccess);
+
+    if (accessible.length === 0) {
+      return [];
+    }
+
+    const courseIds = accessible.map((course) => course.id);
+    const progresses = await this.prisma.courseProgress.findMany({
+      where: { userId, courseId: { in: courseIds } },
+      include: {
+        lastLesson: {
+          select: { id: true, title: true, slug: true },
+        },
+      },
+    });
+
+    const progressByCourseId = new Map(
+      progresses.map((progress) => [progress.courseId, progress]),
+    );
+
+    return accessible.map((course) => {
+      const progress = progressByCourseId.get(course.id);
+      const isCompleted = progress
+        ? progress.progressPercent >= 100 && progress.totalLessons > 0
+        : false;
+
+      return {
+        id: course.id,
+        slug: course.slug,
+        title: course.title,
+        shortDescription: course.shortDescription,
+        coverImage: course.coverImage,
+        progressPercent: progress?.progressPercent ?? 0,
+        completedLessons: progress?.completedLessons ?? 0,
+        totalLessons: progress?.totalLessons ?? 0,
+        isCompleted,
+        lastLesson: progress?.lastLesson
+          ? {
+              id: progress.lastLesson.id,
+              title: progress.lastLesson.title,
+              slug: progress.lastLesson.slug,
+            }
+          : null,
+      };
+    });
+  }
 }

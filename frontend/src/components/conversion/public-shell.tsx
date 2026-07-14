@@ -1,7 +1,9 @@
+'use client';
+
 import type { ReactNode } from 'react';
 import { Reveal } from '@/components/motion-primitives';
-import { ButtonLink } from '@/components/design-system';
-import { proHref, proPlan } from '@/lib/pro';
+import { ProCta, ProGate } from '@/components/pro/pro-cta';
+import { proPlan } from '@/lib/pro';
 
 export function PublicPage({ children, className }: { children: ReactNode; className?: string }) {
   return <main className={['lp', 'lp--inner', 'lp--app', className].filter(Boolean).join(' ')}>{children}</main>;
@@ -81,20 +83,20 @@ export function PublicProBanner({
   animated?: boolean;
 }) {
   const content = (
-    <div className="shell">
-      <aside className="public-pro-banner">
-        <div>
-          <p className="public-pro-banner__label">{proPlan.name}</p>
-          <p className="public-pro-banner__title">{title}</p>
+    <ProGate>
+      <div className="shell">
+        <aside className="public-pro-banner">
+          <div>
+            <p className="public-pro-banner__label">{proPlan.name}</p>
+            <p className="public-pro-banner__title">{title}</p>
             <p className="public-pro-banner__text">
               {description || `Avisos por email y SMS, y curso Guía VPO incluido. ${proPlan.price}`}
             </p>
-        </div>
-        <ButtonLink href={proHref} size="lg">
-          {proPlan.ctaLabel}
-        </ButtonLink>
-      </aside>
-    </div>
+          </div>
+          <ProCta size="lg" />
+        </aside>
+      </div>
+    </ProGate>
   );
 
   if (!animated) {
@@ -114,18 +116,20 @@ export function PublicCtaBand({
   children: ReactNode;
 }) {
   return (
-    <Reveal>
-      <section className="lp-section lp-section--border">
-        <div className="shell">
-          <div className="public-cta-band">
-            <div>
-              <h2 className="lp-title lp-title--sm">{title}</h2>
-              {description ? <p className="lp-lead">{description}</p> : null}
+    <ProGate>
+      <Reveal>
+        <section className="lp-section lp-section--border">
+          <div className="shell">
+            <div className="public-cta-band">
+              <div>
+                <h2 className="lp-title lp-title--sm">{title}</h2>
+                {description ? <p className="lp-lead">{description}</p> : null}
+              </div>
+              <div className="public-cta-band__actions">{children}</div>
             </div>
-            <div className="public-cta-band__actions">{children}</div>
           </div>
-        </div>
-      </section>
-    </Reveal>
+        </section>
+      </Reveal>
+    </ProGate>
   );
 }

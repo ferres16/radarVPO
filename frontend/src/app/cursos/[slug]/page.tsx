@@ -15,7 +15,8 @@ import { PublicPage } from '@/components/conversion/public-shell';
 import { StructuredData } from '@/components/structured-data';
 import { buildCourseAccessTargets } from '@/lib/course-access-targets';
 import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
-import { proHref, proPlan } from '@/lib/pro';
+import { CourseProUnlockCta } from '@/components/course-pro-unlock-cta';
+import { proPlan } from '@/lib/pro';
 import type { Course } from '@/types';
 
 const isOnSale = (salePrice?: string | number | null) => {
@@ -233,9 +234,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                   className="flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
                 />
                 {includedInPro ? (
-                  <ButtonLink href={proHref} variant="secondary" className="w-full !border-white/20 !bg-white/10 !text-white">
-                    {proPlan.ctaLabel}
-                  </ButtonLink>
+                  <CourseProUnlockCta className="w-full !border-white/20 !bg-white/10 !text-white" block />
                 ) : null}
               </div>
             </aside>

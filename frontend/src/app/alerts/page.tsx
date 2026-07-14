@@ -1,10 +1,9 @@
-import Link from 'next/link';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
-import { proHref, proPlan } from '@/lib/pro';
 import { PublicPage, PublicPageHero, PublicProBanner, PublicSection } from '@/components/conversion/public-shell';
-import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { PublicHeroProActions, PublicInlineProCta, PublicProSection } from '@/components/conversion/public-pro-actions';
+import { SectionHeader, SurfaceCard } from '@/components/design-system';
 import { AlertTimeline } from '@/components/saas/alert-timeline';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
@@ -36,14 +35,10 @@ export default async function AlertsPage() {
         titleAccent="antes de que se publique"
         description="Monitorizamos señales de vivienda protegida en Cataluña. Gratis puedes consultar lanzamientos en la web; con VPO PRO recibes avisos por SMS y email."
         actions={
-          <div className="lp-hero__actions lp-hero__actions--stack">
-            <ButtonLink href={proHref} size="lg" block>
-              {proPlan.ctaLabel}
-            </ButtonLink>
-            <ButtonLink href="/promotions" variant="secondary" size="lg" block>
-              Ver publicadas
-            </ButtonLink>
-          </div>
+          <PublicHeroProActions
+            secondaryHref="/promotions"
+            secondaryLabel="Ver publicadas"
+          />
         }
       />
 
@@ -60,7 +55,7 @@ export default async function AlertsPage() {
             <span className="empty-illus__icon" aria-hidden="true">⏱</span>
             <p className="mt-4 text-sm text-[var(--ink-soft)]">Sin lanzamientos previstos visibles ahora mismo.</p>
             <div className="mt-6">
-              <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>
+              <PublicInlineProCta />
             </div>
           </SurfaceCard>
         ) : (
@@ -75,12 +70,7 @@ export default async function AlertsPage() {
           title="¿Por qué activar VPO PRO?"
           description="La web es gratis para consultar. PRO añade avisos por email y SMS, y el curso Guía VPO."
         />
-        <div className="mt-4 flex flex-wrap gap-3">
-          <ButtonLink href={proHref} size="lg">{proPlan.ctaLabel}</ButtonLink>
-          <Link href="/register?intent=pro" className="btn btn--secondary btn--lg min-h-11">
-            Crear cuenta
-          </Link>
-        </div>
+        <PublicProSection />
       </PublicSection>
     </PublicPage>
   );

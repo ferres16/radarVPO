@@ -14,17 +14,8 @@ export class UsersController {
   @Get('me')
   @ApiCookieAuth('access_token')
   @UseGuards(JwtAuthGuard)
-  async me(@CurrentUser() user: CurrentUserPayload) {
-    const found = await this.usersService.findById(user.sub);
-    return {
-      id: found.id,
-      email: found.email,
-      fullName: found.fullName,
-      phone: found.phone,
-      role: found.role,
-      plan: found.plan,
-      lastLoginAt: found.lastLoginAt,
-    };
+  me(@CurrentUser() user: CurrentUserPayload) {
+    return this.usersService.getProfileWithProAccess(user.sub);
   }
 
   @Patch('me')
@@ -34,25 +25,23 @@ export class UsersController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateProfileDto,
   ) {
-    const updated = await this.usersService.updateProfile(
-      user.sub,
-      dto.fullName ?? null,
-    );
-    return {
-      id: updated.id,
-      email: updated.email,
-      fullName: updated.fullName,
-      phone: updated.phone,
-      role: updated.role,
-      plan: updated.plan,
-      lastLoginAt: updated.lastLoginAt,
-    };
+    return this.usersService.updateProfileWithProAccess(user.sub, {
+      fullName: dto.fullName ?? null,
+      phone: dto.phone ?? null,
+    });
+  }
+
+  @Get('me/courses')
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  myCourses(@CurrentUser() user: CurrentUserPayload) {
+    return this.usersService.getMyCourses(user.sub);
   }
 
   @Get('access')
   @ApiCookieAuth('access_token')
   @UseGuards(JwtAuthGuard)
-  async access(@CurrentUser() user: CurrentUserPayload) {
+  access(@CurrentUser() user: CurrentUserPayload) {
     return this.usersService.getAccessSummary(user.sub);
   }
 }

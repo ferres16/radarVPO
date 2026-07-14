@@ -4,13 +4,12 @@ import { FeaturedCourseSpotlight } from '@/components/conversion/featured-course
 import { HomeFaq } from '@/components/conversion/home-faq';
 import { HomeTestimonials } from '@/components/conversion/home-testimonials';
 import { HeroProof } from '@/components/conversion/hero-proof';
-import { ButtonLink } from '@/components/design-system';
+import { HomeFinalCtaBand, HomeHeroActions, HomeHeroPriceLine, HomeSolutionCta } from '@/components/conversion/home-pro-ctas';
 import { ProComparison } from '@/components/pro-comparison';
 import { ProductPreview } from '@/components/saas/product-preview';
 import { TrustMetrics } from '@/components/saas/trust-metrics';
 import { StructuredData } from '@/components/structured-data';
 import { homeFaqs, homeProblemCards, homeSolutionBlocks } from '@/lib/conversion';
-import { proHref, proPlan } from '@/lib/pro';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
@@ -53,15 +52,8 @@ export default async function Home() {
                 <p className="lp-hero__subtitle">
                   Promociones abiertas, próximos lanzamientos y noticias de vivienda protegida (VPO/HPO). Gratis en la web; con PRO, avisos por email y SMS y el curso Guía VPO.
                 </p>
-                <div className="lp-hero__actions lp-hero__actions--stack">
-                  <ButtonLink href={proHref} size="lg" block>
-                    {proPlan.ctaLabel}
-                  </ButtonLink>
-                  <ButtonLink href="/register" variant="secondary" size="lg" block>
-                    Crear cuenta gratis
-                  </ButtonLink>
-                </div>
-                <p className="lp-hero__price">{proPlan.price} · cancela cuando quieras</p>
+                <HomeHeroActions />
+                <HomeHeroPriceLine />
                 <HeroProof />
               </div>
               <div className="order-1 hidden md:block md:order-2">
@@ -114,11 +106,7 @@ export default async function Home() {
                 </article>
               ))}
             </div>
-            <div className="lp-section__cta">
-              <ButtonLink href={proHref} size="lg">
-                {proPlan.ctaLabel}
-              </ButtonLink>
-            </div>
+            <HomeSolutionCta />
           </div>
         </section>
 
@@ -159,20 +147,7 @@ export default async function Home() {
 
         <section className="lp-section lp-section--muted">
           <div className="shell">
-            <div className="public-cta-band">
-              <div>
-                <h2 className="lp-title lp-title--sm">Empieza hoy con VPO PRO</h2>
-                <p className="lp-lead">Avisos por email y SMS, y curso Guía VPO incluido. {proPlan.price}</p>
-              </div>
-              <div className="public-cta-band__actions lp-hero__actions--stack">
-                <ButtonLink href={proHref} size="lg" block>
-                  {proPlan.ctaLabel}
-                </ButtonLink>
-                <ButtonLink href="/register" variant="secondary" size="lg" block>
-                  Crear cuenta gratis
-                </ButtonLink>
-              </div>
-            </div>
+            <HomeFinalCtaBand />
           </div>
         </section>
       </main>

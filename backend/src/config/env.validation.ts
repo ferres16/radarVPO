@@ -214,6 +214,14 @@ class EnvironmentVariables {
   BREVO_PRO_ALERTS_ENABLED?: string;
 
   @IsOptional()
+  @IsString()
+  STRIPE_SECRET_KEY?: string;
+
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  STRIPE_PORTAL_RETURN_URL?: string;
+
+  @IsOptional()
   @IsUrl()
   REGISTRE_NEWS_URL?: string;
 

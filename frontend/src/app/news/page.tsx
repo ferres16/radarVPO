@@ -5,11 +5,11 @@ import { InlineAdCard } from '@/components/ads';
 import { EmptyState } from '@/components/empty-state';
 import { NewsCard } from '@/components/news-card';
 import { PublicPage, PublicSection } from '@/components/conversion/public-shell';
+import { PublicInlineProCta } from '@/components/conversion/public-pro-actions';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { Stagger, StaggerItem } from '@/components/motion-primitives';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
-import { proHref } from '@/lib/pro';
 
 export const metadata: Metadata = createMetadata({
   title: 'Noticias de vivienda pública en Cataluña',
@@ -56,7 +56,7 @@ export default async function NewsPage({
           </p>
           <div className="lp-hero__actions">
             <ButtonLink href="/promotions" size="lg">Ver promociones</ButtonLink>
-            <ButtonLink href={proHref} variant="secondary" size="lg">Activar VPO PRO</ButtonLink>
+            <PublicInlineProCta />
           </div>
         </div>
       </section>

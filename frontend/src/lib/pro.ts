@@ -1,9 +1,25 @@
+export const VPO_PRO_PRICE = {
+  amount: 9.99,
+  currency: 'EUR',
+  interval: 'month' as const,
+};
+
+export function formatProPrice(): string {
+  return new Intl.NumberFormat('es-ES', {
+    style: 'currency',
+    currency: VPO_PRO_PRICE.currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(VPO_PRO_PRICE.amount) + '/mes';
+}
+
 export const proPlan = {
   name: 'VPO PRO',
   brandName: 'Radar VPO',
-  price: 'Desde 7,99 €/mes',
-  priceAmount: 7.99,
-  currency: 'EUR',
+  price: formatProPrice(),
+  priceAmount: VPO_PRO_PRICE.amount,
+  currency: VPO_PRO_PRICE.currency,
+  interval: VPO_PRO_PRICE.interval,
   stripeLink: process.env.NEXT_PUBLIC_STRIPE_PRO_LINK || '',
   fallbackHref: '/register?intent=pro',
   courseLabel: 'Curso Guía VPO',
@@ -13,6 +29,21 @@ export const proPlan = {
 };
 
 export const proHref = proPlan.stripeLink || proPlan.fallbackHref;
+
+export const proActiveMessages = [
+  'Ya formas parte de VPO PRO 🎉',
+  'Buena elección: ya estás un paso por delante.',
+  'VPO PRO activo. Ahora toca no llegar tarde.',
+  'Ya estás dentro. Nosotros vigilamos las promociones.',
+] as const;
+
+export function getProActiveMessage(seed?: string): string {
+  if (!seed) {
+    return proActiveMessages[0];
+  }
+  const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return proActiveMessages[hash % proActiveMessages.length];
+}
 
 export const freePlanFeatures = [
   'Consultar promociones publicadas',

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { api } from '@/lib/api';
+import { hasProAccess } from '@/lib/pro-access';
 import { isSafeExternalCheckoutUrl } from '@/lib/checkout-url';
 import type { CourseAccessType, CoursePricingType } from '@/types';
 
@@ -67,7 +68,7 @@ export function CourseAccessProvider({
         const match = courses.find((course) => course.slug === slug);
         if (match?.access?.canAccess) {
           setCanAccess(true);
-        } else if (accessType === 'pro' && me.plan === 'pro') {
+        } else if (accessType === 'pro' && hasProAccess(me)) {
           setCanAccess(true);
         } else if (accessType === 'free' || pricingType === 'free') {
           setCanAccess(true);

@@ -1,5 +1,7 @@
-import { proComparisonRows, proHref, proPlan, freeVsProDescription, type ProComparisonCell } from '@/lib/pro';
-import { ButtonLink } from './design-system';
+'use client';
+
+import { proComparisonRows, proPlan, freeVsProDescription, type ProComparisonCell } from '@/lib/pro';
+import { ProCta, ProGate } from '@/components/pro/pro-cta';
 
 function ComparisonCell({ value, highlight = false }: { value: ProComparisonCell; highlight?: boolean }) {
   if (typeof value === 'string') {
@@ -93,12 +95,12 @@ export function ProComparison({
         </table>
       </div>
 
-      <div className="compare-block__cta">
-        <ButtonLink href={proHref} size="lg" className="btn--block sm:!w-auto">
-          {proPlan.ctaLabel} · {proPlan.price}
-        </ButtonLink>
-        <p className="compare-block__note">Cancela cuando quieras · Sin permanencia</p>
-      </div>
+      <ProGate>
+        <div className="compare-block__cta">
+          <ProCta size="lg" className="btn--block sm:!w-auto" label={`${proPlan.ctaLabel} · ${proPlan.price}`} />
+          <p className="compare-block__note">Cancela cuando quieras · Sin permanencia</p>
+        </div>
+      </ProGate>
     </section>
   );
 }

@@ -1,7 +1,8 @@
+'use client';
+
 import Link from 'next/link';
 import { homeFaqs } from '@/lib/conversion';
-import { proHref, proPlan } from '@/lib/pro';
-import { ButtonLink } from '@/components/design-system';
+import { ProCta } from '@/components/pro/pro-cta';
 
 export function HomeFaq() {
   return (
@@ -24,9 +25,7 @@ export function HomeFaq() {
         ))}
       </div>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <ButtonLink href={proHref} size="lg" block>
-          {proPlan.ctaLabel}
-        </ButtonLink>
+        <ProCta size="lg" block />
         <Link href="/register" className="btn btn--secondary btn--lg btn--block text-center">
           Crear cuenta gratis
         </Link>

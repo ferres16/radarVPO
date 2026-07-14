@@ -1,8 +1,8 @@
 'use client';
 
-import { proHref, proPlan } from '@/lib/pro';
+import { proPlan } from '@/lib/pro';
 import { CourseAccessLink, useCourseAccess } from '@/components/course-access';
-import { ButtonLink } from '@/components/design-system';
+import { ProCta } from '@/components/pro/pro-cta';
 
 type CourseStickyBuyBarProps = {
   priceLabel: string;
@@ -38,9 +38,7 @@ export function CourseStickyBuyBar({
             className="btn btn--primary btn--sm shrink-0"
           />
           {includedInPro ? (
-            <ButtonLink href={proHref} variant="secondary" className="shrink-0 !min-h-[44px] !px-3 !text-xs">
-              PRO
-            </ButtonLink>
+            <ProCta variant="secondary" className="shrink-0 !min-h-[44px] !px-3 !text-xs" label="PRO" />
           ) : null}
         </div>
       </div>

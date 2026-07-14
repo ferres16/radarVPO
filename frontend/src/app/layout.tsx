@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
 import { PublicAdFrame } from "@/components/ads";
+import { ProAccessProvider } from "@/components/pro-access-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { TopNav } from "@/components/top-nav";
 import { adsConfig } from "@/lib/ads";
@@ -83,11 +84,13 @@ export default function RootLayout({
         ) : null}
       </head>
       <body className="min-h-full flex flex-col pt-[4.25rem] md:pt-20">
-        <TopNav />
-        <div className="flex-1">
-          <PublicAdFrame>{children}</PublicAdFrame>
-        </div>
-        <SiteFooter />
+        <ProAccessProvider>
+          <TopNav />
+          <div className="flex-1">
+            <PublicAdFrame>{children}</PublicAdFrame>
+          </div>
+          <SiteFooter />
+        </ProAccessProvider>
       </body>
     </html>
   );
