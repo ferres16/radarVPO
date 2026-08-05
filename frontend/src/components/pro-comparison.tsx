@@ -32,11 +32,13 @@ export function ProComparison({
   description = freeVsProDescription,
   compact = false,
   showHeader = true,
+  showCta = true,
 }: {
   title?: string;
   description?: string;
   compact?: boolean;
   showHeader?: boolean;
+  showCta?: boolean;
 }) {
   return (
     <section className={compact ? 'compare-block compare-block--compact' : 'compare-block'} aria-labelledby="compare-title">
@@ -95,12 +97,14 @@ export function ProComparison({
         </table>
       </div>
 
-      <ProGate>
-        <div className="compare-block__cta">
-          <ProCta size="lg" className="btn--block sm:!w-auto" label={`${proPlan.ctaLabel} · ${proPlan.price}`} />
-          <p className="compare-block__note">Cancela cuando quieras · Sin permanencia</p>
-        </div>
-      </ProGate>
+      {showCta ? (
+        <ProGate>
+          <div className="compare-block__cta">
+            <ProCta size="lg" className="btn--block sm:!w-auto" label={`${proPlan.ctaLabel} · ${proPlan.price}`} />
+            <p className="compare-block__note">Cancela cuando quieras · Sin permanencia</p>
+          </div>
+        </ProGate>
+      ) : null}
     </section>
   );
 }

@@ -3,8 +3,6 @@
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { proExclusiveFeatures } from '@/lib/pro';
-import { ProCta } from '@/components/pro/pro-cta';
 import { FormField } from '@/components/design-system';
 
 export default function LoginPage() {
@@ -80,18 +78,10 @@ export default function LoginPage() {
 
           <aside className="order-2 border-t border-[var(--stroke)] bg-[var(--ink)] p-5 text-white md:order-1 md:border-t-0 md:border-r md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/70">Radar VPO</p>
-            <h2 className="mt-3 text-xl font-bold leading-tight md:text-2xl">Tu ventaja para conseguir VPO</h2>
+            <h2 className="mt-3 text-xl font-bold leading-tight md:text-2xl">Tu espacio para seguir las VPO</h2>
             <p className="mt-3 text-sm leading-6 text-white/78">
-              Gratis consultas promociones y lanzamientos. PRO añade avisos por email y SMS, y el curso Guía VPO.
+              Accede a tu perfil, cursos activos y las promociones que estás siguiendo.
             </p>
-            <ul className="mt-5 space-y-2 text-sm text-white/85">
-              {proExclusiveFeatures.map((item) => (
-                <li key={item}>✓ {item}</li>
-              ))}
-            </ul>
-            <div className="mt-6">
-              <ProCta variant="secondary" block className="!border-white/20 !bg-white !text-[var(--ink)]" />
-            </div>
           </aside>
         </section>
       </section>

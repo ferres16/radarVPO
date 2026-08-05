@@ -3,8 +3,7 @@ import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { PromotionCard } from '@/components/promotion-card';
 import { InlineAdCard } from '@/components/ads';
-import { PublicPage, PublicPageHero, PublicProBanner, PublicSection } from '@/components/conversion/public-shell';
-import { PublicHeroProActions, PublicInlineProCta } from '@/components/conversion/public-pro-actions';
+import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
 import { hasPublicFicha } from '@/lib/promotion-access';
@@ -38,14 +37,13 @@ export default async function PromotionsPage() {
         titleAccent="con plazos y requisitos"
         description={copy.publishedPromotionsDesc}
         actions={
-          <PublicHeroProActions
-            secondaryHref="/alerts"
-            secondaryLabel="Ver lanzamientos"
-          />
+          <div className="lp-hero__actions lp-hero__actions--stack">
+            <ButtonLink href="/alerts" size="lg" block>
+              Ver próximos lanzamientos
+            </ButtonLink>
+          </div>
         }
       />
-
-      <PublicProBanner animated={false} title="¿No quieres revisar esta página cada día?" className="hidden md:block" />
 
       {visiblePromotions.length === 0 ? (
         <PublicSection animated={false}>
@@ -53,11 +51,10 @@ export default async function PromotionsPage() {
             <span className="empty-illus__icon" aria-hidden="true">◎</span>
             <h2 className="lp-title mt-4 text-xl">No hay promociones publicadas ahora mismo</h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-[var(--ink-soft)]">
-              Consulta próximos lanzamientos o activa VPO PRO para avisos por email y SMS, y el curso Guía VPO.
+              Consulta próximos lanzamientos mientras se publican nuevas convocatorias.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <PublicInlineProCta />
-              <ButtonLink href="/alerts" variant="secondary" size="lg">Ver próximos lanzamientos</ButtonLink>
+              <ButtonLink href="/alerts" size="lg">Ver próximos lanzamientos</ButtonLink>
             </div>
           </div>
         </PublicSection>
@@ -75,16 +72,6 @@ export default async function PromotionsPage() {
           <InlineAdCard className="mt-6" />
         </PublicSection>
       )}
-
-      <PublicSection animated={false} muted border>
-        <SectionHeader
-          title="No revises esta página cada día"
-          description="Con VPO PRO recibes avisos por email y SMS, y acceso al curso Guía VPO."
-        />
-        <div className="mt-4">
-          <PublicInlineProCta />
-        </div>
-      </PublicSection>
     </PublicPage>
   );
 }

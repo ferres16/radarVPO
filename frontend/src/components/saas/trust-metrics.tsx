@@ -1,10 +1,8 @@
-import { formatProPrice } from '@/lib/pro';
-
 const metrics = [
   { value: '120+', label: 'Promociones monitorizadas' },
   { value: '3.2k', label: 'Usuarios activos' },
   { value: '48h', label: 'Antelación media alertas' },
-  { value: formatProPrice(), label: 'VPO PRO al mes' },
+  { value: 'Cat.', label: 'Cobertura Cataluña' },
 ] as const;
 
 export function TrustMetrics() {

@@ -2,21 +2,17 @@ import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { EmptyState } from '@/components/empty-state';
 import { CourseProductCard } from '@/components/course-product-card';
-import { PublicCtaBand, PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
-import { PublicHeroProActions } from '@/components/conversion/public-pro-actions';
-import { ProCta } from '@/components/pro/pro-cta';
+import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { HorizontalRail, HorizontalRailItem } from '@/components/saas/horizontal-rail';
-import { TrustMetrics } from '@/components/saas/trust-metrics';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
-import { proPlan } from '@/lib/pro';
 
 export const metadata: Metadata = createMetadata({
   title: 'Cursos VPO — Formación para conseguir vivienda protegida',
   description: 'Cursos VPO con temario claro, acceso por plan y compra directa. Prepárate antes del plazo.',
   path: '/cursos',
-  keywords: ['curso VPO', 'formación vivienda protegida', 'VPO PRO', 'Cataluña'],
+  keywords: ['curso VPO', 'formación vivienda protegida', 'Cataluña'],
 });
 
 export default async function CoursesPage() {
@@ -40,14 +36,18 @@ export default async function CoursesPage() {
 
       <PublicPageHero
         badge="Academia VPO"
-        title="Formación profesional"
+        title="Formación práctica"
         titleAccent="para conseguir tu vivienda"
-        description="No es una tienda de PDFs. Es una academia práctica para entender requisitos, documentación y estrategia antes del plazo."
+        description="Temario claro para entender requisitos, documentación y estrategia antes del plazo."
         actions={
-          <PublicHeroProActions
-            secondaryHref="/acompanamiento"
-            secondaryLabel="Solicitar acompañamiento"
-          />
+          <div className="lp-hero__actions lp-hero__actions--stack">
+            <ButtonLink href="#catalogo" size="lg" block>
+              Ver cursos
+            </ButtonLink>
+            <ButtonLink href="/acompanamiento" variant="secondary" size="lg" block>
+              Solicitar acompañamiento
+            </ButtonLink>
+          </div>
         }
       />
 
@@ -60,11 +60,8 @@ export default async function CoursesPage() {
             <strong>{totalLessons || '—'}</strong> lecciones
           </span>
           <span className="academy-stat">
-            <strong>PRO</strong> incluye Guía VPO
+            <strong>Guía VPO</strong> incluida en PRO
           </span>
-        </div>
-        <div className="mt-4">
-          <TrustMetrics />
         </div>
       </PublicSection>
 
@@ -78,8 +75,8 @@ export default async function CoursesPage() {
             <PublicSection id="catalogo">
               <SectionHeader
                 eyebrow="Incluido en PRO"
-                title="Curso Guía VPO con VPO PRO"
-                description="Desbloqueado con tu suscripción PRO junto a los avisos por email y SMS."
+                title="Curso Guía VPO"
+                description="Disponible con la suscripción VPO PRO."
               />
               <div className="mt-4 md:hidden">
                 <HorizontalRail>
@@ -99,7 +96,7 @@ export default async function CoursesPage() {
           ) : null}
 
           {premiumCourses.length > 0 ? (
-            <PublicSection muted={proCourses.length > 0}>
+            <PublicSection muted={proCourses.length > 0} id={proCourses.length === 0 ? 'catalogo' : undefined}>
               <SectionHeader eyebrow="Compra directa" title="Programas premium" description="Acceso individual con pago seguro." />
               <div className="mt-4 md:hidden">
                 <HorizontalRail>
@@ -119,13 +116,6 @@ export default async function CoursesPage() {
           ) : null}
         </>
       )}
-
-      <PublicCtaBand title="Activa VPO PRO: avisos y Guía VPO" description={`${proPlan.price} · avisos por email y SMS, y curso Guía VPO incluido`}>
-        <ProCta size="lg" block />
-        <ButtonLink href="/alerts" variant="secondary" size="lg" block>
-          Ver próximos lanzamientos
-        </ButtonLink>
-      </PublicCtaBand>
     </PublicPage>
   );
 }

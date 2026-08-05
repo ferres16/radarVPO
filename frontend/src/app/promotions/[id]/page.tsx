@@ -4,11 +4,8 @@ import type { ReactNode } from 'react';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { hasPublicFicha, isAlertPromotion } from '@/lib/promotion-access';
-import { proPlan } from '@/lib/pro';
-import { ProCta } from '@/components/pro/pro-cta';
 import { InlineAdCard } from '@/components/ads';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
-import { ProComparison } from '@/components/pro-comparison';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
@@ -284,17 +281,6 @@ export default async function PromotionDetailPage({
               </ButtonLink>
             ) : null}
           </div>
-
-          <div className="mt-3 rounded-xl border border-[var(--stroke)] bg-[var(--bg-eco)]/60 p-3.5">
-            <p className="text-sm font-bold text-[var(--ink)]">¿Quieres enterarte del siguiente antes?</p>
-            <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-              Con {proPlan.name} recibes avisos por email y SMS, y el curso Guía VPO.
-            </p>
-            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <ProCta />
-              <ButtonLink href="/alerts" variant="secondary">Ver próximos lanzamientos</ButtonLink>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -446,8 +432,6 @@ export default async function PromotionDetailPage({
       </article>
       </section>
       ) : null}
-
-      <ProComparison compact title="¿Te interesa llegar antes la próxima vez?" />
     </main>
   );
 }

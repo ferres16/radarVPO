@@ -5,7 +5,6 @@ import { InlineAdCard } from '@/components/ads';
 import { EmptyState } from '@/components/empty-state';
 import { NewsCard } from '@/components/news-card';
 import { PublicPage, PublicSection } from '@/components/conversion/public-shell';
-import { PublicInlineProCta } from '@/components/conversion/public-pro-actions';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { Stagger, StaggerItem } from '@/components/motion-primitives';
 import { StructuredData } from '@/components/structured-data';
@@ -56,7 +55,7 @@ export default async function NewsPage({
           </p>
           <div className="lp-hero__actions">
             <ButtonLink href="/promotions" size="lg">Ver promociones</ButtonLink>
-            <PublicInlineProCta />
+            <ButtonLink href="/alerts" variant="secondary" size="lg">Ver lanzamientos</ButtonLink>
           </div>
         </div>
       </section>

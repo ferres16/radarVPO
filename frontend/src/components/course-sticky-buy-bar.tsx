@@ -1,8 +1,6 @@
 'use client';
 
-import { proPlan } from '@/lib/pro';
 import { CourseAccessLink, useCourseAccess } from '@/components/course-access';
-import { ProCta } from '@/components/pro/pro-cta';
 
 type CourseStickyBuyBarProps = {
   priceLabel: string;
@@ -28,6 +26,9 @@ export function CourseStickyBuyBar({
         <div className="min-w-0">
           <p className="course-sticky-buy__label">Acceso al curso</p>
           <p className="course-sticky-buy__price">{priceLabel}</p>
+          {includedInPro ? (
+            <p className="course-sticky-buy__hint">Incluido en VPO PRO</p>
+          ) : null}
         </div>
         <div className="course-sticky-buy__actions">
           <CourseAccessLink
@@ -37,14 +38,8 @@ export function CourseStickyBuyBar({
             accessLabel="Empezar"
             className="btn btn--primary btn--sm shrink-0"
           />
-          {includedInPro ? (
-            <ProCta variant="secondary" className="shrink-0 !min-h-[44px] !px-3 !text-xs" label="PRO" />
-          ) : null}
         </div>
       </div>
-      {includedInPro ? (
-        <p className="course-sticky-buy__hint">Incluido en {proPlan.name} · {proPlan.price}</p>
-      ) : null}
     </div>
   );
 }

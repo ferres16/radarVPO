@@ -3,8 +3,7 @@ import { api } from '@/lib/api';
 import { FeaturedCourseSpotlight } from '@/components/conversion/featured-course-spotlight';
 import { HomeFaq } from '@/components/conversion/home-faq';
 import { HomeTestimonials } from '@/components/conversion/home-testimonials';
-import { HeroProof } from '@/components/conversion/hero-proof';
-import { HomeFinalCtaBand, HomeHeroActions, HomeHeroPriceLine, HomeSolutionCta } from '@/components/conversion/home-pro-ctas';
+import { HomeFinalCtaBand, HomeHeroActions } from '@/components/conversion/home-pro-ctas';
 import { ProComparison } from '@/components/pro-comparison';
 import { ProductPreview } from '@/components/saas/product-preview';
 import { TrustMetrics } from '@/components/saas/trust-metrics';
@@ -15,7 +14,7 @@ import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/
 export const metadata: Metadata = createMetadata({
   title: 'Vivienda pública Cataluña — promociones VPO, lanzamientos y alertas',
   description:
-    'Encuentra vivienda pública y protegida en Cataluña. Promociones VPO/HPO abiertas, próximos lanzamientos, noticias y avisos por email y SMS con VPO PRO.',
+    'Encuentra vivienda pública y protegida en Cataluña. Promociones VPO/HPO abiertas, próximos lanzamientos y noticias.',
   path: '/',
   keywords: [
     'vivienda pública cataluña',
@@ -44,17 +43,15 @@ export default async function Home() {
           <div className="shell">
             <div className="hero-split">
               <div className="lp-hero__inner order-2 md:order-1">
-                <span className="lp-hero__badge">VPO PRO · Cataluña</span>
+                <span className="lp-hero__badge">Vivienda pública · Cataluña</span>
                 <h1 id="hero-title" className="lp-hero__title">
                   Vivienda pública en Cataluña.
                   <span className="lp-hero__title-accent"> Llega antes a cada promoción VPO.</span>
                 </h1>
                 <p className="lp-hero__subtitle">
-                  Promociones abiertas, próximos lanzamientos y noticias de vivienda protegida (VPO/HPO). Gratis en la web; con PRO, avisos por email y SMS y el curso Guía VPO.
+                  Promociones abiertas, próximos lanzamientos y noticias de vivienda protegida (VPO/HPO) en un solo sitio.
                 </p>
                 <HomeHeroActions />
-                <HomeHeroPriceLine />
-                <HeroProof />
               </div>
               <div className="order-1 hidden md:block md:order-2">
                 <ProductPreview />
@@ -106,13 +103,12 @@ export default async function Home() {
                 </article>
               ))}
             </div>
-            <HomeSolutionCta />
           </div>
         </section>
 
         <section className="lp-section">
           <div className="shell">
-            <ProComparison />
+            <ProComparison showCta={false} />
           </div>
         </section>
 
@@ -120,12 +116,12 @@ export default async function Home() {
           <section className="lp-section lp-section--muted" aria-labelledby="courses-title">
             <div className="shell">
               <div className="lp-section__head">
-                <p className="lp-eyebrow">Formación incluida</p>
+                <p className="lp-eyebrow">Formación</p>
                 <h2 id="courses-title" className="lp-title">
                   El curso que te prepara para el plazo
                 </h2>
                 <p className="lp-lead">
-                  Incluido en VPO PRO. El curso Guía VPO te prepara requisitos, documentación y errores frecuentes.
+                  El curso Guía VPO te prepara requisitos, documentación y errores frecuentes.
                 </p>
               </div>
               <FeaturedCourseSpotlight course={featuredCourse} />

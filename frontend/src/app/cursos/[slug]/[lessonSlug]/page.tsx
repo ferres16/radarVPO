@@ -10,7 +10,7 @@ import { CourseTipTapRenderer } from '@/components/course-tiptap-renderer';
 import { CollapsePanel } from '@/components/collapse-panel';
 import { filterLessonResourcesForDisplay } from '@/lib/course-lesson-resources';
 import { api } from '@/lib/api';
-import { ProCta, ProCtaLink } from '@/components/pro/pro-cta';
+import { ProCta } from '@/components/pro/pro-cta';
 import { proPlan } from '@/lib/pro';
 import type { Course, CourseLesson, CourseModule } from '@/types';
 
@@ -161,8 +161,7 @@ export default function LessonPage() {
               </div>
               {locked ? (
                 <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900 md:mt-4">
-                  Esta lección está incluida en {proPlan.name}. Actívalo para continuar.
-                  <ProCtaLink className="ml-2 font-semibold underline" />
+                  Esta lección está incluida en {proPlan.name}.
                 </div>
               ) : null}
             </header>

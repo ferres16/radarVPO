@@ -6,6 +6,7 @@ import { SkeletonCard } from '@/components/skeleton-card';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { Stagger, StaggerItem } from '@/components/motion-primitives';
 import { api } from '@/lib/api';
+import { proHref } from '@/lib/pro';
 import type { Service } from '@/types';
 
 const whatsappContactUrl =
@@ -41,7 +42,7 @@ const fallbackOfferings = [
     copy:
       'VPO PRO añade avisos por email y SMS cuando detectamos lanzamientos o promociones relevantes, e incluye el curso Guía VPO.',
     cta: 'Activar VPO PRO',
-    href: '/register?intent=pro',
+    href: proHref,
     price: null,
     salePrice: null,
     currency: 'EUR',

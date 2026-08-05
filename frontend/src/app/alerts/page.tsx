@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
-import { PublicPage, PublicPageHero, PublicProBanner, PublicSection } from '@/components/conversion/public-shell';
-import { PublicHeroProActions, PublicInlineProCta, PublicProSection } from '@/components/conversion/public-pro-actions';
-import { SectionHeader, SurfaceCard } from '@/components/design-system';
+import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
+import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { AlertTimeline } from '@/components/saas/alert-timeline';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
@@ -13,7 +12,7 @@ export const metadata: Metadata = createMetadata({
   description:
     'Promociones que todavía no han sido publicadas oficialmente pero que podrían aparecer próximamente en Cataluña.',
   path: '/alerts',
-  keywords: ['próximos lanzamientos VPO', 'VPO PRO', 'vivienda protegida Cataluña'],
+  keywords: ['próximos lanzamientos VPO', 'vivienda protegida Cataluña'],
 });
 
 export default async function AlertsPage() {
@@ -33,16 +32,15 @@ export default async function AlertsPage() {
         badge={copy.upcomingLaunches}
         title="Sabe qué puede salir"
         titleAccent="antes de que se publique"
-        description="Monitorizamos señales de vivienda protegida en Cataluña. Gratis puedes consultar lanzamientos en la web; con VPO PRO recibes avisos por SMS y email."
+        description="Monitorizamos señales de vivienda protegida en Cataluña. Consulta aquí los próximos lanzamientos detectados."
         actions={
-          <PublicHeroProActions
-            secondaryHref="/promotions"
-            secondaryLabel="Ver publicadas"
-          />
+          <div className="lp-hero__actions lp-hero__actions--stack">
+            <ButtonLink href="/promotions" size="lg" block>
+              Ver promociones publicadas
+            </ButtonLink>
+          </div>
         }
       />
-
-      <PublicProBanner />
 
       <PublicSection id="lanzamientos">
         <SectionHeader
@@ -55,7 +53,9 @@ export default async function AlertsPage() {
             <span className="empty-illus__icon" aria-hidden="true">⏱</span>
             <p className="mt-4 text-sm text-[var(--ink-soft)]">Sin lanzamientos previstos visibles ahora mismo.</p>
             <div className="mt-6">
-              <PublicInlineProCta />
+              <ButtonLink href="/promotions" size="lg">
+                Ver promociones publicadas
+              </ButtonLink>
             </div>
           </SurfaceCard>
         ) : (
@@ -63,14 +63,6 @@ export default async function AlertsPage() {
             <AlertTimeline alerts={activeAlerts} />
           </div>
         )}
-      </PublicSection>
-
-      <PublicSection muted border>
-        <SectionHeader
-          title="¿Por qué activar VPO PRO?"
-          description="La web es gratis para consultar. PRO añade avisos por email y SMS, y el curso Guía VPO."
-        />
-        <PublicProSection />
       </PublicSection>
     </PublicPage>
   );
