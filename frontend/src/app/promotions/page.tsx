@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { PromotionCard } from '@/components/promotion-card';
 import { InlineAdCard } from '@/components/ads';
+import { AlertsProCtaBand } from '@/components/conversion/alerts-pro-cta-band';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
@@ -35,7 +36,7 @@ export default async function PromotionsPage() {
         badge={copy.publishedPromotions}
         title="Promociones ya abiertas"
         titleAccent="con plazos y requisitos"
-        description={copy.publishedPromotionsDesc}
+        description={`${copy.publishedPromotionsDesc} Con VPO PRO te avisamos por SMS y email de las nuevas.`}
         actions={
           <div className="lp-hero__actions lp-hero__actions--stack">
             <ButtonLink href="/alerts" size="lg" block>
@@ -72,6 +73,14 @@ export default async function PromotionsPage() {
           <InlineAdCard className="mt-6" />
         </PublicSection>
       )}
+
+      <PublicSection animated={false} muted border>
+        <AlertsProCtaBand
+          title="Entérate del siguiente antes"
+          description="Consulta las promociones publicadas gratis. Con VPO PRO recibes avisos por SMS y email cuando detectamos novedades."
+          ctaLabel="Obtener avisos SMS y email"
+        />
+      </PublicSection>
     </PublicPage>
   );
 }

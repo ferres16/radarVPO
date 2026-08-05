@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
+import { AlertsProCtaBand } from '@/components/conversion/alerts-pro-cta-band';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { AlertTimeline } from '@/components/saas/alert-timeline';
@@ -12,7 +13,7 @@ export const metadata: Metadata = createMetadata({
   description:
     'Promociones que todavía no han sido publicadas oficialmente pero que podrían aparecer próximamente en Cataluña.',
   path: '/alerts',
-  keywords: ['próximos lanzamientos VPO', 'vivienda protegida Cataluña'],
+  keywords: ['próximos lanzamientos VPO', 'vivienda protegida Cataluña', 'avisos VPO'],
 });
 
 export default async function AlertsPage() {
@@ -32,7 +33,7 @@ export default async function AlertsPage() {
         badge={copy.upcomingLaunches}
         title="Sabe qué puede salir"
         titleAccent="antes de que se publique"
-        description="Monitorizamos señales de vivienda protegida en Cataluña. Consulta aquí los próximos lanzamientos detectados."
+        description="Monitorizamos señales de vivienda protegida en Cataluña. Consulta los lanzamientos aquí; con VPO PRO te avisamos por SMS y email."
         actions={
           <div className="lp-hero__actions lp-hero__actions--stack">
             <ButtonLink href="/promotions" size="lg" block>
@@ -63,6 +64,14 @@ export default async function AlertsPage() {
             <AlertTimeline alerts={activeAlerts} />
           </div>
         )}
+      </PublicSection>
+
+      <PublicSection muted border>
+        <AlertsProCtaBand
+          title="No revises esta página cada día"
+          description="Con VPO PRO te avisamos por SMS y email cuando detectamos un próximo lanzamiento o se abre un plazo. La consulta en la web sigue siendo gratis."
+          ctaLabel="Obtener avisos SMS y email"
+        />
       </PublicSection>
     </PublicPage>
   );
