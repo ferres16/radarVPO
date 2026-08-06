@@ -5,6 +5,7 @@ import { cache } from 'react';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { hasPublicFicha, isAlertPromotion } from '@/lib/promotion-access';
+import { isAmendmentPublication } from '@/lib/promotion-content-filters';
 import { InlineAdCard } from '@/components/ads';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
@@ -195,6 +196,10 @@ export default async function PromotionDetailPage({
   const promotion = await getPromotion(id);
 
   if (!promotion) {
+    return notFound();
+  }
+
+  if (isAmendmentPublication(promotion.title, promotion.publicDescription)) {
     return notFound();
   }
 

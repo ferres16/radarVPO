@@ -3,7 +3,10 @@ import { Prisma, PromotionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
 import { withPromotionView } from '../common/promotion-view.util';
-import { AMENDMENT_TITLE_CONTAINS } from '../common/promotion-content-filters';
+import {
+  AMENDMENT_TITLE_CONTAINS,
+  isAmendmentPublication,
+} from '../common/promotion-content-filters';
 import { FileStorageService } from '../storage/file-storage.service';
 
 const PUBLIC_PROMOTION_STATUSES: PromotionStatus[] = [
@@ -61,7 +64,7 @@ export class PromotionsService {
     const items = await this.prisma.promotion.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: limit,
+      take: Math.min(limit * 3, 100),
       skip: offset,
       select: {
         id: true,
@@ -81,7 +84,12 @@ export class PromotionsService {
       },
     });
 
-    return items.map(withPromotionView);
+    return items
+      .filter(
+        (item) => !isAmendmentPublication(item.title, item.publicDescription),
+      )
+      .slice(0, limit)
+      .map(withPromotionView);
   }
 
   async getById(id: string) {
@@ -147,6 +155,10 @@ export class PromotionsService {
     });
 
     if (!item) {
+      throw new NotFoundException('Promotion not found');
+    }
+
+    if (isAmendmentPublication(item.title, item.publicDescription)) {
       throw new NotFoundException('Promotion not found');
     }
 

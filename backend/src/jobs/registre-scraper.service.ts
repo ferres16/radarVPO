@@ -230,7 +230,7 @@ export class RegistreScraperService {
     };
   }
 
-  private async archiveExistingAmendments() {
+  async archiveExistingAmendments() {
     const candidates = await this.prisma.promotion.findMany({
       where: {
         status: { not: 'archived' },

@@ -6,6 +6,7 @@ import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-syst
 import { AlertTimeline } from '@/components/saas/alert-timeline';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
+import { isAmendmentPublication } from '@/lib/promotion-content-filters';
 
 export const metadata: Metadata = createMetadata({
   title: 'Próximos lanzamientos de vivienda protegida',
@@ -16,7 +17,9 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function AlertsPage() {
-  const alerts = await api.getAlerts().catch(() => []);
+  const alerts = (await api.getAlerts().catch(() => [])).filter(
+    (item) => !isAmendmentPublication(item.title),
+  );
 
   return (
     <PublicPage>

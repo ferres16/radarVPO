@@ -8,7 +8,10 @@ import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversi
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
 import { hasPublicFicha } from '@/lib/promotion-access';
+import { isAmendmentPublication } from '@/lib/promotion-content-filters';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
+
+export const revalidate = 30;
 
 export const metadata: Metadata = createMetadata({
   title: 'Promociones publicadas de vivienda protegida en Cataluña',
@@ -19,8 +22,15 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function PromotionsPage() {
-  const promotions = await api.getPromotions('?limit=10').catch(() => []);
-  const visiblePromotions = promotions.filter((item) => item.status !== 'archived' && hasPublicFicha(item));
+  const promotions = await api.getPromotions('?limit=40').catch(() => []);
+  const visiblePromotions = promotions
+    .filter(
+      (item) =>
+        item.status !== 'archived' &&
+        hasPublicFicha(item) &&
+        !isAmendmentPublication(item.title, item.publicDescription),
+    )
+    .slice(0, 10);
 
   return (
     <PublicPage>

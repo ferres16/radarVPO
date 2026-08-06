@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { api } from '@/lib/api';
+import { isAmendmentPublication } from '@/lib/promotion-content-filters';
 import { absoluteUrl } from '@/lib/seo';
 
 const staticRoutes = [
@@ -27,7 +28,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   })) satisfies MetadataRoute.Sitemap;
 
   const promotionEntries = promotions
-    .filter((promotion) => promotion.status !== 'archived')
+    .filter(
+      (promotion) =>
+        promotion.status !== 'archived' &&
+        !isAmendmentPublication(promotion.title, promotion.publicDescription),
+    )
     .map((promotion) => ({
       url: absoluteUrl(`/promotions/${promotion.id}`),
       lastModified: promotion.publishedAt ? new Date(promotion.publishedAt) : now,
