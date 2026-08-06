@@ -35,6 +35,15 @@ async function bootstrap() {
     !method || ['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
 
   app.setGlobalPrefix('api/v1');
+
+  const httpAdapter = app.getHttpAdapter();
+  if (typeof httpAdapter.getInstance === 'function') {
+    const expressApp = httpAdapter.getInstance() as {
+      set?: (key: string, value: unknown) => void;
+    };
+    expressApp.set?.('trust proxy', 1);
+  }
+
   app.use(helmet());
   app.use(cookieParser());
   app.enableCors({

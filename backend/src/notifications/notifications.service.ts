@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AudienceType, Prisma, Promotion, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizePhoneForSms } from './phone-normalize';
+import { isAmendmentPublication } from '../common/promotion-content-filters';
 
 type ProAlertPromotion = Pick<
   Promotion,
@@ -230,6 +231,10 @@ export class NotificationsService {
 
     if (!promotion || promotion.status !== 'pending_review') {
       return { skipped: true, reason: 'not_pending_alert', sent: 0, promotionId };
+    }
+
+    if (isAmendmentPublication(promotion.title)) {
+      return { skipped: true, reason: 'amendment_excluded', sent: 0, promotionId, title: promotion.title };
     }
 
     const existing = await this.prisma.publishedPost.findFirst({

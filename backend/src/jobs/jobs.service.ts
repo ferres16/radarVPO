@@ -20,17 +20,42 @@ export class JobsService implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    await this.checkPromotions();
+    // Avoid scrape + Brevo work on every deploy/restart unless explicitly enabled.
+    if (process.env.RUN_JOBS_ON_BOOTSTRAP !== 'true') {
+      this.logger.log(
+        'Bootstrap jobs skipped (set RUN_JOBS_ON_BOOTSTRAP=true to scrape/news on boot).',
+      );
+      return;
+    }
+
+    await this.runPromotionsCheck({ notify: false });
 
     if ((process.env.NEWS_ENABLED ?? 'true') === 'true') {
-      await this.generateDailyHousingNews();
+      await this.runDailyHousingNews();
     }
+  }
+
+  private cronsEnabled() {
+    return (process.env.ENABLE_CRONS ?? 'true') === 'true';
   }
 
   @Cron(process.env.CRON_CHECK_PROMOTIONS || CronExpression.EVERY_5_MINUTES, {
     timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
   })
   async checkPromotions() {
+    if (!this.cronsEnabled()) return;
+    await this.runPromotionsCheck({ notify: true });
+  }
+
+  @Cron(process.env.CRON_FETCH_DAILY_NEWS || CronExpression.EVERY_DAY_AT_6AM, {
+    timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
+  })
+  async generateDailyHousingNews() {
+    if (!this.cronsEnabled()) return;
+    await this.runDailyHousingNews();
+  }
+
+  private async runPromotionsCheck(options: { notify: boolean }) {
     await this.runWithLock('check_promotions', async () => {
       const count = await this.prisma.source.count({ where: { active: true } });
       const registre = await this.registreScraperService
@@ -42,26 +67,39 @@ export class JobsService implements OnApplicationBootstrap {
             promotionsCreated: 0,
             documentsCreated: 0,
             duplicatesMerged: 0,
+            skippedAmendments: 0,
+            createdAlertIds: [] as string[],
           };
         });
 
       this.logger.log(
-        `Checked active sources=${count}; registre scanned=${registre.scanned}, created=${registre.promotionsCreated}, docs=${registre.documentsCreated}, merged=${registre.duplicatesMerged}`,
+        `Checked active sources=${count}; registre scanned=${registre.scanned}, created=${registre.promotionsCreated}, docs=${registre.documentsCreated}, merged=${registre.duplicatesMerged}, skippedAmendments=${registre.skippedAmendments}`,
       );
-      const proAlerts = await this.notificationsService.notifyProUsersForPendingAlerts();
+
+      const proAlertResults = [];
+      if (options.notify && registre.createdAlertIds.length > 0) {
+        for (const alertId of registre.createdAlertIds) {
+          proAlertResults.push(
+            await this.notificationsService.notifyProUsersForPromotion(alertId),
+          );
+        }
+      } else if (options.notify) {
+        this.logger.log('Pro alerts skipped: no newly created alerts in this run');
+      }
 
       return {
         checkedSources: count,
         registre,
-        proAlerts,
+        proAlerts: {
+          notified: proAlertResults.filter((item) => !item.skipped).length,
+          sent: proAlertResults.reduce((acc, item) => acc + item.sent, 0),
+          results: proAlertResults,
+        },
       };
     });
   }
 
-  @Cron(process.env.CRON_FETCH_DAILY_NEWS || CronExpression.EVERY_DAY_AT_6AM, {
-    timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
-  })
-  async generateDailyHousingNews() {
+  private async runDailyHousingNews() {
     await this.runWithLock('generate_daily_housing_news', async () => {
       const enabled = (process.env.NEWS_ENABLED ?? 'true') === 'true';
       if (!enabled) {
@@ -142,8 +180,7 @@ export class JobsService implements OnApplicationBootstrap {
         errorDetail:
           error instanceof Error
             ? {
-                message: error.message,
-                stack: error.stack,
+                message: error.message.slice(0, 500),
               }
             : { message: 'unknown' },
       },

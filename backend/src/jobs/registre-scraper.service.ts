@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PromotionType } from '@prisma/client';
 import * as cheerio from 'cheerio';
 import { PrismaService } from '../prisma/prisma.service';
+import { isAmendmentPublication } from '../common/promotion-content-filters';
 
 type NewsEntry = {
   title: string;
@@ -23,6 +24,8 @@ export class RegistreScraperService {
     promotionsCreated: number;
     documentsCreated: number;
     duplicatesMerged: number;
+    skippedAmendments: number;
+    createdAlertIds: string[];
   }> {
     const listUrl =
       process.env.REGISTRE_NEWS_URL ??
@@ -64,8 +67,18 @@ export class RegistreScraperService {
 
     let promotionsCreated = 0;
     let documentsCreated = 0;
+    let skippedAmendments = 0;
+    const createdAlertIds: string[] = [];
+
+    await this.archiveExistingAmendments();
 
     for (const entry of entries) {
+      if (isAmendmentPublication(entry.title)) {
+        skippedAmendments += 1;
+        this.logger.log(`Skipped amendment by title: ${entry.title}`);
+        continue;
+      }
+
       const existing = await this.prisma.promotion.findFirst({
         where: { sourceUrl: entry.detailUrl },
         select: { id: true, rawText: true, status: true },
@@ -73,6 +86,22 @@ export class RegistreScraperService {
 
       const detailHtml = await this.fetchHtml(entry.detailUrl);
       const rawText = this.extractText(detailHtml);
+
+      if (isAmendmentPublication(entry.title, rawText)) {
+        skippedAmendments += 1;
+        this.logger.log(`Skipped amendment by body: ${entry.title}`);
+        if (existing && existing.status !== 'archived') {
+          await this.prisma.promotion.update({
+            where: { id: existing.id },
+            data: {
+              status: 'archived',
+              statusMessage: 'Archivada automáticamente: publicación de esmena/corrección.',
+            },
+          });
+        }
+        continue;
+      }
+
       const pdfLinks = this.extractPdfLinks(detailHtml, entry.detailUrl);
       const publicationDate = entry.publishedAt ?? this.extractDate(rawText);
       const alertDate =
@@ -127,6 +156,9 @@ export class RegistreScraperService {
 
       if (!existing) {
         promotionsCreated += 1;
+        if (isAlertEntry) {
+          createdAlertIds.push(promotion.id);
+        }
       } else {
         const mergedRawText = this.mergeRawText(existing.rawText, rawText);
         await this.prisma.promotion.update({
@@ -193,7 +225,41 @@ export class RegistreScraperService {
       promotionsCreated,
       documentsCreated,
       duplicatesMerged,
+      skippedAmendments,
+      createdAlertIds,
     };
+  }
+
+  private async archiveExistingAmendments() {
+    const candidates = await this.prisma.promotion.findMany({
+      where: {
+        status: { not: 'archived' },
+        OR: [
+          { title: { contains: 'esmena', mode: 'insensitive' } },
+          { title: { contains: 'esmenes', mode: 'insensitive' } },
+          { title: { contains: 'corrección', mode: 'insensitive' } },
+          { title: { contains: 'correcció', mode: 'insensitive' } },
+          { title: { contains: 'correccio', mode: 'insensitive' } },
+          { title: { contains: 'rectificación', mode: 'insensitive' } },
+          { title: { contains: 'rectificació', mode: 'insensitive' } },
+          { title: { contains: 'amendment', mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true, title: true },
+      take: 100,
+    });
+
+    for (const row of candidates) {
+      if (!isAmendmentPublication(row.title)) continue;
+      await this.prisma.promotion.update({
+        where: { id: row.id },
+        data: {
+          status: 'archived',
+          statusMessage: 'Archivada automáticamente: publicación de esmena/corrección.',
+        },
+      });
+      this.logger.log(`Archived existing amendment promotion ${row.id}: ${row.title}`);
+    }
   }
 
   private async ensureSource() {

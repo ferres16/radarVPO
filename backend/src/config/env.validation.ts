@@ -271,6 +271,15 @@ export function validateEnv(config: Record<string, unknown>) {
 
   if (
     nodeEnv === 'production' &&
+    (accessSecret.length < 48 || refreshSecret.length < 48)
+  ) {
+    throw new Error(
+      'JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be at least 48 characters in production',
+    );
+  }
+
+  if (
+    nodeEnv === 'production' &&
     (!config.CORS_ORIGIN || !config.FRONTEND_URL)
   ) {
     throw new Error('CORS_ORIGIN and FRONTEND_URL are required in production');

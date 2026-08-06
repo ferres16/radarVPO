@@ -3,6 +3,7 @@ import { Prisma, PromotionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
 import { withPromotionView } from '../common/promotion-view.util';
+import { AMENDMENT_TITLE_CONTAINS } from '../common/promotion-content-filters';
 import { FileStorageService } from '../storage/file-storage.service';
 
 const PUBLIC_PROMOTION_STATUSES: PromotionStatus[] = [
@@ -40,9 +41,12 @@ export class PromotionsService {
         : undefined,
       promotionType: filters.promotionType,
       status: statusFilter,
-      NOT: {
-        title: { contains: 'alerta', mode: 'insensitive' },
-      },
+      AND: [
+        { NOT: { title: { contains: 'alerta', mode: 'insensitive' } } },
+        ...AMENDMENT_TITLE_CONTAINS.map((term) => ({
+          NOT: { title: { contains: term, mode: 'insensitive' as const } },
+        })),
+      ],
       OR: search
         ? [
             { title: { contains: search, mode: 'insensitive' } },
