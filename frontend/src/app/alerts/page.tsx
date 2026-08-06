@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
-import { AlertsProCtaBand } from '@/components/conversion/alerts-pro-cta-band';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { AlertTimeline } from '@/components/saas/alert-timeline';
@@ -18,7 +17,6 @@ export const metadata: Metadata = createMetadata({
 
 export default async function AlertsPage() {
   const alerts = await api.getAlerts().catch(() => []);
-  const activeAlerts = alerts.filter((item) => item.type === 'alert');
 
   return (
     <PublicPage>
@@ -46,10 +44,10 @@ export default async function AlertsPage() {
       <PublicSection id="lanzamientos">
         <SectionHeader
           title="Timeline de lanzamientos"
-          description="Cuenta atrás, ubicación y acceso a ficha en un solo vistazo."
+          description="Cuenta atrás y ubicación. Activa VPO PRO para recibir avisos por SMS y email."
         />
 
-        {activeAlerts.length === 0 ? (
+        {alerts.length === 0 ? (
           <SurfaceCard premium className="empty-illus mt-6 border-0 shadow-none">
             <span className="empty-illus__icon" aria-hidden="true">⏱</span>
             <p className="mt-4 text-sm text-[var(--ink-soft)]">Sin lanzamientos previstos visibles ahora mismo.</p>
@@ -61,17 +59,9 @@ export default async function AlertsPage() {
           </SurfaceCard>
         ) : (
           <div className="mt-6">
-            <AlertTimeline alerts={activeAlerts} />
+            <AlertTimeline alerts={alerts} />
           </div>
         )}
-      </PublicSection>
-
-      <PublicSection muted border>
-        <AlertsProCtaBand
-          title="No revises esta página cada día"
-          description="Con VPO PRO te avisamos por SMS y email cuando detectamos un próximo lanzamiento o se abre un plazo. La consulta en la web sigue siendo gratis."
-          ctaLabel="Obtener avisos SMS y email"
-        />
       </PublicSection>
     </PublicPage>
   );

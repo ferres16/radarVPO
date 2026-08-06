@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { api } from '@/lib/api';
-import { hasProAccess } from '@/lib/pro-access';
 import { isSafeExternalCheckoutUrl } from '@/lib/checkout-url';
 import type { CourseAccessType, CoursePricingType } from '@/types';
 
@@ -33,13 +32,14 @@ export function CourseAccessProvider({
   initialCanAccess?: boolean;
   children: ReactNode;
 }) {
-  const [canAccess, setCanAccess] = useState(initialCanAccess);
-  const [resolved, setResolved] = useState(initialCanAccess);
+  const isFree = accessType === 'free' || pricingType === 'free';
+  const [canAccess, setCanAccess] = useState(initialCanAccess || isFree);
+  const [resolved, setResolved] = useState(initialCanAccess || isFree);
 
   useEffect(() => {
     let active = true;
 
-    if (initialCanAccess) {
+    if (initialCanAccess || isFree) {
       setCanAccess(true);
       setResolved(true);
       return () => {
@@ -52,42 +52,18 @@ export function CourseAccessProvider({
         const course = await api.getCourseForUser(slug);
         if (!active) return;
         setCanAccess(Boolean(course.access?.canAccess));
-        setResolved(true);
-        return;
-      } catch {
-        // Continue with fallbacks below.
-      }
-
-      try {
-        const [me, courses] = await Promise.all([
-          api.getMe(),
-          api.listCoursesForUser(),
-        ]);
-        if (!active) return;
-
-        const match = courses.find((course) => course.slug === slug);
-        if (match?.access?.canAccess) {
-          setCanAccess(true);
-        } else if (accessType === 'pro' && hasProAccess(me)) {
-          setCanAccess(true);
-        } else if (accessType === 'free' || pricingType === 'free') {
-          setCanAccess(true);
-        } else {
-          setCanAccess(false);
-        }
-        setResolved(true);
-        return;
       } catch {
         if (!active) return;
         setCanAccess(false);
-        setResolved(true);
+      } finally {
+        if (active) setResolved(true);
       }
     })();
 
     return () => {
       active = false;
     };
-  }, [accessType, initialCanAccess, pricingType, slug]);
+  }, [accessType, initialCanAccess, isFree, pricingType, slug]);
 
   const value = useMemo(
     () => ({ canAccess, resolved, initialCanAccess }),

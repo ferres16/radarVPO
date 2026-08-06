@@ -1,9 +1,5 @@
-'use client';
-
 import type { ReactNode } from 'react';
 import { Reveal } from '@/components/motion-primitives';
-import { ProCta, ProGate } from '@/components/pro/pro-cta';
-import { proPlan } from '@/lib/pro';
 
 export function PublicPage({ children, className }: { children: ReactNode; className?: string }) {
   return <main className={['lp', 'lp--inner', 'lp--app', className].filter(Boolean).join(' ')}>{children}</main>;
@@ -69,67 +65,4 @@ export function PublicSection({
   if (!animated) return content;
 
   return <Reveal>{content}</Reveal>;
-}
-
-export function PublicProBanner({
-  title = '¿No quieres revisar cada día?',
-  description,
-  className,
-  animated = true,
-}: {
-  title?: string;
-  description?: string;
-  className?: string;
-  animated?: boolean;
-}) {
-  const content = (
-    <ProGate>
-      <div className="shell">
-        <aside className="public-pro-banner">
-          <div>
-            <p className="public-pro-banner__label">{proPlan.name}</p>
-            <p className="public-pro-banner__title">{title}</p>
-            <p className="public-pro-banner__text">
-              {description || `Avisos por email y SMS, y curso Guía VPO incluido. ${proPlan.price}`}
-            </p>
-          </div>
-          <ProCta size="lg" />
-        </aside>
-      </div>
-    </ProGate>
-  );
-
-  if (!animated) {
-    return <div className={className}>{content}</div>;
-  }
-
-  return <Reveal className={className}>{content}</Reveal>;
-}
-
-export function PublicCtaBand({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description?: string;
-  children: ReactNode;
-}) {
-  return (
-    <ProGate>
-      <Reveal>
-        <section className="lp-section lp-section--border">
-          <div className="shell">
-            <div className="public-cta-band">
-              <div>
-                <h2 className="lp-title lp-title--sm">{title}</h2>
-                {description ? <p className="lp-lead">{description}</p> : null}
-              </div>
-              <div className="public-cta-band__actions">{children}</div>
-            </div>
-          </div>
-        </section>
-      </Reveal>
-    </ProGate>
-  );
 }

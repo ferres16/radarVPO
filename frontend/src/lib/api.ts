@@ -137,6 +137,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/** Public catalog/list reads — short ISR cache to cut repeated backend load. */
+async function requestPublic<T>(path: string, revalidateSeconds = 45): Promise<T> {
+  const res = await fetch(`${getBrowserApiBaseUrl()}${path}`, {
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    next: { revalidate: revalidateSeconds },
+  });
+
+  if (!res.ok) {
+    throw new Error(await parseErrorResponse(res, `Request failed with status ${res.status}`));
+  }
+
+  return res.json() as Promise<T>;
+}
+
 async function authRequest<T>(path: '/login' | '/register' | '/logout', init?: RequestInit): Promise<T> {
   const res = await fetch(`/api/auth${path}`, {
     ...init,
@@ -175,12 +192,11 @@ async function requestForm<T>(path: string, body: FormData): Promise<T> {
 }
 
 export const api = {
-  getPromotions: (query = '') => request<Promotion[]>(`/promotions${query}`),
-  getPromotionById: (id: string) => request<PromotionDetail>(`/promotions/${id}`),
-  getUpcomingAlerts: () => request<Promotion[]>('/alerts/upcoming'),
-  getAlerts: () => request<Promotion[]>('/alerts/upcoming'),
-  getNews: () => request<NewsItem[]>('/news'),
-  getNewsById: (id: string) => request<NewsItem & { rawText?: string }>(`/news/${id}`),
+  getPromotions: (query = '') => requestPublic<Promotion[]>(`/promotions${query}`),
+  getPromotionById: (id: string) => requestPublic<PromotionDetail>(`/promotions/${id}`, 30),
+  getAlerts: () => requestPublic<Promotion[]>('/alerts/upcoming'),
+  getNews: () => requestPublic<NewsItem[]>('/news'),
+  getNewsById: (id: string) => requestPublic<NewsItem & { rawText?: string }>(`/news/${id}`, 60),
   getMe: () => request<UserProfile>('/users/me'),
   getMyCourses: () => request<import('@/types').UserCourseProgress[]>('/users/me/courses'),
   getMyAccess: () => request<UserAccessSummary>('/users/access'),
@@ -365,10 +381,10 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
-  listCourses: () => request<Course[]>('/courses'),
-  listServices: () => request<Service[]>('/services'),
+  listCourses: () => requestPublic<Course[]>('/courses'),
+  listServices: () => requestPublic<Service[]>('/services'),
   listCoursesForUser: () => request<Array<Course & { access: { canAccess: boolean; reason: string } }>>('/courses/access'),
-  getCourse: (slug: string) => request<Course>(`/courses/${slug}`),
+  getCourse: (slug: string) => requestPublic<Course>(`/courses/${slug}`, 60),
   getCourseForUser: (slug: string) => request<Course & { access: { canAccess: boolean; reason: string } }>(`/courses/${slug}/access`),
   getCourseLesson: (slug: string, lessonSlug: string) =>
     request<{ course: Course; lesson: CourseLesson; access: { canAccess: boolean; reason: string } }>(

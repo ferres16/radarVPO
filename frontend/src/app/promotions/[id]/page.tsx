@@ -1,6 +1,7 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { cache } from 'react';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { hasPublicFicha, isAlertPromotion } from '@/lib/promotion-access';
@@ -124,9 +125,9 @@ type PromotionDetailParams = {
   params: Promise<{ id: string }>;
 };
 
-async function getPromotion(id: string) {
+const getPromotion = cache(async (id: string) => {
   return api.getPromotionById(id).catch(() => null);
-}
+});
 
 export async function generateMetadata({ params }: PromotionDetailParams): Promise<Metadata> {
   const { id } = await params;
@@ -197,6 +198,10 @@ export default async function PromotionDetailPage({
     return notFound();
   }
 
+  if (isAlertPromotion(promotion)) {
+    redirect('/alerts');
+  }
+
   const documentsByType = {
     images: promotion.documents.filter((doc) => doc.fileType?.startsWith('image/')),
     videos: promotion.documents.filter((doc) => doc.fileType?.startsWith('video/')),
@@ -207,7 +212,6 @@ export default async function PromotionDetailPage({
     (doc) => !doc.fileType?.startsWith('image/') && !doc.fileType?.startsWith('video/'),
   );
   const heroImage = documentsByType.images[0]?.publicUrl;
-  const isAlert = isAlertPromotion(promotion);
   const showFicha = hasPublicFicha(promotion);
   const keyFacts = [
     { label: 'Municipio', value: promotion.municipality || 'Catalunya' },
@@ -221,7 +225,7 @@ export default async function PromotionDetailPage({
       <StructuredData
         data={breadcrumbJsonLd([
           { name: 'Inicio', path: '/' },
-          { name: isAlert ? copy.upcomingLaunches : copy.publishedPromotions, path: isAlert ? '/alerts' : '/promotions' },
+          { name: copy.publishedPromotions, path: '/promotions' },
           { name: promotion.title, path: `/promotions/${promotion.id}` },
         ])}
       />
@@ -259,10 +263,7 @@ export default async function PromotionDetailPage({
           <div className="mt-3 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3.5">
             <p className="text-sm font-semibold text-[var(--ink)]">Estado: {statusLabel(promotion.status)}</p>
             <p className="mt-1 text-sm leading-6 text-[var(--ink-soft)]">
-              {promotion.statusMessage ||
-                (isAlert
-                  ? 'Aviso detectado. Aún no hay ficha completa; te avisamos cuando haya más información.'
-                  : 'Estamos analizando esta promoción y actualizando la información.')}
+              {promotion.statusMessage || 'Estamos analizando esta promoción y actualizando la información.'}
             </p>
           </div>
 
@@ -273,11 +274,6 @@ export default async function PromotionDetailPage({
             {showFicha && downloadableDocuments.length > 0 ? (
               <ButtonLink href="#documentos" variant="secondary" block className="sm:!inline-flex sm:w-auto">
                 Ver documentos
-              </ButtonLink>
-            ) : null}
-            {isAlert ? (
-              <ButtonLink href="/alerts" variant="secondary" block className="sm:!inline-flex sm:w-auto">
-                Volver a lanzamientos
               </ButtonLink>
             ) : null}
           </div>

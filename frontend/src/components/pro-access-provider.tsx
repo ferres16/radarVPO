@@ -9,7 +9,6 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
 import { hasProAccess } from '@/lib/pro-access';
 import type { UserProfile } from '@/types';
@@ -25,7 +24,6 @@ type ProAccessContextValue = {
 const ProAccessContext = createContext<ProAccessContextValue | null>(null);
 
 export function ProAccessProvider({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
   const [me, setMe] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -42,27 +40,24 @@ export function ProAccessProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    let cancelled = false;
 
     (async () => {
       try {
         const profile = await api.getMe();
         if (!active) return;
         setMe(profile);
-        setLoading(false);
       } catch {
         if (!active) return;
         setMe(null);
-        setLoading(false);
+      } finally {
+        if (active) setLoading(false);
       }
     })();
 
     return () => {
       active = false;
-      cancelled = true;
-      void cancelled;
     };
-  }, [pathname]);
+  }, []);
 
   const value = useMemo(
     () => ({

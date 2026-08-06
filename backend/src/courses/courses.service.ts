@@ -61,7 +61,6 @@ export class CoursesService {
                 id: true,
                 title: true,
                 slug: true,
-                summary: true,
                 order: true,
                 durationMinutes: true,
                 status: true,
