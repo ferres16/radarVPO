@@ -89,9 +89,11 @@ export function PromotionCard({
           {displayDate(promotion) ? <span className="chip text-xs">{displayDate(promotion)}</span> : null}
         </div>
         {!showFicha ? null : (
-          <Link href={`/promotions/${promotion.id}`} className="btn btn--primary mt-4 min-h-11 w-full py-2.5 text-sm font-semibold">
-            Ver ficha completa
-          </Link>
+          <div className="mt-auto pt-4">
+            <Link href={`/promotions/${promotion.id}`} className="btn btn--primary min-h-11 w-full py-2.5 text-sm font-semibold">
+              Ver ficha completa
+            </Link>
+          </div>
         )}
       </CardShell>
     );
@@ -125,12 +127,14 @@ export function PromotionCard({
         {displayDate(promotion) ? <span className="chip">{displayDate(promotion)}</span> : null}
       </div>
       {!showFicha ? null : (
-        <Link
-          href={`/promotions/${promotion.id}`}
-          className="mt-auto inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--green-700)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm outline-none transition duration-200 hover:bg-[var(--green-900)] focus-visible:ring-2 focus-visible:ring-[var(--green-700)] md:w-fit md:hover:-translate-y-0.5 md:hover:shadow-glow"
-        >
-          Ver ficha completa
-        </Link>
+        <div className="mt-auto pt-4">
+          <Link
+            href={`/promotions/${promotion.id}`}
+            className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--green-700)] px-4 py-2.5 text-sm font-semibold text-white outline-none transition duration-200 hover:bg-[var(--green-900)] focus-visible:ring-2 focus-visible:ring-[var(--green-700)] md:w-fit"
+          >
+            Ver ficha completa
+          </Link>
+        </div>
       )}
     </CardShell>
   );

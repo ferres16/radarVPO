@@ -28,7 +28,16 @@ export const proPlan = {
   ctaLabel: 'Activar VPO PRO',
 };
 
+/** Guest checkout / CTA target (Stripe when configured, otherwise register). */
 export const proHref = proPlan.stripeLink || proPlan.fallbackHref;
+
+/** Logged-in users should never land on register for PRO — Stripe or account. */
+export function getProHref(isAuthenticated: boolean): string {
+  if (isAuthenticated) {
+    return proPlan.stripeLink || '/account';
+  }
+  return proHref;
+}
 
 export const proActiveMessages = [
   'Ya formas parte de VPO PRO 🎉',

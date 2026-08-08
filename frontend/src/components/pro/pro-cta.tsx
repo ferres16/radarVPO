@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { ButtonLink } from '@/components/design-system';
 import { useOptionalProAccess } from '@/components/pro-access-provider';
-import { proHref, proPlan } from '@/lib/pro';
+import { getProHref, proPlan } from '@/lib/pro';
 
 type ProCtaProps = {
   children?: ReactNode;
@@ -24,14 +24,17 @@ export function ProCta({
   label,
 }: ProCtaProps) {
   const context = useOptionalProAccess();
+  // While auth is resolving, prefer Stripe so logged-in users never flash /register.
+  const href =
+    context?.loading && proPlan.stripeLink
+      ? proPlan.stripeLink
+      : getProHref(Boolean(context?.me));
+  const isExternal = /^https?:\/\//.test(href);
+  const content = children ?? label ?? proPlan.ctaLabel;
 
   if (context?.hasPro) {
     return null;
   }
-
-  const content = children ?? label ?? proPlan.ctaLabel;
-  const href = proHref;
-  const isExternal = /^https?:\/\//.test(href);
 
   if (isExternal) {
     return (
@@ -63,14 +66,16 @@ export function ProCtaLink({
   label?: string;
 }) {
   const context = useOptionalProAccess();
+  const href =
+    context?.loading && proPlan.stripeLink
+      ? proPlan.stripeLink
+      : getProHref(Boolean(context?.me));
+  const isExternal = /^https?:\/\//.test(href);
+  const content = children ?? label ?? proPlan.ctaLabel;
 
   if (context?.hasPro) {
     return null;
   }
-
-  const content = children ?? label ?? proPlan.ctaLabel;
-  const href = proHref;
-  const isExternal = /^https?:\/\//.test(href);
 
   if (isExternal) {
     return (

@@ -2102,7 +2102,32 @@ h3,
   --space-8: 2rem;
   --radius-card: 1rem;
   --radius-lg: 1.25rem;
-  --shadow-soft: 0 1px 2px rgba(11, 18, 32, 0.04), 0 4px 16px rgba(11, 18, 32, 0.05);
+  --shadow-soft: none;
+}
+
+/* Flat UI: no decorative elevation shadows site-wide. */
+.shadow-card,
+.shadow-glow,
+.shadow-sm,
+.premium-card,
+.premium-card:hover,
+.surface-card,
+.section-band,
+.glass-surface,
+.saas-card-rail,
+.mobile-tab-bar,
+.btn,
+.btn--primary,
+.btn--secondary,
+.btn:hover,
+.btn--primary:hover,
+.chip,
+input:focus,
+textarea:focus,
+select:focus,
+.form-field:focus,
+.form-field:focus-within {
+  box-shadow: none !important;
 }
 
 .lp--app {
@@ -2519,4 +2544,22 @@ h3,
   inset: 0;
   background: linear-gradient(180deg, rgba(16, 24, 40, 0.12), rgba(16, 24, 40, 0.45));
   pointer-events: none;
+}
+
+/* Final override: kill leftover decorative box-shadows (keep focus via outline). */
+*,
+*::before,
+*::after {
+  box-shadow: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--green-700);
+  outline-offset: 2px;
+}
+
+body.nav-scroll-lock {
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: none;
 }

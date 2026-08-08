@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -16,6 +16,27 @@ export function TopNav() {
   const { me, hasPro } = useProAccess();
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousTouchAction = document.body.style.touchAction;
+    document.body.classList.add('nav-scroll-lock');
+    document.body.style.overflow = 'hidden';
+    document.body.style.touchAction = 'none';
+
+    return () => {
+      document.body.classList.remove('nav-scroll-lock');
+      document.body.style.overflow = previousOverflow;
+      document.body.style.touchAction = previousTouchAction;
+    };
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+    setMenuOpen(false);
+  }, [pathname]);
 
   const initials = useMemo(() => {
     if (!me?.fullName) return me?.email?.slice(0, 2).toUpperCase() || 'RV';
@@ -53,7 +74,7 @@ export function TopNav() {
           className="group flex items-center gap-2 rounded-full px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
           aria-label="Radar VPO, ir al inicio"
         >
-          <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm transition duration-200 group-hover:scale-105">
+          <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-white transition duration-200 group-hover:scale-105">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-radar-vpo.png" alt="" className="h-full w-full object-contain p-0.5" />
           </span>
@@ -65,7 +86,7 @@ export function TopNav() {
 
         <button
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--stroke)] bg-white/90 text-[var(--ink)] shadow-sm transition hover:bg-[var(--bg-eco)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] lg:hidden"
+          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--stroke)] bg-white/90 text-[var(--ink)] transition hover:bg-[var(--bg-eco)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] lg:hidden"
           onClick={() => setMobileOpen((value) => !value)}
           aria-expanded={mobileOpen}
           aria-controls="mobile-navigation"
@@ -83,32 +104,32 @@ export function TopNav() {
           {primaryLinks.map((link) => {
             const active = isActive(link.href);
             return (
-            <Link
-              key={link.href}
-              href={link.href}
-              aria-current={active ? 'page' : undefined}
-              className={`relative rounded-full px-2.5 py-2 text-[13px] font-semibold transition duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-3 xl:text-sm ${
-                active
-                  ? 'bg-[rgba(22,112,85,0.10)] text-[var(--green-700)]'
-                  : 'text-[var(--ink)] hover:bg-white/80'
-              }`}
-            >
-              {link.label}
-              {active ? <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[var(--cyan-500)]" /> : null}
-            </Link>
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={active ? 'page' : undefined}
+                className={`relative rounded-full px-2.5 py-2 text-[13px] font-semibold transition duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-3 xl:text-sm ${
+                  active
+                    ? 'bg-[rgba(22,112,85,0.10)] text-[var(--green-700)]'
+                    : 'text-[var(--ink)] hover:bg-white/80'
+                }`}
+              >
+                {link.label}
+                {active ? <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[var(--cyan-500)]" /> : null}
+              </Link>
             );
           })}
         </nav>
 
         <nav className="hidden items-center gap-2 md:flex" aria-label="Acceso de usuario">
           {!hasPro ? (
-            <ProCtaLink className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-black text-white shadow-card transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
+            <ProCtaLink className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
           ) : null}
           {me ? (
             <div className="relative">
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-full border border-[var(--stroke)] bg-white/90 px-2 py-1.5 text-sm font-semibold text-[var(--ink)] shadow-sm transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+                className="flex items-center gap-2 rounded-full border border-[var(--stroke)] bg-white/90 px-2 py-1.5 text-sm font-semibold text-[var(--ink)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
                 onClick={() => setMenuOpen((value) => !value)}
                 aria-expanded={menuOpen}
                 aria-haspopup="menu"
@@ -117,11 +138,13 @@ export function TopNav() {
                   {initials}
                 </span>
                 <span className="hidden max-w-32 truncate text-sm md:inline">{me.fullName || 'Perfil'}</span>
-                <span aria-hidden="true" className={`text-xs transition ${menuOpen ? 'rotate-180' : ''}`}>v</span>
+                <span aria-hidden="true" className={`text-xs transition ${menuOpen ? 'rotate-180' : ''}`}>
+                  v
+                </span>
               </button>
               {menuOpen ? (
                 <div
-                  className="absolute right-0 mt-3 w-56 rounded-3xl border border-[var(--stroke)] bg-white p-2 shadow-card animate-fade-up"
+                  className="absolute right-0 mt-3 w-56 rounded-3xl border border-[var(--stroke)] bg-white p-2 animate-fade-up"
                   role="menu"
                 >
                   <Link
@@ -130,7 +153,7 @@ export function TopNav() {
                     onClick={() => setMenuOpen(false)}
                     role="menuitem"
                   >
-                  Perfil
+                    Perfil
                   </Link>
                   {me.role === 'admin' ? (
                     <Link
@@ -154,26 +177,28 @@ export function TopNav() {
               ) : null}
             </div>
           ) : (
-            <>
-              <Link
-                href="/login"
-                className="rounded-full border border-[var(--stroke)] bg-white/90 px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-sm transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
-              >
-                Iniciar Sesión
-              </Link>
-            </>
+            <Link
+              href="/login"
+              className="rounded-full border border-[var(--stroke)] bg-white/90 px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+            >
+              Iniciar Sesión
+            </Link>
           )}
         </nav>
       </div>
 
       {mobileOpen ? (
-        <div className="fixed inset-0 z-40 bg-[rgba(16,24,40,0.38)] backdrop-blur-[2px] lg:hidden" onClick={() => setMobileOpen(false)} aria-hidden="true" />
+        <div
+          className="fixed inset-0 z-40 bg-[rgba(16,24,40,0.38)] backdrop-blur-[2px] lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+        />
       ) : null}
 
       {mobileOpen ? (
         <nav
           id="mobile-navigation"
-          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 rounded-[1.5rem] border border-white/80 bg-white p-3 shadow-[0_20px_60px_rgba(16,24,40,0.18)] animate-slide-down lg:hidden"
+          className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 max-h-[min(80dvh,32rem)] overflow-y-auto rounded-[1.5rem] border border-white/80 bg-white p-3 animate-slide-down lg:hidden"
           aria-label="Navegación móvil"
         >
           <ul className="space-y-2">

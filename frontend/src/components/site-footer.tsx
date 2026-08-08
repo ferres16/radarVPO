@@ -3,9 +3,12 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { primaryNavLinks } from '@/lib/navigation';
+import { useProAccess } from '@/components/pro-access-provider';
 
 export function SiteFooter() {
   const pathname = usePathname();
+  const { me, loading } = useProAccess();
+
   if (pathname.startsWith('/admin')) {
     return null;
   }
@@ -25,7 +28,11 @@ export function SiteFooter() {
               {link.mobileLabel ?? link.label}
             </Link>
           ))}
-          <Link href="/login">Entrar</Link>
+          {!loading && me ? (
+            <Link href="/account">Perfil</Link>
+          ) : !loading ? (
+            <Link href="/login">Entrar</Link>
+          ) : null}
         </nav>
       </div>
       <div className="shell site-footer__legal">
