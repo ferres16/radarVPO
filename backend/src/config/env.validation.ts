@@ -34,8 +34,12 @@ class EnvironmentVariables {
   CORS_ORIGIN?: string;
 
   @IsOptional()
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   FRONTEND_URL?: string;
+
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  PUBLIC_SITE_URL?: string;
 
   @IsOptional()
   @IsString()

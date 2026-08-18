@@ -3,6 +3,8 @@ import { AudienceType, Prisma, Promotion, SubscriptionStatus } from '@prisma/cli
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizePhoneForSms } from './phone-normalize';
 import { isAmendmentPublication, shortenAlertTitle } from '../common/promotion-content-filters';
+import { resolvePublicSiteUrl } from '../common/public-site-url';
+import { collectAdminEmails } from './admin-emails';
 import {
   calendarDaysUntil,
   PRO_NOTIFY_SOURCE_KIND,
@@ -35,6 +37,7 @@ type NotifyResult = {
   channels?: string[];
   promotionId?: string;
   title?: string;
+  kind?: ProNotifyKind;
   proUsers?: number;
   emailsSent?: number;
   smsSent?: number;
@@ -66,9 +69,7 @@ export class NotificationsService {
   private readonly smsSender = process.env.BREVO_SMS_SENDER || 'RadarVPO';
   private readonly emailSender = process.env.BREVO_EMAIL_SENDER || 'Radar VPO <info@radarvpo.com>';
   private readonly proAlertsEnabled = process.env.BREVO_PRO_ALERTS_ENABLED === 'true';
-  private readonly frontendUrl = (
-    process.env.FRONTEND_URL || 'https://radar-vpo-frontend-ten.vercel.app'
-  ).replace(/\/$/, '');
+  private readonly publicSiteUrl = resolvePublicSiteUrl();
 
   constructor(private readonly prisma: PrismaService) {}
 
@@ -137,7 +138,7 @@ export class NotificationsService {
   }
 
   getAlertsPageUrl() {
-    return `${this.frontendUrl}/alerts`;
+    return `${this.publicSiteUrl}/alerts`;
   }
 
   async notifyProUsersForPendingAlerts(
@@ -228,6 +229,52 @@ export class NotificationsService {
     return this.notifyProEvent(promotionId, 'new_publication', options);
   }
 
+  async simulateProNotificationsForPromotion(
+    promotionId: string,
+    options: { kinds?: ProNotifyKind[]; onlyUserId?: string } = {},
+  ) {
+    const diagnostics = await this.getProAlertsDiagnostics();
+    const kinds: ProNotifyKind[] =
+      options.kinds && options.kinds.length > 0
+        ? options.kinds
+        : ['new_alert', 'reminder_7d', 'reminder_1d', 'new_publication'];
+
+    const promotionResults: NotifyResult[] = [];
+    let sent = 0;
+
+    for (const kind of kinds) {
+      const result = await this.notifyProEvent(promotionId, kind, {
+        simulate: true,
+        onlyUserId: options.onlyUserId,
+      });
+      promotionResults.push(result);
+      if (!result.skipped) sent += result.sent;
+    }
+
+    let reason: string | undefined;
+    if (sent === 0) {
+      const skippedResults = promotionResults.filter((item) => item.skipped);
+      const failedResults = promotionResults.filter(
+        (item) => !item.skipped && item.sent === 0,
+      );
+      if (skippedResults.length === promotionResults.length) {
+        reason = skippedResults[0]?.reason || 'all_skipped';
+      } else if (failedResults.length > 0) {
+        reason = 'brevo_delivery_failed';
+      } else {
+        reason = 'no_deliveries';
+      }
+    }
+
+    return {
+      ...diagnostics,
+      skipped: sent === 0,
+      reason,
+      sent,
+      promotions: promotionResults,
+    };
+  }
+
   async notifyDueReminders(): Promise<{ sent: number; results: NotifyResult[] }> {
     if (!this.isProAlertsConfigured()) {
       return { sent: 0, results: [] };
@@ -269,10 +316,16 @@ export class NotificationsService {
   private async notifyProEvent(
     promotionId: string,
     kind: ProNotifyKind,
-    options: { force?: boolean } = {},
+    options: { force?: boolean; simulate?: boolean; onlyUserId?: string } = {},
   ): Promise<NotifyResult> {
     if (!this.isProAlertsConfigured()) {
-      return { skipped: true, reason: 'brevo_not_configured', sent: 0, promotionId };
+      return {
+        skipped: true,
+        reason: 'brevo_not_configured',
+        sent: 0,
+        promotionId,
+        kind,
+      };
     }
 
     const promotion = await this.prisma.promotion.findUnique({
@@ -288,7 +341,7 @@ export class NotificationsService {
     });
 
     if (!promotion) {
-      return { skipped: true, reason: 'not_found', sent: 0, promotionId };
+      return { skipped: true, reason: 'not_found', sent: 0, promotionId, kind };
     }
 
     if (isAmendmentPublication(promotion.title)) {
@@ -298,39 +351,56 @@ export class NotificationsService {
         sent: 0,
         promotionId,
         title: promotion.title,
+        kind,
       };
     }
 
-    if (kind === 'new_alert' && promotion.status !== 'pending_review') {
-      return { skipped: true, reason: 'not_pending_alert', sent: 0, promotionId };
-    }
+    if (!options.simulate) {
+      if (kind === 'new_alert' && promotion.status !== 'pending_review') {
+        return {
+          skipped: true,
+          reason: 'not_pending_alert',
+          sent: 0,
+          promotionId,
+          kind,
+        };
+      }
 
-    if (
-      kind === 'new_publication' &&
-      promotion.status !== 'published_unreviewed' &&
-      promotion.status !== 'published_reviewed'
-    ) {
-      return { skipped: true, reason: 'not_published', sent: 0, promotionId };
-    }
+      if (
+        kind === 'new_publication' &&
+        promotion.status !== 'published_unreviewed' &&
+        promotion.status !== 'published_reviewed'
+      ) {
+        return { skipped: true, reason: 'not_published', sent: 0, promotionId, kind };
+      }
 
-    if (
-      (kind === 'reminder_7d' || kind === 'reminder_1d') &&
-      promotion.status !== 'pending_review'
-    ) {
-      return { skipped: true, reason: 'not_pending_alert', sent: 0, promotionId };
+      if (
+        (kind === 'reminder_7d' || kind === 'reminder_1d') &&
+        promotion.status !== 'pending_review'
+      ) {
+        return {
+          skipped: true,
+          reason: 'not_pending_alert',
+          sent: 0,
+          promotionId,
+          kind,
+        };
+      }
     }
 
     const sourceKind = PRO_NOTIFY_SOURCE_KIND[kind];
-    const existing = await this.prisma.publishedPost.findFirst({
-      where: {
-        sourceKind,
-        sourceId: promotion.id,
-        audience: AudienceType.pro,
-        channel: 'brevo',
-        status: 'sent',
-      },
-      select: { id: true },
-    });
+    const existing = options.simulate
+      ? null
+      : await this.prisma.publishedPost.findFirst({
+          where: {
+            sourceKind,
+            sourceId: promotion.id,
+            audience: AudienceType.pro,
+            channel: 'brevo',
+            status: 'sent',
+          },
+          select: { id: true },
+        });
 
     if (existing && !options.force) {
       return {
@@ -339,11 +409,12 @@ export class NotificationsService {
         sent: 0,
         promotionId,
         title: promotion.title,
+        kind,
       };
     }
 
-    const result = await this.sendProBroadcast(promotion, kind);
-    if (result.sent > 0) {
+    const result = await this.sendProBroadcast(promotion, kind, options.onlyUserId);
+    if (result.sent > 0 && !options.simulate) {
       if (existing && options.force) {
         await this.prisma.publishedPost.update({
           where: { id: existing.id },
@@ -379,8 +450,12 @@ export class NotificationsService {
       this.logger.log(
         `PRO ${kind} sent for ${promotion.id}: ${result.sent} deliveries (${result.channels.join(', ')})`,
       );
-    } else {
+    } else if (result.sent === 0) {
       this.logger.warn(`PRO ${kind} produced zero deliveries for ${promotion.id}`);
+    } else {
+      this.logger.log(
+        `PRO ${kind} simulated for ${promotion.id}: ${result.sent} deliveries (${result.channels.join(', ')})`,
+      );
     }
 
     return {
@@ -395,27 +470,36 @@ export class NotificationsService {
       channels: result.channels,
       promotionId,
       title: promotion.title,
+      kind,
       proUsers: result.proUsers,
       emailsSent: result.emailsSent,
       smsSent: result.smsSent,
     };
   }
 
-  private async sendProBroadcast(promotion: ProAlertPromotion, kind: ProNotifyKind) {
+  private async sendProBroadcast(
+    promotion: ProAlertPromotion,
+    kind: ProNotifyKind,
+    onlyUserId?: string,
+  ) {
     const users = await this.prisma.user.findMany({
-      where: {
-        OR: [
-          { plan: 'pro' },
-          {
-            subscriptions: {
-              some: {
-                planKey: 'pro',
-                status: { in: [SubscriptionStatus.active, SubscriptionStatus.trialing] },
+      where: onlyUserId
+        ? { id: onlyUserId }
+        : {
+            OR: [
+              { plan: 'pro' },
+              {
+                subscriptions: {
+                  some: {
+                    planKey: 'pro',
+                    status: {
+                      in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+                    },
+                  },
+                },
               },
-            },
+            ],
           },
-        ],
-      },
       select: { id: true, email: true, fullName: true, phone: true },
     });
 
@@ -484,8 +568,8 @@ export class NotificationsService {
           timeZone: 'Europe/Madrid',
         })
       : null;
-    const alertsUrl = `${this.frontendUrl}/alerts`;
-    const promotionsUrl = `${this.frontendUrl}/promotions/${promotion.id}`;
+    const alertsUrl = `${this.publicSiteUrl}/alerts`;
+    const promotionsUrl = `${this.publicSiteUrl}/promotions/${promotion.id}`;
 
     if (kind === 'new_publication') {
       return {
@@ -611,7 +695,7 @@ export class NotificationsService {
     const requestedAt = input.requestedAt.toLocaleString('es-ES', {
       timeZone: 'Europe/Madrid',
     });
-    const panelUrl = `${this.frontendUrl}/admin/cancellations`;
+    const panelUrl = `${this.publicSiteUrl}/admin/cancellations`;
     const sent = await this.sendEmail({
       sender: this.parseEmailSender(),
       to: recipients.map((email) => ({ email })),
@@ -646,22 +730,15 @@ export class NotificationsService {
   }
 
   private async resolveAdminEmails(): Promise<string[]> {
-    const configured = (process.env.BREVO_ADMIN_EMAIL || '')
-      .split(',')
-      .map((value) => value.trim().toLowerCase())
-      .filter((value) => value.includes('@'));
-
     const admins = await this.prisma.user.findMany({
       where: { role: 'admin' },
       select: { email: true },
     });
 
-    return [
-      ...new Set([
-        ...configured,
-        ...admins.map((admin) => admin.email.trim().toLowerCase()),
-      ]),
-    ];
+    return collectAdminEmails(
+      process.env.BREVO_ADMIN_EMAIL,
+      admins.map((admin) => admin.email),
+    );
   }
 
   private async sendEmail(payload: BrevoEmailPayload) {

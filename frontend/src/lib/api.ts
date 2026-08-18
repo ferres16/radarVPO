@@ -220,6 +220,7 @@ export const api = {
       promotions: Array<{
         promotionId?: string;
         title?: string;
+        kind?: 'new_alert' | 'new_publication' | 'reminder_7d' | 'reminder_1d';
         skipped: boolean;
         reason?: string;
         sent: number;
@@ -235,6 +236,42 @@ export const api = {
       }>;
     }>(`/backoffice/notifications/pro-alerts/dispatch${force ? '?force=true' : ''}`, {
       method: 'POST',
+    }),
+  simulateProAlertNotifications: (payload: {
+    promotionId: string;
+    kinds?: Array<'new_alert' | 'new_publication' | 'reminder_7d' | 'reminder_1d'>;
+    onlyMe?: boolean;
+  }) =>
+    request<{
+      skipped: boolean;
+      reason?: string;
+      sent: number;
+      configured: boolean;
+      hasApiKey: boolean;
+      proAlertsEnabled: boolean;
+      pendingAlerts: number;
+      proUsers: number;
+      proUsersWithPhone: number;
+      promotions: Array<{
+        promotionId?: string;
+        title?: string;
+        kind?: 'new_alert' | 'new_publication' | 'reminder_7d' | 'reminder_1d';
+        skipped: boolean;
+        reason?: string;
+        sent: number;
+        proUsers?: number;
+        emailsSent?: number;
+        smsSent?: number;
+      }>;
+      recentFailures: Array<{
+        channel: string;
+        target: string;
+        errorCode: string;
+        createdAt: string;
+      }>;
+    }>('/backoffice/notifications/pro-alerts/simulate', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
   getBackofficeFiles: (query?: string | FileAssetQuery) => {
     const params =

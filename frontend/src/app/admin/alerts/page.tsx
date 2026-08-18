@@ -18,6 +18,12 @@ const statusLabels: Record<AlertStatusFilter, string> = {
 };
 
 function formatDispatchResult(result: Awaited<ReturnType<typeof api.dispatchProAlertNotifications>>) {
+  const kindLabels: Record<string, string> = {
+    new_alert: 'alerta nueva',
+    reminder_7d: 'queda 1 semana',
+    reminder_1d: 'queda 1 día',
+    new_publication: 'promoción publicada',
+  };
   const lines: string[] = [];
 
   if (!result.configured) {
@@ -44,13 +50,15 @@ function formatDispatchResult(result: Awaited<ReturnType<typeof api.dispatchProA
   }
 
   for (const promotion of result.promotions) {
-    if (!promotion.title) continue;
+    if (!promotion.title && !promotion.kind) continue;
+    const label = promotion.kind ? kindLabels[promotion.kind] || promotion.kind : '';
+    const prefix = [promotion.title, label].filter(Boolean).join(' · ');
     if (promotion.skipped && promotion.reason) {
-      lines.push(`· ${promotion.title}: omitida (${promotion.reason}).`);
+      lines.push(`· ${prefix}: omitida (${promotion.reason}).`);
     } else if (promotion.sent === 0) {
-      lines.push(`· ${promotion.title}: 0 envíos (email ${promotion.emailsSent ?? 0}, SMS ${promotion.smsSent ?? 0}).`);
+      lines.push(`· ${prefix}: 0 envíos (email ${promotion.emailsSent ?? 0}, SMS ${promotion.smsSent ?? 0}).`);
     } else {
-      lines.push(`· ${promotion.title}: ${promotion.sent} envíos (email ${promotion.emailsSent ?? 0}, SMS ${promotion.smsSent ?? 0}).`);
+      lines.push(`· ${prefix}: ${promotion.sent} envíos (email ${promotion.emailsSent ?? 0}, SMS ${promotion.smsSent ?? 0}).`);
     }
   }
 
@@ -73,7 +81,7 @@ export default function AdminAlertsPage() {
   const [error, setError] = useState('');
   const [dispatchMessage, setDispatchMessage] = useState('');
   const [dispatching, setDispatching] = useState(false);
-  const [forceResend, setForceResend] = useState(false);
+  const [simulatingId, setSimulatingId] = useState('');
 
   async function dispatchProNotifications() {
     setDispatching(true);
@@ -85,6 +93,30 @@ export default function AdminAlertsPage() {
       setDispatchMessage(err instanceof Error ? err.message : 'No se pudieron enviar las notificaciones');
     } finally {
       setDispatching(false);
+    }
+  }
+
+  async function simulateProNotifications(promotionId: string) {
+    if (
+      !window.confirm(
+        'Se enviarán 4 mensajes a tu email y SMS: alerta nueva, 1 semana, 1 día y promoción publicada. No se envían al resto de usuarios PRO.',
+      )
+    ) {
+      return;
+    }
+
+    setSimulatingId(promotionId);
+    setDispatchMessage('');
+    try {
+      const result = await api.simulateProAlertNotifications({
+        promotionId,
+        onlyMe: true,
+      });
+      setDispatchMessage(formatDispatchResult(result));
+    } catch (err) {
+      setDispatchMessage(err instanceof Error ? err.message : 'No se pudieron simular las notificaciones');
+    } finally {
+      setSimulatingId('');
     }
   }
 
@@ -241,6 +273,16 @@ export default function AdminAlertsPage() {
                     className="rounded-2xl border border-[var(--stroke)] px-3 py-2 text-xs font-bold text-[var(--ink)] disabled:opacity-60"
                   >
                     Archivar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={simulatingId === alert.id}
+                    onClick={() => void simulateProNotifications(alert.id)}
+                    className="rounded-2xl border border-[var(--stroke)] px-3 py-2 text-xs font-bold text-[var(--ink)] disabled:opacity-60 sm:col-span-3"
+                  >
+                    {simulatingId === alert.id
+                      ? 'Enviando prueba...'
+                      : 'Probar 4 avisos PRO (a mí)'}
                   </button>
                   <button
                     type="button"

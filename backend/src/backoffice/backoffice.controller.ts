@@ -34,6 +34,7 @@ import {
   BackofficeListFilesDto,
   BackofficeListPromotionsDto,
 } from './dto/list-backoffice.dto';
+import { SimulateProAlertsDto } from './dto/simulate-pro-alerts.dto';
 import { ReorderCourseItemsDto } from './dto/reorder-course-items.dto';
 import { ReorderUnitsDto } from './dto/reorder-units.dto';
 import { UpdateAccessDto } from './dto/update-access.dto';
@@ -111,6 +112,14 @@ export class BackofficeController {
   @Post('notifications/pro-alerts/dispatch')
   dispatchProAlertNotifications(@Query('force') force?: string) {
     return this.backofficeService.dispatchPendingProAlertNotifications(force === 'true');
+  }
+
+  @Post('notifications/pro-alerts/simulate')
+  simulateProAlertNotifications(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: SimulateProAlertsDto,
+  ) {
+    return this.backofficeService.simulateProAlertNotifications(dto, user.sub);
   }
 
   @Get('files')

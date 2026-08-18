@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ProfileCard } from '@/components/profile-card';
 import { StatusPill } from '@/components/status-pill';
+import { CourseCoverImage } from '@/components/course-cover-image';
 import type { UserCourseProgress } from '@/types';
 
 type MyCoursesSectionProps = {
@@ -53,18 +54,16 @@ function CourseProgressCard({ course }: { course: UserCourseProgress }) {
 
   return (
     <article className="overflow-hidden rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] transition hover:-translate-y-0.5 hover:bg-white">
-      {course.coverImage ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+      <div className="h-36 w-full overflow-hidden">
+        <CourseCoverImage
+          slug={course.slug}
           src={course.coverImage}
-          alt=""
+          alt={course.title}
           className="h-36 w-full object-cover"
+          fallbackClassName="flex h-36 w-full items-center justify-center bg-[linear-gradient(135deg,#e8f7ef,#f4fbff)] text-sm font-semibold text-[var(--ink-soft)]"
+          label={course.title}
         />
-      ) : (
-        <div className="flex h-36 items-center justify-center bg-[linear-gradient(135deg,#e8f7ef,#f4fbff)] text-4xl">
-          📚
-        </div>
-      )}
+      </div>
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="font-semibold text-[var(--ink)]">{course.title}</h3>

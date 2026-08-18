@@ -39,6 +39,7 @@ import {
   BackofficeListFilesDto,
   BackofficeListPromotionsDto,
 } from './dto/list-backoffice.dto';
+import { SimulateProAlertsDto } from './dto/simulate-pro-alerts.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
 import { UpdateAccessDto } from './dto/update-access.dto';
 import { UpdateCourseAccessRuleDto } from './dto/update-course-access-rule.dto';
@@ -128,6 +129,19 @@ export class BackofficeService {
 
   async dispatchPendingProAlertNotifications(force = false) {
     return this.notificationsService.notifyProUsersForPendingAlerts(20, { force });
+  }
+
+  async simulateProAlertNotifications(
+    dto: SimulateProAlertsDto,
+    userId: string,
+  ) {
+    return this.notificationsService.simulateProNotificationsForPromotion(
+      dto.promotionId,
+      {
+        kinds: dto.kinds,
+        onlyUserId: dto.onlyMe === false ? undefined : userId,
+      },
+    );
   }
 
   async listFiles(query: BackofficeListFilesDto) {
