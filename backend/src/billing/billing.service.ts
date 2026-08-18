@@ -128,6 +128,33 @@ export class BillingService {
     return { success: true };
   }
 
+  async withdrawCancellation(userId: string): Promise<{ success: true }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        plan: true,
+        proCancellationRequestedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Usuario no encontrado.');
+    }
+
+    if (user.plan !== 'pro' || !user.proCancellationRequestedAt) {
+      throw new BadRequestException(
+        'No hay ninguna solicitud de cancelación pendiente.',
+      );
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { proCancellationRequestedAt: null },
+    });
+
+    return { success: true };
+  }
+
   async cancelStripeSubscriptionsForUser(input: {
     userId: string;
     email: string;

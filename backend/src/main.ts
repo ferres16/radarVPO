@@ -6,6 +6,7 @@ import { ExpressAdapter } from '@nestjs/platform-express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module';
+import { buildAllowedOriginSet, resolveOrigin } from './common/request-origin';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, new ExpressAdapter());
@@ -20,17 +21,7 @@ async function bootstrap() {
     .filter(Boolean);
 
   const corsOrigins = [...new Set(configuredOrigins)];
-  const resolveOrigin = (value?: string) => {
-    if (!value) return undefined;
-    try {
-      return new URL(value).origin;
-    } catch {
-      return undefined;
-    }
-  };
-  const allowedOriginSet = new Set(
-    corsOrigins.map((value) => resolveOrigin(value) || value).filter(Boolean),
-  );
+  const allowedOriginSet = buildAllowedOriginSet(corsOrigins);
   const isSafeMethod = (method?: string) =>
     !method || ['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
 
@@ -47,7 +38,15 @@ async function bootstrap() {
   app.use(helmet());
   app.use(cookieParser());
   app.enableCors({
-    origin: corsOrigins,
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
+      if (!origin || allowedOriginSet.has(origin) || allowedOriginSet.has(resolveOrigin(origin) || '')) {
+        return callback(null, true);
+      }
+      return callback(null, false);
+    },
     credentials: true,
   });
 
@@ -69,10 +68,17 @@ async function bootstrap() {
     const origin = req.headers.origin;
     const referer = req.headers.referer;
     const clientOrigin = req.headers['x-client-origin'];
+    const forwardedHost = req.headers['x-forwarded-host'];
+    const forwardedProto = req.headers['x-forwarded-proto'];
+    const forwardedOrigin =
+      typeof forwardedHost === 'string' && forwardedHost.length > 0
+        ? `${typeof forwardedProto === 'string' && forwardedProto ? forwardedProto.split(',')[0].trim() : 'https'}://${forwardedHost.split(',')[0].trim()}`
+        : undefined;
     const normalizedOrigin =
       resolveOrigin(origin) ||
       resolveOrigin(referer) ||
-      resolveOrigin(typeof clientOrigin === 'string' ? clientOrigin : undefined);
+      resolveOrigin(typeof clientOrigin === 'string' ? clientOrigin : undefined) ||
+      resolveOrigin(forwardedOrigin);
 
     if (!normalizedOrigin || !allowedOriginSet.has(normalizedOrigin)) {
       return res.status(403).json({

@@ -29,4 +29,18 @@ describe('buildBackendProxyHeaders', () => {
 
     expect(headers.get('x-client-origin')).toBe('https://radar-vpo-frontend-ten.vercel.app');
   });
+
+  it('forwards the production domain origin for same-site admin requests', () => {
+    const request = new NextRequest('https://www.radarvpo.com/api/backend/backoffice/users/abc', {
+      method: 'PATCH',
+      headers: {
+        origin: 'https://www.radarvpo.com',
+        cookie: 'access_token=test',
+      },
+    });
+
+    const headers = buildBackendProxyHeaders(request);
+
+    expect(headers.get('x-client-origin')).toBe('https://www.radarvpo.com');
+  });
 });

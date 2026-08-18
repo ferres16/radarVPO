@@ -23,4 +23,11 @@ export class BillingController {
   requestCancellation(@CurrentUser() user: CurrentUserPayload) {
     return this.billingService.requestCancellation(user.sub);
   }
+
+  @Post('withdraw-cancellation')
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  withdrawCancellation(@CurrentUser() user: CurrentUserPayload) {
+    return this.billingService.withdrawCancellation(user.sub);
+  }
 }

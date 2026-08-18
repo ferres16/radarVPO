@@ -628,4 +628,8 @@ export const api = {
     request<{ success: true }>('/billing/request-cancellation', {
       method: 'POST',
     }),
+  withdrawProCancellation: () =>
+    request<{ success: true }>('/billing/withdraw-cancellation', {
+      method: 'POST',
+    }),
 };

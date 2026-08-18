@@ -23,6 +23,7 @@ export function ProStatusCard({ profile, onProfileUpdate }: ProStatusCardProps) 
   const hasPro = proAccess?.hasAccess ?? profile.plan === 'pro';
   const [portalLoading, setPortalLoading] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [withdrawLoading, setWithdrawLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [actionError, setActionError] = useState('');
 
@@ -41,6 +42,26 @@ export function ProStatusCard({ profile, onProfileUpdate }: ProStatusCardProps) 
       );
     } finally {
       setPortalLoading(false);
+    }
+  }
+
+  async function handleWithdrawCancellation() {
+    setWithdrawLoading(true);
+    setActionError('');
+    setActionMessage('');
+    try {
+      await api.withdrawProCancellation();
+      const updated = await api.getMe();
+      onProfileUpdate?.(updated);
+      setActionMessage('Solicitud anulada. Tu VPO PRO sigue activo.');
+    } catch (err) {
+      setActionError(
+        err instanceof Error
+          ? err.message
+          : 'No se pudo anular la solicitud de cancelación.',
+      );
+    } finally {
+      setWithdrawLoading(false);
     }
   }
 
@@ -140,9 +161,19 @@ export function ProStatusCard({ profile, onProfileUpdate }: ProStatusCardProps) 
           ) : null}
         </div>
         {status === 'cancel_pending' ? (
-          <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            Tu cancelación está en proceso. Seguirás teniendo acceso hasta que finalice el periodo actual.
-          </p>
+          <div className="space-y-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm text-amber-800">
+              Tu cancelación está en proceso. Seguirás teniendo acceso hasta que un administrador la procese.
+            </p>
+            <button
+              type="button"
+              onClick={() => void handleWithdrawCancellation()}
+              disabled={withdrawLoading}
+              className="btn btn--secondary min-h-11 w-full sm:w-auto"
+            >
+              {withdrawLoading ? 'Anulando...' : 'Deshacer solicitud'}
+            </button>
+          </div>
         ) : null}
         <div className="flex flex-col gap-2 sm:flex-row">
           {proAccess?.canManageViaStripe ? (
@@ -154,23 +185,16 @@ export function ProStatusCard({ profile, onProfileUpdate }: ProStatusCardProps) 
             >
               {portalLoading ? 'Abriendo portal...' : 'Gestionar suscripción'}
             </button>
-          ) : proAccess?.managementMethod === 'manual_request' ? (
-            <>
-              {!proAccess.cancellationRequestedAt ? (
-                <button
-                  type="button"
-                  onClick={() => void handleRequestCancellation()}
-                  disabled={cancelLoading}
-                  className="btn btn--secondary"
-                >
-                  {cancelLoading ? 'Enviando...' : 'Solicitar cancelación'}
-                </button>
-              ) : (
-                <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  Cancelación solicitada. Un administrador la procesará pronto.
-                </p>
-              )}
-            </>
+          ) : null}
+          {proAccess?.managementMethod === 'manual_request' && !proAccess.cancellationRequestedAt ? (
+            <button
+              type="button"
+              onClick={() => void handleRequestCancellation()}
+              disabled={cancelLoading}
+              className="btn btn--secondary"
+            >
+              {cancelLoading ? 'Enviando...' : 'Solicitar cancelación'}
+            </button>
           ) : null}
         </div>
         {actionMessage ? (
