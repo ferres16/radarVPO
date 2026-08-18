@@ -10,6 +10,7 @@ import {
   PRO_NOTIFY_SOURCE_KIND,
   type ProNotifyKind,
 } from './pro-notify.util';
+import { buildProNotifyCopy } from './pro-notify-copy';
 
 type ProAlertPromotion = Pick<
   Promotion,
@@ -519,6 +520,7 @@ export class NotificationsService {
         estimatedDate: copy.estimatedDate,
         ctaLabel: copy.ctaLabel,
         pageUrl: copy.pageUrl,
+        disclaimer: copy.disclaimer,
       });
 
       const emailSent = await this.sendEmail({
@@ -568,65 +570,15 @@ export class NotificationsService {
           timeZone: 'Europe/Madrid',
         })
       : null;
-    const alertsUrl = `${this.publicSiteUrl}/alerts`;
-    const promotionsUrl = `${this.publicSiteUrl}/promotions/${promotion.id}`;
 
-    if (kind === 'new_publication') {
-      return {
-        title,
-        location,
-        estimatedDate,
-        subject: `Nueva promoción VPO publicada: ${title}`.slice(0, 140),
-        intro: 'Hay una <strong>nueva promoción publicada</strong> en Radar VPO PRO.',
-        ctaLabel: 'Ver ficha',
-        pageUrl: promotionsUrl,
-        sms: `Radar VPO PRO: nueva promoción publicada en ${location}. ${promotionsUrl}`.slice(
-          0,
-          160,
-        ),
-      };
-    }
-
-    if (kind === 'reminder_7d') {
-      return {
-        title,
-        location,
-        estimatedDate,
-        subject: `Queda 1 semana: ${title}`.slice(0, 140),
-        intro:
-          'Queda <strong>1 semana</strong> para la publicación estimada de este lanzamiento.',
-        ctaLabel: 'Ver próximos lanzamientos',
-        pageUrl: alertsUrl,
-        sms: `Radar VPO PRO: queda 1 semana para una publicación en ${location}. ${alertsUrl}`.slice(
-          0,
-          160,
-        ),
-      };
-    }
-
-    if (kind === 'reminder_1d') {
-      return {
-        title,
-        location,
-        estimatedDate,
-        subject: `Mañana se publica: ${title}`.slice(0, 140),
-        intro: 'Queda <strong>1 día</strong> para la publicación estimada de este lanzamiento.',
-        ctaLabel: 'Ver próximos lanzamientos',
-        pageUrl: alertsUrl,
-        sms: `Radar VPO PRO: mañana se publica en ${location}. ${alertsUrl}`.slice(0, 160),
-      };
-    }
-
-    return {
+    return buildProNotifyCopy({
+      kind,
       title,
       location,
       estimatedDate,
-      subject: `Nueva alerta VPO: ${title}`.slice(0, 140),
-      intro: 'Hemos publicado una <strong>nueva alerta de próximo lanzamiento</strong> en Radar VPO PRO.',
-      ctaLabel: 'Ver próximos lanzamientos',
-      pageUrl: alertsUrl,
-      sms: `Radar VPO PRO: nueva alerta en ${location}. ${alertsUrl}`.slice(0, 160),
-    };
+      alertsUrl: `${this.publicSiteUrl}/alerts`,
+      promotionsUrl: `${this.publicSiteUrl}/promotions/${promotion.id}`,
+    });
   }
 
   private buildEmailHtml({
@@ -637,6 +589,7 @@ export class NotificationsService {
     estimatedDate,
     ctaLabel,
     pageUrl,
+    disclaimer,
   }: {
     displayName: string;
     intro: string;
@@ -645,9 +598,13 @@ export class NotificationsService {
     estimatedDate: string | null;
     ctaLabel: string;
     pageUrl: string;
+    disclaimer: string | null;
   }) {
     const estimatedHtml = estimatedDate
-      ? `<p style="margin:0 0 16px;color:#4b5563;">Fecha estimada: <strong>${this.escapeHtml(estimatedDate)}</strong></p>`
+      ? `<p style="margin:0 0 12px;color:#4b5563;">Fecha estimada (no confirmada): <strong>${this.escapeHtml(estimatedDate)}</strong></p>`
+      : '';
+    const disclaimerHtml = disclaimer
+      ? `<p style="margin:0 0 20px;font-size:13px;color:#6b7280;">${this.escapeHtml(disclaimer)}</p>`
       : '';
 
     return `
@@ -659,6 +616,7 @@ export class NotificationsService {
           <p style="margin:0;color:#4b5563;">Zona: ${this.escapeHtml(location)}</p>
         </div>
         ${estimatedHtml}
+        ${disclaimerHtml}
         <p style="margin:0 0 24px;">
           <a href="${this.escapeHtml(pageUrl)}" style="display:inline-block;background:#167055;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;">
             ${this.escapeHtml(ctaLabel)}
