@@ -1360,6 +1360,13 @@ export class BackofficeService {
 
     if (status === 'pending_review') {
       void this.notificationsService.notifyProUsersForPromotion(promotion.id).catch(() => undefined);
+    } else if (
+      status === 'published_unreviewed' ||
+      status === 'published_reviewed'
+    ) {
+      void this.notificationsService
+        .notifyProUsersForPublication(promotion.id)
+        .catch(() => undefined);
     }
 
     return this.withSignedPromotionDocuments(promotion);
@@ -1476,6 +1483,16 @@ export class BackofficeService {
 
     if (dto.status === 'pending_review' && current.status !== 'pending_review') {
       void this.notificationsService.notifyProUsersForPromotion(promotionId).catch(() => undefined);
+    }
+
+    if (
+      (dto.status === 'published_unreviewed' || dto.status === 'published_reviewed') &&
+      current.status !== 'published_unreviewed' &&
+      current.status !== 'published_reviewed'
+    ) {
+      void this.notificationsService
+        .notifyProUsersForPublication(promotionId)
+        .catch(() => undefined);
     }
 
     return promotion;

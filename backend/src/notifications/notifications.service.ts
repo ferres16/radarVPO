@@ -2,11 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AudienceType, Prisma, Promotion, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizePhoneForSms } from './phone-normalize';
-import { isAmendmentPublication } from '../common/promotion-content-filters';
+import { isAmendmentPublication, shortenAlertTitle } from '../common/promotion-content-filters';
+import {
+  calendarDaysUntil,
+  PRO_NOTIFY_SOURCE_KIND,
+  type ProNotifyKind,
+} from './pro-notify.util';
 
 type ProAlertPromotion = Pick<
   Promotion,
-  'id' | 'title' | 'municipality' | 'province' | 'estimatedPublicationDate'
+  'id' | 'title' | 'municipality' | 'province' | 'estimatedPublicationDate' | 'status'
 >;
 
 type BrevoEmailPayload = {
@@ -213,6 +218,59 @@ export class NotificationsService {
     promotionId: string,
     options: { force?: boolean } = {},
   ): Promise<NotifyResult> {
+    return this.notifyProEvent(promotionId, 'new_alert', options);
+  }
+
+  async notifyProUsersForPublication(
+    promotionId: string,
+    options: { force?: boolean } = {},
+  ): Promise<NotifyResult> {
+    return this.notifyProEvent(promotionId, 'new_publication', options);
+  }
+
+  async notifyDueReminders(): Promise<{ sent: number; results: NotifyResult[] }> {
+    if (!this.isProAlertsConfigured()) {
+      return { sent: 0, results: [] };
+    }
+
+    const alerts = await this.prisma.promotion.findMany({
+      where: {
+        status: 'pending_review',
+        estimatedPublicationDate: { not: null },
+      },
+      select: {
+        id: true,
+        title: true,
+        estimatedPublicationDate: true,
+      },
+      take: 200,
+    });
+
+    const results: NotifyResult[] = [];
+    let sent = 0;
+
+    for (const alert of alerts) {
+      if (isAmendmentPublication(alert.title)) continue;
+      const days = calendarDaysUntil(alert.estimatedPublicationDate as Date);
+      const kind: ProNotifyKind | null =
+        days === 7 ? 'reminder_7d' : days === 1 ? 'reminder_1d' : null;
+      if (!kind) continue;
+      const result = await this.notifyProEvent(alert.id, kind);
+      results.push(result);
+      if (!result.skipped) sent += result.sent;
+    }
+
+    this.logger.log(
+      `PRO reminders checked=${alerts.length}, due=${results.length}, sent=${sent}`,
+    );
+    return { sent, results };
+  }
+
+  private async notifyProEvent(
+    promotionId: string,
+    kind: ProNotifyKind,
+    options: { force?: boolean } = {},
+  ): Promise<NotifyResult> {
     if (!this.isProAlertsConfigured()) {
       return { skipped: true, reason: 'brevo_not_configured', sent: 0, promotionId };
     }
@@ -229,17 +287,43 @@ export class NotificationsService {
       },
     });
 
-    if (!promotion || promotion.status !== 'pending_review') {
-      return { skipped: true, reason: 'not_pending_alert', sent: 0, promotionId };
+    if (!promotion) {
+      return { skipped: true, reason: 'not_found', sent: 0, promotionId };
     }
 
     if (isAmendmentPublication(promotion.title)) {
-      return { skipped: true, reason: 'amendment_excluded', sent: 0, promotionId, title: promotion.title };
+      return {
+        skipped: true,
+        reason: 'amendment_excluded',
+        sent: 0,
+        promotionId,
+        title: promotion.title,
+      };
     }
 
+    if (kind === 'new_alert' && promotion.status !== 'pending_review') {
+      return { skipped: true, reason: 'not_pending_alert', sent: 0, promotionId };
+    }
+
+    if (
+      kind === 'new_publication' &&
+      promotion.status !== 'published_unreviewed' &&
+      promotion.status !== 'published_reviewed'
+    ) {
+      return { skipped: true, reason: 'not_published', sent: 0, promotionId };
+    }
+
+    if (
+      (kind === 'reminder_7d' || kind === 'reminder_1d') &&
+      promotion.status !== 'pending_review'
+    ) {
+      return { skipped: true, reason: 'not_pending_alert', sent: 0, promotionId };
+    }
+
+    const sourceKind = PRO_NOTIFY_SOURCE_KIND[kind];
     const existing = await this.prisma.publishedPost.findFirst({
       where: {
-        sourceKind: 'promotion_alert',
+        sourceKind,
         sourceId: promotion.id,
         audience: AudienceType.pro,
         channel: 'brevo',
@@ -249,20 +333,26 @@ export class NotificationsService {
     });
 
     if (existing && !options.force) {
-      return { skipped: true, reason: 'already_sent', sent: 0, promotionId, title: promotion.title };
+      return {
+        skipped: true,
+        reason: 'already_sent',
+        sent: 0,
+        promotionId,
+        title: promotion.title,
+      };
     }
 
-    const result = await this.sendProAlert(promotion);
+    const result = await this.sendProBroadcast(promotion, kind);
     if (result.sent > 0) {
       if (existing && options.force) {
         await this.prisma.publishedPost.update({
           where: { id: existing.id },
           data: {
             payloadJson: {
+              kind,
               title: promotion.title,
               sent: result.sent,
               channels: result.channels,
-              alertsUrl: this.getAlertsPageUrl(),
               forced: true,
             } as Prisma.InputJsonValue,
             sentAt: new Date(),
@@ -271,15 +361,15 @@ export class NotificationsService {
       } else {
         await this.prisma.publishedPost.create({
           data: {
-            sourceKind: 'promotion_alert',
+            sourceKind,
             sourceId: promotion.id,
             audience: AudienceType.pro,
             channel: 'brevo',
             payloadJson: {
+              kind,
               title: promotion.title,
               sent: result.sent,
               channels: result.channels,
-              alertsUrl: this.getAlertsPageUrl(),
             } as Prisma.InputJsonValue,
             status: 'sent',
             sentAt: new Date(),
@@ -287,10 +377,10 @@ export class NotificationsService {
         });
       }
       this.logger.log(
-        `Pro alert notification sent for promotion ${promotion.id}: ${result.sent} deliveries (${result.channels.join(', ')})`,
+        `PRO ${kind} sent for ${promotion.id}: ${result.sent} deliveries (${result.channels.join(', ')})`,
       );
     } else {
-      this.logger.warn(`Pro alert notification produced zero deliveries for promotion ${promotion.id}`);
+      this.logger.warn(`PRO ${kind} produced zero deliveries for ${promotion.id}`);
     }
 
     return {
@@ -311,7 +401,7 @@ export class NotificationsService {
     };
   }
 
-  private async sendProAlert(promotion: ProAlertPromotion) {
+  private async sendProBroadcast(promotion: ProAlertPromotion, kind: ProNotifyKind) {
     const users = await this.prisma.user.findMany({
       where: {
         OR: [
@@ -333,28 +423,24 @@ export class NotificationsService {
     let sent = 0;
     let emailsSent = 0;
     let smsSent = 0;
-    const alertsUrl = this.getAlertsPageUrl();
-    const location = [promotion.municipality, promotion.province].filter(Boolean).join(', ') || 'Cataluña';
-    const estimatedDate = promotion.estimatedPublicationDate
-      ? new Date(promotion.estimatedPublicationDate).toLocaleDateString('es-ES')
-      : null;
+    const copy = this.buildProCopy(promotion, kind);
 
     for (const user of users) {
       const displayName = user.fullName || 'usuario PRO';
-      const subject = `Nueva alerta VPO: ${promotion.title}`;
-      const sms = this.buildSmsMessage({ location, alertsUrl });
       const html = this.buildEmailHtml({
         displayName,
-        promotionTitle: promotion.title,
-        location,
-        estimatedDate,
-        alertsUrl,
+        intro: copy.intro,
+        promotionTitle: copy.title,
+        location: copy.location,
+        estimatedDate: copy.estimatedDate,
+        ctaLabel: copy.ctaLabel,
+        pageUrl: copy.pageUrl,
       });
 
       const emailSent = await this.sendEmail({
         sender: this.parseEmailSender(),
         to: [{ email: user.email, name: displayName }],
-        subject,
+        subject: copy.subject,
         htmlContent: html,
       });
       if (emailSent) {
@@ -368,7 +454,7 @@ export class NotificationsService {
         const smsSentForUser = await this.sendSms({
           sender: this.smsSender,
           recipient: normalizedPhone,
-          content: sms,
+          content: copy.sms,
           type: 'transactional',
         });
         if (smsSentForUser) {
@@ -388,44 +474,113 @@ export class NotificationsService {
     };
   }
 
-  private buildSmsMessage({ location, alertsUrl }: { location: string; alertsUrl: string }) {
-    const message = `Radar VPO PRO: nueva alerta en ${location}. Ver lanzamientos: ${alertsUrl}`;
-    return message.slice(0, 160);
+  private buildProCopy(promotion: ProAlertPromotion, kind: ProNotifyKind) {
+    const title = shortenAlertTitle(promotion.title);
+    const location =
+      [promotion.municipality, promotion.province].filter(Boolean).join(', ') ||
+      'Cataluña';
+    const estimatedDate = promotion.estimatedPublicationDate
+      ? new Date(promotion.estimatedPublicationDate).toLocaleDateString('es-ES', {
+          timeZone: 'Europe/Madrid',
+        })
+      : null;
+    const alertsUrl = `${this.frontendUrl}/alerts`;
+    const promotionsUrl = `${this.frontendUrl}/promotions/${promotion.id}`;
+
+    if (kind === 'new_publication') {
+      return {
+        title,
+        location,
+        estimatedDate,
+        subject: `Nueva promoción VPO publicada: ${title}`.slice(0, 140),
+        intro: 'Hay una <strong>nueva promoción publicada</strong> en Radar VPO PRO.',
+        ctaLabel: 'Ver ficha',
+        pageUrl: promotionsUrl,
+        sms: `Radar VPO PRO: nueva promoción publicada en ${location}. ${promotionsUrl}`.slice(
+          0,
+          160,
+        ),
+      };
+    }
+
+    if (kind === 'reminder_7d') {
+      return {
+        title,
+        location,
+        estimatedDate,
+        subject: `Queda 1 semana: ${title}`.slice(0, 140),
+        intro:
+          'Queda <strong>1 semana</strong> para la publicación estimada de este lanzamiento.',
+        ctaLabel: 'Ver próximos lanzamientos',
+        pageUrl: alertsUrl,
+        sms: `Radar VPO PRO: queda 1 semana para una publicación en ${location}. ${alertsUrl}`.slice(
+          0,
+          160,
+        ),
+      };
+    }
+
+    if (kind === 'reminder_1d') {
+      return {
+        title,
+        location,
+        estimatedDate,
+        subject: `Mañana se publica: ${title}`.slice(0, 140),
+        intro: 'Queda <strong>1 día</strong> para la publicación estimada de este lanzamiento.',
+        ctaLabel: 'Ver próximos lanzamientos',
+        pageUrl: alertsUrl,
+        sms: `Radar VPO PRO: mañana se publica en ${location}. ${alertsUrl}`.slice(0, 160),
+      };
+    }
+
+    return {
+      title,
+      location,
+      estimatedDate,
+      subject: `Nueva alerta VPO: ${title}`.slice(0, 140),
+      intro: 'Hemos publicado una <strong>nueva alerta de próximo lanzamiento</strong> en Radar VPO PRO.',
+      ctaLabel: 'Ver próximos lanzamientos',
+      pageUrl: alertsUrl,
+      sms: `Radar VPO PRO: nueva alerta en ${location}. ${alertsUrl}`.slice(0, 160),
+    };
   }
 
   private buildEmailHtml({
     displayName,
+    intro,
     promotionTitle,
     location,
     estimatedDate,
-    alertsUrl,
+    ctaLabel,
+    pageUrl,
   }: {
     displayName: string;
+    intro: string;
     promotionTitle: string;
     location: string;
     estimatedDate: string | null;
-    alertsUrl: string;
+    ctaLabel: string;
+    pageUrl: string;
   }) {
     const estimatedHtml = estimatedDate
-      ? `<p style="margin:0 0 16px;color:#4b5563;">Fecha estimada de publicación: <strong>${this.escapeHtml(estimatedDate)}</strong></p>`
+      ? `<p style="margin:0 0 16px;color:#4b5563;">Fecha estimada: <strong>${this.escapeHtml(estimatedDate)}</strong></p>`
       : '';
 
     return `
       <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">
         <p style="margin:0 0 16px;">Hola ${this.escapeHtml(displayName)},</p>
-        <p style="margin:0 0 16px;">Hemos publicado una <strong>nueva alerta de próximo lanzamiento</strong> en Radar VPO PRO.</p>
+        <p style="margin:0 0 16px;">${intro}</p>
         <div style="margin:0 0 20px;padding:16px 18px;border:1px solid #e5e7eb;border-radius:16px;background:#f8faf9;">
           <p style="margin:0 0 8px;font-size:18px;font-weight:700;">${this.escapeHtml(promotionTitle)}</p>
           <p style="margin:0;color:#4b5563;">Zona: ${this.escapeHtml(location)}</p>
         </div>
         ${estimatedHtml}
-        <p style="margin:0 0 20px;color:#4b5563;">Entra en la web para revisar el aviso y preparar tu solicitud antes de que abra el plazo.</p>
         <p style="margin:0 0 24px;">
-          <a href="${this.escapeHtml(alertsUrl)}" style="display:inline-block;background:#167055;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;">
-            Ver próximos lanzamientos
+          <a href="${this.escapeHtml(pageUrl)}" style="display:inline-block;background:#167055;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;">
+            ${this.escapeHtml(ctaLabel)}
           </a>
         </p>
-        <p style="margin:0;font-size:13px;color:#6b7280;">Si el botón no funciona, copia este enlace: <a href="${this.escapeHtml(alertsUrl)}">${this.escapeHtml(alertsUrl)}</a></p>
+        <p style="margin:0;font-size:13px;color:#6b7280;">Si el botón no funciona, copia este enlace: <a href="${this.escapeHtml(pageUrl)}">${this.escapeHtml(pageUrl)}</a></p>
       </div>
     `;
   }

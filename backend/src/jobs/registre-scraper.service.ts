@@ -26,6 +26,7 @@ export class RegistreScraperService {
     duplicatesMerged: number;
     skippedAmendments: number;
     createdAlertIds: string[];
+    createdPublicationIds: string[];
   }> {
     const listUrl =
       process.env.REGISTRE_NEWS_URL ??
@@ -69,6 +70,7 @@ export class RegistreScraperService {
     let documentsCreated = 0;
     let skippedAmendments = 0;
     const createdAlertIds: string[] = [];
+    const createdPublicationIds: string[] = [];
 
     await this.archiveExistingAmendments();
 
@@ -158,6 +160,8 @@ export class RegistreScraperService {
         promotionsCreated += 1;
         if (isAlertEntry) {
           createdAlertIds.push(promotion.id);
+        } else {
+          createdPublicationIds.push(promotion.id);
         }
       } else {
         const mergedRawText = this.mergeRawText(existing.rawText, rawText);
@@ -227,6 +231,7 @@ export class RegistreScraperService {
       duplicatesMerged,
       skippedAmendments,
       createdAlertIds,
+      createdPublicationIds,
     };
   }
 

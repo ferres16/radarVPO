@@ -54,6 +54,20 @@ export class JobsService implements OnApplicationBootstrap {
     await this.runPromotionsCheck({ notify: true });
   }
 
+  @Cron(process.env.CRON_SEND_REMINDERS || '0 8 * * *', {
+    timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
+  })
+  async sendProReminders() {
+    if (!this.cronsEnabled()) return;
+    await this.runWithLock('send_pro_reminders', async () => {
+      const reminders = await this.notificationsService.notifyDueReminders();
+      return {
+        sent: reminders.sent,
+        due: reminders.results.length,
+      };
+    });
+  }
+
   @Cron(process.env.CRON_FETCH_DAILY_NEWS || CronExpression.EVERY_DAY_AT_6AM, {
     timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
   })
@@ -76,6 +90,7 @@ export class JobsService implements OnApplicationBootstrap {
             duplicatesMerged: 0,
             skippedAmendments: 0,
             createdAlertIds: [] as string[],
+            createdPublicationIds: [] as string[],
           };
         });
 
@@ -84,14 +99,25 @@ export class JobsService implements OnApplicationBootstrap {
       );
 
       const proAlertResults = [];
-      if (options.notify && registre.createdAlertIds.length > 0) {
+      if (options.notify) {
         for (const alertId of registre.createdAlertIds) {
           proAlertResults.push(
             await this.notificationsService.notifyProUsersForPromotion(alertId),
           );
         }
-      } else if (options.notify) {
-        this.logger.log('Pro alerts skipped: no newly created alerts in this run');
+        for (const publicationId of registre.createdPublicationIds) {
+          proAlertResults.push(
+            await this.notificationsService.notifyProUsersForPublication(
+              publicationId,
+            ),
+          );
+        }
+        if (
+          registre.createdAlertIds.length === 0 &&
+          registre.createdPublicationIds.length === 0
+        ) {
+          this.logger.log('PRO new-item alerts skipped: no newly created items');
+        }
       }
 
       return {
