@@ -430,6 +430,85 @@ export class NotificationsService {
     `;
   }
 
+  async notifyAdminsOfProCancellation(input: {
+    userId: string;
+    email: string;
+    fullName: string | null;
+    phone: string | null;
+    requestedAt: Date;
+  }): Promise<{ sent: boolean; recipients: number }> {
+    const recipients = await this.resolveAdminEmails();
+    if (!this.apiKey) {
+      this.logger.warn(
+        'Admin cancellation email skipped: missing BREVO_API_KEY',
+      );
+      return { sent: false, recipients: recipients.length };
+    }
+
+    if (recipients.length === 0) {
+      this.logger.warn(
+        'Admin cancellation email skipped: no BREVO_ADMIN_EMAIL and no admin users',
+      );
+      return { sent: false, recipients: 0 };
+    }
+
+    const displayName = input.fullName?.trim() || input.email;
+    const requestedAt = input.requestedAt.toLocaleString('es-ES', {
+      timeZone: 'Europe/Madrid',
+    });
+    const panelUrl = `${this.frontendUrl}/admin/cancellations`;
+    const sent = await this.sendEmail({
+      sender: this.parseEmailSender(),
+      to: recipients.map((email) => ({ email })),
+      subject: `[Radar VPO] Baja PRO solicitada: ${displayName}`,
+      htmlContent: `
+        <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">
+          <p style="margin:0 0 16px;">Un usuario ha solicitado dar de baja VPO PRO.</p>
+          <div style="margin:0 0 20px;padding:16px 18px;border:1px solid #e5e7eb;border-radius:16px;background:#f8faf9;">
+            <p style="margin:0 0 8px;font-size:18px;font-weight:700;">${this.escapeHtml(displayName)}</p>
+            <p style="margin:0 0 4px;color:#4b5563;">Email: ${this.escapeHtml(input.email)}</p>
+            <p style="margin:0 0 4px;color:#4b5563;">Teléfono: ${this.escapeHtml(input.phone || 'n/d')}</p>
+            <p style="margin:0;color:#4b5563;">Solicitado: ${this.escapeHtml(requestedAt)}</p>
+          </div>
+          <p style="margin:0 0 20px;color:#4b5563;">Entra al panel de anulaciones para procesar la baja en Stripe y en Radar VPO.</p>
+          <p style="margin:0 0 24px;">
+            <a href="${this.escapeHtml(panelUrl)}" style="display:inline-block;background:#167055;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;">
+              Ver anulaciones
+            </a>
+          </p>
+          <p style="margin:0;font-size:13px;color:#6b7280;">ID usuario: ${this.escapeHtml(input.userId)}</p>
+        </div>
+      `,
+    });
+
+    if (!sent) {
+      this.logger.warn(
+        `Admin cancellation email failed for user ${input.userId} (${input.email})`,
+      );
+    }
+
+    return { sent, recipients: recipients.length };
+  }
+
+  private async resolveAdminEmails(): Promise<string[]> {
+    const configured = (process.env.BREVO_ADMIN_EMAIL || '')
+      .split(',')
+      .map((value) => value.trim().toLowerCase())
+      .filter((value) => value.includes('@'));
+
+    const admins = await this.prisma.user.findMany({
+      where: { role: 'admin' },
+      select: { email: true },
+    });
+
+    return [
+      ...new Set([
+        ...configured,
+        ...admins.map((admin) => admin.email.trim().toLowerCase()),
+      ]),
+    ];
+  }
+
   private async sendEmail(payload: BrevoEmailPayload) {
     return this.postBrevo('https://api.brevo.com/v3/smtp/email', payload, 'email', payload.to[0]?.email);
   }

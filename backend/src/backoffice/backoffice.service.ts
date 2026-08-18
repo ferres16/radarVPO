@@ -12,6 +12,8 @@ import {
   PromotionStatus,
   ServiceStatus,
   ServiceType,
+  SubscriptionStatus,
+  UserPlan,
   UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -72,6 +74,7 @@ export class BackofficeService {
       archived,
       news,
       jobsFailed,
+      pendingCancellations,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.promotion.count(),
@@ -83,6 +86,9 @@ export class BackofficeService {
       this.prisma.promotion.count({ where: { status: 'archived' } }),
       this.prisma.newsItem.count(),
       this.prisma.jobRun.count({ where: { status: 'failed' } }),
+      this.prisma.user.count({
+        where: { proCancellationRequestedAt: { not: null }, plan: 'pro' },
+      }),
     ]);
 
     return {
@@ -94,6 +100,7 @@ export class BackofficeService {
       archived,
       news,
       jobsFailed,
+      pendingCancellations,
     };
   }
 
@@ -182,10 +189,92 @@ export class BackofficeService {
         role: true,
         plan: true,
         createdAt: true,
+        stripeCustomerId: true,
+        proCancellationRequestedAt: true,
       },
       orderBy: { createdAt: 'desc' },
       take: limit,
       skip: offset,
+    });
+  }
+
+  async listCancellationRequests() {
+    return this.prisma.user.findMany({
+      where: {
+        proCancellationRequestedAt: { not: null },
+        plan: UserPlan.pro,
+      },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        role: true,
+        plan: true,
+        stripeCustomerId: true,
+        proCancellationRequestedAt: true,
+        createdAt: true,
+      },
+      orderBy: { proCancellationRequestedAt: 'asc' },
+    });
+  }
+
+  async processCancellationRequest(userId: string) {
+    const existing = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        plan: true,
+        proCancellationRequestedAt: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!existing.proCancellationRequestedAt) {
+      throw new BadRequestException(
+        'Este usuario no tiene una solicitud de baja pendiente.',
+      );
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          plan: UserPlan.free,
+          proCancellationRequestedAt: null,
+        },
+      }),
+      this.prisma.subscription.updateMany({
+        where: {
+          userId,
+          planKey: 'pro',
+          status: {
+            in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+          },
+        },
+        data: {
+          status: SubscriptionStatus.canceled,
+          cancelAt: new Date(),
+        },
+      }),
+    ]);
+
+    return this.prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        role: true,
+        plan: true,
+        stripeCustomerId: true,
+        proCancellationRequestedAt: true,
+        createdAt: true,
+      },
     });
   }
 
@@ -214,6 +303,9 @@ export class BackofficeService {
         fullName: dto.fullName,
         role: dto.role,
         plan: dto.plan,
+        ...(dto.plan === UserPlan.free
+          ? { proCancellationRequestedAt: null }
+          : {}),
       },
       select: {
         id: true,
@@ -222,6 +314,8 @@ export class BackofficeService {
         role: true,
         plan: true,
         createdAt: true,
+        stripeCustomerId: true,
+        proCancellationRequestedAt: true,
       },
     });
   }

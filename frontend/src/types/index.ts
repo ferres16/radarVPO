@@ -131,6 +131,7 @@ export type BackofficeOverview = {
   archived: number;
   news: number;
   jobsFailed: number;
+  pendingCancellations: number;
 };
 
 export type BackofficeUser = {
@@ -141,6 +142,12 @@ export type BackofficeUser = {
   role: 'user' | 'admin';
   plan: 'free' | 'pro';
   createdAt: string;
+  stripeCustomerId?: string | null;
+  proCancellationRequestedAt?: string | null;
+};
+
+export type BackofficeCancellationRequest = BackofficeUser & {
+  proCancellationRequestedAt: string;
 };
 
 export type CourseStatus = 'draft' | 'published' | 'archived';

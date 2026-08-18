@@ -3,6 +3,7 @@
 import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
 import { ProCta, ProGate, ProOnlyMessage } from '@/components/pro/pro-cta';
 import { getDaysRemaining } from '@/lib/alert-countdown';
+import { shortenAlertTitle } from '@/lib/alert-title';
 import type { Promotion } from '@/types';
 
 export function AlertTimeline({ alerts }: { alerts: Promotion[] }) {
@@ -19,7 +20,9 @@ export function AlertTimeline({ alerts }: { alerts: Promotion[] }) {
             </div>
             <div className="saas-card-rail">
               <AlertCountdownBadge daysRemaining={daysRemaining} size="sm" />
-              <h3 className="mt-3 text-base font-bold leading-snug text-[var(--ink)]">{alert.title}</h3>
+              <h3 className="mt-3 text-base font-bold leading-snug text-[var(--ink)]">
+                {shortenAlertTitle(alert.title)}
+              </h3>
               <p className="mt-1 text-sm text-[var(--ink-soft)]">{alert.municipality || 'Cataluña'}</p>
               <div className="mt-auto pt-4">
                 <ProGate>

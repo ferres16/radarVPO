@@ -16,6 +16,7 @@ const overviewLabels: Record<string, string> = {
   archived: 'Archivadas',
   news: 'Noticias',
   jobsFailed: 'Fallos jobs',
+  pendingCancellations: 'Bajas PRO pendientes',
 };
 
 export default function AdminPage() {
@@ -76,7 +77,7 @@ export default function AdminPage() {
           <PageHero
             eyebrow="Panel de administración"
             title="Centro operativo para contenido, usuarios y promociones"
-            description="Solo datos clave y accesos directos. La gestión operativa está separada en Promociones, Avisos, Cursos, Acompañamiento y Compras."
+            description="Solo datos clave y accesos directos. La gestión operativa está separada en Promociones, Avisos, Cursos, Acompañamiento, Compras y Anulaciones."
             actions={
               <>
                 <ButtonLink href="/admin/promotions">Promociones</ButtonLink>
@@ -100,6 +101,7 @@ export default function AdminPage() {
                 ['/admin/courses', 'Cursos'],
                 ['/admin/services', 'Acompañamiento'],
                 ['/admin/access', 'Compras y accesos'],
+                ['/admin/cancellations', 'Anulaciones PRO'],
               ].map(([href, label]) => (
                 <Link key={href} href={href} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 text-sm font-semibold text-[var(--ink)] hover:bg-white">
                   {label}

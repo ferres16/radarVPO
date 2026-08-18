@@ -52,7 +52,7 @@ export function ProStatusCard({ profile, onProfileUpdate }: ProStatusCardProps) 
       await api.requestProCancellation();
       const updated = await api.getMe();
       onProfileUpdate?.(updated);
-      setActionMessage('Solicitud de cancelación registrada. Te contactaremos pronto.');
+      setActionMessage('Solicitud enviada. El equipo ha recibido un aviso y procesará la baja.');
     } catch (err) {
       setActionError(
         err instanceof Error

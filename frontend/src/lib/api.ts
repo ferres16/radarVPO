@@ -2,6 +2,7 @@ import {
   BackofficeNewsItem,
   BackofficeOverview,
   BackofficeAccessDetail,
+  BackofficeCancellationRequest,
   BackofficeUser,
   Course,
   CourseAccessRule,
@@ -262,6 +263,12 @@ export const api = {
     request<BackofficeUser>(`/backoffice/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
+    }),
+  getBackofficeCancellations: () =>
+    request<BackofficeCancellationRequest[]>('/backoffice/cancellations'),
+  processBackofficeCancellation: (id: string) =>
+    request<BackofficeUser>(`/backoffice/cancellations/${id}/process`, {
+      method: 'POST',
     }),
   getBackofficeNews: () => request<BackofficeNewsItem[]>('/backoffice/news'),
   createBackofficeNews: (

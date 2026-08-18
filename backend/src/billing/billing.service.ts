@@ -1,16 +1,21 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class BillingService {
+  private readonly logger = new Logger(BillingService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async createPortalSession(userId: string): Promise<{ url: string }> {
@@ -58,6 +63,9 @@ export class BillingService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
+        email: true,
+        fullName: true,
+        phone: true,
         plan: true,
         proCancellationRequestedAt: true,
       },
@@ -79,10 +87,32 @@ export class BillingService {
       );
     }
 
+    const requestedAt = new Date();
     await this.prisma.user.update({
       where: { id: userId },
-      data: { proCancellationRequestedAt: new Date() },
+      data: { proCancellationRequestedAt: requestedAt },
     });
+
+    try {
+      const result = await this.notifications.notifyAdminsOfProCancellation({
+        userId,
+        email: user.email,
+        fullName: user.fullName,
+        phone: user.phone,
+        requestedAt,
+      });
+      if (!result.sent) {
+        this.logger.warn(
+          `Cancellation stored for ${user.email} but admin email was not sent`,
+        );
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Cancellation stored for ${user.email} but admin email failed: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
 
     return { success: true };
   }

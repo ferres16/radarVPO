@@ -141,6 +141,16 @@ export class BackofficeController {
     return this.backofficeService.updateUser(userId, dto);
   }
 
+  @Get('cancellations')
+  listCancellationRequests() {
+    return this.backofficeService.listCancellationRequests();
+  }
+
+  @Post('cancellations/:id/process')
+  processCancellationRequest(@Param('id') userId: string) {
+    return this.backofficeService.processCancellationRequest(userId);
+  }
+
   @Get('news')
   listNews(@Query() query: BackofficeListDto) {
     return this.backofficeService.listNews(query);

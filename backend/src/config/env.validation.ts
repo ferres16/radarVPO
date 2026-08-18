@@ -215,6 +215,10 @@ class EnvironmentVariables {
 
   @IsOptional()
   @IsString()
+  BREVO_ADMIN_EMAIL?: string;
+
+  @IsOptional()
+  @IsString()
   STRIPE_SECRET_KEY?: string;
 
   @IsOptional()
