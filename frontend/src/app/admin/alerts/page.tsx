@@ -81,6 +81,7 @@ export default function AdminAlertsPage() {
   const [error, setError] = useState('');
   const [dispatchMessage, setDispatchMessage] = useState('');
   const [dispatching, setDispatching] = useState(false);
+  const [forceResend, setForceResend] = useState(false);
   const [simulatingId, setSimulatingId] = useState('');
 
   async function dispatchProNotifications() {
