@@ -3,6 +3,7 @@ import {
   BackofficeOverview,
   BackofficeAccessDetail,
   BackofficeCancellationRequest,
+  BackofficeCancellationProcessResult,
   BackofficeUser,
   Course,
   CourseAccessRule,
@@ -258,7 +259,7 @@ export const api = {
   getBackofficeUsers: (q?: string) => request<BackofficeUser[]>(`/backoffice/users${queryString({ q })}`),
   updateBackofficeUser: (
     id: string,
-    payload: Partial<Pick<BackofficeUser, 'fullName' | 'role' | 'plan'>>,
+    payload: Partial<Pick<BackofficeUser, 'fullName' | 'role' | 'plan' | 'stripeCustomerId'>>,
   ) =>
     request<BackofficeUser>(`/backoffice/users/${id}`, {
       method: 'PATCH',
@@ -267,7 +268,7 @@ export const api = {
   getBackofficeCancellations: () =>
     request<BackofficeCancellationRequest[]>('/backoffice/cancellations'),
   processBackofficeCancellation: (id: string) =>
-    request<BackofficeUser>(`/backoffice/cancellations/${id}/process`, {
+    request<BackofficeCancellationProcessResult>(`/backoffice/cancellations/${id}/process`, {
       method: 'POST',
     }),
   getBackofficeNews: () => request<BackofficeNewsItem[]>('/backoffice/news'),

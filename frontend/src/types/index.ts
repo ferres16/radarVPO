@@ -150,6 +150,19 @@ export type BackofficeCancellationRequest = BackofficeUser & {
   proCancellationRequestedAt: string;
 };
 
+export type StripeCancellationResult = {
+  attempted: boolean;
+  canceled: number;
+  customerId: string | null;
+  periodEnd: string | null;
+  skippedReason?: string;
+};
+
+export type BackofficeCancellationProcessResult = {
+  user: BackofficeUser;
+  stripe: StripeCancellationResult;
+};
+
 export type CourseStatus = 'draft' | 'published' | 'archived';
 export type CourseAccessType = 'free' | 'paid' | 'pro' | 'seguimiento';
 export type CoursePricingType = 'free' | 'premium';

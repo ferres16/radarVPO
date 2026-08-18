@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
 import { PageHero, SurfaceCard } from '@/components/design-system';
 import { api } from '@/lib/api';
-import type { BackofficeCancellationRequest, UserProfile } from '@/types';
+import type { BackofficeCancellationRequest, StripeCancellationResult, UserProfile } from '@/types';
 
 function formatDate(value: string | null) {
   if (!value) return 'n/d';
@@ -13,6 +13,25 @@ function formatDate(value: string | null) {
     dateStyle: 'medium',
     timeStyle: 'short',
   });
+}
+
+function stripeMessage(stripe: StripeCancellationResult) {
+  if (stripe.canceled > 0) {
+    const until = stripe.periodEnd
+      ? ` Dejará de renovar el ${new Date(stripe.periodEnd).toLocaleDateString('es-ES')}.`
+      : '';
+    return `Stripe: suscripción cancelada al final del periodo.${until}`;
+  }
+  if (stripe.skippedReason === 'missing_stripe_key') {
+    return 'Stripe: falta STRIPE_SECRET_KEY. Baja hecha en Radar; cancela el cobro en el Dashboard.';
+  }
+  if (stripe.skippedReason === 'stripe_customer_not_found') {
+    return 'Stripe: no hay Customer ID ni cliente con ese email. Baja hecha en Radar; cancela el cobro a mano.';
+  }
+  if (stripe.skippedReason === 'no_active_subscription') {
+    return 'Stripe: no había suscripción activa. Baja hecha en Radar.';
+  }
+  return 'Stripe: no se canceló ningún cobro. Revisa el Customer ID.';
 }
 
 export default function AdminCancellationsPage() {
@@ -59,9 +78,9 @@ export default function AdminCancellationsPage() {
     setError('');
     setMessage('');
     try {
-      await api.processBackofficeCancellation(userId);
+      const result = await api.processBackofficeCancellation(userId);
       setRequests((prev) => prev.filter((item) => item.id !== userId));
-      setMessage('Baja procesada. El usuario ya no tiene VPO PRO.');
+      setMessage(`Baja procesada. El usuario ya no tiene VPO PRO. ${stripeMessage(result.stripe)}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo procesar la baja');
     } finally {
@@ -101,7 +120,7 @@ export default function AdminCancellationsPage() {
           <PageHero
             eyebrow="Backoffice"
             title="Anulaciones VPO PRO"
-            description="Cuando un usuario solicita la baja, recibes un correo por Brevo y la petición queda aquí hasta que la proceses en Stripe y en Radar VPO."
+            description="Procesar baja quita PRO en Radar y cancela la renovación en Stripe si hay Customer ID o el email coincide."
           />
 
           {error ? (
@@ -151,6 +170,12 @@ export default function AdminCancellationsPage() {
                           <dd className="break-all font-semibold text-[var(--ink)]">
                             {item.stripeCustomerId || 'Sin customer vinculado'}
                           </dd>
+                          <Link
+                            href={`/admin/users?q=${encodeURIComponent(item.email)}`}
+                            className="mt-1 inline-block text-xs font-semibold text-[var(--green-700)]"
+                          >
+                            Editar usuario y Customer ID
+                          </Link>
                         </div>
                       </dl>
                     </div>

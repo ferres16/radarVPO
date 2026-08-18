@@ -25,6 +25,7 @@ import {
 } from '../storage/upload-limits';
 import { S3StorageService } from '../storage/s3-storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { BillingService } from '../billing/billing.service';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
 import { CreateCourseContentBlockDto } from './dto/create-course-content-block.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -62,6 +63,7 @@ export class BackofficeService {
     private readonly storage: S3StorageService,
     private readonly fileStorage: FileStorageService,
     private readonly notificationsService: NotificationsService,
+    private readonly billingService: BillingService,
   ) {}
 
   async overview() {
@@ -178,6 +180,7 @@ export class BackofficeService {
               { email: { contains: search, mode: 'insensitive' } },
               { fullName: { contains: search, mode: 'insensitive' } },
               { phone: { contains: search, mode: 'insensitive' } },
+              { stripeCustomerId: { contains: search, mode: 'insensitive' } },
             ],
           }
         : undefined,
@@ -224,7 +227,9 @@ export class BackofficeService {
       where: { id: userId },
       select: {
         id: true,
+        email: true,
         plan: true,
+        stripeCustomerId: true,
         proCancellationRequestedAt: true,
       },
     });
@@ -239,12 +244,28 @@ export class BackofficeService {
       );
     }
 
+    let stripe;
+    try {
+      stripe = await this.billingService.cancelStripeSubscriptionsForUser({
+        userId,
+        email: existing.email,
+        stripeCustomerId: existing.stripeCustomerId,
+      });
+    } catch (error) {
+      throw new BadRequestException(
+        `No se pudo cancelar en Stripe: ${
+          error instanceof Error ? error.message : String(error)
+        }. Revisa el Customer ID y vuelve a procesar.`,
+      );
+    }
+
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
         data: {
           plan: UserPlan.free,
           proCancellationRequestedAt: null,
+          stripeCustomerId: stripe.customerId ?? existing.stripeCustomerId,
         },
       }),
       this.prisma.subscription.updateMany({
@@ -257,12 +278,12 @@ export class BackofficeService {
         },
         data: {
           status: SubscriptionStatus.canceled,
-          cancelAt: new Date(),
+          cancelAt: stripe.periodEnd ? new Date(stripe.periodEnd) : new Date(),
         },
       }),
     ]);
 
-    return this.prisma.user.findUniqueOrThrow({
+    const user = await this.prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: {
         id: true,
@@ -276,6 +297,8 @@ export class BackofficeService {
         createdAt: true,
       },
     });
+
+    return { user, stripe };
   }
 
   async updateUser(userId: string, dto: UpdateUserDto) {
@@ -297,12 +320,33 @@ export class BackofficeService {
       }
     }
 
+    const stripeCustomerId =
+      dto.stripeCustomerId === undefined
+        ? undefined
+        : dto.stripeCustomerId?.trim() || null;
+
+    if (stripeCustomerId) {
+      const taken = await this.prisma.user.findFirst({
+        where: {
+          stripeCustomerId,
+          id: { not: userId },
+        },
+        select: { email: true },
+      });
+      if (taken) {
+        throw new BadRequestException(
+          `Ese Stripe Customer ID ya está vinculado a ${taken.email}.`,
+        );
+      }
+    }
+
     return this.prisma.user.update({
       where: { id: userId },
       data: {
         fullName: dto.fullName,
         role: dto.role,
         plan: dto.plan,
+        ...(stripeCustomerId !== undefined ? { stripeCustomerId } : {}),
         ...(dto.plan === UserPlan.free
           ? { proCancellationRequestedAt: null }
           : {}),
@@ -311,6 +355,7 @@ export class BackofficeService {
         id: true,
         email: true,
         fullName: true,
+        phone: true,
         role: true,
         plan: true,
         createdAt: true,

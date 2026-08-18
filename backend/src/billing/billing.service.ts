@@ -5,8 +5,19 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { SubscriptionStatus } from '@prisma/client';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+
+function getSubscriptionPeriodEnd(subscription: {
+  current_period_end?: number;
+  items?: { data?: Array<{ current_period_end?: number }> };
+}): number | undefined {
+  return (
+    subscription.current_period_end ??
+    subscription.items?.data?.[0]?.current_period_end
+  );
+}
 
 @Injectable()
 export class BillingService {
@@ -115,5 +126,113 @@ export class BillingService {
     }
 
     return { success: true };
+  }
+
+  async cancelStripeSubscriptionsForUser(input: {
+    userId: string;
+    email: string;
+    stripeCustomerId: string | null;
+  }): Promise<{
+    attempted: boolean;
+    canceled: number;
+    customerId: string | null;
+    periodEnd: string | null;
+    skippedReason?: string;
+  }> {
+    const secretKey = this.config.get<string>('STRIPE_SECRET_KEY');
+    if (!secretKey) {
+      return {
+        attempted: false,
+        canceled: 0,
+        customerId: input.stripeCustomerId,
+        periodEnd: null,
+        skippedReason: 'missing_stripe_key',
+      };
+    }
+
+    const Stripe = (await import('stripe')).default;
+    const stripe = new Stripe(secretKey);
+
+    let customerId = input.stripeCustomerId?.trim() || null;
+    if (!customerId) {
+      const matches = await stripe.customers.list({
+        email: input.email,
+        limit: 3,
+      });
+      customerId = matches.data[0]?.id ?? null;
+      if (customerId) {
+        await this.prisma.user.update({
+          where: { id: input.userId },
+          data: { stripeCustomerId: customerId },
+        });
+      }
+    }
+
+    if (!customerId) {
+      return {
+        attempted: false,
+        canceled: 0,
+        customerId: null,
+        periodEnd: null,
+        skippedReason: 'stripe_customer_not_found',
+      };
+    }
+
+    const subscriptions = await stripe.subscriptions.list({
+      customer: customerId,
+      status: 'all',
+      limit: 20,
+    });
+
+    const cancelable = subscriptions.data.filter((subscription) =>
+      ['active', 'trialing', 'past_due', 'unpaid'].includes(subscription.status),
+    );
+
+    if (cancelable.length === 0) {
+      return {
+        attempted: true,
+        canceled: 0,
+        customerId,
+        periodEnd: null,
+        skippedReason: 'no_active_subscription',
+      };
+    }
+
+    let latestPeriodEnd: string | null = null;
+    for (const subscription of cancelable) {
+      const updated = subscription.cancel_at_period_end
+        ? subscription
+        : await stripe.subscriptions.update(subscription.id, {
+            cancel_at_period_end: true,
+          });
+      const periodEndUnix = getSubscriptionPeriodEnd(updated);
+      const periodEnd = periodEndUnix
+        ? new Date(periodEndUnix * 1000).toISOString()
+        : null;
+      if (periodEnd && (!latestPeriodEnd || periodEnd > latestPeriodEnd)) {
+        latestPeriodEnd = periodEnd;
+      }
+    }
+
+    await this.prisma.subscription.updateMany({
+      where: {
+        userId: input.userId,
+        planKey: 'pro',
+        status: {
+          in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+        },
+      },
+      data: {
+        status: SubscriptionStatus.canceled,
+        cancelAt: latestPeriodEnd ? new Date(latestPeriodEnd) : new Date(),
+      },
+    });
+
+    return {
+      attempted: true,
+      canceled: cancelable.length,
+      customerId,
+      periodEnd: latestPeriodEnd,
+    };
   }
 }
