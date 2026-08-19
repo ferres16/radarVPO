@@ -10,8 +10,6 @@ import { CourseTipTapRenderer } from '@/components/course-tiptap-renderer';
 import { CollapsePanel } from '@/components/collapse-panel';
 import { filterLessonResourcesForDisplay } from '@/lib/course-lesson-resources';
 import { api } from '@/lib/api';
-import { ProCta } from '@/components/pro/pro-cta';
-import { proPlan } from '@/lib/pro';
 import type { Course, CourseLesson, CourseModule } from '@/types';
 
 type LessonPayload = {
@@ -47,9 +45,28 @@ export default function LessonPage() {
           message.includes('403') ||
           message.toLowerCase().includes('unauthorized') ||
           message.toLowerCase().includes('forbidden');
+
         if (needsAuth) {
-          const next = `/cursos/${slug}/${lessonSlug}`;
-          router.replace(`/login?next=${encodeURIComponent(next)}`);
+          try {
+            const course = await api.getCourse(slug);
+            if (!active) return;
+            const lesson = course.modules
+              ?.flatMap((module) => module.lessons || [])
+              .find((item) => item.slug === lessonSlug);
+            if (lesson) {
+              setPayload({
+                course,
+                lesson,
+                access: { canAccess: false, reason: 'locked' },
+              });
+              setError('');
+              return;
+            }
+          } catch {
+            // fall through to course page redirect
+          }
+
+          router.replace(`/cursos/${slug}#indice`);
           return;
         }
         setError(message);
@@ -132,6 +149,7 @@ export default function LessonPage() {
             mode="nav"
             activeLessonSlug={lesson?.slug}
             defaultOpenFirst
+            locked={locked}
           />
         </CollapsePanel>
       </div>
@@ -146,6 +164,7 @@ export default function LessonPage() {
               mode="nav"
               activeLessonSlug={lesson?.slug}
               defaultOpenFirst
+              locked={locked}
             />
           </div>
         </aside>
@@ -159,20 +178,21 @@ export default function LessonPage() {
                 <span>{lesson?.durationMinutes ? `${lesson.durationMinutes} min` : 'Tiempo flexible'}</span>
                 <span>Tipo: {lesson?.type}</span>
               </div>
-              {locked ? (
-                <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900 md:mt-4">
-                  Esta lección está incluida en {proPlan.name}.
-                </div>
-              ) : null}
             </header>
 
             {locked ? (
               <article className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 md:mt-6 md:p-6 lg:rounded-3xl">
                 <h2 className="text-lg font-black text-amber-950 md:text-xl">Contenido bloqueado</h2>
                 <p className="mt-2 text-sm leading-6 text-amber-900 md:text-base">
-                  Esta lección existe, pero el contenido solo se entrega cuando el acceso del usuario está activo.
+                  Puedes ver el índice del curso, pero el contenido de las lecciones solo está disponible cuando
+                  tienes acceso activo.
                 </p>
-                <ProCta className="mt-4 inline-flex rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-semibold text-white" />
+                <Link
+                  href={`/cursos/${payload.course.slug}#precio`}
+                  className="mt-4 inline-flex rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-semibold text-white"
+                >
+                  Ver opciones de acceso
+                </Link>
               </article>
             ) : (
               <article className="mt-4 md:mt-6 lg:mx-auto lg:max-w-3xl">
@@ -217,7 +237,7 @@ export default function LessonPage() {
               >
                 Volver al curso
               </Link>
-              {previousLesson ? (
+              {previousLesson && !locked ? (
                 <Link
                   href={`/cursos/${payload.course.slug}/${previousLesson.slug}`}
                   className="flex-1 rounded-full border border-[var(--stroke)] bg-white px-4 py-2.5 text-center text-sm font-semibold text-[var(--ink)] sm:flex-none sm:px-5"
@@ -235,7 +255,7 @@ export default function LessonPage() {
               >
                 {marking ? 'Guardando...' : 'Completada'}
               </button>
-              {nextLesson ? (
+              {nextLesson && !locked ? (
                 <Link
                   href={`/cursos/${payload.course.slug}/${nextLesson.slug}`}
                   className="flex-1 rounded-full bg-[var(--ink)] px-4 py-2.5 text-center text-sm font-semibold text-white sm:flex-none sm:px-5"

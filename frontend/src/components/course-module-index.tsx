@@ -23,6 +23,7 @@ type CourseModuleIndexProps = {
   lessonProgress?: Array<{ lessonId: string; status: LessonStatus }>;
   activeLessonSlug?: string;
   defaultOpenFirst?: boolean;
+  locked?: boolean;
 };
 
 function findLessonStatus(
@@ -39,6 +40,7 @@ export function CourseModuleIndex({
   lessonProgress = [],
   activeLessonSlug,
   defaultOpenFirst = true,
+  locked = false,
 }: CourseModuleIndexProps) {
   return (
     <div className="space-y-2 md:space-y-3">
@@ -70,6 +72,24 @@ export function CourseModuleIndex({
               }`;
 
               if (mode === 'progress') {
+                if (locked) {
+                  return (
+                    <span
+                      key={lesson.id}
+                      className={`${baseClass} cursor-not-allowed opacity-70`}
+                      aria-disabled="true"
+                      title="Activa el curso para acceder a esta lección"
+                    >
+                      <span className="min-w-0 font-semibold text-[var(--ink)]">{lesson.title}</span>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] md:text-[10px] ${statusStyles[status]}`}
+                      >
+                        {statusLabels[status]}
+                      </span>
+                    </span>
+                  );
+                }
+
                 return (
                   <Link key={lesson.id} href={`/cursos/${courseSlug}/${lesson.slug}`} className={baseClass}>
                     <span className="min-w-0 font-semibold text-[var(--ink)]">{lesson.title}</span>
@@ -83,6 +103,19 @@ export function CourseModuleIndex({
               }
 
               if (mode === 'nav') {
+                if (locked && !isActive) {
+                  return (
+                    <span
+                      key={lesson.id}
+                      className="block cursor-not-allowed rounded-lg border border-[var(--stroke)] px-3 py-2.5 text-sm font-semibold text-[var(--ink-soft)] opacity-70 md:rounded-xl"
+                      aria-disabled="true"
+                      title="Activa el curso para acceder a esta lección"
+                    >
+                      {lesson.title}
+                    </span>
+                  );
+                }
+
                 return (
                   <Link
                     key={lesson.id}

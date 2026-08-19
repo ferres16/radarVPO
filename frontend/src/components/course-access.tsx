@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import Link from 'next/link';
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
@@ -81,8 +81,8 @@ function pickHref(canAccess: boolean, hrefWhenAccess: string, hrefWhenLocked: st
   return canAccess ? hrefWhenAccess : hrefWhenLocked;
 }
 
-function resolveExternalHref(href: string, fallback: string) {
-  return isSafeExternalCheckoutUrl(href) ? href : fallback;
+function resolveExternalHref(href: string) {
+  return isSafeExternalCheckoutUrl(href) ? href : null;
 }
 
 export function CourseAccessLink({
@@ -101,28 +101,37 @@ export function CourseAccessLink({
   const { canAccess, resolved, initialCanAccess } = useCourseAccess();
   const hasAccess = resolved ? canAccess : initialCanAccess;
   const rawHref = pickHref(hasAccess, hrefWhenAccess, hrefWhenLocked);
-  const href = /^https?:\/\//.test(rawHref)
-    ? resolveExternalHref(rawHref, hasAccess ? hrefWhenAccess : `/login?next=${encodeURIComponent(hrefWhenAccess)}`)
-    : rawHref;
   const label = hasAccess ? accessLabel : lockedLabel;
+  const content = !resolved ? 'Entrar al curso' : label;
 
-  if (/^https?:\/\//.test(href)) {
+  if (/^https?:\/\//.test(rawHref)) {
+    const externalHref = resolveExternalHref(rawHref);
+    if (externalHref) {
+      return (
+        <a
+          href={externalHref}
+          className={className}
+          rel="noopener noreferrer"
+          target="_blank"
+          aria-busy={!resolved}
+        >
+          {content}
+        </a>
+      );
+    }
+  }
+
+  if (rawHref.startsWith('#')) {
     return (
-      <a
-        href={href}
-        className={className}
-        rel="noopener noreferrer"
-        target="_blank"
-        aria-busy={!resolved}
-      >
-        {!resolved ? 'Entrar al curso' : label}
+      <a href={rawHref} className={className} aria-busy={!resolved}>
+        {content}
       </a>
     );
   }
 
   return (
-    <Link href={href} className={className} aria-busy={!resolved}>
-      {!resolved ? 'Entrar al curso' : label}
+    <Link href={rawHref} className={className} aria-busy={!resolved}>
+      {content}
     </Link>
   );
 }
@@ -139,12 +148,22 @@ export function CourseLessonAccessLink({
   children: ReactNode;
 }) {
   const { canAccess, resolved, initialCanAccess } = useCourseAccess();
-  const lessonHref = `/cursos/${courseSlug}/${lessonSlug}`;
   const hasAccess = resolved ? canAccess : initialCanAccess;
-  const href = hasAccess ? lessonHref : `/login?next=${encodeURIComponent(lessonHref)}`;
+
+  if (!hasAccess) {
+    return (
+      <span
+        className={`${className} cursor-not-allowed opacity-70`}
+        aria-disabled="true"
+        title="Activa el curso para acceder a esta lección"
+      >
+        {children}
+      </span>
+    );
+  }
 
   return (
-    <Link href={href} className={className} aria-busy={!resolved}>
+    <Link href={`/cursos/${courseSlug}/${lessonSlug}`} className={className} aria-busy={!resolved}>
       {children}
     </Link>
   );

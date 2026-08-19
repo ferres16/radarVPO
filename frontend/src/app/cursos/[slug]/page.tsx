@@ -107,6 +107,13 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
   const lessonCount = modules.reduce((count, module) => count + (module.lessons?.length || 0), 0);
   const canAccess = Boolean(course.access?.canAccess);
   const includedInPro = course.accessType === 'pro';
+  const accessTypeLabel = includedInPro
+    ? 'Incluido en PRO'
+    : course.pricingType === 'premium' || course.accessType === 'paid'
+      ? 'Compra directa'
+      : course.accessType === 'free' || course.pricingType === 'free'
+        ? 'Gratis'
+        : 'Curso';
   const { accessHref: courseEntryHref, lockedHref: lockedAccessHref, lockedLabel: lockedAccessLabel, hasLessons } =
     buildCourseAccessTargets(course);
   const salePrice = getCourseSalePrice(course);
@@ -192,7 +199,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-soft)] md:mt-5">
                 <span className="rounded-full bg-[var(--bg-app)] px-3 py-1">{lessonCount} lecciones</span>
                 <span className="rounded-full bg-[var(--bg-app)] px-3 py-1">
-                  {includedInPro ? 'Incluido en PRO' : course.accessType}
+                  {accessTypeLabel}
                 </span>
                 {canAccess ? (
                   <span className="rounded-full bg-[rgba(22,112,85,0.12)] px-3 py-1 text-[var(--green-700)]">Acceso activo</span>
@@ -213,7 +220,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               ) : null}
             </div>
             {!canAccess ? (
-            <aside className="course-progress-card flex flex-col gap-4 p-5 md:p-6">
+            <aside id="precio" className="course-progress-card flex scroll-mt-24 flex-col gap-4 p-5 md:p-6">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/60">Precio</p>
                 <p className="display-type mt-2 text-3xl font-black text-white">
@@ -251,7 +258,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
             className="premium-card !border-[var(--stroke)] !bg-[var(--surface-elevated)]"
             bodyClassName="!border-t-0 !pt-3 lg:!pt-0"
           >
-            <CourseModuleIndex courseSlug={course.slug} modules={modules} mode="access" defaultOpenFirst />
+            <CourseModuleIndex courseSlug={course.slug} modules={modules} mode="access" defaultOpenFirst locked={!canAccess} />
           </CollapsePanel>
 
           <aside className="space-y-3 md:space-y-4">

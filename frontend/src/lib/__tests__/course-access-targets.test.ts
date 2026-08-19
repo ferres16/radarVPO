@@ -42,9 +42,9 @@ describe('getCourseEntryHref', () => {
 });
 
 describe('buildCourseAccessTargets', () => {
-  it('sends free users to login with lesson next url', () => {
+  it('points locked free courses to the purchase section instead of login', () => {
     const targets = buildCourseAccessTargets(baseCourse);
-    expect(targets.lockedHref).toBe('/login?next=%2Fcursos%2Fcurso-test%2Fleccion-1');
+    expect(targets.lockedHref).toBe('/cursos/curso-test#precio');
     expect(targets.accessHref).toBe('/cursos/curso-test/leccion-1');
   });
 
@@ -66,7 +66,7 @@ describe('buildCourseAccessTargets', () => {
       accessType: 'paid',
       stripePaymentLink: 'https://bucket.s3.amazonaws.com/courses/cover.jpg',
     });
-    expect(targets.lockedHref).toBe('/login?next=%2Fcursos%2Fcurso-test%2Fleccion-1');
+    expect(targets.lockedHref).toBe('/cursos/curso-test#precio');
     expect(targets.lockedLabel).toBe('Solicitar acceso');
   });
 });

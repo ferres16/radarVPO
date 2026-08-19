@@ -23,12 +23,14 @@ export type CourseAccessTargets = {
   hasLessons: boolean;
 };
 
+export const COURSE_PURCHASE_ANCHOR = '#precio';
+
 export function buildCourseAccessTargets(course: Course): CourseAccessTargets {
   const lessonSlug = getFirstLessonSlug(course);
   const entryHref = getCourseEntryHref(course);
   const includedInPro = course.accessType === 'pro';
   const isFree = course.pricingType === 'free' || course.accessType === 'free';
-  const loginFallback = `/login?next=${encodeURIComponent(entryHref)}`;
+  const coursePageHref = `/cursos/${course.slug}${COURSE_PURCHASE_ANCHOR}`;
 
   if (includedInPro) {
     return {
@@ -53,8 +55,8 @@ export function buildCourseAccessTargets(course: Course): CourseAccessTargets {
   if (isFree) {
     return {
       accessHref: entryHref,
-      lockedHref: loginFallback,
-      lockedLabel: lessonSlug ? 'Entrar al curso' : 'Ver índice',
+      lockedHref: coursePageHref,
+      lockedLabel: lessonSlug ? 'Ver opciones de acceso' : 'Ver índice',
       accessLabel: lessonSlug ? 'Entrar al curso' : 'Ver índice',
       hasLessons: Boolean(lessonSlug),
     };
@@ -62,7 +64,7 @@ export function buildCourseAccessTargets(course: Course): CourseAccessTargets {
 
   return {
     accessHref: entryHref,
-    lockedHref: loginFallback,
+    lockedHref: coursePageHref,
     lockedLabel: 'Solicitar acceso',
     accessLabel: lessonSlug ? 'Entrar al curso' : 'Ver índice',
     hasLessons: Boolean(lessonSlug),
