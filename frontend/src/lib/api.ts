@@ -156,7 +156,10 @@ async function requestPublic<T>(path: string, revalidateSeconds = 45): Promise<T
   return res.json() as Promise<T>;
 }
 
-async function authRequest<T>(path: '/login' | '/register' | '/logout', init?: RequestInit): Promise<T> {
+async function authRequest<T>(
+  path: '/login' | '/register' | '/logout' | '/forgot-password' | '/reset-password',
+  init?: RequestInit,
+): Promise<T> {
   const res = await fetch(`/api/auth${path}`, {
     ...init,
     credentials: 'include',
@@ -652,6 +655,16 @@ export const api = {
       body: JSON.stringify({ email, password, fullName, phone }),
     });
   },
+  requestPasswordReset: (email: string) =>
+    authRequest<{ success: true; message: string }>('/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+  resetPassword: (token: string, password: string) =>
+    authRequest<{ success: true; message: string }>('/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }),
   updateMe: (payload: { fullName?: string; phone?: string }) =>
     request<UserProfile>('/users/me', {
       method: 'PATCH',

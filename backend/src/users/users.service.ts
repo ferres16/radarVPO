@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProAccessService } from '../common/pro-access/pro-access.service';
 import { CoursesService } from '../courses/courses.service';
@@ -103,6 +103,24 @@ export class UsersService {
     id: string,
     data: { fullName?: string | null; phone?: string | null },
   ) {
+    const current = await this.prisma.user.findUnique({
+      where: { id },
+      select: { fullName: true, phone: true },
+    });
+
+    if (!current) {
+      throw new NotFoundException('User not found');
+    }
+
+    const nextFullName =
+      data.fullName === undefined ? current.fullName : (data.fullName ?? '');
+    const nextPhone =
+      data.phone === undefined ? current.phone : (data.phone ?? '');
+
+    if (nextFullName === current.fullName && nextPhone === current.phone) {
+      throw new BadRequestException('No hay cambios que guardar.');
+    }
+
     return this.prisma.user.update({
       where: { id },
       data: {

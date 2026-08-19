@@ -10,8 +10,10 @@ import { ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { CookieOptions, Request, Response } from 'express';
 import { AuthService } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const cookieDomain = process.env.COOKIE_DOMAIN;
@@ -89,6 +91,7 @@ export class AuthController {
   }
 
   @Post('logout')
+  @Throttle({ default: { limit: 10, ttl: 60 } })
   async logout(
     @Req() req: RequestWithCookies,
     @Res({ passthrough: true }) res: Response,
@@ -108,6 +111,18 @@ export class AuthController {
     res.clearCookie('refresh_token', clearOptions);
     res.clearCookie('session_id', clearOptions);
     return { success: true };
+  }
+
+  @Post('forgot-password')
+  @Throttle({ default: { limit: 3, ttl: 3600 } })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.requestPasswordReset(dto);
+  }
+
+  @Post('reset-password')
+  @Throttle({ default: { limit: 5, ttl: 60 } })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   private writeAuthCookies(

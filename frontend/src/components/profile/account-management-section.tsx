@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
@@ -10,6 +11,7 @@ export function AccountManagementSection() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   async function logout() {
+    if (loggingOut) return;
     setLoggingOut(true);
     try {
       await api.logout();
@@ -28,16 +30,21 @@ export function AccountManagementSection() {
         Sesión y seguridad
       </h2>
       <p className="mt-2 text-sm text-[var(--ink-soft)]">
-        Cierra tu sesión en este dispositivo cuando termines.
+        Cierra tu sesión en este dispositivo cuando termines o solicita un enlace para cambiar tu contraseña.
       </p>
-      <button
-        type="button"
-        onClick={() => void logout()}
-        disabled={loggingOut}
-        className="btn btn--secondary mt-4 !border-red-100 !text-red-700"
-      >
-        {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
-      </button>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Link href="/forgot-password" className="btn btn--secondary">
+          Cambiar contraseña
+        </Link>
+        <button
+          type="button"
+          onClick={() => void logout()}
+          disabled={loggingOut}
+          className="btn btn--secondary !border-red-100 !text-red-700"
+        >
+          {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
+        </button>
+      </div>
     </ProfileCard>
   );
 }

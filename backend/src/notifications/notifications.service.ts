@@ -687,6 +687,37 @@ export class NotificationsService {
     return { sent, recipients: recipients.length };
   }
 
+  async sendPasswordResetEmail(input: {
+    email: string;
+    fullName: string | null;
+    resetUrl: string;
+  }): Promise<boolean> {
+    if (!this.apiKey) {
+      this.logger.warn('Password reset email skipped: missing BREVO_API_KEY');
+      return false;
+    }
+
+    const displayName = input.fullName?.trim() || input.email;
+    return this.sendEmail({
+      sender: this.parseEmailSender(),
+      to: [{ email: input.email, name: displayName }],
+      subject: 'Restablece tu contraseña de Radar VPO',
+      htmlContent: `
+        <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">
+          <p style="margin:0 0 16px;">Hola ${this.escapeHtml(displayName)},</p>
+          <p style="margin:0 0 16px;">Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en Radar VPO.</p>
+          <p style="margin:0 0 24px;">
+            <a href="${this.escapeHtml(input.resetUrl)}" style="display:inline-block;background:#167055;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;">
+              Restablecer contraseña
+            </a>
+          </p>
+          <p style="margin:0 0 12px;font-size:13px;color:#6b7280;">El enlace caduca en 1 hora. Si no has solicitado este cambio, puedes ignorar este correo.</p>
+          <p style="margin:0;font-size:13px;color:#6b7280;">Si el botón no funciona, copia este enlace: <a href="${this.escapeHtml(input.resetUrl)}">${this.escapeHtml(input.resetUrl)}</a></p>
+        </div>
+      `,
+    });
+  }
+
   private async resolveAdminEmails(): Promise<string[]> {
     const admins = await this.prisma.user.findMany({
       where: { role: 'admin' },

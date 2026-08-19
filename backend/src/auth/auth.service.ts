@@ -7,9 +7,19 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { resolvePublicSiteUrl } from '../common/public-site-url';
+import { NotificationsService } from '../notifications/notifications.service';
 import { UsersService } from '../users/users.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import {
+  createPasswordResetToken,
+  getPasswordResetCooldownRemainingMs,
+  hashPasswordResetToken,
+  PASSWORD_RESET_TOKEN_TTL_MS,
+} from './password-reset.util';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +28,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly notifications: NotificationsService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -113,6 +124,105 @@ export class AuthService {
       where: { id: sessionId, revokedAt: null },
       data: { revokedAt: new Date() },
     });
+  }
+
+  async requestPasswordReset(dto: ForgotPasswordDto) {
+    const email = dto.email.trim().toLowerCase();
+    const genericResponse = {
+      success: true,
+      message:
+        'Si existe una cuenta con ese email, recibirás un enlace para restablecer la contraseña.',
+    };
+
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      return genericResponse;
+    }
+
+    const recentRequest = await this.prisma.passwordResetToken.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    });
+
+    if (recentRequest) {
+      const remainingMs = getPasswordResetCooldownRemainingMs(
+        recentRequest.createdAt,
+      );
+      if (remainingMs > 0) {
+        const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
+        throw new BadRequestException(
+          `Solo puedes solicitar un enlace de recuperación una vez cada 24 horas. Vuelve a intentarlo en ${remainingHours} h.`,
+        );
+      }
+    }
+
+    const { rawToken, tokenHash } = createPasswordResetToken();
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS);
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    const resetUrl = `${resolvePublicSiteUrl()}/reset-password?token=${rawToken}`;
+    const sent = await this.notifications.sendPasswordResetEmail({
+      email: user.email,
+      fullName: user.fullName,
+      resetUrl,
+    });
+
+    if (!sent) {
+      throw new BadRequestException(
+        'No se pudo enviar el correo de recuperación. Inténtalo más tarde.',
+      );
+    }
+
+    return genericResponse;
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const tokenHash = hashPasswordResetToken(dto.token.trim());
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: {
+        user: {
+          select: { id: true },
+        },
+      },
+    });
+
+    if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {
+      throw new BadRequestException(
+        'El enlace de recuperación no es válido o ha caducado.',
+      );
+    }
+
+    const passwordHash = await bcrypt.hash(dto.password, 10);
+    const usedAt = new Date();
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { usedAt },
+      }),
+      this.prisma.session.updateMany({
+        where: { userId: resetToken.userId, revokedAt: null },
+        data: { revokedAt: usedAt },
+      }),
+    ]);
+
+    return {
+      success: true,
+      message: 'Contraseña actualizada. Ya puedes iniciar sesión.',
+    };
   }
 
   private async issueTokens(

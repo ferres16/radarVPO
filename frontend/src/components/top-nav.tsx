@@ -13,6 +13,7 @@ const primaryLinks = primaryNavLinks;
 export function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const { me, hasPro } = useProAccess();
   const router = useRouter();
   const pathname = usePathname();
@@ -55,12 +56,16 @@ export function TopNav() {
   };
 
   const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
     try {
       await api.logout();
     } catch {
       // Ignore logout failures and still redirect.
     } finally {
       setMenuOpen(false);
+      setMobileOpen(false);
+      setLoggingOut(false);
       router.push('/login');
       router.refresh();
     }
@@ -167,11 +172,12 @@ export function TopNav() {
                   ) : null}
                   <button
                     type="button"
-                    className="block w-full rounded-2xl px-3 py-2 text-left text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
-                    onClick={handleLogout}
+                    disabled={loggingOut}
+                    className="block w-full rounded-2xl px-3 py-2 text-left text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] disabled:opacity-60"
+                    onClick={() => void handleLogout()}
                     role="menuitem"
                   >
-                    Cerrar sesión
+                    {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
                   </button>
                 </div>
               ) : null}
@@ -248,13 +254,14 @@ export function TopNav() {
               <li>
                 <button
                   type="button"
-                  className="block w-full rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-left text-sm font-semibold text-[var(--ink)]"
+                  disabled={loggingOut}
+                  className="block w-full rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-left text-sm font-semibold text-[var(--ink)] disabled:opacity-60"
                   onClick={() => {
                     setMobileOpen(false);
                     void handleLogout();
                   }}
                 >
-                  Cerrar sesión
+                  {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
                 </button>
               </li>
             ) : (

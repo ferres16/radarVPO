@@ -58,6 +58,11 @@ export default function LoginPage() {
                   className="ds-control w-full"
                 />
               </FormField>
+              <div className="flex justify-end">
+                <Link href="/forgot-password" className="text-sm font-semibold text-[var(--green-700)]">
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
               {error ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="alert" aria-live="polite">
                   {error}

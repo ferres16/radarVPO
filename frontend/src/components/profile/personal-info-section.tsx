@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { ProfileCard } from '@/components/profile-card';
 import { formatProfileDate, splitFullName } from '@/lib/pro-access';
@@ -23,6 +23,14 @@ export function PersonalInfoSection({
   const [success, setSuccess] = useState('');
 
   const { firstName, lastName } = splitFullName(profile.fullName);
+  const hasChanges = useMemo(() => {
+    const trimmedName = fullName.trim();
+    const trimmedPhone = phone.trim();
+    return (
+      trimmedName !== (profile.fullName || '').trim() ||
+      trimmedPhone !== (profile.phone || '').trim()
+    );
+  }, [fullName, phone, profile.fullName, profile.phone]);
 
   function startEditing() {
     setFullName(profile.fullName || '');
@@ -42,6 +50,10 @@ export function PersonalInfoSection({
     const trimmedName = fullName.trim();
     if (!trimmedName) {
       setError('El nombre es obligatorio.');
+      return;
+    }
+
+    if (!hasChanges) {
       return;
     }
 
@@ -120,7 +132,7 @@ export function PersonalInfoSection({
             <button
               type="button"
               onClick={() => void saveProfile()}
-              disabled={saving}
+              disabled={saving || !hasChanges}
               className="btn btn--primary"
             >
               {saving ? 'Guardando...' : 'Guardar cambios'}
