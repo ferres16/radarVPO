@@ -4,7 +4,6 @@ import { EmptyState } from '@/components/empty-state';
 import { CourseProductCard } from '@/components/course-product-card';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
-import { HorizontalRail, HorizontalRailItem } from '@/components/saas/horizontal-rail';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
@@ -18,8 +17,6 @@ export const metadata: Metadata = createMetadata({
 export default async function CoursesPage() {
   const courses = await api.listCourses().catch(() => []);
   const visibleCourses = [...courses].sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
-  const proCourses = visibleCourses.filter((course) => course.accessType === 'pro');
-  const premiumCourses = visibleCourses.filter((course) => course.accessType !== 'pro');
   const totalLessons = visibleCourses.reduce(
     (acc, course) => acc + (course.modules?.reduce((m, mod) => m + (mod.lessons?.length || 0), 0) || 0),
     0,
@@ -70,51 +67,23 @@ export default async function CoursesPage() {
           <EmptyState title="Sin cursos publicados" description="El catálogo aparecerá aquí cuando haya contenido disponible." />
         </PublicSection>
       ) : (
-        <>
-          {proCourses.length > 0 ? (
-            <PublicSection id="catalogo">
-              <SectionHeader
-                eyebrow="Incluido en PRO"
-                title="Curso Guía VPO"
-                description="Disponible con la suscripción VPO PRO."
+        <PublicSection id="catalogo">
+          <SectionHeader
+            eyebrow="Catálogo"
+            title="Todos los cursos"
+            description="Incluidos en PRO y de compra directa, con acceso y precio en cada ficha."
+          />
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
+            {visibleCourses.map((course) => (
+              <CourseProductCard
+                key={course.id}
+                course={course}
+                includedInPro={course.accessType === 'pro'}
+                showCta
               />
-              <div className="mt-4 md:hidden">
-                <HorizontalRail>
-                  {proCourses.map((course) => (
-                    <HorizontalRailItem key={course.id}>
-                      <CourseProductCard course={course} includedInPro showCta layout="rail" />
-                    </HorizontalRailItem>
-                  ))}
-                </HorizontalRail>
-              </div>
-              <div className="mt-4 hidden gap-4 md:grid md:grid-cols-2 md:gap-5 xl:grid-cols-3">
-                {proCourses.map((course) => (
-                  <CourseProductCard key={course.id} course={course} includedInPro showCta />
-                ))}
-              </div>
-            </PublicSection>
-          ) : null}
-
-          {premiumCourses.length > 0 ? (
-            <PublicSection muted={proCourses.length > 0} id={proCourses.length === 0 ? 'catalogo' : undefined}>
-              <SectionHeader eyebrow="Compra directa" title="Programas premium" description="Acceso individual con pago seguro." />
-              <div className="mt-4 md:hidden">
-                <HorizontalRail>
-                  {premiumCourses.map((course) => (
-                    <HorizontalRailItem key={course.id}>
-                      <CourseProductCard course={course} showCta layout="rail" />
-                    </HorizontalRailItem>
-                  ))}
-                </HorizontalRail>
-              </div>
-              <div className="mt-4 hidden gap-4 md:grid md:grid-cols-2 md:gap-5 xl:grid-cols-3">
-                {premiumCourses.map((course) => (
-                  <CourseProductCard key={course.id} course={course} showCta />
-                ))}
-              </div>
-            </PublicSection>
-          ) : null}
-        </>
+            ))}
+          </div>
+        </PublicSection>
       )}
     </PublicPage>
   );
