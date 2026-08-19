@@ -1,15 +1,32 @@
 export type NavLink = {
   href: string;
   label: string;
+  /** Shorter label for the fixed-width top navigation bar */
+  navLabel?: string;
   mobileLabel?: string;
 };
 
 export const primaryNavLinks: NavLink[] = [
   { href: '/', label: 'Inicio' },
   { href: '/cursos', label: 'Cursos' },
-  { href: '/alerts', label: 'Próximos Lanzamientos', mobileLabel: 'Lanzamientos' },
-  { href: '/promotions', label: 'Promociones Publicadas', mobileLabel: 'Publicadas' },
-  { href: '/acompanamiento', label: 'Acompañamiento', mobileLabel: 'Acompañamiento' },
+  {
+    href: '/alerts',
+    label: 'Próximos Lanzamientos',
+    navLabel: 'Lanzamientos',
+    mobileLabel: 'Lanzamientos',
+  },
+  {
+    href: '/promotions',
+    label: 'Promociones Publicadas',
+    navLabel: 'Publicadas',
+    mobileLabel: 'Publicadas',
+  },
+  {
+    href: '/acompanamiento',
+    label: 'Acompañamiento',
+    navLabel: 'Acompañamiento',
+    mobileLabel: 'Acompañamiento',
+  },
   { href: '/news', label: 'Noticias', mobileLabel: 'Noticias' },
 ];
 

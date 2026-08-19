@@ -73,10 +73,10 @@ export function TopNav() {
 
   return (
     <header className="fixed left-0 right-0 top-0 z-50 px-3 pt-2 md:pt-3">
-      <div className="glass-surface relative mx-auto flex w-full max-w-[1240px] items-center justify-between rounded-[1.5rem] px-3 py-2 md:px-4">
+      <div className="glass-surface relative mx-auto flex w-full max-w-[1240px] items-center gap-2 rounded-[1.5rem] px-3 py-2 md:gap-3 md:px-4">
         <Link
           href="/"
-          className="group flex items-center gap-2 rounded-full px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+          className="group flex shrink-0 items-center gap-2 rounded-full px-2 py-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
           aria-label="Radar VPO, ir al inicio"
         >
           <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-2xl bg-white transition duration-200 group-hover:scale-105">
@@ -85,13 +85,15 @@ export function TopNav() {
           </span>
           <span className="leading-tight">
             <span className="block text-sm font-black tracking-tight text-[var(--ink)]">Radar VPO</span>
-            <span className="block text-[11px] font-semibold text-[var(--ink-soft)]">Habitatge públic</span>
+            <span className="hidden text-[11px] font-semibold text-[var(--ink-soft)] 2xl:block">
+              Habitatge públic
+            </span>
           </span>
         </Link>
 
         <button
           type="button"
-          className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[var(--stroke)] bg-white/90 text-[var(--ink)] transition hover:bg-[var(--bg-eco)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] lg:hidden"
+          className="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--stroke)] bg-white/90 text-[var(--ink)] transition hover:bg-[var(--bg-eco)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] lg:hidden"
           onClick={() => setMobileOpen((value) => !value)}
           aria-expanded={mobileOpen}
           aria-controls="mobile-navigation"
@@ -105,92 +107,106 @@ export function TopNav() {
           </span>
         </button>
 
-        <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Navegación principal">
-          {primaryLinks.map((link) => {
-            const active = isActive(link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={active ? 'page' : undefined}
-                className={`relative rounded-full px-2.5 py-2 text-[13px] font-semibold transition duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-3 xl:text-sm ${
-                  active
-                    ? 'bg-[rgba(22,112,85,0.10)] text-[var(--green-700)]'
-                    : 'text-[var(--ink)] hover:bg-white/80'
-                }`}
-              >
-                {link.label}
-                {active ? <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[var(--cyan-500)]" /> : null}
-              </Link>
-            );
-          })}
-        </nav>
-
-        <nav className="hidden items-center gap-2 md:flex" aria-label="Acceso de usuario">
-          {!hasPro ? (
-            <ProCtaLink className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-black text-white transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]" />
-          ) : null}
-          {me ? (
-            <div className="relative">
-              <button
-                type="button"
-                className="flex items-center gap-2 rounded-full border border-[var(--stroke)] bg-white/90 px-2 py-1.5 text-sm font-semibold text-[var(--ink)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
-                onClick={() => setMenuOpen((value) => !value)}
-                aria-expanded={menuOpen}
-                aria-haspopup="menu"
-              >
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--bg-eco)] text-xs font-bold text-[var(--green-700)] ring-1 ring-white">
-                  {initials}
-                </span>
-                <span className="hidden max-w-32 truncate text-sm md:inline">{me.fullName || 'Perfil'}</span>
-                <span aria-hidden="true" className={`text-xs transition ${menuOpen ? 'rotate-180' : ''}`}>
-                  v
-                </span>
-              </button>
-              {menuOpen ? (
-                <div
-                  className="absolute right-0 mt-3 w-56 rounded-3xl border border-[var(--stroke)] bg-white p-2 animate-fade-up"
-                  role="menu"
+        <div className="hidden min-w-0 flex-1 items-center justify-end gap-2 lg:flex xl:gap-3">
+          <nav
+            className="flex min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            aria-label="Navegación principal"
+          >
+            {primaryLinks.map((link) => {
+              const active = isActive(link.href);
+              const navLabel = link.navLabel ?? link.label;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  title={link.label}
+                  aria-current={active ? 'page' : undefined}
+                  aria-label={navLabel === link.label ? undefined : link.label}
+                  className={`relative shrink-0 whitespace-nowrap rounded-full px-2.5 py-2 text-[13px] font-semibold transition duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-3 xl:text-sm ${
+                    active
+                      ? 'bg-[rgba(22,112,85,0.10)] text-[var(--green-700)]'
+                      : 'text-[var(--ink)] hover:bg-white/80'
+                  }`}
                 >
-                  <Link
-                    href="/account"
-                    className="block rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
-                    onClick={() => setMenuOpen(false)}
-                    role="menuitem"
+                  {navLabel}
+                  {active ? (
+                    <span className="absolute inset-x-3 -bottom-0.5 h-0.5 rounded-full bg-[var(--cyan-500)]" />
+                  ) : null}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <nav className="flex shrink-0 items-center gap-2" aria-label="Acceso de usuario">
+            {!hasPro ? (
+              <ProCtaLink
+                label="Activar PRO"
+                className="whitespace-nowrap rounded-full bg-[var(--green-700)] px-3.5 py-2 text-[13px] font-black text-white transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-4 xl:text-sm"
+              />
+            ) : null}
+            {me ? (
+              <div className="relative">
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-full border border-[var(--stroke)] bg-white/90 px-2 py-1.5 text-sm font-semibold text-[var(--ink)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+                  onClick={() => setMenuOpen((value) => !value)}
+                  aria-expanded={menuOpen}
+                  aria-haspopup="menu"
+                  aria-label={`Menú de ${me.fullName || 'usuario'}`}
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--bg-eco)] text-xs font-bold text-[var(--green-700)] ring-1 ring-white">
+                    {initials}
+                  </span>
+                  <span className="hidden max-w-28 truncate text-sm 2xl:inline">{me.fullName || 'Perfil'}</span>
+                  <span aria-hidden="true" className={`hidden text-xs transition 2xl:inline ${menuOpen ? 'rotate-180' : ''}`}>
+                    v
+                  </span>
+                </button>
+                {menuOpen ? (
+                  <div
+                    className="absolute right-0 mt-3 w-56 rounded-3xl border border-[var(--stroke)] bg-white p-2 animate-fade-up"
+                    role="menu"
                   >
-                    Perfil
-                  </Link>
-                  {me.role === 'admin' ? (
                     <Link
-                      href="/admin"
+                      href="/account"
                       className="block rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
                       onClick={() => setMenuOpen(false)}
                       role="menuitem"
                     >
-                      Panel admin
+                      Perfil
                     </Link>
-                  ) : null}
-                  <button
-                    type="button"
-                    disabled={loggingOut}
-                    className="block w-full rounded-2xl px-3 py-2 text-left text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] disabled:opacity-60"
-                    onClick={() => void handleLogout()}
-                    role="menuitem"
-                  >
-                    {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <Link
-              href="/login"
-              className="rounded-full border border-[var(--stroke)] bg-white/90 px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
-            >
-              Iniciar Sesión
-            </Link>
-          )}
-        </nav>
+                    {me.role === 'admin' ? (
+                      <Link
+                        href="/admin"
+                        className="block rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+                        onClick={() => setMenuOpen(false)}
+                        role="menuitem"
+                      >
+                        Panel admin
+                      </Link>
+                    ) : null}
+                    <button
+                      type="button"
+                      disabled={loggingOut}
+                      className="block w-full rounded-2xl px-3 py-2 text-left text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] disabled:opacity-60"
+                      onClick={() => void handleLogout()}
+                      role="menuitem"
+                    >
+                      {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="whitespace-nowrap rounded-full border border-[var(--stroke)] bg-white/90 px-3.5 py-2 text-[13px] font-semibold text-[var(--ink)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-4 xl:text-sm"
+              >
+                Iniciar sesión
+              </Link>
+            )}
+          </nav>
+        </div>
       </div>
 
       {mobileOpen ? (
