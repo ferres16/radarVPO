@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { AdminNav } from '@/components/admin-nav';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { api } from '@/lib/api';
-import { PromotionDetail, PromotionDocument, PromotionUnit } from '@/types';
+import { PromotionDetail, PromotionDocument } from '@/types';
 import { PromotionJsonImporter } from './promotion-json-importer';
 
 const STATUS_OPTIONS: PromotionDetail['status'][] = [
@@ -26,13 +26,6 @@ const STATUS_LABELS: Record<PromotionDetail['status'], string> = {
 function toJsonString(value: unknown) {
   if (!value) return '{}';
   return JSON.stringify(value, null, 2);
-}
-
-function parseNumberInput(value: string) {
-  if (!value.trim()) return undefined;
-  const normalized = value.replace(/\./g, '').replace(',', '.');
-  const parsed = Number(normalized);
-  return Number.isNaN(parsed) ? undefined : parsed;
 }
 
 type SectionKey = 'importantDates' | 'requirements' | 'economicInfo' | 'feesAndReservations' | 'contactInfo';
@@ -76,8 +69,7 @@ export default function AdminPromotionEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingDocumentId, setSavingDocumentId] = useState('');
-  const [pasteBuffer, setPasteBuffer] = useState('');
-  const [activeTab, setActiveTab] = useState<'summary' | 'content' | 'media' | 'units' | 'preview'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'content' | 'media' | 'preview'>('summary');
 
   const [form, setForm] = useState({
     title: '',
@@ -153,9 +145,6 @@ export default function AdminPromotionEditPage() {
       if (hash === 'documentos' || hash === 'media') {
         setActiveTab('media');
       }
-      if (hash === 'unidades') {
-        setActiveTab('units');
-      }
       if (hash === 'contenido') {
         setActiveTab('content');
       }
@@ -166,7 +155,6 @@ export default function AdminPromotionEditPage() {
     return () => window.removeEventListener('hashchange', applyHashTab);
   }, []);
 
-  const units = useMemo(() => promotion?.units || [], [promotion]);
   const documents = useMemo(() => promotion?.documents || [], [promotion]);
   const mediaGroups = useMemo(() => ({
     images: documents.filter((doc) => doc.fileType?.startsWith('image/')),
@@ -179,9 +167,9 @@ export default function AdminPromotionEditPage() {
     { label: 'Descripción pública', done: Boolean(form.publicDescription) },
     { label: 'Fechas estructuradas', done: sections.importantDates.some((row) => row.key && row.value) },
     { label: 'Requisitos estructurados', done: sections.requirements.some((row) => row.key && row.value) },
+    { label: 'PDF oficial adjunto', done: mediaGroups.pdfs.some((doc) => doc.isPublic !== false) },
     { label: 'Al menos un archivo público', done: documents.some((doc) => doc.isPublic !== false) },
-    { label: 'Tabla de viviendas revisada', done: units.length > 0 || Boolean(promotion?.availableUnitsText) },
-  ], [documents, form.municipality, form.publicDescription, form.title, promotion?.availableUnitsText, sections.importantDates, sections.requirements, units.length]);
+  ], [documents, form.municipality, form.publicDescription, form.title, mediaGroups.pdfs, sections.importantDates, sections.requirements]);
 
   async function savePromotion() {
     setSaving(true);
@@ -213,38 +201,6 @@ export default function AdminPromotionEditPage() {
 
   async function changeStatus(status: PromotionDetail['status']) {
     await api.updateBackofficePromotionStatus(id, status);
-    await refresh();
-  }
-
-  async function createUnit() {
-    await api.createBackofficeUnit(id, {
-      unitLabel: 'Nueva fila',
-    });
-    await refresh();
-  }
-
-  async function updateUnit(unitId: string, patch: Partial<PromotionUnit>) {
-    await api.updateBackofficeUnit(id, unitId, patch);
-    await refresh();
-  }
-
-  async function removeUnit(unitId: string) {
-    await api.deleteBackofficeUnit(id, unitId);
-    await refresh();
-  }
-
-  async function removeAllUnits() {
-    const accepted = window.confirm('Se eliminaran todas las filas de la tabla de viviendas. ¿Continuar?');
-    if (!accepted) return;
-
-    await api.deleteAllBackofficeUnits(id);
-    await refresh();
-  }
-
-  async function importPaste() {
-    if (!pasteBuffer.trim()) return;
-    await api.importBackofficeUnits(id, pasteBuffer);
-    setPasteBuffer('');
     await refresh();
   }
 
@@ -294,7 +250,7 @@ export default function AdminPromotionEditPage() {
       <PageHero
         eyebrow="Editor modular de promoción"
         title={promotion.title}
-        description="Gestiona la ficha pública por secciones: contenido, multimedia, viviendas, publicación y preview."
+        description="Gestiona la ficha pública por secciones: contenido, multimedia/PDF, publicación y preview. El detalle de viviendas se consulta en los PDF adjuntos."
         actions={
           <>
             <ButtonLink href={`/promotions/${promotion.id}`}>Ver ficha pública</ButtonLink>
@@ -308,7 +264,6 @@ export default function AdminPromotionEditPage() {
           ['summary', 'Resumen y publicación'],
           ['content', 'Contenido estructurado'],
           ['media', 'Multimedia y documentos'],
-          ['units', 'Viviendas'],
           ['preview', 'Preview pública'],
         ].map(([tab, label]) => (
           <button
@@ -338,11 +293,10 @@ export default function AdminPromotionEditPage() {
                 </button>
               ))}
             </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-4">
+            <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <Metric label="Imágenes" value={mediaGroups.images.length} />
               <Metric label="Vídeos" value={mediaGroups.videos.length} />
               <Metric label="PDFs" value={mediaGroups.pdfs.length} />
-              <Metric label="Viviendas" value={units.length} />
             </div>
           </SurfaceCard>
           <SurfaceCard className="p-5">
@@ -410,117 +364,10 @@ export default function AdminPromotionEditPage() {
         </section>
       ) : null}
 
-      {activeTab === 'units' ? (
-      <section id="unidades" className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-[var(--ink)]">Tabla de viviendas</h2>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-[var(--ink)] transition hover:bg-[var(--bg-app)]"
-              onClick={removeAllUnits}
-            >
-              Eliminar todas
-            </button>
-            <button className="rounded-lg bg-[var(--green-500)] px-3 py-2 text-xs font-semibold text-white" onClick={createUnit}>Anadir fila</button>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1500px] text-sm">
-            <thead>
-              <tr className="border-b">
-                <th className="p-2 text-left">Ord.</th>
-                <th className="p-2 text-left">Règ. us</th>
-                <th className="p-2 text-left">Tip.</th>
-                <th className="p-2 text-left">Escalera</th>
-                <th className="p-2 text-left">Planta</th>
-                <th className="p-2 text-left">Puerta</th>
-                <th className="p-2 text-left">E-M</th>
-                <th className="p-2 text-left">6sH &lt; 8</th>
-                <th className="p-2 text-left">8sH &lt; 12</th>
-                <th className="p-2 text-left">H &gt; 12</th>
-                <th className="p-2 text-left">C</th>
-                <th className="p-2 text-left">CH</th>
-                <th className="p-2 text-left">E-M-C</th>
-                <th className="p-2 text-left">Otras piezas</th>
-                <th className="p-2 text-left">Ocup. maxima</th>
-                <th className="p-2 text-left">Sup. util interior</th>
-                <th className="p-2 text-left">Sup. comp.</th>
-                <th className="p-2 text-left">Res</th>
-                <th className="p-2 text-left">P.V. max.</th>
-                <th className="p-2 text-left">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {units.map((unit, index) => (
-                <tr key={unit.id} className="border-b align-top">
-                  <td className="p-2 text-xs font-semibold">{index + 1}</td>
-                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.extraData?.regUs || unit.extraData?.regimenUso || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), regUs: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-14 rounded border p-1" defaultValue={String(unit.extraData?.tip || unit.extraData?.tipologia || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), tip: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-24 rounded border p-1" defaultValue={unit.stair || ''} onBlur={(e) => updateUnit(unit.id, { stair: e.target.value })} /></td>
-                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={unit.floor || ''} onBlur={(e) => updateUnit(unit.id, { floor: e.target.value })} /></td>
-                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={unit.door || ''} onBlur={(e) => updateUnit(unit.id, { door: e.target.value })} /></td>
-                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.em || unit.extraData?.entradaComedor || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), em: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.h6sh8 || unit.extraData?.h6sHlt8 || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), h6sh8: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.h8sh12 || unit.extraData?.h8sHlt12 || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), h8sh12: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.hgt12 || unit.extraData?.hGt12 || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), hgt12: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.c || unit.extraData?.cocina || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), c: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.ch || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), ch: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-12 rounded border p-1" defaultValue={String(unit.extraData?.emc || unit.extraData?.banosEntradaSalonCocina || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), emc: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-28 rounded border p-1" defaultValue={String(unit.extraData?.otrasPiezas || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), otrasPiezas: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.extraData?.ocupacionMaxima || '')} onBlur={(e) => updateUnit(unit.id, { extraData: { ...(unit.extraData || {}), ocupacionMaxima: e.target.value } })} /></td>
-                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.usefulAreaM2 || '')} onBlur={(e) => updateUnit(unit.id, { usefulAreaM2: parseNumberInput(e.target.value) })} /></td>
-                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.builtAreaM2 || '')} onBlur={(e) => updateUnit(unit.id, { builtAreaM2: parseNumberInput(e.target.value) })} /></td>
-                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.reservation || '')} onBlur={(e) => updateUnit(unit.id, { reservation: parseNumberInput(e.target.value) })} /></td>
-                  <td className="p-2"><input className="w-20 rounded border p-1" defaultValue={String(unit.priceSale || '')} onBlur={(e) => updateUnit(unit.id, { priceSale: parseNumberInput(e.target.value) })} /></td>
-                  <td className="p-2">
-                    <button
-                      type="button"
-                      className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)]"
-                      onClick={() => {
-                        const accepted = window.confirm('¿Eliminar esta fila?');
-                        if (!accepted) return;
-                        void removeUnit(unit.id);
-                      }}
-                    >
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        <div className="mt-4">
-          <p className="mb-2 text-sm font-semibold">Importar por pegado manual (CSV/TSV con cabecera)</p>
-          <p className="mb-2 text-xs leading-5 text-[var(--ink-soft)]">
-            Copia desde Excel (mejor con tabuladores) incluyendo la primera fila de cabecera. Ejemplo:{' '}
-            <code className="rounded bg-[var(--bg-app)] px-1">
-              Ord.	Règ. us	Tip.	Escalera	Planta	Puerta	Sup. util interior	Sup. comp.	Res	P.V. max.
-            </code>
-            . También acepta CSV con comas o punto y coma. Los números pueden ir con coma decimal (45,20).
-          </p>
-          <textarea
-            className="min-h-24 w-full rounded-lg border p-2 font-mono text-xs"
-            value={pasteBuffer}
-            onChange={(e) => setPasteBuffer(e.target.value)}
-            placeholder={
-              'Ord.\tEscalera\tPlanta\tPuerta\tSup. util interior\tSup. comp.\tRes\tP.V. max.\n1\tA\t1\t2\t45,20\t60,00\t500\t185000'
-            }
-          />
-          <button className="mt-2 rounded-lg border px-3 py-2 text-xs" onClick={importPaste}>
-            Importar filas
-          </button>
-        </div>
-      </section>
-      ) : null}
-
       {activeTab === 'media' ? (
       <section id="documentos" className="space-y-4">
         <SurfaceCard className="p-5">
-        <SectionHeader eyebrow="S3 Media Manager" title="Multimedia y documentos" description="Todo lo que subas se guarda en S3 y queda vinculado a esta promoción. Borrar un archivo también lo borra de S3." />
+        <SectionHeader eyebrow="S3 Media Manager" title="Multimedia y documentos" description="Sube el PDF oficial (con el listado de viviendas) y el resto de archivos. El detalle de tipologías y precios se consulta en esos adjuntos, no en una tabla editable." />
         <div className="mt-3 grid gap-3 md:grid-cols-2">
           <label className="rounded-xl border border-dashed p-3 text-sm">
             PDF original
@@ -593,7 +440,7 @@ export default function AdminPromotionEditPage() {
                 <img src={mediaGroups.images[0].publicUrl} alt={mediaGroups.images[0].altText || ''} className="h-56 w-full rounded-3xl object-cover" />
               ) : null}
               <Metric label="Documentos públicos" value={documents.filter((doc) => doc.isPublic !== false).length} />
-              <Metric label="Viviendas" value={units.length} />
+              <Metric label="PDFs" value={mediaGroups.pdfs.length} />
             </aside>
           </div>
         </SurfaceCard>

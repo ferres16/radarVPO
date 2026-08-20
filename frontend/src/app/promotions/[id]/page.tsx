@@ -369,51 +369,14 @@ export default async function PromotionDetailPage({
 
         <InlineAdCard className="mt-4" />
 
-        <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Tabla de viviendas</h2>
-          {promotion.units.length === 0 ? (
-            <p className="mt-2 text-sm text-[var(--ink-soft)]">Pendiente de revision manual.</p>
-          ) : (
-            <>
-              <p className="mt-2 text-xs text-[var(--ink-soft)] md:hidden">Desliza horizontalmente para ver todas las columnas.</p>
-              <div className="mt-3 overflow-x-auto rounded-2xl border border-[var(--stroke)] bg-white/90">
-              <table className="w-full min-w-[760px] text-sm">
-                <thead>
-                  <tr className="border-b border-[var(--stroke)] bg-[var(--bg-app)]">
-                    <th className="p-3 text-left text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-soft)]">Vivienda</th>
-                    <th className="p-3 text-left">Régimen</th>
-                    <th className="p-3 text-left">Tipología</th>
-                    <th className="p-2 text-left">Escalera</th>
-                    <th className="p-2 text-left">Planta</th>
-                    <th className="p-2 text-left">Puerta</th>
-                    <th className="p-3 text-left">Sup. útil</th>
-                    <th className="p-3 text-left">Precio/Renta</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {promotion.units.map((row, index) => (
-                    <tr key={row.id} className="border-b border-[var(--stroke)] last:border-b-0">
-                      <td className="p-3 font-semibold text-[var(--ink)]">{row.unitLabel || `#${index + 1}`}</td>
-                      <td className="p-3">{String(row.extraData?.regUs || row.extraData?.regimenUso || 'n/d')}</td>
-                      <td className="p-3">{String(row.extraData?.tip || row.extraData?.tipologia || 'n/d')}</td>
-                      <td className="p-2">{row.stair || 'n/d'}</td>
-                      <td className="p-2">{row.floor || 'n/d'}</td>
-                      <td className="p-2">{row.door || 'n/d'}</td>
-                      <td className="p-3">{row.usefulAreaM2 ?? 'n/d'}</td>
-                      <td className="p-3">{row.priceSale ?? row.monthlyRent ?? 'n/d'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            </>
-          )}
-        </div>
-
         <div id="documentos" className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
           <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--green-700)]">Documentos de referencia</h2>
+          <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
+            El detalle de viviendas (tipologías, superficies, precios, etc.) está en los PDF adjuntos
+            oficiales. Ábrelos para consultar la tabla completa.
+          </p>
           {downloadableDocuments.length === 0 ? (
-            <p className="mt-2 text-sm text-[var(--ink-soft)]">Sin documentos adjuntos.</p>
+            <p className="mt-3 text-sm text-[var(--ink-soft)]">Sin documentos adjuntos.</p>
           ) : (
             <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               {downloadableDocuments.map((doc) => (
