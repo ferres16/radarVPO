@@ -143,17 +143,19 @@ h3,
 .premium-card {
   position: relative;
   overflow: hidden;
-  border-radius: 1.25rem;
+  border-radius: 1.5rem;
   border: 1px solid var(--stroke);
-  background: #ffffff;
+  background:
+    linear-gradient(180deg, rgba(228, 243, 236, 0.35) 0%, rgba(255, 255, 255, 0.96) 28%),
+    #ffffff;
   transition:
     transform 220ms ease,
     border-color 220ms ease;
 }
 
 .premium-card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(11, 18, 32, 0.18);
+  transform: translateY(-3px);
+  border-color: rgba(22, 112, 85, 0.22);
 }
 
 .glass-surface {

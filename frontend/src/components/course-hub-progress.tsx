@@ -56,20 +56,20 @@ function SummaryStats({
   totalLessons: number;
 }) {
   return (
-    <dl className="space-y-3 text-sm">
-      <div className="flex items-center justify-between border-b border-[var(--stroke)] pb-3">
+    <dl className="space-y-2 text-sm">
+      <div className="flex items-center justify-between rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)]/70 px-3 py-2.5">
         <dt className="text-[var(--ink-soft)]">Progreso global</dt>
-        <dd className="font-semibold text-[var(--ink)]">{progressPercent}%</dd>
+        <dd className="font-bold text-[var(--ink)]">{progressPercent}%</dd>
       </div>
-      <div className="flex items-center justify-between border-b border-[var(--stroke)] pb-3">
+      <div className="flex items-center justify-between rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)]/70 px-3 py-2.5">
         <dt className="text-[var(--ink-soft)]">Lecciones completadas</dt>
-        <dd className="font-semibold text-[var(--ink)]">
+        <dd className="font-bold text-[var(--ink)]">
           {completedLessons}/{totalLessons}
         </dd>
       </div>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)]/70 px-3 py-2.5">
         <dt className="text-[var(--ink-soft)]">Estado</dt>
-        <dd className="font-semibold text-[var(--ink)]">
+        <dd className="font-bold text-[var(--green-700)]">
           {progressPercent === 100 ? 'Completado' : completedLessons > 0 ? 'En progreso' : 'Sin empezar'}
         </dd>
       </div>
@@ -123,14 +123,19 @@ export function CourseHubProgress({
         </div>
       </div>
 
-      <div className="course-hub-grid mt-6 md:mt-8">
-        <div className="min-w-0">
-          <div className="flex items-end justify-between gap-3">
+      <div className="course-hub-grid mt-4 md:mt-5">
+        <article className="public-card p-5 md:p-6">
+          <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-xl font-bold text-[var(--ink)]">Índice del curso</h2>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
+                Temario
+              </p>
+              <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)]">Índice del curso</h2>
               <p className="mt-1 text-sm text-[var(--ink-soft)]">Módulos y lecciones de tu curso</p>
             </div>
-            <p className="shrink-0 text-sm text-[var(--ink-soft)]">{totalLessons} lecciones</p>
+            <span className="shrink-0 rounded-full bg-[var(--bg-eco)] px-3 py-1 text-xs font-bold text-[var(--green-700)]">
+              {totalLessons} lecc.
+            </span>
           </div>
           <div className="mt-5">
             <CourseModuleIndex
@@ -141,10 +146,13 @@ export function CourseHubProgress({
               defaultOpenFirst
             />
           </div>
-        </div>
+        </article>
 
-        <aside className="border-t border-[var(--stroke)] pt-6 lg:border-t-0 lg:pt-0">
-          <h2 className="text-lg font-bold text-[var(--ink)]">Resumen</h2>
+        <aside className="public-card p-5 md:p-6">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
+            Resumen
+          </p>
+          <h2 className="display-type mt-2 text-lg font-black text-[var(--ink)]">Tu avance</h2>
           <div className="mt-4">
             <SummaryStats
               progressPercent={progressPercent}

@@ -248,11 +248,16 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
 
         <CoursePublicIndex>
         <section id="indice" className="shell scroll-mt-24 pb-8 md:pb-12">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
-            <div className="min-w-0">
-              <div className="flex items-end justify-between gap-3">
+          <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-5">
+            <article className="public-card p-5 md:p-6">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-xl font-bold text-[var(--ink)] md:text-2xl">Índice del curso</h2>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
+                    Temario
+                  </p>
+                  <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
+                    Índice del curso
+                  </h2>
                   <p className="mt-1 text-sm text-[var(--ink-soft)]">
                     {lessonCount > 0
                       ? 'Módulos y lecciones disponibles'
@@ -260,7 +265,9 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                   </p>
                 </div>
                 {lessonCount > 0 ? (
-                  <p className="shrink-0 text-sm text-[var(--ink-soft)]">{lessonCount} lecciones</p>
+                  <span className="shrink-0 rounded-full bg-[var(--bg-eco)] px-3 py-1 text-xs font-bold text-[var(--green-700)]">
+                    {lessonCount} lecc.
+                  </span>
                 ) : null}
               </div>
               <div className="mt-5">
@@ -272,14 +279,14 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                   locked={!canAccess}
                 />
               </div>
-            </div>
+            </article>
 
-            <aside className="space-y-8 border-t border-[var(--stroke)] pt-6 lg:border-t-0 lg:pt-0">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
+            <aside className="space-y-4">
+              <article className="public-card p-5 md:p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
                   Qué aprenderás
                 </p>
-                <h3 className="mt-2 text-lg font-bold text-[var(--ink)]">
+                <h3 className="display-type mt-2 text-lg font-black text-[var(--ink)]">
                   Preparación real para el plazo
                 </h3>
                 <ul className="mt-4 space-y-2 text-sm leading-6 text-[var(--ink-soft)]">
@@ -296,12 +303,12 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                     className="inline-flex w-full items-center justify-center rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[var(--green-900)]"
                   />
                 </div>
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
+              </article>
+              <article className="public-card p-5 md:p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
                   Acompañamiento
                 </p>
-                <h3 className="mt-2 text-lg font-bold text-[var(--ink)]">
+                <h3 className="display-type mt-2 text-lg font-black text-[var(--ink)]">
                   ¿Necesitas revisar tu caso?
                 </h3>
                 <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
@@ -311,11 +318,11 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                   <ButtonLink href="/acompanamiento" variant="secondary">
                     Solicitar acompañamiento
                   </ButtonLink>
-                  <Link href="/cursos" className="text-sm font-semibold text-[var(--green-700)]">
+                  <Link href="/cursos" className="text-sm font-bold text-[var(--green-700)]">
                     Ver más cursos
                   </Link>
                 </div>
-              </div>
+              </article>
             </aside>
           </div>
         </section>
