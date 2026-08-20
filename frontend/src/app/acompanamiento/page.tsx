@@ -11,7 +11,11 @@ import type { Service } from '@/types';
 
 const whatsappContactUrl =
   process.env.NEXT_PUBLIC_WHATSAPP_CONTACT_URL ||
-  'https://wa.me/34600111222?text=Hola%2C%20quiero%20activar%20el%20acompa%C3%B1amiento%20personalizado%20de%20Radar%20VPO.';
+  'https://wa.me/34690763693?text=Hola%2C%20quiero%20activar%20el%20acompa%C3%B1amiento%20personalizado%20de%20Radar%20VPO.';
+
+const whatsappConsultaUrl =
+  process.env.NEXT_PUBLIC_WHATSAPP_CONSULTA_URL ||
+  'https://wa.me/34690763693?text=Hola%2C%20quiero%20enviar%20una%20consulta%20sobre%20acompa%C3%B1amiento%20de%20Radar%20VPO.';
 
 const fallbackOfferings = [
   {
@@ -85,7 +89,7 @@ const useCases = [
 const faqs = [
   ['¿Esto garantiza conseguir una vivienda?', 'No. Te acompañamos para detectar oportunidades, entender requisitos y presentar mejor tu candidatura.'],
   ['¿Puedo empezar solo con cursos?', 'Sí. Los cursos son la vía más ligera para ganar criterio antes de contratar acompañamiento.'],
-  ['¿Cómo contacto con el equipo?', 'WhatsApp, email, formulario y reserva de llamada están disponibles en esta página.'],
+  ['¿Cómo contacto con el equipo?', 'Puedes escribirnos por WhatsApp al 690 763 693 o por email desde esta página.'],
 ];
 
 const salePriceMarkerPattern = /\n?<!--rvpo:salePrice=([^>]*)-->/;
@@ -171,7 +175,7 @@ export default function AccompanimentPage() {
             <ButtonLink href={whatsappContactUrl} size="lg" block>
               Hablar por WhatsApp
             </ButtonLink>
-            <ButtonLink href="#hablemos" variant="secondary" size="lg" block>
+            <ButtonLink href={whatsappConsultaUrl} variant="secondary" size="lg" block>
               Enviar consulta
             </ButtonLink>
           </div>
@@ -287,17 +291,11 @@ export default function AccompanimentPage() {
         </SurfaceCard>
 
         <SurfaceCard id="hablemos" className="p-5">
-          <SectionHeader eyebrow="Hablemos" title="Cuéntanos qué necesitas" description="Contacto integrado: formulario, WhatsApp, email y reserva de llamada." />
-          <form action="mailto:info@radarvpo.com" method="post" encType="text/plain" className="mt-4 space-y-3">
-            <input name="nombre" className="ds-control w-full" placeholder="Nombre" />
-            <input name="email" type="email" className="ds-control w-full" placeholder="Email" />
-            <textarea name="mensaje" className="ds-control min-h-28 w-full" placeholder="Explícanos tu caso" />
-            <button type="submit" className="btn btn--primary btn--lg btn--block">Enviar consulta</button>
-          </form>
+          <SectionHeader eyebrow="Hablemos" title="Cuéntanos qué necesitas" description="Contacto directo por WhatsApp al 690 763 693, email o reserva de llamada." />
           <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            <ButtonLink href={whatsappContactUrl} block>WhatsApp</ButtonLink>
+            <ButtonLink href={whatsappContactUrl} block>Hablar por WhatsApp</ButtonLink>
+            <ButtonLink href={whatsappConsultaUrl} variant="secondary" block>Enviar consulta</ButtonLink>
             <ButtonLink href="mailto:info@radarvpo.com" variant="secondary" block>Email</ButtonLink>
-            <ButtonLink href={whatsappContactUrl} variant="secondary" block>Reservar llamada</ButtonLink>
           </div>
         </SurfaceCard>
         </div>
