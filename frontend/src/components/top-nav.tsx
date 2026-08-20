@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
 import { primaryNavLinks } from '@/lib/navigation';
 import { ProCtaLink } from '@/components/pro/pro-cta';
@@ -14,8 +14,7 @@ export function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const { me, hasPro } = useProAccess();
-  const router = useRouter();
+  const { me, hasPro, setMe } = useProAccess();
   const pathname = usePathname();
 
   useEffect(() => {
@@ -61,13 +60,13 @@ export function TopNav() {
     try {
       await api.logout();
     } catch {
-      // Ignore logout failures and still redirect.
+      // Ignore logout failures and still clear local state.
     } finally {
+      setMe(null);
       setMenuOpen(false);
       setMobileOpen(false);
       setLoggingOut(false);
-      router.push('/login');
-      router.refresh();
+      window.location.assign('/');
     }
   };
 

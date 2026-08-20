@@ -32,6 +32,23 @@ export function isAmendmentPublication(
     .some((token) => AMENDMENT_TOKENS.has(token));
 }
 
+/**
+ * Official "new published promotion" announcements from the Registre.
+ * Only these should trigger publication emails/SMS (not amendments, alerts, or unrelated posts).
+ */
+export function isOfficialProcedureStartAnnouncement(
+  ...parts: Array<string | null | undefined>
+): boolean {
+  const text = normalizeForMatch(parts.filter(Boolean).join('\n')).trim();
+  if (!text) return false;
+
+  return (
+    /^anunci\s+(d['']\s*)?inici(\s+de)?\s+procediment\b/.test(text) ||
+    /^anuncio\s+(de\s+)?inicio(\s+de)?\s+procedimiento\b/.test(text) ||
+    /^anunci\s+d['']inici\s+de\s+procediment\b/.test(text)
+  );
+}
+
 /** Prisma-friendly title exclusions for public lists (defense in depth). */
 export const AMENDMENT_TITLE_CONTAINS = [
   'esmena',

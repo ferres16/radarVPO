@@ -150,6 +150,14 @@ export class BackofficeController {
     return this.backofficeService.updateUser(userId, dto);
   }
 
+  @Delete('users/:id')
+  deleteUser(
+    @Param('id') userId: string,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.backofficeService.deleteUser(userId, user.sub);
+  }
+
   @Get('cancellations')
   listCancellationRequests() {
     return this.backofficeService.listCancellationRequests();

@@ -47,7 +47,9 @@ export function CourseModuleIndex({
       {modules.map((module, index) => (
         <details
           key={module.id}
-          className="course-module-details group rounded-2xl border border-[var(--stroke)] bg-white p-4"
+          className={`course-module-details group rounded-2xl border border-[var(--stroke)] bg-white ${
+            mode === 'nav' ? 'p-2.5' : 'p-4'
+          }`}
           open={defaultOpenFirst && index === 0}
         >
           <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
@@ -55,7 +57,9 @@ export function CourseModuleIndex({
               <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--green-700)] md:text-xs">
                 Módulo {String(index + 1).padStart(2, '0')}
               </p>
-              <h3 className="mt-1 text-sm font-bold text-[var(--ink)] md:text-base">{module.title}</h3>
+              <h3 className="mt-1 text-pretty break-words text-sm font-bold leading-snug text-[var(--ink)] md:text-base">
+                {module.title}
+              </h3>
             </div>
             <span className="shrink-0 rounded-full bg-[var(--bg-eco)] px-2.5 py-1 text-[10px] font-bold text-[var(--green-700)] md:text-xs">
               {module.lessons?.length || 0}{' '}
@@ -66,7 +70,7 @@ export function CourseModuleIndex({
             {(module.lessons || []).map((lesson) => {
               const isActive = activeLessonSlug === lesson.slug;
               const status = findLessonStatus(lesson.id, lessonProgress);
-              const baseClass = `flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm transition ${
+              const baseClass = `flex items-center justify-between gap-2 rounded-xl border px-3 py-2.5 text-sm leading-snug transition ${
                 isActive
                   ? 'border-[rgba(22,112,85,0.28)] bg-[var(--bg-eco)]'
                   : 'border-[var(--stroke)] bg-[var(--bg-app)]/70 hover:border-[rgba(22,112,85,0.22)]'
@@ -81,7 +85,9 @@ export function CourseModuleIndex({
                       aria-disabled="true"
                       title="Activa el curso para acceder a esta lección"
                     >
-                      <span className="min-w-0 font-semibold text-[var(--ink)]">{lesson.title}</span>
+                      <span className="min-w-0 text-pretty break-words font-semibold text-[var(--ink)]">
+                        {lesson.title}
+                      </span>
                       <span
                         className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] md:text-[10px] ${statusStyles[status]}`}
                       >
@@ -93,7 +99,9 @@ export function CourseModuleIndex({
 
                 return (
                   <Link key={lesson.id} href={`/cursos/${courseSlug}/${lesson.slug}`} className={baseClass}>
-                    <span className="min-w-0 font-semibold text-[var(--ink)]">{lesson.title}</span>
+                    <span className="min-w-0 text-pretty break-words font-semibold text-[var(--ink)]">
+                      {lesson.title}
+                    </span>
                     <span
                       className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] md:text-[10px] ${statusStyles[status]}`}
                     >
@@ -112,7 +120,9 @@ export function CourseModuleIndex({
                       aria-disabled="true"
                       title="Activa el curso para acceder a esta lección"
                     >
-                      <span className="min-w-0 font-semibold text-[var(--ink-soft)]">{lesson.title}</span>
+                      <span className="min-w-0 text-pretty break-words font-semibold text-[var(--ink-soft)]">
+                        {lesson.title}
+                      </span>
                     </span>
                   );
                 }
@@ -121,7 +131,7 @@ export function CourseModuleIndex({
                   <Link
                     key={lesson.id}
                     href={`/cursos/${courseSlug}/${lesson.slug}`}
-                    className={`block rounded-xl px-3 py-2.5 text-sm font-semibold transition ${
+                    className={`block rounded-xl px-3 py-2.5 text-sm font-semibold leading-snug text-pretty break-words transition ${
                       isActive
                         ? 'bg-[var(--green-700)] text-white'
                         : 'border border-[var(--stroke)] bg-[var(--bg-app)]/70 text-[var(--ink)] hover:border-[rgba(22,112,85,0.22)]'
@@ -139,7 +149,9 @@ export function CourseModuleIndex({
                   lessonSlug={lesson.slug}
                   className={baseClass}
                 >
-                  <span className="min-w-0 font-semibold text-[var(--ink)]">{lesson.title}</span>
+                  <span className="min-w-0 text-pretty break-words font-semibold text-[var(--ink)]">
+                    {lesson.title}
+                  </span>
                   <span className="shrink-0 text-xs font-medium text-[var(--ink-soft)]">
                     {lesson.durationMinutes ? `${lesson.durationMinutes} min` : 'Lección'}
                   </span>

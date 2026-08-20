@@ -2,7 +2,10 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PromotionType } from '@prisma/client';
 import * as cheerio from 'cheerio';
 import { PrismaService } from '../prisma/prisma.service';
-import { isAmendmentPublication } from '../common/promotion-content-filters';
+import {
+  isAmendmentPublication,
+  isOfficialProcedureStartAnnouncement,
+} from '../common/promotion-content-filters';
 
 type NewsEntry = {
   title: string;
@@ -160,7 +163,10 @@ export class RegistreScraperService {
         promotionsCreated += 1;
         if (isAlertEntry) {
           createdAlertIds.push(promotion.id);
-        } else {
+        } else if (
+          isOfficialProcedureStartAnnouncement(entry.title, rawText)
+        ) {
+          // Only "Anunci inici procediment"-style posts count as new publications for PRO notify.
           createdPublicationIds.push(promotion.id);
         }
       } else {

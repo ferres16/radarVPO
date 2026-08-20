@@ -379,6 +379,35 @@ export class BackofficeService {
     });
   }
 
+  async deleteUser(userId: string, actorUserId: string) {
+    if (userId === actorUserId) {
+      throw new BadRequestException(
+        'No puedes eliminar tu propia cuenta desde el panel.',
+      );
+    }
+
+    const existing = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, role: true, email: true },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (existing.role === UserRole.admin) {
+      const admins = await this.prisma.user.count({
+        where: { role: UserRole.admin },
+      });
+      if (admins <= 1) {
+        throw new BadRequestException('Cannot delete the only admin user');
+      }
+    }
+
+    await this.prisma.user.delete({ where: { id: userId } });
+    return { success: true as const, id: userId, email: existing.email };
+  }
+
   async listNews(query: BackofficeListDto) {
     const limit = Math.min(query.limit ?? 100, 500);
     const offset = query.offset ?? 0;
@@ -1627,7 +1656,14 @@ export class BackofficeService {
       );
     }
 
-    const delimiter = lines[0].includes('\t') ? '\t' : ',';
+    const detectDelimiter = (headerLine: string) => {
+      if (headerLine.includes('\t')) return '\t';
+      const commas = (headerLine.match(/,/g) || []).length;
+      const semicolons = (headerLine.match(/;/g) || []).length;
+      return semicolons > commas ? ';' : ',';
+    };
+
+    const delimiter = detectDelimiter(lines[0]);
     const normalizeHeader = (value: string) =>
       value
         .trim()
@@ -1641,6 +1677,86 @@ export class BackofficeService {
     const rows = lines
       .slice(1)
       .map((line) => line.split(delimiter).map((value) => value.trim()));
+
+    const knownHeaders = new Set([
+      'unitlabel',
+      'unidad',
+      'label',
+      'ord',
+      'ordre',
+      'building',
+      'bloque',
+      'edificio',
+      'stair',
+      'escalera',
+      'esc',
+      'floor',
+      'planta',
+      'pla',
+      'door',
+      'puerta',
+      'por',
+      'bedrooms',
+      'habitaciones',
+      'hab',
+      'h',
+      'bathrooms',
+      'banos',
+      'banys',
+      'usefulaream2',
+      'm2utiles',
+      'suputilinterior',
+      'builtaream2',
+      'm2construidos',
+      'supcompres',
+      'supcomp',
+      'supcompresa',
+      'pricesale',
+      'precioventa',
+      'pvmaxim',
+      'pvmax',
+      'monthlyrent',
+      'alquilermensual',
+      'lloguermensual',
+      'reservation',
+      'reserva',
+      'res',
+      'notes',
+      'observaciones',
+      'altrespeces',
+      'regus',
+      'regimus',
+      'regimenuso',
+      'tip',
+      'tipologia',
+      'tipus',
+      'em',
+      'entradacomedor',
+      'entrada',
+      'comedor',
+      '6sh8',
+      'h6sh8',
+      '8sh12',
+      'h8sh12',
+      'h12',
+      'hgt12',
+      'c',
+      'cocina',
+      'cuina',
+      'ch',
+      'emc',
+      'otraspiezas',
+      'ocupacionmaxima',
+      'ocupmaxima',
+      'ocupmax',
+      'ocupaciomaxima',
+    ]);
+
+    if (!headers.some((header) => knownHeaders.has(header))) {
+      throw new BadRequestException(
+        'No se reconoció ninguna columna de la cabecera. Usa las mismas etiquetas de la tabla (Ord., Escalera, Planta, Sup. util interior, Sup. comp., Res, P.V. max., etc.) separadas por tabulador, coma o punto y coma.',
+      );
+    }
 
     const created = await this.prisma.$transaction(
       rows.map((cells, index) => {
@@ -1662,7 +1778,7 @@ export class BackofficeService {
         };
 
         const rawExtraData = {
-          regUs: get('regus', 'regimus', 'regimenuso', 'regimus'),
+          regUs: get('regus', 'regimus', 'regimenuso'),
           tip: get('tip', 'tipologia', 'tipus'),
           em: get('em', 'entradacomedor', 'entrada', 'comedor'),
           h6sh8: get('6sh8', 'h6sh8'),
@@ -1670,14 +1786,13 @@ export class BackofficeService {
           hgt12: get('h12', 'hgt12'),
           c: get('c', 'cocina', 'cuina'),
           ch: get('ch'),
-          emc: get('emc', 'emc'),
+          emc: get('emc'),
           otrasPiezas: get('otraspiezas', 'altrespeces'),
           ocupacionMaxima: get(
             'ocupacionmaxima',
             'ocupmaxima',
             'ocupmax',
             'ocupaciomaxima',
-            'ocupmaxima',
           ),
         };
         const cleanedExtraData = Object.fromEntries(
@@ -1701,7 +1816,13 @@ export class BackofficeService {
               get('usefulaream2', 'm2utiles', 'suputilinterior'),
             ),
             builtAreaM2: parseNumber(
-              get('builtaream2', 'm2construidos', 'supcompres'),
+              get(
+                'builtaream2',
+                'm2construidos',
+                'supcompres',
+                'supcomp',
+                'supcompresa',
+              ),
             ),
             priceSale: parseNumber(
               get('pricesale', 'precioventa', 'pvmaxim', 'pvmax'),
@@ -1709,8 +1830,8 @@ export class BackofficeService {
             monthlyRent: parseNumber(
               get('monthlyrent', 'alquilermensual', 'lloguermensual'),
             ),
-            reservation: parseNumber(get('reservation', 'reserva')),
-            notes: get('notes', 'observaciones', 'altrespeces'),
+            reservation: parseNumber(get('reservation', 'reserva', 'res')),
+            notes: get('notes', 'observaciones'),
             extraData:
               Object.keys(cleanedExtraData).length > 0
                 ? (cleanedExtraData as Prisma.InputJsonValue)

@@ -121,7 +121,30 @@ async function parseErrorResponse(res: Response, fallback: string) {
   }
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function refreshAuthSession(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  if (!refreshInFlight) {
+    refreshInFlight = (async () => {
+      try {
+        const res = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        return res.ok;
+      } catch {
+        return false;
+      } finally {
+        refreshInFlight = null;
+      }
+    })();
+  }
+  return refreshInFlight;
+}
+
+async function request<T>(path: string, init?: RequestInit, retried = false): Promise<T> {
   const res = await fetch(`${getBrowserApiBaseUrl()}${path}`, {
     ...init,
     credentials: 'include',
@@ -131,6 +154,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     },
     cache: 'no-store',
   });
+
+  if (res.status === 401 && !retried && typeof window !== 'undefined') {
+    const refreshed = await refreshAuthSession();
+    if (refreshed) {
+      return request<T>(path, init, true);
+    }
+  }
 
   if (!res.ok) {
     throw new Error(await parseErrorResponse(res, `Request failed with status ${res.status}`));
@@ -157,7 +187,7 @@ async function requestPublic<T>(path: string, revalidateSeconds = 45): Promise<T
 }
 
 async function authRequest<T>(
-  path: '/login' | '/register' | '/logout' | '/forgot-password' | '/reset-password',
+  path: '/login' | '/register' | '/logout' | '/forgot-password' | '/reset-password' | '/refresh',
   init?: RequestInit,
 ): Promise<T> {
   const res = await fetch(`/api/auth${path}`, {
@@ -304,6 +334,10 @@ export const api = {
     request<BackofficeUser>(`/backoffice/users/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
+    }),
+  deleteBackofficeUser: (id: string) =>
+    request<{ success: true }>(`/backoffice/users/${id}`, {
+      method: 'DELETE',
     }),
   getBackofficeCancellations: () =>
     request<BackofficeCancellationRequest[]>('/backoffice/cancellations'),

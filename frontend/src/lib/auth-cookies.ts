@@ -53,7 +53,7 @@ export function applyAuthCookiesFromBackend(upstream: Response, response: NextRe
       path: '/',
       maxAge:
         parsed.maxAge ??
-        (parsed.name === 'access_token' ? 15 * 60 : 30 * 24 * 60 * 60),
+        (parsed.name === 'access_token' ? 7 * 24 * 60 * 60 : 30 * 24 * 60 * 60),
     });
   }
 }

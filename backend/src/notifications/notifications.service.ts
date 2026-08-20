@@ -2,7 +2,11 @@ import { Injectable, Logger } from '@nestjs/common';
 import { AudienceType, Prisma, Promotion, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizePhoneForSms } from './phone-normalize';
-import { isAmendmentPublication, shortenAlertTitle } from '../common/promotion-content-filters';
+import {
+  isAmendmentPublication,
+  isOfficialProcedureStartAnnouncement,
+  shortenAlertTitle,
+} from '../common/promotion-content-filters';
 import { resolvePublicSiteUrl } from '../common/public-site-url';
 import { collectAdminEmails } from './admin-emails';
 import {
@@ -349,6 +353,22 @@ export class NotificationsService {
       return {
         skipped: true,
         reason: 'amendment_excluded',
+        sent: 0,
+        promotionId,
+        title: promotion.title,
+        kind,
+      };
+    }
+
+    if (
+      kind === 'new_publication' &&
+      !options.force &&
+      !options.simulate &&
+      !isOfficialProcedureStartAnnouncement(promotion.title)
+    ) {
+      return {
+        skipped: true,
+        reason: 'not_official_publication_announcement',
         sent: 0,
         promotionId,
         title: promotion.title,

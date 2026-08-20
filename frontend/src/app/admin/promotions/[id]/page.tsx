@@ -495,8 +495,24 @@ export default function AdminPromotionEditPage() {
 
         <div className="mt-4">
           <p className="mb-2 text-sm font-semibold">Importar por pegado manual (CSV/TSV con cabecera)</p>
-          <textarea className="min-h-24 w-full rounded-lg border p-2 font-mono text-xs" value={pasteBuffer} onChange={(e) => setPasteBuffer(e.target.value)} />
-          <button className="mt-2 rounded-lg border px-3 py-2 text-xs" onClick={importPaste}>Importar filas</button>
+          <p className="mb-2 text-xs leading-5 text-[var(--ink-soft)]">
+            Copia desde Excel (mejor con tabuladores) incluyendo la primera fila de cabecera. Ejemplo:{' '}
+            <code className="rounded bg-[var(--bg-app)] px-1">
+              Ord.	Règ. us	Tip.	Escalera	Planta	Puerta	Sup. util interior	Sup. comp.	Res	P.V. max.
+            </code>
+            . También acepta CSV con comas o punto y coma. Los números pueden ir con coma decimal (45,20).
+          </p>
+          <textarea
+            className="min-h-24 w-full rounded-lg border p-2 font-mono text-xs"
+            value={pasteBuffer}
+            onChange={(e) => setPasteBuffer(e.target.value)}
+            placeholder={
+              'Ord.\tEscalera\tPlanta\tPuerta\tSup. util interior\tSup. comp.\tRes\tP.V. max.\n1\tA\t1\t2\t45,20\t60,00\t500\t185000'
+            }
+          />
+          <button className="mt-2 rounded-lg border px-3 py-2 text-xs" onClick={importPaste}>
+            Importar filas
+          </button>
         </div>
       </section>
       ) : null}

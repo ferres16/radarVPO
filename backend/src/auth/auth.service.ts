@@ -239,7 +239,7 @@ export class AuthService {
       { sub: userId, email, role, plan, sessionId },
       {
         secret: this.config.getOrThrow<string>('JWT_ACCESS_SECRET'),
-        expiresIn: '15m',
+        expiresIn: '7d',
       },
     );
 

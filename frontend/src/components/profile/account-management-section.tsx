@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { api } from '@/lib/api';
 import { ProfileCard } from '@/components/profile-card';
+import { useOptionalProAccess } from '@/components/pro-access-provider';
 
 export function AccountManagementSection() {
-  const router = useRouter();
+  const proAccess = useOptionalProAccess();
   const [loggingOut, setLoggingOut] = useState(false);
 
   async function logout() {
@@ -15,9 +15,12 @@ export function AccountManagementSection() {
     setLoggingOut(true);
     try {
       await api.logout();
-      router.push('/login');
+    } catch {
+      // Ignore logout failures and still clear local state.
     } finally {
+      proAccess?.setMe(null);
       setLoggingOut(false);
+      window.location.assign('/');
     }
   }
 

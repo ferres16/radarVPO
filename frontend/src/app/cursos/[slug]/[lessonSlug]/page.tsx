@@ -154,7 +154,7 @@ export default function LessonPage() {
         </CollapsePanel>
       </div>
 
-      <div className="grid gap-4 lg:h-full lg:grid-cols-[minmax(240px,280px)_1fr] lg:gap-6">
+      <div className="grid gap-4 lg:h-full lg:grid-cols-[minmax(320px,380px)_1fr] lg:gap-6">
         <aside className="hidden h-full overflow-y-auto rounded-2xl border border-[var(--stroke)] bg-white p-3 shadow-card lg:block lg:rounded-3xl lg:p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">Índice</p>
           <div className="mt-3">

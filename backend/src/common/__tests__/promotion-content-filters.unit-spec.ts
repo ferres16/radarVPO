@@ -1,4 +1,7 @@
-import { isAmendmentPublication } from '../promotion-content-filters';
+import {
+  isAmendmentPublication,
+  isOfficialProcedureStartAnnouncement,
+} from '../promotion-content-filters';
 
 describe('isAmendmentPublication', () => {
   it('detects Catalan esmena titles', () => {
@@ -28,6 +31,44 @@ describe('isAmendmentPublication', () => {
     expect(
       isAmendmentPublication(
         'Anunci de convocatòria per a la adjudicació de habitatges',
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('isOfficialProcedureStartAnnouncement', () => {
+  it('matches Anunci inici procediment titles', () => {
+    expect(
+      isOfficialProcedureStartAnnouncement(
+        "Anunci d'inici de procediment d'adjudicació d'habitatges a Vic",
+      ),
+    ).toBe(true);
+    expect(
+      isOfficialProcedureStartAnnouncement(
+        'Anunci inici procediment habitatges HPO Barcelona',
+      ),
+    ).toBe(true);
+    expect(
+      isOfficialProcedureStartAnnouncement(
+        'Anuncio de inicio de procedimiento de adjudicación',
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects amendments, alerts and unrelated titles', () => {
+    expect(
+      isOfficialProcedureStartAnnouncement(
+        "Esmena de l'anunci d'inici de procediment",
+      ),
+    ).toBe(false);
+    expect(
+      isOfficialProcedureStartAnnouncement(
+        "ALERTA: Propera adjudicació d'habitatges",
+      ),
+    ).toBe(false);
+    expect(
+      isOfficialProcedureStartAnnouncement(
+        'Convocatòria per a la adjudicació de habitatges',
       ),
     ).toBe(false);
   });
