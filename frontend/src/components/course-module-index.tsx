@@ -10,12 +10,6 @@ const statusLabels = {
   not_started: 'Pendiente',
 } as const;
 
-const statusStyles = {
-  completed: 'bg-[rgba(22,112,85,0.12)] text-[var(--green-700)]',
-  in_progress: 'bg-[rgba(232,184,74,0.16)] text-[#7a5600]',
-  not_started: 'bg-[var(--bg-app)] text-[var(--ink-soft)]',
-} as const;
-
 type CourseModuleIndexProps = {
   courseSlug: string;
   modules: CourseModule[];
@@ -43,107 +37,106 @@ export function CourseModuleIndex({
   locked = false,
 }: CourseModuleIndexProps) {
   return (
-    <div className="space-y-2 md:space-y-3">
+    <div className="divide-y divide-[var(--stroke)] border-y border-[var(--stroke)]">
       {modules.map((module, index) => (
         <details
           key={module.id}
-          className="course-module-details group rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)]/60 p-3 md:rounded-2xl md:p-4"
+          className="course-module-details group py-3 first:pt-0 last:pb-0 md:py-4"
           open={defaultOpenFirst && index === 0}
         >
-          <summary className="flex cursor-pointer list-none items-start justify-between gap-3">
+          <summary className="flex cursor-pointer list-none items-baseline justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)] md:text-xs">
+              <p className="text-xs text-[var(--ink-soft)]">
                 Módulo {String(index + 1).padStart(2, '0')}
               </p>
-              <h3 className="mt-0.5 text-sm font-semibold text-[var(--ink)] md:mt-1 md:text-base">{module.title}</h3>
+              <h3 className="mt-1 text-base font-semibold text-[var(--ink)]">{module.title}</h3>
             </div>
-            <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-[var(--ink-soft)] md:py-1 md:text-xs">
-              {module.lessons?.length || 0}
+            <span className="shrink-0 text-xs text-[var(--ink-soft)]">
+              {module.lessons?.length || 0}{' '}
+              {(module.lessons?.length || 0) === 1 ? 'lección' : 'lecciones'}
             </span>
           </summary>
-          <div className="mt-2 space-y-1.5 md:mt-3 md:space-y-2">
+          <ul className="mt-3 space-y-0">
             {(module.lessons || []).map((lesson) => {
               const isActive = activeLessonSlug === lesson.slug;
               const status = findLessonStatus(lesson.id, lessonProgress);
-              const baseClass = `flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5 text-sm transition md:rounded-xl md:py-3 ${
-                isActive
-                  ? 'border-[var(--green-700)] bg-[rgba(22,112,85,0.08)]'
-                  : 'border-[var(--stroke)] bg-white/80 hover:border-[rgba(22,112,85,0.22)] hover:shadow-sm'
+              const baseClass = `flex items-center justify-between gap-3 border-t border-[var(--stroke)] py-3 text-sm first:border-t-0 ${
+                isActive ? 'text-[var(--green-700)]' : 'text-[var(--ink)]'
               }`;
 
               if (mode === 'progress') {
                 if (locked) {
                   return (
-                    <span
-                      key={lesson.id}
-                      className={`${baseClass} cursor-not-allowed opacity-70`}
-                      aria-disabled="true"
-                      title="Activa el curso para acceder a esta lección"
-                    >
-                      <span className="min-w-0 font-semibold text-[var(--ink)]">{lesson.title}</span>
+                    <li key={lesson.id}>
                       <span
-                        className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] md:text-[10px] ${statusStyles[status]}`}
+                        className={`${baseClass} cursor-not-allowed opacity-60`}
+                        aria-disabled="true"
+                        title="Activa el curso para acceder a esta lección"
                       >
-                        {statusLabels[status]}
+                        <span className="min-w-0 font-medium">{lesson.title}</span>
+                        <span className="shrink-0 text-xs text-[var(--ink-soft)]">
+                          {statusLabels[status]}
+                        </span>
                       </span>
-                    </span>
+                    </li>
                   );
                 }
 
                 return (
-                  <Link key={lesson.id} href={`/cursos/${courseSlug}/${lesson.slug}`} className={baseClass}>
-                    <span className="min-w-0 font-semibold text-[var(--ink)]">{lesson.title}</span>
-                    <span
-                      className={`shrink-0 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.1em] md:text-[10px] ${statusStyles[status]}`}
-                    >
-                      {statusLabels[status]}
-                    </span>
-                  </Link>
+                  <li key={lesson.id}>
+                    <Link href={`/cursos/${courseSlug}/${lesson.slug}`} className={`${baseClass} hover:text-[var(--green-700)]`}>
+                      <span className="min-w-0 font-medium">{lesson.title}</span>
+                      <span className="shrink-0 text-xs text-[var(--ink-soft)]">
+                        {statusLabels[status]}
+                      </span>
+                    </Link>
+                  </li>
                 );
               }
 
               if (mode === 'nav') {
                 if (locked && !isActive) {
                   return (
-                    <span
-                      key={lesson.id}
-                      className="block cursor-not-allowed rounded-lg border border-[var(--stroke)] px-3 py-2.5 text-sm font-semibold text-[var(--ink-soft)] opacity-70 md:rounded-xl"
-                      aria-disabled="true"
-                      title="Activa el curso para acceder a esta lección"
-                    >
-                      {lesson.title}
-                    </span>
+                    <li key={lesson.id}>
+                      <span
+                        className={`${baseClass} cursor-not-allowed opacity-60`}
+                        aria-disabled="true"
+                        title="Activa el curso para acceder a esta lección"
+                      >
+                        <span className="min-w-0 font-medium">{lesson.title}</span>
+                      </span>
+                    </li>
                   );
                 }
 
                 return (
-                  <Link
-                    key={lesson.id}
-                    href={`/cursos/${courseSlug}/${lesson.slug}`}
-                    className={`block rounded-lg px-3 py-2.5 text-sm font-semibold md:rounded-xl ${
-                      isActive ? 'bg-[var(--green-700)] text-white' : 'border border-[var(--stroke)] text-[var(--ink)]'
-                    }`}
-                  >
-                    {lesson.title}
-                  </Link>
+                  <li key={lesson.id}>
+                    <Link
+                      href={`/cursos/${courseSlug}/${lesson.slug}`}
+                      className={`${baseClass} ${isActive ? 'font-semibold' : 'hover:text-[var(--green-700)]'}`}
+                    >
+                      <span className="min-w-0 font-medium">{lesson.title}</span>
+                    </Link>
+                  </li>
                 );
               }
 
               return (
-                <CourseLessonAccessLink
-                  key={lesson.id}
-                  courseSlug={courseSlug}
-                  lessonSlug={lesson.slug}
-                  className={baseClass}
-                >
-                  <span className="min-w-0 font-semibold text-[var(--ink)]">{lesson.title}</span>
-                  <span className="shrink-0 text-xs text-[var(--ink-soft)]">
-                    {lesson.durationMinutes ? `${lesson.durationMinutes} min` : 'Lección'}
-                  </span>
-                </CourseLessonAccessLink>
+                <li key={lesson.id}>
+                  <CourseLessonAccessLink
+                    courseSlug={courseSlug}
+                    lessonSlug={lesson.slug}
+                    className={baseClass}
+                  >
+                    <span className="min-w-0 font-medium">{lesson.title}</span>
+                    <span className="shrink-0 text-xs text-[var(--ink-soft)]">
+                      {lesson.durationMinutes ? `${lesson.durationMinutes} min` : 'Lección'}
+                    </span>
+                  </CourseLessonAccessLink>
+                </li>
               );
             })}
-          </div>
+          </ul>
         </details>
       ))}
     </div>

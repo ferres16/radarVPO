@@ -13,6 +13,7 @@ describe('PromotionCard', () => {
   it('renders promotion title and action', () => {
     render(
       <PromotionCard
+        animated={false}
         promotion={{
           id: 'p1',
           title: 'Promocion Demo',
@@ -22,10 +23,10 @@ describe('PromotionCard', () => {
           status: 'published_reviewed',
           sourceUrl: 'https://example.com',
         }}
-      />, 
+      />,
     );
 
     expect(screen.getByText('Promocion Demo')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ver detalle' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver ficha completa' })).toBeInTheDocument();
   });
 });

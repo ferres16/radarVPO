@@ -3,14 +3,13 @@ import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
-import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { ButtonLink } from '@/components/design-system';
 import { CourseAccessLink, CourseAccessProvider } from '@/components/course-access';
 import { CourseCoverImage } from '@/components/course-cover-image';
 import { CourseHubSection } from '@/components/course-hub-section';
 import { CourseModuleIndex } from '@/components/course-module-index';
 import { CoursePublicIndex } from '@/components/course-public-index';
 import { CourseStickyBuyBar } from '@/components/course-sticky-buy-bar';
-import { CollapsePanel } from '@/components/collapse-panel';
 import { PublicPage } from '@/components/conversion/public-shell';
 import { StructuredData } from '@/components/structured-data';
 import { buildCourseAccessTargets } from '@/lib/course-access-targets';
@@ -248,48 +247,76 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
         <CourseHubSection course={course} lessonCount={lessonCount} />
 
         <CoursePublicIndex>
-        <section id="indice" className="shell scroll-mt-24 pb-6 md:pb-8">
-          <div className="grid gap-3 md:gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-          <CollapsePanel
-            title="Índice del curso"
-            subtitle={lessonCount > 0 ? 'Módulos y lecciones disponibles' : 'Contenido en preparación'}
-            meta={lessonCount > 0 ? `${lessonCount} lecc.` : undefined}
-            alwaysOpenFrom="lg"
-            className="premium-card !border-[var(--stroke)] !bg-[var(--surface-elevated)]"
-            bodyClassName="!border-t-0 !pt-3 lg:!pt-0"
-          >
-            <CourseModuleIndex courseSlug={course.slug} modules={modules} mode="access" defaultOpenFirst locked={!canAccess} />
-          </CollapsePanel>
-
-          <aside className="space-y-3 md:space-y-4">
-            <SurfaceCard premium className="p-4 md:p-6">
-              <SectionHeader eyebrow="Qué aprenderás" title="Preparación real para el plazo" />
-              <ul className="mt-4 space-y-2 text-sm text-[var(--ink-soft)]">
-                <li>Requisitos y documentación necesaria</li>
-                <li>Errores frecuentes que hacen perder la oportunidad</li>
-                <li>Cómo actuar rápido cuando se abre la convocatoria</li>
-              </ul>
+        <section id="indice" className="shell scroll-mt-24 pb-8 md:pb-12">
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12">
+            <div className="min-w-0">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-bold text-[var(--ink)] md:text-2xl">Índice del curso</h2>
+                  <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                    {lessonCount > 0
+                      ? 'Módulos y lecciones disponibles'
+                      : 'Contenido en preparación'}
+                  </p>
+                </div>
+                {lessonCount > 0 ? (
+                  <p className="shrink-0 text-sm text-[var(--ink-soft)]">{lessonCount} lecciones</p>
+                ) : null}
+              </div>
               <div className="mt-5">
-                <CourseAccessLink
-                  hrefWhenAccess={courseEntryHref}
-                  hrefWhenLocked={lockedAccessHref}
-                  lockedLabel={includedInPro ? proPlan.ctaLabel : lockedAccessLabel}
-                  accessLabel={hasLessons ? 'Empezar curso' : 'Ver índice'}
-                  className="inline-flex w-full items-center justify-center rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-bold text-white shadow-glow transition hover:bg-[var(--green-900)]"
+                <CourseModuleIndex
+                  courseSlug={course.slug}
+                  modules={modules}
+                  mode="access"
+                  defaultOpenFirst
+                  locked={!canAccess}
                 />
               </div>
-            </SurfaceCard>
-            <SurfaceCard premium className="p-4 md:p-6">
-              <SectionHeader eyebrow="Acompañamiento" title="¿Necesitas revisar tu caso?" />
-              <p className="mt-2 text-sm text-[var(--ink-soft)]">
-                Combina el curso con acompañamiento personalizado para documentación y estrategia.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-2">
-                <ButtonLink href="/acompanamiento" variant="secondary">Solicitar acompañamiento</ButtonLink>
-                <Link href="/cursos" className="text-sm font-bold text-[var(--green-700)]">Ver más cursos</Link>
+            </div>
+
+            <aside className="space-y-8 border-t border-[var(--stroke)] pt-6 lg:border-t-0 lg:pt-0">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
+                  Qué aprenderás
+                </p>
+                <h3 className="mt-2 text-lg font-bold text-[var(--ink)]">
+                  Preparación real para el plazo
+                </h3>
+                <ul className="mt-4 space-y-2 text-sm leading-6 text-[var(--ink-soft)]">
+                  <li>Requisitos y documentación necesaria</li>
+                  <li>Errores frecuentes que hacen perder la oportunidad</li>
+                  <li>Cómo actuar rápido cuando se abre la convocatoria</li>
+                </ul>
+                <div className="mt-5">
+                  <CourseAccessLink
+                    hrefWhenAccess={courseEntryHref}
+                    hrefWhenLocked={lockedAccessHref}
+                    lockedLabel={includedInPro ? proPlan.ctaLabel : lockedAccessLabel}
+                    accessLabel={hasLessons ? 'Empezar curso' : 'Ver índice'}
+                    className="inline-flex w-full items-center justify-center rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[var(--green-900)]"
+                  />
+                </div>
               </div>
-            </SurfaceCard>
-          </aside>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
+                  Acompañamiento
+                </p>
+                <h3 className="mt-2 text-lg font-bold text-[var(--ink)]">
+                  ¿Necesitas revisar tu caso?
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
+                  Combina el curso con acompañamiento personalizado para documentación y estrategia.
+                </p>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <ButtonLink href="/acompanamiento" variant="secondary">
+                    Solicitar acompañamiento
+                  </ButtonLink>
+                  <Link href="/cursos" className="text-sm font-semibold text-[var(--green-700)]">
+                    Ver más cursos
+                  </Link>
+                </div>
+              </div>
+            </aside>
           </div>
         </section>
         </CoursePublicIndex>

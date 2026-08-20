@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import type { Course, CourseModule } from '@/types';
-import { CollapsePanel } from '@/components/collapse-panel';
+import type { Course } from '@/types';
 import { CourseModuleIndex } from '@/components/course-module-index';
 
 type LessonProgressEntry = {
@@ -57,20 +56,20 @@ function SummaryStats({
   totalLessons: number;
 }) {
   return (
-    <dl className="space-y-2 text-sm md:space-y-3">
-      <div className="flex items-center justify-between rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)]/60 px-3 py-2.5 md:px-4 md:py-3">
+    <dl className="space-y-3 text-sm">
+      <div className="flex items-center justify-between border-b border-[var(--stroke)] pb-3">
         <dt className="text-[var(--ink-soft)]">Progreso global</dt>
-        <dd className="font-black text-[var(--ink)]">{progressPercent}%</dd>
+        <dd className="font-semibold text-[var(--ink)]">{progressPercent}%</dd>
       </div>
-      <div className="flex items-center justify-between rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)]/60 px-3 py-2.5 md:px-4 md:py-3">
+      <div className="flex items-center justify-between border-b border-[var(--stroke)] pb-3">
         <dt className="text-[var(--ink-soft)]">Lecciones completadas</dt>
-        <dd className="font-black text-[var(--ink)]">
+        <dd className="font-semibold text-[var(--ink)]">
           {completedLessons}/{totalLessons}
         </dd>
       </div>
-      <div className="flex items-center justify-between rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)]/60 px-3 py-2.5 md:px-4 md:py-3">
+      <div className="flex items-center justify-between">
         <dt className="text-[var(--ink-soft)]">Estado</dt>
-        <dd className="font-black text-[var(--green-700)]">
+        <dd className="font-semibold text-[var(--ink)]">
           {progressPercent === 100 ? 'Completado' : completedLessons > 0 ? 'En progreso' : 'Sin empezar'}
         </dd>
       </div>
@@ -124,39 +123,28 @@ export function CourseHubProgress({
         </div>
       </div>
 
-      <div className="course-hub-grid mt-3 md:mt-4">
-        <CollapsePanel
-          title="Índice del curso"
-          subtitle="Módulos y lecciones de tu curso"
-          meta={`${totalLessons} lecc.`}
-          alwaysOpenFrom="lg"
-          className="premium-card w-full p-4 md:p-5"
-          bodyClassName="!border-t-0 !pt-3 lg:!pt-0"
-        >
-          <CourseModuleIndex
-            courseSlug={course.slug}
-            modules={modules}
-            mode="progress"
-            lessonProgress={lessonProgress}
-            defaultOpenFirst
-          />
-        </CollapsePanel>
+      <div className="course-hub-grid mt-6 md:mt-8">
+        <div className="min-w-0">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold text-[var(--ink)]">Índice del curso</h2>
+              <p className="mt-1 text-sm text-[var(--ink-soft)]">Módulos y lecciones de tu curso</p>
+            </div>
+            <p className="shrink-0 text-sm text-[var(--ink-soft)]">{totalLessons} lecciones</p>
+          </div>
+          <div className="mt-5">
+            <CourseModuleIndex
+              courseSlug={course.slug}
+              modules={modules}
+              mode="progress"
+              lessonProgress={lessonProgress}
+              defaultOpenFirst
+            />
+          </div>
+        </div>
 
-        <CollapsePanel
-          title="Resumen"
-          subtitle="Progreso y estado del curso"
-          className="premium-card w-full p-4 lg:hidden"
-          bodyClassName="!pt-3"
-        >
-          <SummaryStats
-            progressPercent={progressPercent}
-            completedLessons={completedLessons}
-            totalLessons={totalLessons}
-          />
-        </CollapsePanel>
-
-        <aside className="premium-card hidden w-full p-4 md:p-5 lg:block">
-          <h2 className="text-lg font-black text-[var(--ink)]">Resumen</h2>
+        <aside className="border-t border-[var(--stroke)] pt-6 lg:border-t-0 lg:pt-0">
+          <h2 className="text-lg font-bold text-[var(--ink)]">Resumen</h2>
           <div className="mt-4">
             <SummaryStats
               progressPercent={progressPercent}
