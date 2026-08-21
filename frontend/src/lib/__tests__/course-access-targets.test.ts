@@ -67,6 +67,6 @@ describe('buildCourseAccessTargets', () => {
       stripePaymentLink: 'https://bucket.s3.amazonaws.com/courses/cover.jpg',
     });
     expect(targets.lockedHref).toBe('/cursos/curso-test#precio');
-    expect(targets.lockedLabel).toBe('Solicitar acceso');
+    expect(targets.lockedLabel).toBe('Comprar curso');
   });
 });

@@ -34,8 +34,8 @@ export function CourseStickyBuyBar({
           <CourseAccessLink
             hrefWhenAccess="/"
             hrefWhenLocked={lockedHref}
-            lockedLabel={lockedLabel}
-            accessLabel="Empezar"
+            lockedLabel={lockedLabel || 'Comprar curso'}
+            accessLabel="Continuar curso"
             className="btn btn--primary btn--sm shrink-0"
           />
         </div>

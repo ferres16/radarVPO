@@ -73,7 +73,7 @@ export function CourseProductCard({
   const targets = buildCourseAccessTargets(course);
   const duration = lessonCount > 0 ? `${lessonCount} lecciones` : 'Próximamente';
   const ctaHref = includedInPro ? `/cursos/${course.slug}` : targets.lockedHref.startsWith('http') ? targets.lockedHref : `/cursos/${course.slug}`;
-  const ctaLabel = includedInPro ? 'Acceder con PRO' : targets.lockedLabel;
+  const ctaLabel = includedInPro ? 'Continuar curso' : 'Comprar curso';
 
   const shellClass = layout === 'rail' ? 'saas-card-rail h-full' : 'product-card public-card public-card--hover group';
 

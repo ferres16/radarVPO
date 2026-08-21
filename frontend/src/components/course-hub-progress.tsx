@@ -117,7 +117,7 @@ export function CourseHubProgress({
               href={`/cursos/${course.slug}/${continueLessonSlug}`}
               className="mt-3 inline-flex w-full items-center justify-center rounded-full bg-white px-4 py-2.5 text-sm font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)] sm:mt-4 sm:w-auto sm:px-5"
             >
-              {continueLessonTitle ? `Continuar: ${continueLessonTitle}` : 'Continuar curso'}
+              Continuar curso
             </Link>
           ) : null}
         </div>

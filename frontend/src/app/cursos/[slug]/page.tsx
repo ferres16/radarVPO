@@ -222,7 +222,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                     hrefWhenAccess={courseEntryHref}
                     hrefWhenLocked={lockedAccessHref}
                     lockedLabel={lockedAccessLabel}
-                    accessLabel="Empezar curso"
+                    accessLabel="Continuar curso"
                     className="inline-flex w-full items-center justify-center rounded-full bg-[var(--green-700)] px-5 py-3 text-sm font-bold text-white shadow-glow transition hover:bg-[var(--green-900)] sm:w-auto"
                   />
                 </div>
@@ -244,8 +244,8 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                 <CourseAccessLink
                   hrefWhenAccess={courseEntryHref}
                   hrefWhenLocked={lockedAccessHref}
-                  lockedLabel={lockedAccessLabel}
-                  accessLabel={hasLessons ? 'Empezar curso' : 'Ver índice'}
+                  lockedLabel="Comprar curso"
+                  accessLabel={hasLessons ? 'Continuar curso' : 'Ver índice'}
                   className="flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
                 />
               </div>
@@ -304,15 +304,6 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                   <li>Errores frecuentes que hacen perder la oportunidad</li>
                   <li>Cómo actuar rápido cuando se abre la convocatoria</li>
                 </ul>
-                <div className="mt-5">
-                  <CourseAccessLink
-                    hrefWhenAccess={courseEntryHref}
-                    hrefWhenLocked={lockedAccessHref}
-                    lockedLabel={includedInPro ? proPlan.ctaLabel : lockedAccessLabel}
-                    accessLabel={hasLessons ? 'Empezar curso' : 'Ver índice'}
-                    className="inline-flex w-full items-center justify-center rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-bold text-white transition hover:bg-[var(--green-900)]"
-                  />
-                </div>
               </article>
               <article className="public-card p-5 md:p-6">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">

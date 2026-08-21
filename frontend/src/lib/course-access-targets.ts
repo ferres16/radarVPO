@@ -37,7 +37,7 @@ export function buildCourseAccessTargets(course: Course): CourseAccessTargets {
       accessHref: entryHref,
       lockedHref: proHref,
       lockedLabel: proPlan.ctaLabel,
-      accessLabel: lessonSlug ? 'Entrar al curso' : 'Ver índice',
+      accessLabel: lessonSlug ? 'Continuar curso' : 'Ver índice',
       hasLessons: Boolean(lessonSlug),
     };
   }
@@ -47,7 +47,7 @@ export function buildCourseAccessTargets(course: Course): CourseAccessTargets {
       accessHref: entryHref,
       lockedHref: course.stripePaymentLink,
       lockedLabel: 'Comprar curso',
-      accessLabel: lessonSlug ? 'Entrar al curso' : 'Ver índice',
+      accessLabel: lessonSlug ? 'Continuar curso' : 'Ver índice',
       hasLessons: Boolean(lessonSlug),
     };
   }
@@ -56,8 +56,8 @@ export function buildCourseAccessTargets(course: Course): CourseAccessTargets {
     return {
       accessHref: entryHref,
       lockedHref: coursePageHref,
-      lockedLabel: lessonSlug ? 'Ver opciones de acceso' : 'Ver índice',
-      accessLabel: lessonSlug ? 'Entrar al curso' : 'Ver índice',
+      lockedLabel: 'Comprar curso',
+      accessLabel: lessonSlug ? 'Continuar curso' : 'Ver índice',
       hasLessons: Boolean(lessonSlug),
     };
   }
@@ -65,8 +65,8 @@ export function buildCourseAccessTargets(course: Course): CourseAccessTargets {
   return {
     accessHref: entryHref,
     lockedHref: coursePageHref,
-    lockedLabel: 'Solicitar acceso',
-    accessLabel: lessonSlug ? 'Entrar al curso' : 'Ver índice',
+    lockedLabel: 'Comprar curso',
+    accessLabel: lessonSlug ? 'Continuar curso' : 'Ver índice',
     hasLessons: Boolean(lessonSlug),
   };
 }

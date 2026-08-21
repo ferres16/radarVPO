@@ -27,6 +27,7 @@ export default function LessonPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [marking, setMarking] = useState(false);
+  const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -37,6 +38,15 @@ export default function LessonPage() {
         if (!active) return;
         setPayload(data);
         setError('');
+        try {
+          const progress = await api.getCourseProgress(slug);
+          if (!active) return;
+          const entry = progress.lessons.find((item) => item.lessonId === data.lesson.id);
+          setCompleted(entry?.status === 'completed');
+        } catch {
+          if (!active) return;
+          setCompleted(false);
+        }
       } catch (err) {
         if (!active) return;
         const message = err instanceof Error ? err.message : 'No se pudo cargar la leccion';
@@ -59,6 +69,7 @@ export default function LessonPage() {
                 lesson,
                 access: { canAccess: false, reason: 'locked' },
               });
+              setCompleted(false);
               setError('');
               return;
             }
@@ -96,10 +107,11 @@ export default function LessonPage() {
   );
 
   async function markCompleted() {
-    if (!lesson) return;
+    if (!lesson || completed) return;
     setMarking(true);
     try {
       await api.markLessonCompleted(slug, lesson.slug);
+      setCompleted(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo actualizar progreso');
     } finally {
@@ -247,14 +259,16 @@ export default function LessonPage() {
               ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => void markCompleted()}
-                disabled={locked || marking}
-                className="flex-1 rounded-full bg-[var(--green-500)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 sm:flex-none sm:px-5"
-              >
-                {marking ? 'Guardando...' : 'Completada'}
-              </button>
+              {!locked && !completed ? (
+                <button
+                  type="button"
+                  onClick={() => void markCompleted()}
+                  disabled={marking}
+                  className="flex-1 rounded-full bg-[var(--green-500)] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-50 sm:flex-none sm:px-5"
+                >
+                  {marking ? 'Guardando...' : 'Completada'}
+                </button>
+              ) : null}
               {nextLesson && !locked ? (
                 <Link
                   href={`/cursos/${payload.course.slug}/${nextLesson.slug}`}
