@@ -17,7 +17,7 @@ export function Reveal({ children, className = '', delay = 0 }: MotionProps) {
       className={className}
       initial={prefersReducedMotion ? false : { opacity: 0, y: 18 }}
       whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.18 }}
+      viewport={{ once: true, amount: 0.01, margin: '0px 0px -8% 0px' }}
       transition={{ duration: 0.48, ease: 'easeOut', delay }}
     >
       {children}
@@ -34,7 +34,7 @@ export function MotionCard({ children, className = '', delay = 0 }: MotionProps)
       initial={prefersReducedMotion ? false : { opacity: 0, y: 14 }}
       whileInView={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
       whileHover={prefersReducedMotion ? undefined : { y: -4 }}
-      viewport={{ once: true, amount: 0.2 }}
+      viewport={{ once: true, amount: 0.01, margin: '0px 0px -8% 0px' }}
       transition={{ duration: 0.32, ease: 'easeOut', delay }}
     >
       {children}
@@ -50,7 +50,7 @@ export function Stagger({ children, className = '' }: MotionProps) {
       className={className}
       initial="hidden"
       whileInView="show"
-      viewport={{ once: true, amount: 0.16 }}
+      viewport={{ once: true, amount: 0.01, margin: '0px 0px -8% 0px' }}
       variants={{
         hidden: {},
         show: {

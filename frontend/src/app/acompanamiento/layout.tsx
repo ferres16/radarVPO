@@ -3,11 +3,16 @@ import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Acompañamiento personalizado para conseguir tu VPO',
+  title: 'Acompañamiento individualizado VPO con chat y seguimiento',
   description:
-    'Acompañamiento personalizado para personas que quieren conseguir una VPO: revisión de requisitos, preparación de documentación y seguimiento de oportunidades en Cataluña.',
+    'Acompañamiento 1:1 para vivienda protegida en Cataluña: acceso a chat, revisión de tu caso y ayuda durante todo el proceso hasta presentar la solicitud.',
   path: '/acompanamiento',
-  keywords: ['acompañamiento VPO', 'vivienda protegida Cataluña', 'preparación solicitud VPO'],
+  keywords: [
+    'acompañamiento VPO',
+    'acompañamiento individualizado VPO',
+    'chat VPO',
+    'vivienda protegida Cataluña',
+  ],
 });
 
 export default function AccompanimentLayout({ children }: { children: React.ReactNode }) {
@@ -22,13 +27,13 @@ export default function AccompanimentLayout({ children }: { children: React.Reac
           {
             '@context': 'https://schema.org',
             '@type': 'Service',
-            name: 'Acompañamiento personalizado Radar VPO',
+            name: 'Acompañamiento individualizado Radar VPO',
             provider: {
               '@type': 'Organization',
               name: 'Radar VPO',
             },
             areaServed: 'Catalonia',
-            serviceType: 'Acompañamiento para acceso a vivienda protegida',
+            serviceType: 'Acompañamiento individualizado con chat para acceso a vivienda protegida',
           },
         ]}
       />

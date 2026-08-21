@@ -44,7 +44,7 @@ export default async function AlertsPage() {
         }
       />
 
-      <PublicSection id="lanzamientos">
+      <PublicSection id="lanzamientos" animated={false}>
         <SectionHeader
           title="Timeline de lanzamientos"
           description="Cuenta atrás y ubicación. Activa VPO PRO para recibir avisos por SMS y email."

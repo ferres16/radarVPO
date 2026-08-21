@@ -31,35 +31,29 @@ export const homeSolutionBlocks = [
   },
   {
     step: '04',
-    title: 'Acompañamiento opcional',
-    description: 'Si necesitas ayuda personalizada, puedes contratar acompañamiento aparte.',
+    title: 'Acompañamiento individualizado',
+    description: 'Si lo necesitas, chat y ayuda 1:1 durante todo el proceso, aparte de PRO.',
   },
 ] as const;
 
 export const homeTestimonials = [
   {
-    id: 'placeholder-1',
+    id: 'testimonial-1',
     name: 'María G.',
     location: 'Barcelona',
     quote: 'Me avisaron dos días antes de que saliera la convocatoria. Llegué preparada y presenté a tiempo.',
-    result: 'Presentó solicitud con margen',
-    placeholder: true,
   },
   {
-    id: 'placeholder-2',
+    id: 'testimonial-2',
     name: 'Jordi P.',
-    location: 'Tarragona',
+    location: 'Barcelona',
     quote: 'Dejé de revisar portales a diario. Las alertas PRO me ahorraron horas y mucha ansiedad.',
-    result: 'Detectó oportunidad en su municipio',
-    placeholder: true,
   },
   {
-    id: 'placeholder-3',
+    id: 'testimonial-3',
     name: 'Laura M.',
-    location: 'Girona',
+    location: 'Barcelona',
     quote: 'El curso me aclaró requisitos y errores típicos. Supe qué preparar antes de que abriera el plazo.',
-    result: 'Documentación lista antes del plazo',
-    placeholder: true,
   },
 ] as const;
 

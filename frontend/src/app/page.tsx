@@ -31,7 +31,11 @@ export const metadata: Metadata = createMetadata({
 
 export default async function Home() {
   const courses = await api.listCourses().catch(() => []);
-  const featuredCourse = [...courses].sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))[0];
+  const sortedCourses = [...courses].sort(
+    (a, b) => a.order - b.order || a.title.localeCompare(b.title),
+  );
+  const featuredCourse =
+    sortedCourses.find((course) => /avanzad/i.test(course.title)) || sortedCourses[0];
 
   return (
     <>

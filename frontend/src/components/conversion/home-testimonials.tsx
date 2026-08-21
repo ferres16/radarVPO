@@ -12,14 +12,10 @@ export function HomeTestimonials() {
       <div className="lp-testimonials">
         {homeTestimonials.map((item) => (
           <figure key={item.id} className="lp-testimonial">
-            {item.placeholder ? (
-              <span className="lp-testimonial__placeholder">Ejemplo de testimonio</span>
-            ) : null}
             <blockquote className="lp-testimonial__quote">&ldquo;{item.quote}&rdquo;</blockquote>
             <figcaption className="lp-testimonial__meta">
               <strong>{item.name}</strong>
               <span>{item.location}</span>
-              <span className="lp-testimonial__result">{item.result}</span>
             </figcaption>
           </figure>
         ))}
