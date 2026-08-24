@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Inter } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
 import { PublicAdFrame } from "@/components/ads";
@@ -91,6 +92,7 @@ export default function RootLayout({
           </div>
           <SiteFooter />
         </ProAccessProvider>
+        <Analytics />
       </body>
     </html>
   );
