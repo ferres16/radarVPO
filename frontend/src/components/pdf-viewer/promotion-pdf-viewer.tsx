@@ -104,7 +104,7 @@ export function PromotionPdfViewer({
         };
         const pdf = await loadingTask.promise;
         if (cancelled) {
-          void pdf.destroy();
+          void pdf.loadingTask.destroy();
           return;
         }
         pdfRef.current = pdf;
