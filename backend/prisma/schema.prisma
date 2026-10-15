@@ -846,11 +846,23 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+enum FavoriteStage {
+  interested
+  preparing
+  applied
+  discarded
+}
+
 model PromotionFavorite {
   id          String    @id @default(cuid())
   userId      String    @map("user_id")
   promotionId String    @map("promotion_id")
   createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  /// Seguimiento personal del usuario (Mi espacio). No es un expediente gestionado por Radar VPO.
+  stage         FavoriteStage @default(interested)
+  notes         String?
+  checklistDone String[]      @default([]) @map("checklist_done")
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
 

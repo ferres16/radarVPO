@@ -18,6 +18,7 @@ type AccessDecision = {
   canAccess: boolean;
   reason:
     | 'free'
+    | 'preview'
     | 'plan'
     | 'entitlement'
     | 'purchase'
@@ -180,7 +181,7 @@ export class CoursesService {
   ) {
     const course = await this.getPublishedCourseBySlug(courseSlug, true);
     const profile = await this.getAccessProfile(userId);
-    const access = this.evaluateAccess(course, profile);
+    const courseAccess = this.evaluateAccess(course, profile);
 
     const lesson = await this.prisma.courseLesson.findFirst({
       where: {
@@ -214,6 +215,13 @@ export class CoursesService {
       throw new NotFoundException('Lesson not found');
     }
 
+    // Lección de muestra: se configura en seoMetadata.previewLessonSlug y es visible sin comprar.
+    const isPreviewLesson = this.isPreviewLesson(course.seoMetadata, lesson.slug);
+    const access: AccessDecision =
+      !courseAccess.canAccess && isPreviewLesson
+        ? { canAccess: true, reason: 'preview' }
+        : courseAccess;
+
     if (!access.canAccess) {
       const presentedCourse = await this.withPublicCoursePresentation(course);
       return {
@@ -229,12 +237,14 @@ export class CoursesService {
       };
     }
 
-    await this.trackLessonProgress(
-      userId,
-      lesson.courseId,
-      lesson.moduleId,
-      lesson.id,
-    );
+    if (courseAccess.canAccess) {
+      await this.trackLessonProgress(
+        userId,
+        lesson.courseId,
+        lesson.moduleId,
+        lesson.id,
+      );
+    }
 
     const resources = await Promise.all(
       lesson.resources.map(async (resource) => {
@@ -280,6 +290,22 @@ export class CoursesService {
         resources,
       },
     };
+  }
+
+  private isPreviewLesson(
+    seoMetadata: Prisma.JsonValue | null | undefined,
+    lessonSlug: string,
+  ): boolean {
+    if (
+      !seoMetadata ||
+      typeof seoMetadata !== 'object' ||
+      Array.isArray(seoMetadata)
+    ) {
+      return false;
+    }
+    const previewSlug = (seoMetadata as Record<string, unknown>)
+      .previewLessonSlug;
+    return typeof previewSlug === 'string' && previewSlug === lessonSlug;
   }
 
   private async withAccessibleCourseAsset<

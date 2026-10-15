@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
 
-export default function ServicesRedirectPage() {
-  redirect('/acompanamiento');
+export default function ServicesPage() {
+  redirect('/cursos');
 }

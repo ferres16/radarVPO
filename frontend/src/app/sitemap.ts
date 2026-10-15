@@ -8,7 +8,9 @@ const staticRoutes = [
   '/promotions',
   '/alerts',
   '/cursos',
-  '/acompanamiento',
+  '/pro',
+  '/condiciones',
+  '/privacidad',
   '/news',
 ];
 

@@ -3,12 +3,12 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { proHref, proPlan, freePlanFeatures, proExclusiveFeatures } from '@/lib/pro';
-import { ButtonLink, FormField } from '@/components/design-system';
+import { freePlanFeatures } from '@/lib/pro';
+import { safeNextPath } from '@/lib/safe-next';
+import { FormField } from '@/components/design-system';
 
 export default function RegisterPage() {
-  const [intent, setIntent] = useState('');
-  const isProIntent = intent === 'pro';
+  const [nextPath, setNextPath] = useState('');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -28,7 +28,10 @@ export default function RegisterPage() {
   const passwordLabel = ['Muy débil', 'Básica', 'Media', 'Buena', 'Fuerte'][passwordScore];
 
   useEffect(() => {
-    setIntent(new URLSearchParams(window.location.search).get('intent') || '');
+    const params = new URLSearchParams(window.location.search);
+    // Compatibilidad con enlaces antiguos (?intent=pro): llevan al checkout de PRO.
+    const legacyIntent = params.get('intent') === 'pro' ? '/checkout?product=pro' : '';
+    setNextPath(safeNextPath(params.get('next'), legacyIntent));
   }, []);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -38,7 +41,7 @@ export default function RegisterPage() {
 
     try {
       await api.register(email, password, fullName, phone);
-      window.location.assign(isProIntent ? proHref : '/account');
+      window.location.assign(safeNextPath(nextPath));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta');
     } finally {
@@ -46,19 +49,22 @@ export default function RegisterPage() {
     }
   }
 
+  const loginHref = nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : '/login';
+  const buying = nextPath.startsWith('/checkout');
+
   return (
     <main className="lp lp--inner lp--app auth-shell">
       <section className="shell py-4 md:py-10">
         <section className="public-card mx-auto grid max-w-5xl overflow-hidden md:grid-cols-[1.05fr_0.95fr]">
           <div className="p-5 md:p-8">
-            <span className="lp-hero__badge">{isProIntent ? proPlan.name : 'Cuenta gratuita'}</span>
+            <span className="lp-hero__badge">Cuenta gratuita</span>
             <h1 className="mt-3 text-2xl font-bold text-[var(--ink)] md:text-3xl">
-              {isProIntent ? 'Activa tu ventaja PRO' : 'Crea tu cuenta en 1 minuto'}
+              Crea tu cuenta en 1 minuto
             </h1>
             <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
-              {isProIntent
-                ? `${proPlan.price}. Avisos por email y SMS, y ${proPlan.courseLabel} incluido.`
-                : 'Gratis para consultar promociones y lanzamientos. PRO añade avisos y el curso Guía VPO.'}
+              {buying
+                ? 'Necesitamos una cuenta para activar tu compra. Al terminar volverás al resumen del pedido.'
+                : 'La cuenta es gratis. Con ella guardas promociones y accedes a la lección de muestra del curso.'}
             </p>
 
             <form className="mt-5 space-y-4" onSubmit={onSubmit}>
@@ -68,8 +74,8 @@ export default function RegisterPage() {
               <FormField id="email" label="Email">
                 <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="ds-control w-full" />
               </FormField>
-              <FormField id="phone" label="Móvil" hint="Para alertas SMS con VPO PRO. Ej: 612345678">
-                <input id="phone" type="tel" autoComplete="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required className="ds-control w-full" />
+              <FormField id="phone" label="Móvil (opcional)" hint="Solo se usa para los avisos por SMS de Radar VPO PRO. Puedes añadirlo después.">
+                <input id="phone" type="tel" autoComplete="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="ds-control w-full" />
               </FormField>
               <FormField id="password" label="Contraseña">
                 <input
@@ -96,42 +102,33 @@ export default function RegisterPage() {
                 </p>
               ) : null}
               <button type="submit" disabled={loading} className="btn btn--primary btn--lg btn--block">
-                {loading ? 'Creando...' : isProIntent ? proPlan.ctaLabel : 'Crear cuenta gratis'}
+                {loading ? 'Creando...' : buying ? 'Crear cuenta y continuar' : 'Crear cuenta gratis'}
               </button>
               <p className="text-center text-xs text-[var(--ink-soft)]">
-                Información orientativa. No sustituye fuentes oficiales.
+                Al crear la cuenta aceptas las{' '}
+                <Link href="/condiciones" className="font-semibold text-[var(--green-700)]">
+                  condiciones del servicio
+                </Link>
+                . La información es orientativa y no sustituye a las fuentes oficiales.
               </p>
             </form>
 
             <p className="mt-4 text-center text-sm text-[var(--ink-soft)]">
               ¿Ya tienes cuenta?{' '}
-              <Link href="/login" className="font-semibold text-[var(--green-700)]">Entrar</Link>
+              <Link href={loginHref} className="font-semibold text-[var(--green-700)]">Entrar</Link>
             </p>
           </div>
 
           <aside className="border-t border-[var(--stroke)] bg-[#f8faf9] p-5 md:border-l md:border-t-0 md:p-8">
-            <p className="lp-eyebrow">Qué obtienes</p>
-            <h2 className="mt-2 text-xl font-bold text-[var(--ink)]">
-              {isProIntent ? 'Llega preparado al plazo' : 'Empieza gratis hoy'}
-            </h2>
+            <p className="lp-eyebrow">Qué incluye la cuenta gratuita</p>
             <div className="mt-4 space-y-2">
-              {(isProIntent
-                ? [...proExclusiveFeatures, 'Sin permanencia']
-                : [...freePlanFeatures, 'Upgrade a PRO']
-              ).map((item) => (
+              {freePlanFeatures.map((item) => (
                 <div key={item} className="flex items-center gap-2 rounded-xl border border-[var(--stroke)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--ink)]">
                   <span className="text-[var(--green-700)]" aria-hidden="true">✓</span>
                   {item}
                 </div>
               ))}
             </div>
-            {isProIntent ? null : (
-              <div className="mt-5">
-                <ButtonLink href="/register?intent=pro" block>
-                  {proPlan.ctaLabel}
-                </ButtonLink>
-              </div>
-            )}
           </aside>
         </section>
       </section>

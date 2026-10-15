@@ -1,30 +1,24 @@
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
+import { ButtonLink } from '@/components/design-system';
 import { FeaturedCourseSpotlight } from '@/components/conversion/featured-course-spotlight';
 import { HomeFaq } from '@/components/conversion/home-faq';
-import { HomeTestimonials } from '@/components/conversion/home-testimonials';
 import { HomeFinalCtaBand, HomeHeroActions } from '@/components/conversion/home-pro-ctas';
-import { ProComparison } from '@/components/pro-comparison';
-import { ProductPreview } from '@/components/saas/product-preview';
-import { TrustMetrics } from '@/components/saas/trust-metrics';
 import { StructuredData } from '@/components/structured-data';
-import { homeFaqs, homeProblemCards, homeSolutionBlocks } from '@/lib/conversion';
+import { homeFaqs, homePaths, homeProblemCards } from '@/lib/conversion';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Vivienda pública Cataluña — promociones VPO, lanzamientos y alertas',
+  title: 'Prepara tus solicitudes de vivienda protegida en Cataluña',
   description:
-    'Encuentra vivienda pública y protegida en Cataluña. Promociones VPO/HPO abiertas, próximos lanzamientos y noticias.',
+    'Consulta promociones de vivienda protegida con su documento oficial, aprende a preparar tu solicitud con un curso y organiza tus oportunidades en un solo lugar.',
   path: '/',
   keywords: [
-    'vivienda pública cataluña',
-    'vivienda publica catalunya',
     'vivienda protegida Cataluña',
     'VPO Cataluña',
     'HPO Cataluña',
     'promociones VPO',
-    'pisos protegidos',
-    'alertas vivienda protegida',
+    'registro de solicitantes vivienda protegida',
     'curso VPO',
   ],
 });
@@ -35,7 +29,7 @@ export default async function Home() {
     (a, b) => a.order - b.order || a.title.localeCompare(b.title),
   );
   const featuredCourse =
-    sortedCourses.find((course) => /avanzad/i.test(course.title)) || sortedCourses[0];
+    sortedCourses.find((course) => course.slug === 'vpo-inicial') ?? sortedCourses[0];
 
   return (
     <>
@@ -45,28 +39,18 @@ export default async function Home() {
         <section className="lp-hero" aria-labelledby="hero-title">
           <div className="lp-hero__backdrop" aria-hidden="true" />
           <div className="shell">
-            <div className="hero-split">
-              <div className="lp-hero__inner order-2 md:order-1">
-                <span className="lp-hero__badge">Vivienda pública · Cataluña</span>
-                <h1 id="hero-title" className="lp-hero__title">
-                  Vivienda pública en Cataluña.
-                  <span className="lp-hero__title-accent"> Llega antes a cada promoción VPO.</span>
-                </h1>
-                <p className="lp-hero__subtitle">
-                  Promociones abiertas, próximos lanzamientos y noticias de vivienda protegida (VPO/HPO) en un solo sitio.
-                </p>
-                <HomeHeroActions />
-              </div>
-              <div className="order-1 hidden md:block md:order-2">
-                <ProductPreview />
-              </div>
+            <div className="lp-hero__inner">
+              <span className="lp-hero__badge">Vivienda protegida · Cataluña</span>
+              <h1 id="hero-title" className="lp-hero__title">
+                Aprende a preparar tus solicitudes de vivienda protegida
+                <span className="lp-hero__title-accent"> y organiza tus oportunidades en un solo lugar.</span>
+              </h1>
+              <p className="lp-hero__subtitle">
+                Para quien quiere optar a una VPO o HPO y no sabe por dónde empezar: consulta las promociones con su
+                documento oficial, entiende el proceso con un curso práctico y sigue tu preparación.
+              </p>
+              <HomeHeroActions />
             </div>
-          </div>
-        </section>
-
-        <section className="lp-section lp-section--muted" aria-label="Métricas">
-          <div className="shell">
-            <TrustMetrics />
           </div>
         </section>
 
@@ -75,13 +59,12 @@ export default async function Home() {
             <div className="lp-section__head">
               <p className="lp-eyebrow">El problema</p>
               <h2 id="problem-title" className="lp-title">
-                La mayoría pierde la oportunidad antes de empezar
+                Solicitar una vivienda protegida es un proceso con muchos pasos
               </h2>
             </div>
             <div className="lp-problem-grid">
               {homeProblemCards.map((card) => (
                 <article key={card.title} className="lp-problem-card">
-                  <span className="lp-problem-card__mark" aria-hidden="true">✕</span>
                   <h3 className="lp-problem-card__title">{card.title}</h3>
                   <p className="lp-problem-card__text">{card.description}</p>
                 </article>
@@ -90,29 +73,28 @@ export default async function Home() {
           </div>
         </section>
 
-        <section className="lp-section lp-section--border" aria-labelledby="solution-title">
+        <section className="lp-section lp-section--border" aria-labelledby="paths-title">
           <div className="shell">
             <div className="lp-section__head">
-              <p className="lp-eyebrow">La solución</p>
-              <h2 id="solution-title" className="lp-title">
-                Radar VPO trabaja mientras tú te preparas
+              <p className="lp-eyebrow">Cómo empezar</p>
+              <h2 id="paths-title" className="lp-title">
+                Empieza por lo que necesites hoy
               </h2>
             </div>
             <div className="lp-solution-grid">
-              {homeSolutionBlocks.map((block) => (
-                <article key={block.step} className="lp-solution-card">
-                  <span className="lp-solution-card__step">{block.step}</span>
-                  <h3 className="lp-solution-card__title">{block.title}</h3>
-                  <p className="lp-solution-card__text">{block.description}</p>
+              {homePaths.map((path) => (
+                <article key={path.id} className="lp-solution-card">
+                  <span className="lp-solution-card__step">{path.eyebrow}</span>
+                  <h3 className="lp-solution-card__title">{path.title}</h3>
+                  <p className="lp-solution-card__text">{path.description}</p>
+                  <div className="mt-4">
+                    <ButtonLink href={path.href} variant={path.id === 'consult' ? 'primary' : 'secondary'}>
+                      {path.cta}
+                    </ButtonLink>
+                  </div>
                 </article>
               ))}
             </div>
-          </div>
-        </section>
-
-        <section className="lp-section">
-          <div className="shell">
-            <ProComparison showCta={false} />
           </div>
         </section>
 
@@ -122,22 +104,13 @@ export default async function Home() {
               <div className="lp-section__head">
                 <p className="lp-eyebrow">Formación</p>
                 <h2 id="courses-title" className="lp-title">
-                  El curso que te prepara para el plazo
+                  Un curso para entender el proceso
                 </h2>
-                <p className="lp-lead">
-                  El curso Guía VPO te prepara requisitos, documentación y errores frecuentes.
-                </p>
               </div>
               <FeaturedCourseSpotlight course={featuredCourse} />
             </div>
           </section>
         ) : null}
-
-        <section className="lp-section">
-          <div className="shell">
-            <HomeTestimonials />
-          </div>
-        </section>
 
         <section className="lp-section lp-section--border">
           <div className="shell">

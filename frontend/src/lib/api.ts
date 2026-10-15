@@ -20,7 +20,7 @@ import {
   Promotion,
   PromotionDetail,
   PromotionUnit,
-  Service,
+  SavedPromotion,
   UserAccessSummary,
   UserProfile,
 } from '@/types';
@@ -50,10 +50,6 @@ type CourseMutationPayload = Partial<
     | 'seoMetadata'
     | 'publishedAt'
   >
->;
-
-type ServiceMutationPayload = Partial<
-  Pick<Service, 'key' | 'name' | 'description' | 'price' | 'currency' | 'status' | 'serviceType' | 'stripePaymentLink'>
 >;
 
 type FileAssetQuery = {
@@ -97,18 +93,6 @@ function normalizeCoursePayload(payload: CourseMutationPayload) {
     stripePaymentLink: nullableText(rest.stripePaymentLink),
     seoTitle: nullableText(rest.seoTitle),
     seoDescription: nullableText(rest.seoDescription),
-  };
-}
-
-function normalizeServicePayload(payload: ServiceMutationPayload) {
-  const rest = { ...payload } as ServiceMutationPayload & { salePrice?: unknown };
-  delete rest.salePrice;
-  return {
-    ...rest,
-    description: nullableText(rest.description),
-    price: nullableText(rest.price),
-    currency: nullableText(rest.currency),
-    stripePaymentLink: nullableText(rest.stripePaymentLink),
   };
 }
 
@@ -235,7 +219,29 @@ export const api = {
   getMe: () => request<UserProfile>('/users/me'),
   getMyCourses: () => request<import('@/types').UserCourseProgress[]>('/users/me/courses'),
   getMyAccess: () => request<UserAccessSummary>('/users/access'),
-  getFavorites: () => request<Array<{ id: string; promotion: Promotion }>>('/promotions/user/favorites'),
+  getFavorites: () => request<SavedPromotion[]>('/promotions/user/favorites'),
+  toggleFavorite: (promotionId: string) =>
+    request<{ favorite: boolean }>(`/promotions/${promotionId}/favorite`, { method: 'POST' }),
+  updateFavorite: (
+    promotionId: string,
+    payload: Partial<Pick<SavedPromotion, 'stage' | 'notes' | 'checklistDone'>>,
+  ) =>
+    request<Pick<SavedPromotion, 'id' | 'stage' | 'notes' | 'checklistDone' | 'updatedAt'>>(
+      `/promotions/${promotionId}/favorite`,
+      { method: 'PATCH', body: JSON.stringify(payload) },
+    ),
+  getCheckoutStatus: () =>
+    request<{ enabled: boolean; proPriceCents: number; currency: string }>('/billing/checkout-status'),
+  createCheckout: (payload: {
+    product: 'pro' | 'course';
+    courseSlug?: string;
+    acceptedTerms: boolean;
+    acceptedImmediateAccess?: boolean;
+  }) =>
+    request<{ url: string }>('/billing/checkout', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
   getBackofficeJobs: () => request<JobRun[]>('/backoffice/jobs'),
   getBackofficeFailures: () => request<DeliveryFailure[]>('/backoffice/failures'),
@@ -464,7 +470,6 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   listCourses: () => requestPublic<Course[]>('/courses'),
-  listServices: () => requestPublic<Service[]>('/services'),
   listCoursesForUser: () => request<Array<Course & { access: { canAccess: boolean; reason: string } }>>('/courses/access'),
   getCourse: (slug: string) => requestPublic<Course>(`/courses/${slug}`, 60),
   getCourseForUser: (slug: string) => request<Course & { access: { canAccess: boolean; reason: string } }>(`/courses/${slug}/access`),
@@ -516,21 +521,6 @@ export const api = {
     form.append('file', file);
     return requestForm<Course>(`/backoffice/courses/${courseId}/cover/upload`, form);
   },
-  getBackofficeServices: (q?: string) => request<Service[]>(`/backoffice/services${queryString({ q })}`),
-  createBackofficeService: (payload: ServiceMutationPayload) =>
-    request<Service>('/backoffice/services', {
-      method: 'POST',
-      body: JSON.stringify(normalizeServicePayload(payload)),
-    }),
-  updateBackofficeService: (id: string, payload: ServiceMutationPayload) =>
-    request<Service>(`/backoffice/services/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(normalizeServicePayload(payload)),
-    }),
-  deleteBackofficeService: (id: string) =>
-    request<{ deleted: boolean; softDeleted?: boolean }>(`/backoffice/services/${id}`, {
-      method: 'DELETE',
-    }),
   getBackofficeAccessUsers: (q?: string) =>
     request<BackofficeUser[]>(`/backoffice/access/users${queryString({ q })}`),
   getBackofficeAccessUser: (id: string) =>
@@ -683,10 +673,10 @@ export const api = {
       method: 'POST',
     });
   },
-  register: async (email: string, password: string, fullName: string, phone: string) => {
+  register: async (email: string, password: string, fullName: string, phone?: string) => {
     return authRequest<{ user: { id: string; email: string } }>('/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, fullName, phone }),
+      body: JSON.stringify({ email, password, fullName, phone: phone?.trim() || undefined }),
     });
   },
   requestPasswordReset: (email: string) =>
@@ -709,7 +699,7 @@ export const api = {
       method: 'POST',
     }),
   requestProCancellation: () =>
-    request<{ success: true }>('/billing/request-cancellation', {
+    request<{ success: true; mode: 'stripe' | 'manual'; accessUntil: string | null }>('/billing/request-cancellation', {
       method: 'POST',
     }),
   withdrawProCancellation: () =>

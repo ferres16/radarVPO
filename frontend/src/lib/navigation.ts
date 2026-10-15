@@ -8,25 +8,15 @@ export type NavLink = {
 
 export const primaryNavLinks: NavLink[] = [
   { href: '/', label: 'Inicio' },
-  { href: '/cursos', label: 'Cursos' },
+  { href: '/promotions', label: 'Promociones Publicadas', navLabel: 'Publicadas', mobileLabel: 'Promociones publicadas' },
   {
     href: '/alerts',
     label: 'Próximos Lanzamientos',
     navLabel: 'Lanzamientos',
-    mobileLabel: 'Lanzamientos',
+    mobileLabel: 'Próximos lanzamientos',
   },
-  {
-    href: '/promotions',
-    label: 'Promociones Publicadas',
-    navLabel: 'Publicadas',
-    mobileLabel: 'Publicadas',
-  },
-  {
-    href: '/acompanamiento',
-    label: 'Acompañamiento',
-    navLabel: 'Acompañamiento',
-    mobileLabel: 'Acompañamiento',
-  },
+  { href: '/cursos', label: 'Cursos' },
+  { href: '/pro', label: 'Radar VPO PRO', navLabel: 'PRO', mobileLabel: 'Radar VPO PRO' },
   { href: '/news', label: 'Noticias', mobileLabel: 'Noticias' },
 ];
 
@@ -35,9 +25,7 @@ export const copy = {
   upcomingLaunchesDesc:
     'Promociones que todavía no han salido pero que podrían publicarse próximamente.',
   publishedPromotions: 'Promociones Publicadas',
-  publishedPromotionsDesc: 'Promociones ya abiertas o publicadas oficialmente con requisitos y plazos.',
+  publishedPromotionsDesc:
+    'Promociones de vivienda protegida publicadas oficialmente, con sus bases y documentos.',
   howItWorks: 'Cómo funciona',
-  accompaniment: 'Acompañamiento',
-  accompanimentDesc:
-    'Acompañamiento personalizado para conseguir tu VPO: revisión de requisitos, preparación de documentación y seguimiento de oportunidades.',
 } as const;

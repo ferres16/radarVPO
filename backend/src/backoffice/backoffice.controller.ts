@@ -27,7 +27,6 @@ import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
-import { CreateServiceDto } from './dto/create-service.dto';
 import { ImportUnitsFromPasteDto } from './dto/import-units-from-paste.dto';
 import {
   BackofficeListDto,
@@ -47,7 +46,6 @@ import { UpdateCourseModuleDto } from './dto/update-course-module.dto';
 import { UpdatePromotionStatusDto } from './dto/update-promotion-status.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { UpdatePromotionDocumentDto } from './dto/update-promotion-document.dto';
-import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UploadCourseBlockAssetDto } from './dto/upload-course-block-asset.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
@@ -178,26 +176,6 @@ export class BackofficeController {
     return this.backofficeService.listCourses(query);
   }
 
-  @Get('services')
-  listServices(@Query() query: BackofficeListDto) {
-    return this.backofficeService.listServices(query);
-  }
-
-  @Post('services')
-  createService(@Body() dto: CreateServiceDto) {
-    return this.backofficeService.createService(dto);
-  }
-
-  @Patch('services/:id')
-  updateService(@Param('id') serviceId: string, @Body() dto: UpdateServiceDto) {
-    return this.backofficeService.updateService(serviceId, dto);
-  }
-
-  @Delete('services/:id')
-  deleteService(@Param('id') serviceId: string) {
-    return this.backofficeService.deleteService(serviceId);
-  }
-
   @Get('access/users')
   listAccessUsers(@Query() query: BackofficeListDto) {
     return this.backofficeService.listAccessUsers(query);
@@ -223,6 +201,10 @@ export class BackofficeController {
     );
   }
 
+  /**
+   * Legacy: el acompañamiento 1:1 ya no se vende. Se conserva este endpoint solo
+   * para poder consultar y desactivar accesos históricos ya concedidos.
+   */
   @Patch('access/users/:id/services/:serviceId')
   updateServiceAccess(
     @Param('id') userId: string,

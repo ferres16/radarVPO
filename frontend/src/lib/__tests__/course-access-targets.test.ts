@@ -2,6 +2,19 @@ import { describe, expect, it } from 'vitest';
 import { buildCourseAccessTargets, getCourseEntryHref } from '../course-access-targets';
 import type { Course } from '@/types';
 
+function lesson(n: number) {
+  return {
+    id: `l${n}`,
+    title: `Leccion ${n}`,
+    slug: `leccion-${n}`,
+    status: 'published',
+    type: 'text',
+    courseId: 'c1',
+    moduleId: 'm1',
+    order: n,
+  };
+}
+
 const baseCourse = {
   id: 'c1',
   title: 'Curso test',
@@ -15,21 +28,28 @@ const baseCourse = {
       title: 'Modulo 1',
       order: 0,
       visibility: 'visible',
-      lessons: [
-        {
-          id: 'l1',
-          title: 'Leccion 1',
-          slug: 'leccion-1',
-          status: 'published',
-          type: 'text',
-          courseId: 'c1',
-          moduleId: 'm1',
-          order: 0,
-        },
-      ],
+      lessons: [lesson(1)],
     },
   ],
-} as Course;
+} as unknown as Course;
+
+const paidCourse = (lessons: number, extra: Partial<Course> = {}) =>
+  ({
+    ...baseCourse,
+    pricingType: 'premium',
+    accessType: 'paid',
+    price: '29',
+    modules: [
+      {
+        id: 'm1',
+        title: 'Modulo 1',
+        order: 0,
+        visibility: 'visible',
+        lessons: Array.from({ length: lessons }, (_, i) => lesson(i + 1)),
+      },
+    ],
+    ...extra,
+  }) as unknown as Course;
 
 describe('getCourseEntryHref', () => {
   it('points to the first lesson when published lessons exist', () => {
@@ -42,31 +62,28 @@ describe('getCourseEntryHref', () => {
 });
 
 describe('buildCourseAccessTargets', () => {
-  it('points locked free courses to the purchase section instead of login', () => {
+  it('points locked free courses to the course page instead of login', () => {
     const targets = buildCourseAccessTargets(baseCourse);
     expect(targets.lockedHref).toBe('/cursos/curso-test#precio');
     expect(targets.accessHref).toBe('/cursos/curso-test/leccion-1');
   });
 
-  it('uses stripe link when course is paid externally', () => {
-    const targets = buildCourseAccessTargets({
-      ...baseCourse,
-      pricingType: 'premium',
-      accessType: 'paid',
-      stripePaymentLink: 'https://buy.stripe.com/test',
-    });
-    expect(targets.lockedHref).toBe('https://buy.stripe.com/test');
-    expect(targets.lockedLabel).toBe('Comprar curso');
+  it('sends sellable paid courses to the integrated checkout with the final price', () => {
+    const targets = buildCourseAccessTargets(paidCourse(3));
+    expect(targets.lockedHref).toBe('/checkout?product=course&course=curso-test');
+    expect(targets.lockedLabel.replace(/\u00a0/g, ' ')).toBe('Comprar curso · 29 €');
   });
 
-  it('rejects storage urls as stripe checkout links', () => {
-    const targets = buildCourseAccessTargets({
-      ...baseCourse,
-      pricingType: 'premium',
-      accessType: 'paid',
-      stripePaymentLink: 'https://bucket.s3.amazonaws.com/courses/cover.jpg',
-    });
-    expect(targets.lockedHref).toBe('/cursos/curso-test#precio');
-    expect(targets.lockedLabel).toBe('Comprar curso');
+  it('does not sell a course that has too few published lessons', () => {
+    const targets = buildCourseAccessTargets(paidCourse(1));
+    expect(targets.lockedHref).toBe('/cursos/curso-test#indice');
+    expect(targets.lockedLabel).toBe('Ver programa');
+  });
+
+  it('ignores external payment links: purchase must go through the integrated checkout', () => {
+    const targets = buildCourseAccessTargets(
+      paidCourse(3, { stripePaymentLink: 'https://buy.stripe.com/test' }),
+    );
+    expect(targets.lockedHref).toBe('/checkout?product=course&course=curso-test');
   });
 });

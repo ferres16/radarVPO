@@ -20,43 +20,21 @@ export function shouldShowAlert(daysRemaining: number | null) {
   return daysRemaining !== null && daysRemaining >= -7;
 }
 
-export function formatCountdownValue(daysRemaining: number | null) {
-  if (daysRemaining === null) {
-    return { label: 'Sin fecha', detail: 'No hay fecha estimada' };
-  }
+const dateFormatter = new Intl.DateTimeFormat('es-ES', { dateStyle: 'long', timeZone: 'UTC' });
 
-  if (daysRemaining > 0) {
-    return {
-      label: String(daysRemaining),
-      detail: daysRemaining === 1 ? 'día hasta la publicación' : 'días hasta la publicación',
-    };
-  }
-
-  if (daysRemaining === 0) {
-    return {
-      label: 'Hoy',
-      detail: 'La publicación estimada es hoy',
-    };
-  }
-
-  return {
-    label: String(daysRemaining),
-    detail: Math.abs(daysRemaining) === 1 ? 'día de retraso' : 'días de retraso',
-  };
+export function formatEstimatedDate(value?: string | null) {
+  const parsed = parseAlertDate(value);
+  return parsed ? dateFormatter.format(parsed) : null;
 }
 
-export function formatCountdownSummary(daysRemaining: number | null) {
-  if (daysRemaining === null) {
-    return 'Sin fecha estimada disponible';
-  }
-
-  if (daysRemaining > 0) {
-    return `Faltan ${daysRemaining} días`;
-  }
-
-  if (daysRemaining === 0) {
-    return 'Hoy';
-  }
-
-  return `Retraso: ${Math.abs(daysRemaining)} días`;
+/**
+ * Texto de una fecha ESTIMADA de publicación. Nunca devuelve cifras negativas ni
+ * "retraso": si la fecha ya pasó, se dice que no hay publicación oficial confirmada.
+ */
+export function describeEstimate(daysRemaining: number | null): string {
+  if (daysRemaining === null) return 'Sin fecha estimada disponible';
+  if (daysRemaining > 1) return `Quedan unos ${daysRemaining} días hasta la fecha estimada`;
+  if (daysRemaining === 1) return 'Queda aproximadamente 1 día hasta la fecha estimada';
+  if (daysRemaining === 0) return 'Hoy es la fecha estimada';
+  return 'La fecha estimada ya pasó y todavía no consta la publicación oficial';
 }

@@ -102,7 +102,7 @@ export function CourseAccessLink({
   const hasAccess = resolved ? canAccess : initialCanAccess;
   const rawHref = pickHref(hasAccess, hrefWhenAccess, hrefWhenLocked);
   const label = hasAccess ? accessLabel : lockedLabel;
-  const content = !resolved ? 'Entrar al curso' : label;
+  const content = label;
 
   if (/^https?:\/\//.test(rawHref)) {
     const externalHref = resolveExternalHref(rawHref);
@@ -141,21 +141,24 @@ export function CourseLessonAccessLink({
   lessonSlug,
   className,
   children,
+  isPreview = false,
 }: {
   courseSlug: string;
   lessonSlug: string;
   className: string;
   children: ReactNode;
+  /** Lección de muestra: visible sin comprar el curso. */
+  isPreview?: boolean;
 }) {
   const { canAccess, resolved, initialCanAccess } = useCourseAccess();
   const hasAccess = resolved ? canAccess : initialCanAccess;
 
-  if (!hasAccess) {
+  if (!hasAccess && !isPreview) {
     return (
       <span
         className={`${className} cursor-not-allowed opacity-70`}
         aria-disabled="true"
-        title="Activa el curso para acceder a esta lección"
+        title="Disponible al comprar el curso"
       >
         {children}
       </span>

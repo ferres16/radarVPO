@@ -1,13 +1,21 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, PromotionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
+import { UpdateFavoriteDto } from './dto/update-favorite.dto';
+import { normalizeChecklist } from './favorite-checklist';
 import { withPromotionView } from '../common/promotion-view.util';
 import {
   AMENDMENT_TITLE_CONTAINS,
   isAmendmentPublication,
 } from '../common/promotion-content-filters';
 import { FileStorageService } from '../storage/file-storage.service';
+
+export const FREE_SAVED_PROMOTIONS_LIMIT = 3;
 
 const PUBLIC_PROMOTION_STATUSES: PromotionStatus[] = [
   'published_unreviewed',
@@ -81,6 +89,16 @@ export class PromotionsService {
         estimatedPublicationDate: true,
         alertDetectedAt: true,
         sourceUrl: true,
+        _count: {
+          select: {
+            documents: {
+              where: {
+                isPublic: true,
+                fileType: { contains: 'pdf', mode: 'insensitive' },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -89,7 +107,9 @@ export class PromotionsService {
         (item) => !isAmendmentPublication(item.title, item.publicDescription),
       )
       .slice(0, limit)
-      .map(withPromotionView);
+      .map(({ _count, ...item }) =>
+        withPromotionView({ ...item, pdfCount: _count.documents }),
+      );
   }
 
   async getById(id: string) {
@@ -182,6 +202,16 @@ export class PromotionsService {
       return { favorite: false };
     }
 
+    const promotion = await this.prisma.promotion.findUnique({
+      where: { id: promotionId },
+      select: { id: true },
+    });
+    if (!promotion) {
+      throw new NotFoundException('Promotion not found');
+    }
+
+    await this.assertCanSaveAnotherFavorite(userId);
+
     await this.prisma.promotionFavorite.create({
       data: {
         userId,
@@ -190,6 +220,67 @@ export class PromotionsService {
     });
 
     return { favorite: true };
+  }
+
+  /** Las cuentas gratuitas pueden guardar hasta FREE_SAVED_PROMOTIONS_LIMIT promociones. */
+  private async assertCanSaveAnotherFavorite(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        plan: true,
+        subscriptions: {
+          where: {
+            planKey: 'pro',
+            status: { in: ['active', 'trialing'] },
+          },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+    const isPro = user?.plan === 'pro' || (user?.subscriptions.length ?? 0) > 0;
+    if (isPro) return;
+
+    const saved = await this.prisma.promotionFavorite.count({ where: { userId } });
+    if (saved >= FREE_SAVED_PROMOTIONS_LIMIT) {
+      throw new ForbiddenException(
+        `Con la cuenta gratuita puedes guardar hasta ${FREE_SAVED_PROMOTIONS_LIMIT} promociones. Quita alguna o pasa a Radar VPO PRO para guardar sin límite.`,
+      );
+    }
+  }
+
+  async updateFavorite(
+    userId: string,
+    promotionId: string,
+    dto: UpdateFavoriteDto,
+  ) {
+    const existing = await this.prisma.promotionFavorite.findUnique({
+      where: { userId_promotionId: { userId, promotionId } },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Guarda la promoción antes de editarla');
+    }
+
+    return this.prisma.promotionFavorite.update({
+      where: { id: existing.id },
+      data: {
+        ...(dto.stage ? { stage: dto.stage } : {}),
+        ...(dto.notes !== undefined
+          ? { notes: dto.notes.trim() || null }
+          : {}),
+        ...(dto.checklistDone
+          ? { checklistDone: normalizeChecklist(dto.checklistDone) }
+          : {}),
+      },
+      select: {
+        id: true,
+        stage: true,
+        notes: true,
+        checklistDone: true,
+        updatedAt: true,
+      },
+    });
   }
 
   async listFavorites(userId: string) {

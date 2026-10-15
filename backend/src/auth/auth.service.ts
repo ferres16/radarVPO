@@ -44,7 +44,8 @@ export class AuthService {
       data: {
         email: dto.email.toLowerCase(),
         fullName: dto.fullName,
-        phone: dto.phone,
+        // El móvil es opcional: solo se necesita para los SMS de PRO. '' = sin móvil.
+        phone: dto.phone?.trim() ?? '',
         passwordHash,
         role: 'user',
         plan: 'free',

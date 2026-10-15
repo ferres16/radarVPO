@@ -12,8 +12,8 @@ type AlertsProCtaBandProps = {
 /** Single PRO upsell for alert/promotion pages: SMS + email value, no stack of CTAs. */
 export function AlertsProCtaBand({
   title = 'Recibe avisos por SMS y email',
-  description = `Consulta la web gratis. Con ${proPlan.name} te avisamos cuando detectamos un lanzamiento o se abre un plazo. ${proPlan.price}`,
-  ctaLabel = 'Obtener avisos con VPO PRO',
+  description = `Consultar la web es gratis. Con ${proPlan.name} te avisamos cuando se publica una nueva promoción o detectamos un próximo lanzamiento. ${proPlan.price}.`,
+  ctaLabel = 'Ver Radar VPO PRO',
 }: AlertsProCtaBandProps) {
   return (
     <ProGate>

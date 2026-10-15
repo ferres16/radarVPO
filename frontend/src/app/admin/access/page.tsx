@@ -129,6 +129,16 @@ export default function AdminAccessPage() {
     }
   }
 
+  // Solo se muestran los servicios que el usuario ya tenía contratados: se conservan sus derechos,
+  // pero no se pueden conceder accesos nuevos a un servicio retirado.
+  const legacyServices = useMemo(() => {
+    if (!detail) return [];
+    const activeIds = new Set(
+      detail.serviceAccesses.filter((access) => access.isActive).map((access) => access.serviceId),
+    );
+    return detail.services.filter((service) => activeIds.has(service.id));
+  }, [detail]);
+
   if (loading) {
     return (
       <main className="shell grid gap-4 md:grid-cols-3">
@@ -159,10 +169,10 @@ export default function AdminAccessPage() {
         <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--green-700)]">Backoffice</p>
         <h1 className="display-type mt-2 text-3xl font-black text-[var(--ink)]">Compras y Activaciones</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
-          Stripe cobra mediante Payment Links. El acceso real vive en la base de datos y se activa manualmente aqui.
+          Las compras de cursos y PRO se activan solas al confirmarse el pago en Stripe. Esta pantalla sirve para
+          resolver incidencias: activar o quitar un acceso a mano (por ejemplo, un reembolso o un regalo).
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
-          <Link href="/admin/services" className="rounded-xl border border-[var(--stroke)] px-4 py-2 text-sm font-semibold text-[var(--ink)]">Acompañamiento</Link>
           <Link href="/admin/courses" className="rounded-xl border border-[var(--stroke)] px-4 py-2 text-sm font-semibold text-[var(--ink)]">Cursos</Link>
         </div>
       </header>
@@ -246,9 +256,10 @@ export default function AdminAccessPage() {
                 getName={(item) => (item as Course).title}
                 getMeta={(item) => `${(item as Course).accessType} · ${(item as Course).status}`}
               />
+              {legacyServices.length > 0 ? (
               <AccessGroup
-                title="Acompañamiento"
-                items={detail.services}
+                title="Acceso heredado (servicio ya retirado)"
+                items={legacyServices}
                 drafts={serviceDrafts}
                 savingPrefix="service"
                 savingKey={savingKey}
@@ -257,6 +268,7 @@ export default function AdminAccessPage() {
                 getName={(item) => (item as Service).name}
                 getMeta={(item) => `${(item as Service).key} · ${(item as Service).serviceType}`}
               />
+              ) : null}
             </>
           ) : null}
         </section>

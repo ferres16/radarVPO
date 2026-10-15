@@ -8,7 +8,6 @@ const adminLinks = [
   { href: '/admin/courses', label: 'Cursos CMS' },
   { href: '/admin/promotions', label: 'Promociones' },
   { href: '/admin/alerts', label: 'Avisos' },
-  { href: '/admin/services', label: 'Acompañamiento' },
   { href: '/admin/news', label: 'Noticias' },
   { href: '/admin/files', label: 'Archivos' },
   { href: '/admin/users', label: 'Usuarios' },

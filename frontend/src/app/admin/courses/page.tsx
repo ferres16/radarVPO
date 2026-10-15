@@ -14,32 +14,36 @@ const emptyCourse: Partial<Course> = {
   longDescription: '',
   coverImage: '',
   price: '',
-  salePrice: '',
   currency: 'EUR',
-  stripePaymentLink: '',
   status: 'draft',
   accessType: 'free',
   order: 0,
 };
 
 const statusOptions: CourseStatus[] = ['draft', 'published', 'archived'];
-const accessOptions: CourseAccessType[] = ['free', 'paid', 'pro', 'seguimiento'];
+const accessOptions: CourseAccessType[] = ['free', 'paid', 'pro'];
 
-const getCourseSalePrice = (course: Pick<Course, 'salePrice' | 'seoMetadata'>) => {
-  const metadataSalePrice = course.seoMetadata?.salePrice;
-  if (typeof metadataSalePrice === 'string' || typeof metadataSalePrice === 'number') {
-    return String(metadataSalePrice);
-  }
-  return course.salePrice || '';
+/** seguimiento es un tipo heredado (acompañamiento 1:1 retirado): solo se muestra si el curso ya lo tiene. */
+const accessOptionsFor = (current?: CourseAccessType): CourseAccessType[] =>
+  current === 'seguimiento' ? [...accessOptions, 'seguimiento'] : accessOptions;
+
+const getPreviewLessonSlug = (seoMetadata?: Record<string, unknown> | null) => {
+  const value = seoMetadata?.previewLessonSlug;
+  return typeof value === 'string' ? value : '';
 };
 
-const withSaleMetadata = (payload: Partial<Course>): Partial<Course> => ({
-  ...payload,
-  seoMetadata: {
-    ...(payload.seoMetadata || {}),
-    salePrice: payload.salePrice ? String(payload.salePrice) : null,
-  },
-});
+/** Conserva el resto de claves de seoMetadata y actualiza solo la lección de muestra. */
+const withPreviewLesson = (
+  seoMetadata: Record<string, unknown> | null | undefined,
+  slug: string,
+): Record<string, unknown> => {
+  const next: Record<string, unknown> = { ...(seoMetadata || {}) };
+  delete next.salePrice;
+  const trimmed = slug.trim();
+  if (trimmed) next.previewLessonSlug = trimmed;
+  else delete next.previewLessonSlug;
+  return next;
+};
 
 export default function AdminCoursesPage() {
   const [me, setMe] = useState<UserProfile | null>(null);
@@ -81,9 +85,8 @@ export default function AdminCoursesPage() {
                 accessType: course.accessType,
                 order: course.order,
                 price: course.price || '',
-                salePrice: getCourseSalePrice(course),
                 currency: course.currency || 'EUR',
-                stripePaymentLink: course.stripePaymentLink || '',
+                seoMetadata: course.seoMetadata ?? null,
               },
             ]),
           ),
@@ -117,7 +120,10 @@ export default function AdminCoursesPage() {
     setSavingId(courseId);
     setError('');
     try {
-      const updated = await api.updateBackofficeCourse(courseId, withSaleMetadata(payload));
+      const updated = await api.updateBackofficeCourse(courseId, {
+        ...payload,
+        seoMetadata: withPreviewLesson(payload.seoMetadata, getPreviewLessonSlug(payload.seoMetadata)),
+      });
       setCourses((prev) => prev.map((item) => (item.id === courseId ? updated : item)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar el curso');
@@ -144,12 +150,7 @@ export default function AdminCoursesPage() {
         accessType: (newCourse.accessType as CourseAccessType) || 'free',
         order: newCourse.order ?? 0,
         price: newCourse.price ? String(newCourse.price) : undefined,
-        seoMetadata: {
-          ...(newCourse.seoMetadata || {}),
-          salePrice: newCourse.salePrice ? String(newCourse.salePrice) : null,
-        },
         currency: newCourse.currency || undefined,
-        stripePaymentLink: newCourse.stripePaymentLink || undefined,
       });
       setCourses((prev) => [created, ...prev]);
       setDrafts((prev) => ({
@@ -164,9 +165,8 @@ export default function AdminCoursesPage() {
           accessType: created.accessType,
           order: created.order,
           price: created.price || '',
-          salePrice: getCourseSalePrice(created),
           currency: created.currency || 'EUR',
-          stripePaymentLink: created.stripePaymentLink || '',
+          seoMetadata: created.seoMetadata ?? null,
         },
       }));
       setNewCourse(emptyCourse);
@@ -229,7 +229,6 @@ export default function AdminCoursesPage() {
         actions={
           <>
             <ButtonLink href="/admin/access">Compras y activaciones</ButtonLink>
-            <ButtonLink href="/admin/services" variant="secondary">Acompañamiento</ButtonLink>
           </>
         }
       />
@@ -259,9 +258,6 @@ export default function AdminCoursesPage() {
             <div className="mt-4 flex flex-wrap gap-2">
               <Link href="/admin/access" className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)]">
                 Compras y activaciones
-              </Link>
-              <Link href="/admin/services" className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)]">
-                Acompañamiento
               </Link>
             </div>
           </div>
@@ -324,13 +320,7 @@ export default function AdminCoursesPage() {
           <input
             value={newCourse.price || ''}
             onChange={(e) => setNewCourse((prev) => ({ ...prev, price: e.target.value }))}
-            placeholder="Precio"
-            className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
-          />
-          <input
-            value={newCourse.salePrice || ''}
-            onChange={(e) => setNewCourse((prev) => ({ ...prev, salePrice: e.target.value }))}
-            placeholder="Precio oferta"
+            placeholder="Precio final en € (lo que cobra Stripe)"
             className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
           />
           <input
@@ -349,12 +339,6 @@ export default function AdminCoursesPage() {
             value={newCourse.coverImage || ''}
             onChange={(e) => setNewCourse((prev) => ({ ...prev, coverImage: e.target.value }))}
             placeholder="Cover image URL"
-            className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
-          />
-          <input
-            value={newCourse.stripePaymentLink || ''}
-            onChange={(e) => setNewCourse((prev) => ({ ...prev, stripePaymentLink: e.target.value }))}
-            placeholder="Stripe Payment Link"
             className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
           />
         </div>
@@ -508,15 +492,19 @@ export default function AdminCoursesPage() {
                     />
                   </label>
                   <label className="text-sm text-[var(--ink)]">
-                    Precio oferta
+                    Lección de muestra gratuita (slug)
                     <input
-                      value={draft.salePrice || ''}
+                      value={getPreviewLessonSlug(draft.seoMetadata)}
                       onChange={(e) =>
                         setDrafts((prev) => ({
                           ...prev,
-                          [course.id]: { ...draft, salePrice: e.target.value },
+                          [course.id]: {
+                            ...draft,
+                            seoMetadata: { ...(draft.seoMetadata || {}), previewLessonSlug: e.target.value },
+                          },
                         }))
                       }
+                      placeholder="p. ej. vpo-1 (vacío = sin muestra)"
                       className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
                     />
                   </label>
@@ -541,19 +529,6 @@ export default function AdminCoursesPage() {
                         setDrafts((prev) => ({
                           ...prev,
                           [course.id]: { ...draft, coverImage: e.target.value },
-                        }))
-                      }
-                      className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
-                    />
-                  </label>
-                  <label className="text-sm text-[var(--ink)] md:col-span-2">
-                    Stripe Payment Link
-                    <input
-                      value={draft.stripePaymentLink || ''}
-                      onChange={(e) =>
-                        setDrafts((prev) => ({
-                          ...prev,
-                          [course.id]: { ...draft, stripePaymentLink: e.target.value },
                         }))
                       }
                       className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
@@ -616,7 +591,7 @@ export default function AdminCoursesPage() {
                       }
                       className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
                     >
-                      {accessOptions.map((access) => (
+                      {accessOptionsFor(draft.accessType).map((access) => (
                         <option key={access} value={access}>
                           {access}
                         </option>

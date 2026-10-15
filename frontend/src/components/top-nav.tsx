@@ -139,7 +139,7 @@ export function TopNav() {
           <nav className="flex shrink-0 items-center gap-2" aria-label="Acceso de usuario">
             {!hasPro ? (
               <ProCtaLink
-                label="Activar PRO"
+                label="Hazte PRO"
                 className="whitespace-nowrap rounded-full bg-[var(--green-700)] px-3.5 py-2 text-[13px] font-black text-white transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-4 xl:text-sm"
               />
             ) : null}
@@ -172,7 +172,15 @@ export function TopNav() {
                       onClick={() => setMenuOpen(false)}
                       role="menuitem"
                     >
-                      Perfil
+                      Mi cuenta
+                    </Link>
+                    <Link
+                      href="/mi-espacio"
+                      className="block rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+                      onClick={() => setMenuOpen(false)}
+                      role="menuitem"
+                    >
+                      Mi espacio
                     </Link>
                     {me.role === 'admin' ? (
                       <Link
@@ -250,7 +258,18 @@ export function TopNav() {
                   className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
                   onClick={() => setMobileOpen(false)}
                 >
-                  Perfil
+                  Mi cuenta
+                </Link>
+              </li>
+            ) : null}
+            {me ? (
+              <li>
+                <Link
+                  href="/mi-espacio"
+                  className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Mi espacio
                 </Link>
               </li>
             ) : null}

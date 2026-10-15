@@ -40,7 +40,7 @@ const visibilityOptions: CourseModuleVisibility[] = ['visible', 'hidden'];
 const lessonStatusOptions: LessonStatus[] = ['draft', 'published'];
 const lessonTypeOptions: LessonType[] = ['text', 'video', 'downloadable', 'faq'];
 const courseStatusOptions: CourseStatus[] = ['draft', 'published', 'archived'];
-const courseAccessOptions: CourseAccessType[] = ['free', 'paid', 'pro', 'seguimiento'];
+const courseAccessOptions: CourseAccessType[] = ['free', 'paid', 'pro'];
 
 const getCourseSalePrice = (course: Pick<Course, 'salePrice' | 'seoMetadata'>) => {
   const metadataSalePrice = course.seoMetadata?.salePrice;
@@ -619,7 +619,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 <h3 className="text-sm font-bold text-[var(--ink)]">Publicación y acceso</h3>
                 <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <label className="text-sm font-semibold text-[var(--ink)]">Estado<select className="ds-control mt-1 w-full" value={courseDraft.status || 'draft'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, status: e.target.value as CourseStatus }))}>{courseStatusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select></label>
-                  <label className="text-sm font-semibold text-[var(--ink)]">Acceso<select className="ds-control mt-1 w-full" value={courseDraft.accessType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, accessType: e.target.value as CourseAccessType }))}>{courseAccessOptions.map((access) => <option key={access} value={access}>{access}</option>)}</select></label>
+                  <label className="text-sm font-semibold text-[var(--ink)]">Acceso<select className="ds-control mt-1 w-full" value={courseDraft.accessType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, accessType: e.target.value as CourseAccessType }))}>{(courseDraft.accessType === 'seguimiento' ? [...courseAccessOptions, 'seguimiento'] : courseAccessOptions).map((access) => <option key={access} value={access}>{access}</option>)}</select></label>
                   <label className="text-sm font-semibold text-[var(--ink)]">Tipo comercial<select className="ds-control mt-1 w-full" value={courseDraft.pricingType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, pricingType: e.target.value as Course['pricingType'] }))}><option value="free">Gratuito</option><option value="premium">Premium</option></select></label>
                   <label className="text-sm font-semibold text-[var(--ink)]">Fecha publicación<input type="datetime-local" className="ds-control mt-1 w-full" value={(courseDraft.publishedAt || '').slice(0, 16)} onChange={(e) => setCourseDraft((prev) => ({ ...prev, publishedAt: e.target.value }))} /></label>
                 </div>
@@ -627,11 +627,10 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
 
               <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
                 <h3 className="text-sm font-bold text-[var(--ink)]">Precio y compra</h3>
-                <div className="mt-3 grid gap-3 md:grid-cols-[1fr_1fr_120px]">
-                  <label className="text-sm font-semibold text-[var(--ink)]">Precio<input className="ds-control mt-1 w-full" value={courseDraft.price || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, price: e.target.value }))} /></label>
-                  <label className="text-sm font-semibold text-[var(--ink)]">Precio oferta<input className="ds-control mt-1 w-full" value={courseDraft.salePrice || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, salePrice: e.target.value }))} /></label>
+                <div className="mt-3 grid gap-3 md:grid-cols-[1fr_120px]">
+                  <label className="text-sm font-semibold text-[var(--ink)]">Precio final<input className="ds-control mt-1 w-full" value={courseDraft.price || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, price: e.target.value, salePrice: '' }))} /></label>
                   <label className="text-sm font-semibold text-[var(--ink)]">Moneda<input className="ds-control mt-1 w-full" value={courseDraft.currency || 'EUR'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, currency: e.target.value }))} /></label>
-                  <label className="text-sm font-semibold text-[var(--ink)] md:col-span-3">Stripe Payment Link<input className="ds-control mt-1 w-full" value={courseDraft.stripePaymentLink || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, stripePaymentLink: e.target.value }))} /></label>
+                  <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Stripe Payment Link (legado; el cobro actual usa Checkout Sessions)<input className="ds-control mt-1 w-full" value={courseDraft.stripePaymentLink || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, stripePaymentLink: e.target.value }))} /></label>
                 </div>
               </section>
 

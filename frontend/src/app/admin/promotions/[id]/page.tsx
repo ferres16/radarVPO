@@ -1,13 +1,12 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useParams } from 'next/navigation';
 import { AdminNav } from '@/components/admin-nav';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { api } from '@/lib/api';
 import { PromotionDetail, PromotionDocument } from '@/types';
-import { PromotionJsonImporter } from './promotion-json-importer';
 
 const STATUS_OPTIONS: PromotionDetail['status'][] = [
   'pending_review',
@@ -23,41 +22,9 @@ const STATUS_LABELS: Record<PromotionDetail['status'], string> = {
   archived: 'Archivada',
 };
 
-function toJsonString(value: unknown) {
-  if (!value) return '{}';
-  return JSON.stringify(value, null, 2);
-}
-
-type SectionKey = 'importantDates' | 'requirements' | 'economicInfo' | 'feesAndReservations' | 'contactInfo';
-type SectionRecords = Record<SectionKey, Array<{ key: string; value: string }>>;
-
-const SECTION_META: Array<{ id: SectionKey; title: string; description: string }> = [
-  { id: 'importantDates', title: 'Fechas', description: 'Apertura, cierre, sorteo, publicación provisional y otros hitos.' },
-  { id: 'requirements', title: 'Requisitos', description: 'Ingresos, empadronamiento, unidad de convivencia, límites y documentación.' },
-  { id: 'economicInfo', title: 'Economía', description: 'Precios, renta, entrada, financiación, IVA, reservas y costes.' },
-  { id: 'feesAndReservations', title: 'Cuotas y reservas', description: 'Importes de reserva, cuotas mensuales, pagos iniciales y condiciones.' },
-  { id: 'contactInfo', title: 'Contacto', description: 'Promotor, oficina, teléfono, email, enlaces y ubicación.' },
-];
-
-function recordsFromJson(value: unknown): Array<{ key: string; value: string }> {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
-  return Object.entries(value as Record<string, unknown>).map(([key, raw]) => ({
-    key,
-    value: typeof raw === 'string' ? raw : JSON.stringify(raw),
-  }));
-}
-
-function recordsToJson(records: Array<{ key: string; value: string }>) {
-  return Object.fromEntries(
-    records
-      .map((row) => [row.key.trim(), row.value.trim()] as const)
-      .filter(([key, value]) => key && value),
-  );
-}
-
 function classifyDocument(doc: PromotionDocument) {
-  if (doc.fileType?.startsWith('image/')) return 'Imagen';
-  if (doc.fileType?.startsWith('video/')) return 'Vídeo';
+  if (doc.fileType?.startsWith('image/')) return 'Imagen (no se muestra en la web pública)';
+  if (doc.fileType?.startsWith('video/')) return 'Vídeo (no se muestra en la web pública)';
   if (doc.fileType?.includes('pdf')) return 'PDF';
   return 'Documento';
 }
@@ -69,25 +36,13 @@ export default function AdminPromotionEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingDocumentId, setSavingDocumentId] = useState('');
-  const [activeTab, setActiveTab] = useState<'summary' | 'content' | 'media' | 'preview'>('summary');
+  const [activeTab, setActiveTab] = useState<'summary' | 'documents'>('summary');
 
   const [form, setForm] = useState({
     title: '',
-    location: '',
     municipality: '',
     province: '',
     promotionType: 'desconocido',
-    promoter: '',
-    totalHomes: '',
-    statusMessage: '',
-    publicDescription: '',
-  });
-  const [sections, setSections] = useState<SectionRecords>({
-    importantDates: [],
-    requirements: [],
-    economicInfo: [],
-    feesAndReservations: [],
-    contactInfo: [],
   });
 
   async function refresh() {
@@ -99,24 +54,9 @@ export default function AdminPromotionEditPage() {
   function hydrateFromPromotion(data: PromotionDetail) {
     setForm({
       title: data.title || '',
-      location: data.location || '',
       municipality: data.municipality || '',
       province: data.province || '',
       promotionType: data.promotionType,
-      promoter: data.promoter || '',
-      totalHomes:
-        data.totalHomes === null || data.totalHomes === undefined
-          ? ''
-          : String(data.totalHomes),
-      statusMessage: data.statusMessage || '',
-      publicDescription: data.publicDescription || '',
-    });
-    setSections({
-      importantDates: recordsFromJson(data.importantDates),
-      requirements: recordsFromJson(data.requirements),
-      economicInfo: recordsFromJson(data.economicInfo),
-      feesAndReservations: recordsFromJson(data.feesAndReservations),
-      contactInfo: recordsFromJson(data.contactInfo),
     });
   }
 
@@ -139,59 +79,33 @@ export default function AdminPromotionEditPage() {
     };
   }, [id]);
 
-  useEffect(() => {
-    const applyHashTab = () => {
-      const hash = window.location.hash.replace('#', '');
-      if (hash === 'documentos' || hash === 'media') {
-        setActiveTab('media');
-      }
-      if (hash === 'contenido') {
-        setActiveTab('content');
-      }
-    };
-
-    applyHashTab();
-    window.addEventListener('hashchange', applyHashTab);
-    return () => window.removeEventListener('hashchange', applyHashTab);
-  }, []);
-
   const documents = useMemo(() => promotion?.documents || [], [promotion]);
-  const mediaGroups = useMemo(() => ({
-    images: documents.filter((doc) => doc.fileType?.startsWith('image/')),
-    videos: documents.filter((doc) => doc.fileType?.startsWith('video/')),
-    pdfs: documents.filter((doc) => doc.fileType?.includes('pdf') || doc.documentKind === 'pdf_original'),
-    documents: documents.filter((doc) => !doc.fileType?.startsWith('image/') && !doc.fileType?.startsWith('video/') && !doc.fileType?.includes('pdf')),
-  }), [documents]);
-  const checklist = useMemo(() => [
-    { label: 'Título y municipio', done: Boolean(form.title && form.municipality) },
-    { label: 'Descripción pública', done: Boolean(form.publicDescription) },
-    { label: 'Fechas estructuradas', done: sections.importantDates.some((row) => row.key && row.value) },
-    { label: 'Requisitos estructurados', done: sections.requirements.some((row) => row.key && row.value) },
-    { label: 'PDF oficial adjunto', done: mediaGroups.pdfs.some((doc) => doc.isPublic !== false) },
-    { label: 'Al menos un archivo público', done: documents.some((doc) => doc.isPublic !== false) },
-  ], [documents, form.municipality, form.publicDescription, form.title, mediaGroups.pdfs, sections.importantDates, sections.requirements]);
+  const pdfs = useMemo(
+    () =>
+      documents.filter(
+        (doc) => doc.fileType?.includes('pdf') || doc.documentKind === 'pdf_original',
+      ),
+    [documents],
+  );
+  const otherFiles = useMemo(
+    () =>
+      documents.filter(
+        (doc) => !doc.fileType?.includes('pdf') && doc.documentKind !== 'pdf_original',
+      ),
+    [documents],
+  );
 
   async function savePromotion() {
     setSaving(true);
     try {
       await api.updateBackofficePromotion(id, {
         title: form.title,
-        location: form.location,
         municipality: form.municipality,
         province: form.province,
         promotionType: form.promotionType,
-        promoter: form.promoter,
-        totalHomes: form.totalHomes ? Number(form.totalHomes) : undefined,
-        statusMessage: form.statusMessage,
-        publicDescription: form.publicDescription,
-        importantDatesJson: toJsonString(recordsToJson(sections.importantDates)),
-        requirementsJson: toJsonString(recordsToJson(sections.requirements)),
-        economicInfoJson: toJsonString(recordsToJson(sections.economicInfo)),
-        feesAndReservationsJson: toJsonString(recordsToJson(sections.feesAndReservations)),
-        contactInfoJson: toJsonString(recordsToJson(sections.contactInfo)),
       });
       await refresh();
-      alert('Promocion actualizada');
+      alert('Metadatos actualizados. La ficha pública muestra el PDF oficial, no estos campos.');
     } catch (error) {
       alert(error instanceof Error ? error.message : 'No se pudo guardar');
     } finally {
@@ -204,13 +118,10 @@ export default function AdminPromotionEditPage() {
     await refresh();
   }
 
-  async function uploadFile(
-    event: React.ChangeEvent<HTMLInputElement>,
-    kind: 'pdf_original' | 'screenshot' | 'image' | 'support_document',
-  ) {
+  async function uploadPdf(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) return;
-    await api.uploadBackofficeDocument(id, kind, file);
+    await api.uploadBackofficeDocument(id, 'pdf_original', file);
     event.target.value = '';
     await refresh();
   }
@@ -228,7 +139,7 @@ export default function AdminPromotionEditPage() {
   }
 
   async function removeDocument(documentId: string) {
-    const accepted = window.confirm('Se eliminara el archivo tambien de S3. ¿Continuar?');
+    const accepted = window.confirm('Se eliminará el archivo también de S3. ¿Continuar?');
     if (!accepted) return;
     await api.deleteBackofficeDocument(id, documentId);
     await refresh();
@@ -237,214 +148,217 @@ export default function AdminPromotionEditPage() {
   if (loading || !promotion) {
     return (
       <main className="shell">
-        <p className="text-sm text-[var(--ink-soft)]">Cargando promocion...</p>
+        <p className="text-sm text-[var(--ink-soft)]">Cargando promoción...</p>
       </main>
     );
   }
+
+  const publishedOn = promotion.publishedAt ? promotion.publishedAt.slice(0, 10) : null;
 
   return (
     <main className="shell pb-16">
       <div className="admin-shell">
         <AdminNav />
         <div className="space-y-5">
-      <PageHero
-        eyebrow="Editor modular de promoción"
-        title={promotion.title}
-        description="Gestiona la ficha pública por secciones: contenido, multimedia/PDF, publicación y preview. El detalle de viviendas se consulta en los PDF adjuntos."
-        actions={
-          <>
-            <ButtonLink href={`/promotions/${promotion.id}`}>Ver ficha pública</ButtonLink>
-            <ButtonLink href="/admin/promotions" variant="secondary">Volver a promociones</ButtonLink>
-          </>
-        }
-      />
-
-      <nav className="flex flex-wrap gap-2 rounded-3xl border border-[var(--stroke)] bg-white p-3 shadow-card">
-        {[
-          ['summary', 'Resumen y publicación'],
-          ['content', 'Contenido estructurado'],
-          ['media', 'Multimedia y documentos'],
-          ['preview', 'Preview pública'],
-        ].map(([tab, label]) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab as typeof activeTab)}
-            className={`rounded-2xl px-4 py-2 text-sm font-semibold ${activeTab === tab ? 'bg-[var(--green-500)] text-white' : 'bg-[var(--bg-app)] text-[var(--ink)]'}`}
-          >
-            {label}
-          </button>
-        ))}
-      </nav>
-
-      {activeTab === 'summary' ? (
-        <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-          <SurfaceCard className="p-5">
-            <SectionHeader eyebrow="Publicación" title="Estado editorial" description="Cambia el estado solo cuando la ficha tenga los bloques mínimos revisados." />
-            <div className="mt-4 flex flex-wrap gap-2">
-              {STATUS_OPTIONS.map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  onClick={() => changeStatus(status)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${promotion.status === status ? 'bg-[var(--green-500)] text-white' : 'border border-[var(--stroke)] bg-white text-[var(--ink)]'}`}
-                >
-                  {STATUS_LABELS[status]}
-                </button>
-              ))}
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <Metric label="Imágenes" value={mediaGroups.images.length} />
-              <Metric label="Vídeos" value={mediaGroups.videos.length} />
-              <Metric label="PDFs" value={mediaGroups.pdfs.length} />
-            </div>
-          </SurfaceCard>
-          <SurfaceCard className="p-5">
-            <SectionHeader eyebrow="Checklist" title="Lista de publicación" />
-            <div className="mt-4 space-y-2">
-              {checklist.map((item) => (
-                <div key={item.label} className="flex items-center gap-2 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3 text-sm">
-                  <span className={`h-3 w-3 rounded-full ${item.done ? 'bg-[var(--green-500)]' : 'bg-amber-400'}`} />
-                  <span className="font-semibold text-[var(--ink)]">{item.label}</span>
-                </div>
-              ))}
-            </div>
-          </SurfaceCard>
-        </section>
-      ) : null}
-
-      {activeTab === 'content' ? (
-        <section id="contenido" className="space-y-4">
-          <PromotionJsonImporter
-            sections={sections}
-            onSectionsChange={setSections}
-            formPatch={form}
-            onFormPatch={(patch) => setForm((current) => ({ ...current, ...patch }))}
+          <PageHero
+            eyebrow="Promoción"
+            title={promotion.title}
+            description="La web pública muestra el PDF oficial con una cabecera mínima. Aquí solo se editan metadatos de listado y los documentos asociados. Los bloques estructurados históricos se conservan en base de datos y ya no se editan."
+            actions={
+              <>
+                <ButtonLink href={`/promotions/${promotion.id}`}>Ver PDF público</ButtonLink>
+                <ButtonLink href="/admin/promotions" variant="secondary">
+                  Volver a promociones
+                </ButtonLink>
+              </>
+            }
           />
 
-          <SurfaceCard className="p-5">
-            <SectionHeader eyebrow="Ficha base" title="Información general" description="Estos datos alimentan el hero, tarjetas y resumen público." />
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              <Field label="Título"><input className="ds-control" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} /></Field>
-              <Field label="Ubicación"><input className="ds-control" value={form.location} onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))} /></Field>
-              <Field label="Municipio"><input className="ds-control" value={form.municipality} onChange={(e) => setForm((f) => ({ ...f, municipality: e.target.value }))} /></Field>
-              <Field label="Provincia"><input className="ds-control" value={form.province} onChange={(e) => setForm((f) => ({ ...f, province: e.target.value }))} /></Field>
-              <Field label="Promotor"><input className="ds-control" value={form.promoter} onChange={(e) => setForm((f) => ({ ...f, promoter: e.target.value }))} /></Field>
-              <Field label="Total viviendas"><input className="ds-control" value={form.totalHomes} onChange={(e) => setForm((f) => ({ ...f, totalHomes: e.target.value }))} /></Field>
-              <Field label="Tipo de promoción">
-                <select className="ds-control" value={form.promotionType} onChange={(e) => setForm((f) => ({ ...f, promotionType: e.target.value }))}>
-                  <option value="desconocido">Desconocido</option>
-                  <option value="venta">Venta</option>
-                  <option value="alquiler">Alquiler</option>
-                  <option value="mixto">Mixto</option>
-                </select>
-              </Field>
-              <Field label="Mensaje de estado"><textarea className="ds-control min-h-24" value={form.statusMessage} onChange={(e) => setForm((f) => ({ ...f, statusMessage: e.target.value }))} /></Field>
-              <Field label="Descripción pública"><textarea className="ds-control min-h-32 md:col-span-2" value={form.publicDescription} onChange={(e) => setForm((f) => ({ ...f, publicDescription: e.target.value }))} /></Field>
-            </div>
-          </SurfaceCard>
+          <nav className="flex flex-wrap gap-2 rounded-3xl border border-[var(--stroke)] bg-white p-3">
+            {[
+              ['summary', 'Metadatos y publicación'],
+              ['documents', 'Documentos oficiales'],
+            ].map(([tab, label]) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab as typeof activeTab)}
+                className={`rounded-2xl px-4 py-2 text-sm font-semibold ${
+                  activeTab === tab
+                    ? 'bg-[var(--green-500)] text-white'
+                    : 'bg-[var(--bg-app)] text-[var(--ink)]'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </nav>
 
-          {SECTION_META.map((section) => (
-            <SurfaceCard key={section.id} className="p-5">
-              <SectionHeader eyebrow="Bloque estructurado" title={section.title} description={section.description} />
-              <div className="mt-4 space-y-3">
-                {sections[section.id].map((row, index) => (
-                  <div key={`${section.id}-${index}`} className="grid gap-2 md:grid-cols-[260px_1fr_auto]">
-                    <input className="ds-control" value={row.key} placeholder="Campo" onChange={(e) => setSections((prev) => ({ ...prev, [section.id]: prev[section.id].map((item, i) => i === index ? { ...item, key: e.target.value } : item) }))} />
-                    <input className="ds-control" value={row.value} placeholder="Valor visible" onChange={(e) => setSections((prev) => ({ ...prev, [section.id]: prev[section.id].map((item, i) => i === index ? { ...item, value: e.target.value } : item) }))} />
-                    <button type="button" className="rounded-xl border border-red-100 px-3 py-2 text-xs font-semibold text-red-700" onClick={() => setSections((prev) => ({ ...prev, [section.id]: prev[section.id].filter((_, i) => i !== index) }))}>Quitar</button>
-                  </div>
-                ))}
-                <button type="button" className="rounded-xl border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold" onClick={() => setSections((prev) => ({ ...prev, [section.id]: [...prev[section.id], { key: '', value: '' }] }))}>Añadir campo</button>
-              </div>
-            </SurfaceCard>
-          ))}
-
-          <button type="button" disabled={saving} className="rounded-xl bg-[var(--green-500)] px-5 py-3 font-semibold text-white disabled:opacity-50" onClick={savePromotion}>{saving ? 'Guardando...' : 'Guardar contenido'}</button>
-        </section>
-      ) : null}
-
-      {activeTab === 'media' ? (
-      <section id="documentos" className="space-y-4">
-        <SurfaceCard className="p-5">
-        <SectionHeader eyebrow="S3 Media Manager" title="Multimedia y documentos" description="Sube el PDF oficial (con el listado de viviendas) y el resto de archivos. El detalle de tipologías y precios se consulta en esos adjuntos, no en una tabla editable." />
-        <div className="mt-3 grid gap-3 md:grid-cols-2">
-          <label className="rounded-xl border border-dashed p-3 text-sm">
-            PDF original
-            <input className="mt-2 block" type="file" accept="application/pdf" onChange={(e) => uploadFile(e, 'pdf_original')} />
-          </label>
-          <label className="rounded-xl border border-dashed p-3 text-sm">
-            Imagen de galería
-            <input className="mt-2 block" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e) => uploadFile(e, 'image')} />
-          </label>
-          <label className="rounded-xl border border-dashed p-3 text-sm">
-            Video
-            <input className="mt-2 block" type="file" accept="video/mp4,video/quicktime" onChange={(e) => uploadFile(e, 'support_document')} />
-          </label>
-          <label className="rounded-xl border border-dashed p-3 text-sm">
-            Documento auxiliar
-            <input className="mt-2 block" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={(e) => uploadFile(e, 'support_document')} />
-          </label>
-        </div>
-        </SurfaceCard>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          {[
-            ['Imágenes', mediaGroups.images],
-            ['Vídeos', mediaGroups.videos],
-            ['PDFs', mediaGroups.pdfs],
-            ['Otros documentos', mediaGroups.documents],
-          ].map(([label, docs]) => (
-            <SurfaceCard key={String(label)} className="p-4">
-              <h2 className="text-lg font-semibold text-[var(--ink)]">{String(label)}</h2>
-              <div className="mt-3 space-y-3">
-                {(docs as PromotionDocument[]).length === 0 ? <p className="text-sm text-[var(--ink-soft)]">Sin archivos.</p> : null}
-                {(docs as PromotionDocument[]).map((doc) => (
-                  <DocumentEditorRow
-                    key={doc.id}
-                    doc={doc}
-                    saving={savingDocumentId === doc.id}
-                    onSave={(patch) => void saveDocument(doc, patch)}
-                    onDelete={() => void removeDocument(doc.id)}
-                  />
-                ))}
-              </div>
-            </SurfaceCard>
-          ))}
-        </div>
-      </section>
-      ) : null}
-
-      {activeTab === 'preview' ? (
-        <SurfaceCard className="p-5">
-          <SectionHeader eyebrow="Preview pública" title={form.title || promotion.title} description={form.publicDescription || promotion.statusMessage} />
-          <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_320px]">
-            <div className="space-y-4">
-              {SECTION_META.map((section) => (
-                <div key={section.id} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-                  <h3 className="font-bold text-[var(--ink)]">{section.title}</h3>
-                  <dl className="mt-3 grid gap-2 md:grid-cols-2">
-                    {sections[section.id].filter((row) => row.key && row.value).map((row) => (
-                      <Fragment key={`${section.id}-${row.key}`}>
-                        <dt className="text-xs font-semibold uppercase text-[var(--ink-soft)]">{row.key}</dt>
-                        <dd className="text-sm text-[var(--ink)]">{row.value}</dd>
-                      </Fragment>
-                    ))}
-                  </dl>
+          {activeTab === 'summary' ? (
+            <section className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+              <SurfaceCard className="p-5">
+                <SectionHeader
+                  eyebrow="Listado"
+                  title="Cabecera pública"
+                  description="Estos datos aparecen en la tarjeta y en la cabecera del visor. Si un dato no consta, déjalo vacío."
+                />
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <Field label="Título">
+                    <input
+                      className="ds-control"
+                      value={form.title}
+                      onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Municipio">
+                    <input
+                      className="ds-control"
+                      value={form.municipality}
+                      onChange={(e) => setForm((f) => ({ ...f, municipality: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Provincia">
+                    <input
+                      className="ds-control"
+                      value={form.province}
+                      onChange={(e) => setForm((f) => ({ ...f, province: e.target.value }))}
+                    />
+                  </Field>
+                  <Field label="Tipo de promoción">
+                    <select
+                      className="ds-control"
+                      value={form.promotionType}
+                      onChange={(e) => setForm((f) => ({ ...f, promotionType: e.target.value }))}
+                    >
+                      <option value="desconocido">Desconocido</option>
+                      <option value="venta">Venta</option>
+                      <option value="alquiler">Alquiler</option>
+                      <option value="mixto">Mixto</option>
+                    </select>
+                  </Field>
                 </div>
-              ))}
-            </div>
-            <aside className="space-y-3">
-              {mediaGroups.images[0] ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={mediaGroups.images[0].publicUrl} alt={mediaGroups.images[0].altText || ''} className="h-56 w-full rounded-3xl object-cover" />
+                <button
+                  type="button"
+                  disabled={saving}
+                  className="mt-4 rounded-xl bg-[var(--green-500)] px-5 py-3 font-semibold text-white disabled:opacity-50"
+                  onClick={() => void savePromotion()}
+                >
+                  {saving ? 'Guardando...' : 'Guardar metadatos'}
+                </button>
+              </SurfaceCard>
+
+              <SurfaceCard className="p-5">
+                <SectionHeader eyebrow="Publicación" title="Estado editorial" />
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {STATUS_OPTIONS.map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => void changeStatus(status)}
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        promotion.status === status
+                          ? 'bg-[var(--green-500)] text-white'
+                          : 'border border-[var(--stroke)] bg-white text-[var(--ink)]'
+                      }`}
+                    >
+                      {STATUS_LABELS[status]}
+                    </button>
+                  ))}
+                </div>
+                <dl className="mt-5 space-y-2 text-sm">
+                  {publishedOn ? (
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
+                        Fecha de publicación
+                      </dt>
+                      <dd className="mt-1 text-[var(--ink)]">{publishedOn}</dd>
+                    </div>
+                  ) : null}
+                  {promotion.sourceUrl ? (
+                    <div>
+                      <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
+                        Fuente oficial
+                      </dt>
+                      <dd className="mt-1 break-all">
+                        <a
+                          href={promotion.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="font-semibold text-[var(--green-700)] underline"
+                        >
+                          {promotion.sourceUrl}
+                        </a>
+                      </dd>
+                    </div>
+                  ) : null}
+                  <div>
+                    <dt className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
+                      PDFs públicos
+                    </dt>
+                    <dd className="mt-1 text-[var(--ink)]">
+                      {pdfs.filter((doc) => doc.isPublic !== false).length}
+                    </dd>
+                  </div>
+                </dl>
+              </SurfaceCard>
+            </section>
+          ) : null}
+
+          {activeTab === 'documents' ? (
+            <section className="space-y-4">
+              <SurfaceCard className="p-5">
+                <SectionHeader
+                  eyebrow="Documento oficial"
+                  title="PDF de la promoción"
+                  description="Adjunta las bases, anexos y modificaciones. La vista pública abre estos archivos en el visor."
+                />
+                <label className="mt-4 block rounded-xl border border-dashed p-4 text-sm">
+                  Añadir PDF
+                  <input className="mt-2 block" type="file" accept="application/pdf" onChange={(e) => void uploadPdf(e)} />
+                </label>
+              </SurfaceCard>
+
+              <SurfaceCard className="p-4">
+                <h2 className="text-lg font-semibold text-[var(--ink)]">PDFs</h2>
+                <div className="mt-3 space-y-3">
+                  {pdfs.length === 0 ? (
+                    <p className="text-sm text-[var(--ink-soft)]">Sin PDF asociados.</p>
+                  ) : (
+                    pdfs.map((doc) => (
+                      <DocumentEditorRow
+                        key={doc.id}
+                        doc={doc}
+                        saving={savingDocumentId === doc.id}
+                        onSave={(patch) => void saveDocument(doc, patch)}
+                        onDelete={() => void removeDocument(doc.id)}
+                      />
+                    ))
+                  )}
+                </div>
+              </SurfaceCard>
+
+              {otherFiles.length > 0 ? (
+                <SurfaceCard className="p-4">
+                  <h2 className="text-lg font-semibold text-[var(--ink)]">Archivos históricos (no públicos)</h2>
+                  <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                    Imágenes, vídeos u otros adjuntos de la ficha antigua. No se muestran en la web. Puedes
+                    dejarlos o eliminarlos.
+                  </p>
+                  <div className="mt-3 space-y-3">
+                    {otherFiles.map((doc) => (
+                      <DocumentEditorRow
+                        key={doc.id}
+                        doc={doc}
+                        saving={savingDocumentId === doc.id}
+                        onSave={(patch) => void saveDocument(doc, patch)}
+                        onDelete={() => void removeDocument(doc.id)}
+                      />
+                    ))}
+                  </div>
+                </SurfaceCard>
               ) : null}
-              <Metric label="Documentos públicos" value={documents.filter((doc) => doc.isPublic !== false).length} />
-              <Metric label="PDFs" value={mediaGroups.pdfs.length} />
-            </aside>
-          </div>
-        </SurfaceCard>
-      ) : null}
+            </section>
+          ) : null}
         </div>
       </div>
     </main>
@@ -452,15 +366,11 @@ export default function AdminPromotionEditPage() {
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
-  return <label className="text-sm font-semibold text-[var(--ink)]"><span>{label}</span><div className="mt-1">{children}</div></label>;
-}
-
-function Metric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">{label}</p>
-      <p className="display-type mt-1 text-2xl font-black text-[var(--ink)]">{value}</p>
-    </div>
+    <label className="text-sm font-semibold text-[var(--ink)]">
+      <span>{label}</span>
+      <div className="mt-1">{children}</div>
+    </label>
   );
 }
 
@@ -477,22 +387,14 @@ function DocumentEditorRow({
 }) {
   const [draft, setDraft] = useState({
     title: doc.title || doc.originalName || '',
-    description: doc.description || '',
-    altText: doc.altText || '',
     sortOrder: String(doc.sortOrder ?? 0),
-    section: doc.section || '',
-    isFeatured: Boolean(doc.isFeatured),
     isPublic: doc.isPublic !== false,
   });
 
   useEffect(() => {
     setDraft({
       title: doc.title || doc.originalName || '',
-      description: doc.description || '',
-      altText: doc.altText || '',
       sortOrder: String(doc.sortOrder ?? 0),
-      section: doc.section || '',
-      isFeatured: Boolean(doc.isFeatured),
       isPublic: doc.isPublic !== false,
     });
   }, [doc]);
@@ -501,32 +403,54 @@ function DocumentEditorRow({
     <div className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--green-700)]">{classifyDocument(doc)}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--green-700)]">
+            {classifyDocument(doc)}
+          </p>
           {doc.publicUrl ? (
-            <a href={doc.publicUrl} target="_blank" rel="noreferrer" className="mt-1 block font-semibold text-[var(--ink)] underline">{doc.originalName || doc.publicUrl}</a>
+            <a
+              href={doc.publicUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 block font-semibold text-[var(--ink)] underline"
+            >
+              {doc.originalName || doc.publicUrl}
+            </a>
           ) : (
             <p className="mt-1 font-semibold text-[var(--ink)]">{doc.originalName || 'Archivo sin URL pública'}</p>
           )}
-          {doc.fileType?.startsWith('image/') && doc.publicUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={doc.publicUrl} alt={doc.altText || ''} className="mt-3 h-32 w-48 rounded-xl object-cover" />
-          ) : null}
-          {doc.fileType?.startsWith('video/') && doc.publicUrl ? (
-            <video src={doc.publicUrl} controls className="mt-3 h-32 w-48 rounded-xl bg-black" />
-          ) : null}
         </div>
-        <button type="button" onClick={onDelete} className="rounded-lg border border-red-100 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50">Eliminar S3</button>
+        <button
+          type="button"
+          onClick={onDelete}
+          className="rounded-lg border border-red-100 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50"
+        >
+          Eliminar
+        </button>
       </div>
       <div className="mt-3 grid gap-2 md:grid-cols-2">
-        <input className="ds-control" value={draft.title} placeholder="Título editorial" onChange={(e) => setDraft((prev) => ({ ...prev, title: e.target.value }))} />
-        <input className="ds-control" value={draft.altText} placeholder="Alt text" onChange={(e) => setDraft((prev) => ({ ...prev, altText: e.target.value }))} />
-        <input className="ds-control" value={draft.section} placeholder="Sección: galeria, planos, requisitos..." onChange={(e) => setDraft((prev) => ({ ...prev, section: e.target.value }))} />
-        <input className="ds-control" type="number" value={draft.sortOrder} placeholder="Orden" onChange={(e) => setDraft((prev) => ({ ...prev, sortOrder: e.target.value }))} />
-        <textarea className="ds-control min-h-20 md:col-span-2" value={draft.description} placeholder="Descripción interna o pública" onChange={(e) => setDraft((prev) => ({ ...prev, description: e.target.value }))} />
+        <input
+          className="ds-control"
+          value={draft.title}
+          placeholder="Título visible en el visor (bases, anexo…)"
+          onChange={(e) => setDraft((prev) => ({ ...prev, title: e.target.value }))}
+        />
+        <input
+          className="ds-control"
+          type="number"
+          value={draft.sortOrder}
+          placeholder="Orden"
+          onChange={(e) => setDraft((prev) => ({ ...prev, sortOrder: e.target.value }))}
+        />
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-xs font-semibold text-[var(--ink)]"><input type="checkbox" checked={draft.isFeatured} onChange={(e) => setDraft((prev) => ({ ...prev, isFeatured: e.target.checked }))} /> Destacado</label>
-        <label className="flex items-center gap-2 text-xs font-semibold text-[var(--ink)]"><input type="checkbox" checked={draft.isPublic} onChange={(e) => setDraft((prev) => ({ ...prev, isPublic: e.target.checked }))} /> Público</label>
+        <label className="flex items-center gap-2 text-xs font-semibold text-[var(--ink)]">
+          <input
+            type="checkbox"
+            checked={draft.isPublic}
+            onChange={(e) => setDraft((prev) => ({ ...prev, isPublic: e.target.checked }))}
+          />{' '}
+          Público
+        </label>
         <button
           type="button"
           disabled={saving}

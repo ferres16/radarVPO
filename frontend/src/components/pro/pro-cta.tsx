@@ -24,29 +24,11 @@ export function ProCta({
   label,
 }: ProCtaProps) {
   const context = useOptionalProAccess();
-  // While auth is resolving, prefer Stripe so logged-in users never flash /register.
-  const href =
-    context?.loading && proPlan.stripeLink
-      ? proPlan.stripeLink
-      : getProHref(Boolean(context?.me));
-  const isExternal = /^https?:\/\//.test(href);
+  const href = getProHref(Boolean(context?.me));
   const content = children ?? label ?? proPlan.ctaLabel;
 
   if (context?.hasPro) {
     return null;
-  }
-
-  if (isExternal) {
-    return (
-      <a
-        href={href}
-        className={className}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        {content}
-      </a>
-    );
   }
 
   return (
@@ -66,23 +48,11 @@ export function ProCtaLink({
   label?: string;
 }) {
   const context = useOptionalProAccess();
-  const href =
-    context?.loading && proPlan.stripeLink
-      ? proPlan.stripeLink
-      : getProHref(Boolean(context?.me));
-  const isExternal = /^https?:\/\//.test(href);
+  const href = getProHref(Boolean(context?.me));
   const content = children ?? label ?? proPlan.ctaLabel;
 
   if (context?.hasPro) {
     return null;
-  }
-
-  if (isExternal) {
-    return (
-      <a href={href} className={className} rel="noopener noreferrer" target="_blank">
-        {content}
-      </a>
-    );
   }
 
   return (

@@ -11,7 +11,6 @@ import { PromotionsModule } from './promotions/promotions.module';
 import { AlertsModule } from './alerts/alerts.module';
 import { NewsModule } from './news/news.module';
 import { CoursesModule } from './courses/courses.module';
-import { ServicesModule } from './services/services.module';
 import { BackofficeModule } from './backoffice/backoffice.module';
 import { JobsModule } from './jobs/jobs.module';
 import { HealthModule } from './health/health.module';
@@ -40,7 +39,6 @@ import { RequestLoggingInterceptor } from './common/interceptors/request-logging
     AlertsModule,
     NewsModule,
     CoursesModule,
-    ServicesModule,
     BackofficeModule,
     JobsModule,
     HealthModule,

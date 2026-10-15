@@ -98,7 +98,7 @@ export default function AdminFilesPage() {
           <PageHero
             eyebrow="Gestión de archivos"
             title="Assets centralizados en S3"
-            description="Audita archivos vinculados a promociones, cursos, lecciones, noticias y servicios. Los borrados fallidos quedan marcados para reintento."
+            description="Audita archivos vinculados a promociones, cursos, lecciones, noticias. Los borrados fallidos quedan marcados para reintento."
           />
 
           <section className="grid gap-3 md:grid-cols-4">
@@ -138,7 +138,7 @@ export default function AdminFilesPage() {
                   <option value="module">Módulos</option>
                   <option value="lesson">Lecciones</option>
                   <option value="news">Noticias</option>
-                  <option value="service">Acompañamiento</option>
+                  <option value="service">Servicios (histórico)</option>
                 </select>
               </label>
               <label className="text-sm font-semibold text-[var(--ink)]">

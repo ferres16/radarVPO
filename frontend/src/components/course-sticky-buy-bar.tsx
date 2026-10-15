@@ -6,15 +6,10 @@ type CourseStickyBuyBarProps = {
   priceLabel: string;
   lockedHref: string;
   lockedLabel: string;
-  includedInPro: boolean;
+  hint?: string;
 };
 
-export function CourseStickyBuyBar({
-  priceLabel,
-  lockedHref,
-  lockedLabel,
-  includedInPro,
-}: CourseStickyBuyBarProps) {
+export function CourseStickyBuyBar({ priceLabel, lockedHref, lockedLabel, hint }: CourseStickyBuyBarProps) {
   const { canAccess, resolved, initialCanAccess } = useCourseAccess();
   const hasAccess = resolved ? canAccess : initialCanAccess;
 
@@ -24,17 +19,15 @@ export function CourseStickyBuyBar({
     <div className="course-sticky-buy md:hidden" role="region" aria-label="Comprar curso">
       <div className="course-sticky-buy__inner">
         <div className="min-w-0">
-          <p className="course-sticky-buy__label">Acceso al curso</p>
+          <p className="course-sticky-buy__label">Pago único</p>
           <p className="course-sticky-buy__price">{priceLabel}</p>
-          {includedInPro ? (
-            <p className="course-sticky-buy__hint">Incluido en VPO PRO</p>
-          ) : null}
+          {hint ? <p className="course-sticky-buy__hint">{hint}</p> : null}
         </div>
         <div className="course-sticky-buy__actions">
           <CourseAccessLink
             hrefWhenAccess="/"
             hrefWhenLocked={lockedHref}
-            lockedLabel={lockedLabel || 'Comprar curso'}
+            lockedLabel={lockedLabel}
             accessLabel="Continuar curso"
             className="btn btn--primary btn--sm shrink-0"
           />

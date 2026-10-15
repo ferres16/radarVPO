@@ -1,91 +1,82 @@
+import { FREE_SAVED_PROMOTIONS_LIMIT } from '@/lib/my-space';
+import { proPriceLabel } from '@/lib/offer';
+
+/** Problemas reales de quien solicita vivienda protegida (sin cifras ni promesas). */
 export const homeProblemCards = [
   {
-    title: 'Descubre la promoción demasiado tarde',
-    description: 'Cuando la ves, el plazo ya está cerrado o las plazas agotadas.',
+    title: 'La información está dispersa',
+    description:
+      'Las promociones y sus bases se publican en distintos sitios y en documentos largos que cuesta localizar.',
   },
   {
-    title: 'No tiene preparada la documentación',
-    description: 'Pierdes días reuniendo papeles mientras otros ya han presentado.',
+    title: 'Cuesta saber si cumples los requisitos',
+    description:
+      'Cada promoción tiene sus propias condiciones, y los plazos y la documentación pueden sorprender.',
   },
   {
-    title: 'Revisa decenas de portales',
-    description: 'Horas perdidas sin saber si te estás perdiendo la oportunidad real.',
-  },
-] as const;
-
-export const homeSolutionBlocks = [
-  {
-    step: '01',
-    title: 'Detectamos promociones',
-    description: 'Monitorizamos señales de vivienda protegida y HPO en Cataluña antes de que salgan oficialmente.',
-  },
-  {
-    step: '02',
-    title: 'PRO te avisa por email y SMS',
-    description: 'Cuando detectamos un próximo lanzamiento o se abre un plazo relevante en tu zona.',
-  },
-  {
-    step: '03',
-    title: 'Te preparas con la Guía VPO',
-    description: 'El curso incluido en PRO te ayuda con requisitos, documentación y errores frecuentes.',
-  },
-  {
-    step: '04',
-    title: 'Acompañamiento individualizado',
-    description: 'Si lo necesitas, chat y ayuda 1:1 durante todo el proceso, aparte de PRO.',
+    title: 'Se pierde el hilo de lo que sigues',
+    description:
+      'Con varias promociones a la vez, es fácil olvidar qué has leído, qué falta y qué has presentado ya.',
   },
 ] as const;
 
-export const homeTestimonials = [
+/** Tres caminos de entrada: consultar, aprender, avisos. */
+export const homePaths = [
   {
-    id: 'testimonial-1',
-    name: 'María G.',
-    location: 'Barcelona',
-    quote: 'Me avisaron dos días antes de que saliera la convocatoria. Llegué preparada y presenté a tiempo.',
+    id: 'consult',
+    eyebrow: 'Gratis',
+    title: 'Consulta las promociones',
+    description:
+      'Mira las promociones publicadas y abre directamente su documento oficial, sin registrarte.',
+    cta: 'Ver promociones',
+    href: '/promotions',
   },
   {
-    id: 'testimonial-2',
-    name: 'Jordi P.',
-    location: 'Barcelona',
-    quote: 'Dejé de revisar portales a diario. Las alertas PRO me ahorraron horas y mucha ansiedad.',
+    id: 'learn',
+    eyebrow: 'Curso',
+    title: 'Aprende a preparar tu solicitud',
+    description:
+      'Un curso práctico para entender el proceso: qué es una VPO, requisitos, registro de solicitantes y cómo leer los anuncios.',
+    cta: 'Ver el curso',
+    href: '/cursos',
   },
   {
-    id: 'testimonial-3',
-    name: 'Laura M.',
-    location: 'Barcelona',
-    quote: 'El curso me aclaró requisitos y errores típicos. Supe qué preparar antes de que abriera el plazo.',
+    id: 'pro',
+    eyebrow: 'Suscripción',
+    title: 'Recibe avisos y organízate',
+    description: `Avisos por email y SMS de nuevas promociones y un espacio para organizar las que sigues. ${proPriceLabel}.`,
+    cta: 'Ver Radar VPO PRO',
+    href: '/pro',
   },
 ] as const;
 
 export const homeFaqs = [
   {
+    question: '¿Qué es Radar VPO?',
+    answer:
+      'Un sitio para consultar promociones de vivienda protegida en Cataluña con su documento oficial, aprender a preparar la solicitud con un curso y organizar las oportunidades que sigues.',
+  },
+  {
+    question: '¿Puedo ver promociones sin pagar?',
+    answer: `Sí. Consultar las promociones y abrir su documento oficial en PDF es gratis. Con una cuenta gratuita también puedes guardar hasta ${FREE_SAVED_PROMOTIONS_LIMIT} promociones en Mi espacio.`,
+  },
+  {
     question: '¿Qué es Radar VPO PRO?',
-    answer:
-      'Es la suscripción que añade avisos por email y SMS cuando detectamos lanzamientos o promociones relevantes, e incluye el curso Guía VPO.',
+    answer: `Una suscripción de ${proPriceLabel} que añade avisos por email y SMS de nuevas promociones, Mi espacio sin límite y acceso al curso inicial mientras esté activa. Se cancela desde Mi cuenta.`,
   },
   {
-    question: '¿Sirve para VPO y HPO en Cataluña?',
+    question: '¿Los cursos son una suscripción?',
     answer:
-      'Sí. Monitorizamos promociones de vivienda protegida (VPO) y vivienda de protección oficial (HPO) publicadas o previstas en Cataluña.',
+      'No. Cada curso es un pago único con el precio final visible antes de pagar; no hay renovaciones.',
   },
   {
-    question: '¿Recibiré alertas por email y SMS?',
+    question: '¿Radar VPO presenta la solicitud por mí o me asesora individualmente?',
     answer:
-      'Con VPO PRO recibes avisos prioritarios por correo y SMS cuando detectamos un lanzamiento relevante o se abre un plazo en tu zona.',
-  },
-  {
-    question: '¿Incluye curso para solicitar una VPO?',
-    answer:
-      'Sí. VPO PRO incluye el curso Guía VPO para entender requisitos, documentación y errores frecuentes del proceso.',
+      'No. Radar VPO ofrece información, un curso y herramientas de organización. Cada persona presenta su propia solicitud ante los organismos oficiales.',
   },
   {
     question: '¿Garantiza conseguir un piso protegido?',
     answer:
-      'No. Radar VPO te ayuda a enterarte antes y prepararte. La adjudicación depende siempre de los organismos oficiales.',
-  },
-  {
-    question: '¿Puedo ver promociones sin pagar?',
-    answer:
-      'Sí. Con la cuenta gratuita puedes consultar promociones publicadas y próximos lanzamientos en la web. VPO PRO añade avisos por email y SMS, y el curso Guía VPO.',
+      'No. La adjudicación depende siempre de los organismos oficiales. Radar VPO te ayuda a informarte y a prepararte.',
   },
 ] as const;

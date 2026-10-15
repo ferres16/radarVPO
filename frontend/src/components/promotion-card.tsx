@@ -1,8 +1,8 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Promotion } from '@/types';
-import { hasPublicFicha } from '@/lib/promotion-access';
+import { canViewPromotionDocument, hasKnownPdf } from '@/lib/promotion-access';
 import { MotionCard } from './motion-primitives';
+import { TrackedLink } from './tracked-link';
 
 function displayDate(promotion: Promotion) {
   if (promotion.status === 'published_reviewed' || promotion.status === 'published_unreviewed') {
@@ -13,17 +13,13 @@ function displayDate(promotion: Promotion) {
 }
 
 function statusLabel(status: Promotion['status']) {
-  if (status === 'pending_review') return 'Pendiente de revisión';
-  if (status === 'published_unreviewed') return 'En actualización';
-  if (status === 'published_reviewed') return 'Ficha completa';
-  return 'Archivada';
+  if (status === 'pending_review') return 'Próximo lanzamiento';
+  if (status === 'archived') return 'Archivada';
+  return null;
 }
 
 function statusTone(status: Promotion['status']) {
-  if (status === 'published_reviewed') {
-    return 'bg-[var(--bg-eco)] text-[var(--green-700)]';
-  }
-  if (status === 'published_unreviewed') {
+  if (status === 'pending_review') {
     return 'bg-[rgba(232,184,74,0.16)] text-[#7a5600]';
   }
   return 'bg-[var(--bg-app)] text-[var(--ink-soft)]';
@@ -51,6 +47,38 @@ function CardShell({
   return <article className={className}>{children}</article>;
 }
 
+function PromotionAction({
+  promotion,
+  variant,
+}: {
+  promotion: Promotion;
+  variant: 'rail' | 'grid';
+}) {
+  const className =
+    variant === 'rail'
+      ? 'btn btn--primary min-h-11 w-full py-2.5 text-sm font-semibold'
+      : 'inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--green-700)] px-4 py-2.5 text-sm font-semibold text-white outline-none transition duration-200 hover:bg-[var(--green-900)] focus-visible:ring-2 focus-visible:ring-[var(--green-700)] md:w-fit';
+
+  if (hasKnownPdf(promotion)) {
+    return (
+      <TrackedLink
+        href={`/promotions/${promotion.id}`}
+        className={className}
+        event="promotion_pdf_cta_clicked"
+        eventProperties={{ promotionId: promotion.id, source: 'card' }}
+      >
+        Ver PDF de la promoción
+      </TrackedLink>
+    );
+  }
+
+  return (
+    <a href={promotion.sourceUrl} target="_blank" rel="noreferrer" className={className}>
+      Ver fuente oficial
+    </a>
+  );
+}
+
 export function PromotionCard({
   promotion,
   hideDetail = false,
@@ -66,8 +94,9 @@ export function PromotionCard({
   layout?: 'grid' | 'rail';
   animated?: boolean;
 }) {
-  const showFicha = hasPublicFicha(promotion) && !hideDetail;
+  const showAction = canViewPromotionDocument(promotion) && !hideDetail;
   const dateLabel = displayDate(promotion);
+  const status = hideStatus ? null : statusLabel(promotion.status);
 
   if (layout === 'rail') {
     return (
@@ -76,9 +105,9 @@ export function PromotionCard({
           <span className="inline-flex rounded-full bg-[var(--bg-eco)] px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-[0.1em] text-[var(--green-700)]">
             VPO
           </span>
-          {!hideStatus ? (
+          {status ? (
             <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${statusTone(promotion.status)}`}>
-              {statusLabel(promotion.status)}
+              {status}
             </span>
           ) : null}
         </div>
@@ -89,11 +118,9 @@ export function PromotionCard({
           <span className="chip text-xs">{promotionTypeLabel(promotion.promotionType)}</span>
           {dateLabel ? <span className="chip text-xs">{dateLabel}</span> : null}
         </div>
-        {!showFicha ? null : (
+        {!showAction ? null : (
           <div className="mt-auto pt-4">
-            <Link href={`/promotions/${promotion.id}`} className="btn btn--primary min-h-11 w-full py-2.5 text-sm font-semibold">
-              Ver ficha completa
-            </Link>
+            <PromotionAction promotion={promotion} variant="rail" />
           </div>
         )}
       </CardShell>
@@ -107,9 +134,9 @@ export function PromotionCard({
           <span className="inline-flex rounded-full bg-white/90 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--green-700)]">
             Publicada
           </span>
-          {!hideStatus ? (
+          {status ? (
             <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${statusTone(promotion.status)}`}>
-              {statusLabel(promotion.status)}
+              {status}
             </span>
           ) : null}
         </div>
@@ -123,14 +150,9 @@ export function PromotionCard({
           <span className="chip">{promotionTypeLabel(promotion.promotionType)}</span>
           {dateLabel ? <span className="chip">{dateLabel}</span> : null}
         </div>
-        {!showFicha ? null : (
+        {!showAction ? null : (
           <div className="mt-auto pt-4">
-            <Link
-              href={`/promotions/${promotion.id}`}
-              className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--green-700)] px-4 py-2.5 text-sm font-semibold text-white outline-none transition duration-200 hover:bg-[var(--green-900)] focus-visible:ring-2 focus-visible:ring-[var(--green-700)] md:w-fit"
-            >
-              Ver ficha completa
-            </Link>
+            <PromotionAction promotion={promotion} variant="grid" />
           </div>
         )}
       </div>

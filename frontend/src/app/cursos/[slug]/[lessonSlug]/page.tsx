@@ -10,6 +10,7 @@ import { CourseTipTapRenderer } from '@/components/course-tiptap-renderer';
 import { CollapsePanel } from '@/components/collapse-panel';
 import { filterLessonResourcesForDisplay } from '@/lib/course-lesson-resources';
 import { api } from '@/lib/api';
+import { getPreviewLessonSlug } from '@/lib/offer';
 import type { Course, CourseLesson, CourseModule } from '@/types';
 
 type LessonPayload = {
@@ -17,6 +18,9 @@ type LessonPayload = {
   lesson: CourseLesson;
   access: { canAccess: boolean; reason: string };
 };
+
+const LOCKED_MESSAGE =
+  'Puedes ver el programa del curso, pero el contenido de las lecciones está disponible al comprar el curso.';
 
 export default function LessonPage() {
   const router = useRouter();
@@ -60,6 +64,12 @@ export default function LessonPage() {
           try {
             const course = await api.getCourse(slug);
             if (!active) return;
+            const isGuest = message.includes('401') || message.toLowerCase().includes('unauthorized');
+            if (isGuest && getPreviewLessonSlug(course) === lessonSlug) {
+              // La lección de muestra es gratis, pero hace falta una cuenta para verla.
+              router.replace(`/login?next=${encodeURIComponent(`/cursos/${slug}/${lessonSlug}`)}`);
+              return;
+            }
             const lesson = course.modules
               ?.flatMap((module) => module.lessons || [])
               .find((item) => item.slug === lessonSlug);
@@ -94,6 +104,7 @@ export default function LessonPage() {
   const modules = useMemo<CourseModule[]>(() => payload?.course.modules || [], [payload]);
   const lesson = payload?.lesson;
   const locked = payload ? !payload.access.canAccess : true;
+  const isPreview = payload?.access.reason === 'preview';
   const lessonItems = useMemo(
     () => modules.flatMap((module) => module.lessons || []),
     [modules],
@@ -196,18 +207,25 @@ export default function LessonPage() {
               <article className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 md:mt-6 md:p-6 lg:rounded-3xl">
                 <h2 className="text-lg font-black text-amber-950 md:text-xl">Contenido bloqueado</h2>
                 <p className="mt-2 text-sm leading-6 text-amber-900 md:text-base">
-                  Puedes ver el índice del curso, pero el contenido de las lecciones solo está disponible cuando
-                  tienes acceso activo.
+                  {LOCKED_MESSAGE}
                 </p>
                 <Link
                   href={`/cursos/${payload.course.slug}#precio`}
                   className="mt-4 inline-flex rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-semibold text-white"
                 >
-                  Ver opciones de acceso
+                  Ver precio y programa
                 </Link>
               </article>
             ) : (
               <article className="mt-4 md:mt-6 lg:mx-auto lg:max-w-3xl">
+                {isPreview ? (
+                  <p className="mb-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm text-[var(--ink-soft)]">
+                    Esta es la lección de muestra gratuita.{' '}
+                    <Link href={`/cursos/${payload.course.slug}#precio`} className="font-bold text-[var(--green-700)]">
+                      Ver el curso completo
+                    </Link>
+                  </p>
+                ) : null}
                 {lesson?.contentJson ? (
                   <CourseTipTapRenderer content={lesson.contentJson} />
                 ) : lesson?.blocks?.length ? (
@@ -259,7 +277,7 @@ export default function LessonPage() {
               ) : null}
             </div>
             <div className="flex flex-wrap gap-2">
-              {!locked && !completed ? (
+              {!locked && !isPreview && !completed ? (
                 <button
                   type="button"
                   onClick={() => void markCompleted()}
@@ -269,7 +287,7 @@ export default function LessonPage() {
                   {marking ? 'Guardando...' : 'Completada'}
                 </button>
               ) : null}
-              {nextLesson && !locked ? (
+              {nextLesson && !locked && !isPreview ? (
                 <Link
                   href={`/cursos/${payload.course.slug}/${nextLesson.slug}`}
                   className="flex-1 rounded-full bg-[var(--ink)] px-4 py-2.5 text-center text-sm font-semibold text-white sm:flex-none sm:px-5"

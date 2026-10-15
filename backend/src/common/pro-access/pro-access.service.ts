@@ -112,10 +112,12 @@ export class ProAccessService {
         return input.hasAccess ? 'cancel_pending' : 'canceled';
       }
 
-      if (
-        input.subscription.status === SubscriptionStatus.expired ||
-        input.subscription.status === SubscriptionStatus.past_due
-      ) {
+      if (input.subscription.status === SubscriptionStatus.past_due) {
+        // Stripe reintenta el cobro: se mantiene el acceso mientras tanto.
+        return input.hasAccess ? 'active' : 'expired';
+      }
+
+      if (input.subscription.status === SubscriptionStatus.expired) {
         return 'expired';
       }
     }

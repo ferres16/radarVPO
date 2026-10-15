@@ -14,6 +14,7 @@ const contentSecurityPolicy = [
   "style-src 'self' 'unsafe-inline'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net",
   `connect-src 'self' https:${isProduction ? "" : " http://localhost:*"}`,
+  "worker-src 'self' blob:",
   "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
   isProduction ? "upgrade-insecure-requests" : "",
 ].filter(Boolean).join("; ");
@@ -23,7 +24,11 @@ const nextConfig: NextConfig = {
     return [
       { source: '/proximos-lanzamientos', destination: '/alerts', permanent: true },
       { source: '/promociones-publicadas', destination: '/promotions', permanent: true },
-      { source: '/services', destination: '/acompanamiento', permanent: true },
+      // El acompañamiento individual ya no se ofrece: las URLs antiguas llevan al catálogo de cursos.
+      { source: '/acompanamiento', destination: '/cursos', permanent: true },
+      { source: '/acompanamiento/:path*', destination: '/cursos', permanent: true },
+      { source: '/services', destination: '/cursos', permanent: true },
+      { source: '/admin/services', destination: '/admin', permanent: true },
       { source: '/admin/promotions/history', destination: '/admin/promotions', permanent: true },
     ];
   },

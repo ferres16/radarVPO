@@ -27,6 +27,6 @@ describe('PromotionCard', () => {
     );
 
     expect(screen.getByText('Promocion Demo')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ver ficha completa' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ver PDF de la promoción' })).toBeInTheDocument();
   });
 });

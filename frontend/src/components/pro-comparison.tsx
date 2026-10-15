@@ -1,7 +1,8 @@
 'use client';
 
 import { proComparisonRows, proPlan, freeVsProDescription, type ProComparisonCell } from '@/lib/pro';
-import { ProCta, ProGate } from '@/components/pro/pro-cta';
+import { ButtonLink } from '@/components/design-system';
+import { ProGate } from '@/components/pro/pro-cta';
 
 function ComparisonCell({ value, highlight = false }: { value: ProComparisonCell; highlight?: boolean }) {
   if (typeof value === 'string') {
@@ -28,7 +29,7 @@ function cellLabel(value: ProComparisonCell) {
 }
 
 export function ProComparison({
-  title = 'Gratis vs VPO PRO',
+  title = 'Gratis vs Radar VPO PRO',
   description = freeVsProDescription,
   compact = false,
   showHeader = true,
@@ -52,13 +53,13 @@ export function ProComparison({
         </div>
       ) : null}
 
-      <div className="compare-mobile" aria-label="Comparativa móvil Free vs PRO">
+      <div className="compare-mobile" aria-label="Comparativa móvil Gratis vs PRO">
         {proComparisonRows.map((row) => (
           <article key={row.feature} className="compare-mobile__card">
             <p className="compare-mobile__feature">{row.feature}</p>
             <div className="compare-mobile__row">
               <div className="compare-mobile__plan">
-                <p className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">Free</p>
+                <p className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">Gratis</p>
                 <p className="mt-1">{cellLabel(row.free)}</p>
               </div>
               <div className="compare-mobile__plan compare-mobile__plan--pro">
@@ -75,7 +76,7 @@ export function ProComparison({
           <thead>
             <tr>
               <th scope="col">Función</th>
-              <th scope="col">Free</th>
+              <th scope="col">Gratis</th>
               <th scope="col" className="compare-table__pro-col">
                 {proPlan.name}
               </th>
@@ -100,8 +101,10 @@ export function ProComparison({
       {showCta ? (
         <ProGate>
           <div className="compare-block__cta">
-            <ProCta size="lg" className="btn--block sm:!w-auto" label={`${proPlan.ctaLabel} · ${proPlan.price}`} />
-            <p className="compare-block__note">Cancela cuando quieras · Sin permanencia</p>
+            <ButtonLink href={proPlan.checkoutHref} size="lg" className="btn--block sm:!w-auto">
+              {`${proPlan.ctaLabel} · ${proPlan.price}`}
+            </ButtonLink>
+            <p className="compare-block__note">Cancela cuando quieras desde Mi cuenta · Sin permanencia</p>
           </div>
         </ProGate>
       ) : null}

@@ -28,6 +28,8 @@ const excludedPrefixes = [
   '/checkout',
   '/payment',
   '/cursos/',
+  '/promotions/',
+  '/mi-espacio',
 ];
 
 const placeholderSlotPattern = /^123456789\d$/;

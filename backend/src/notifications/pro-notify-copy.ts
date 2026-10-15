@@ -42,7 +42,7 @@ export function buildProNotifyCopy(input: {
       estimatedDate,
       subject: `Nueva promoción VPO publicada: ${title}`.slice(0, 140),
       intro:
-        'Hay una <strong>nueva promoción publicada</strong> en Radar VPO PRO. Accede directamente a la ficha:',
+        'Hay una <strong>nueva promoción publicada</strong> en Radar VPO. Puedes consultar el documento oficial de la promoción aquí:',
       ctaLabel: 'Ver promoción',
       pageUrl: promotionsUrl,
       sms: buildSmsWithUrl(

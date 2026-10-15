@@ -1,36 +1,12 @@
 import Link from 'next/link';
 import { CourseCoverImage } from '@/components/course-cover-image';
 import { ButtonLink } from '@/components/design-system';
-import { proPlan } from '@/lib/pro';
+import { formatEuro, getCoursePrice, getCourseStatusSummary } from '@/lib/offer';
 import type { Course } from '@/types';
 
-function lessonCount(course: Course) {
-  return course.modules?.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 0;
-}
-
-function formatPrice(course: Course) {
-  const amount = resolveDisplayedCoursePrice(course);
-  if (!amount) {
-    return course.accessType === 'pro' ? `Incluido en ${proPlan.name}` : 'Consultar';
-  }
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: course.currency || 'EUR',
-    maximumFractionDigits: 0,
-  }).format(Number(amount));
-}
-
-function resolveDisplayedCoursePrice(course: Course) {
-  const amount = course.salePrice || course.price;
-  if (/avanzad/i.test(course.title) && Number(amount) === 149) {
-    return 89;
-  }
-  return amount;
-}
-
 export function FeaturedCourseSpotlight({ course }: { course: Course }) {
-  const lessons = lessonCount(course);
-  const includedInPro = course.accessType === 'pro';
+  const status = getCourseStatusSummary(course);
+  const price = getCoursePrice(course);
 
   return (
     <article className="spotlight-course">
@@ -45,13 +21,11 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
       </Link>
       <div className="spotlight-course__body">
         <div className="spotlight-course__meta">
-          <span>{lessons > 0 ? `${lessons} lecciones` : 'En actualización'}</span>
-          <span>·</span>
-          <span>Todos los niveles</span>
-          {includedInPro ? (
+          <span>{status.statusText}</span>
+          {!status.sellable ? (
             <>
               <span>·</span>
-              <span className="spotlight-course__pro">Incluido en PRO</span>
+              <span>En preparación</span>
             </>
           ) : null}
         </div>
@@ -59,28 +33,20 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
           <Link href={`/cursos/${course.slug}`}>{course.title}</Link>
         </h3>
         <p className="spotlight-course__desc">
-          {course.shortDescription || 'Formación práctica para solicitar vivienda protegida con criterio.'}
+          {course.shortDescription || 'Formación práctica para preparar tu solicitud de vivienda protegida.'}
         </p>
-        <div className="spotlight-course__stats" aria-label="Métricas del curso (estimadas)">
-          <div>
-            <p className="spotlight-course__stat-value">4,8</p>
-            <p className="spotlight-course__stat-label">Valoración</p>
-          </div>
-          <div>
-            <p className="spotlight-course__stat-value">+120</p>
-            <p className="spotlight-course__stat-label">Alumnos</p>
-          </div>
-          <div>
-            <p className="spotlight-course__stat-value">{formatPrice(course)}</p>
-            <p className="spotlight-course__stat-label">Precio</p>
-          </div>
-        </div>
+        {price !== null ? (
+          <p className="spotlight-course__note">
+            {status.sellable
+              ? `${formatEuro(price)} · pago único, sin renovaciones`
+              : `Precio previsto al lanzarlo: ${formatEuro(price)} (pago único)`}
+          </p>
+        ) : null}
         <div className="spotlight-course__actions">
           <ButtonLink href={`/cursos/${course.slug}`} size="lg">
-            {includedInPro ? 'Ver Guía VPO incluida en PRO' : 'Comprar curso'}
+            Ver el curso
           </ButtonLink>
         </div>
-        <p className="spotlight-course__note">Valoración y alumnos: datos orientativos de lanzamiento.</p>
       </div>
     </article>
   );

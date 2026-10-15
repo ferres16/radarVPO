@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { primaryNavLinks } from '@/lib/navigation';
+import { supportEmail } from '@/lib/legal';
 import { useProAccess } from '@/components/pro-access-provider';
 
 export function SiteFooter() {
@@ -19,8 +20,16 @@ export function SiteFooter() {
         <div>
           <p className="site-footer__brand">Radar VPO</p>
           <p className="site-footer__tagline">
-            Vivienda pública y protegida (VPO/HPO) en Cataluña: promociones, lanzamientos y actualidad en un solo sitio.
+            Consulta promociones de vivienda protegida en Cataluña, aprende a preparar tu solicitud y organiza tus oportunidades.
           </p>
+          {supportEmail ? (
+            <p className="site-footer__tagline">
+              Soporte (compras, acceso y problemas técnicos):{' '}
+              <a href={`mailto:${supportEmail}`} className="underline">
+                {supportEmail}
+              </a>
+            </p>
+          ) : null}
         </div>
         <nav className="site-footer__nav" aria-label="Enlaces del sitio">
           {primaryNavLinks.map((link) => (
@@ -29,14 +38,26 @@ export function SiteFooter() {
             </Link>
           ))}
           {!loading && me ? (
-            <Link href="/account">Perfil</Link>
+            <>
+              <Link href="/mi-espacio">Mi espacio</Link>
+              <Link href="/account">Mi cuenta</Link>
+            </>
           ) : !loading ? (
             <Link href="/login">Entrar</Link>
           ) : null}
         </nav>
       </div>
       <div className="shell site-footer__legal">
-        <p>© {new Date().getFullYear()} Radar VPO. Información orientativa; no sustituye fuentes oficiales.</p>
+        <p>
+          © {new Date().getFullYear()} Radar VPO. Información orientativa; no sustituye fuentes oficiales.{' '}
+          <Link href="/condiciones" className="underline">
+            Condiciones
+          </Link>{' '}
+          ·{' '}
+          <Link href="/privacidad" className="underline">
+            Privacidad
+          </Link>
+        </p>
       </div>
     </footer>
   );

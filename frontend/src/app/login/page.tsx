@@ -1,15 +1,24 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { FormField } from '@/components/design-system';
+import { safeNextPath } from '@/lib/safe-next';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [nextParam, setNextParam] = useState('');
+
+  useEffect(() => {
+    const next = new URLSearchParams(window.location.search).get('next');
+    setNextParam(next ? safeNextPath(next, '') : '');
+  }, []);
+
+  const registerHref = nextParam ? `/register?next=${encodeURIComponent(nextParam)}` : '/register';
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -19,7 +28,7 @@ export default function LoginPage() {
     try {
       await api.login(email, password);
       const next = new URLSearchParams(window.location.search).get('next');
-      window.location.assign(next && next.startsWith('/') ? next : '/account');
+      window.location.assign(safeNextPath(next));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo iniciar sesión');
     } finally {
@@ -75,7 +84,7 @@ export default function LoginPage() {
 
             <p className="mt-4 text-center text-sm text-[var(--ink-soft)]">
               ¿No tienes cuenta?{' '}
-              <Link href="/register" className="font-semibold text-[var(--green-700)]">
+              <Link href={registerHref} className="font-semibold text-[var(--green-700)]">
                 Crear cuenta gratis
               </Link>
             </p>

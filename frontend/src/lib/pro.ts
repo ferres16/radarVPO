@@ -1,122 +1,128 @@
-export const VPO_PRO_PRICE = {
-  amount: 9.99,
+import { PRO_PRICE_AMOUNT, formatEuro, proPriceLabel } from '@/lib/offer';
+
+/**
+ * Definición de Radar VPO PRO. Solo prestaciones que existen hoy en el producto.
+ * Cualquier mejora futura se documenta en docs/estrategia-lanzamiento.md, no aquí.
+ */
+export const proPlan = {
+  name: 'Radar VPO PRO',
+  brandName: 'Radar VPO',
+  price: proPriceLabel,
+  priceAmount: PRO_PRICE_AMOUNT,
+  priceShort: formatEuro(PRO_PRICE_AMOUNT, { decimals: 2 }),
   currency: 'EUR',
   interval: 'month' as const,
+  ctaLabel: 'Hazte PRO',
+  landingHref: '/pro',
+  checkoutHref: '/checkout?product=pro',
 };
 
-export function formatProPrice(): string {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: VPO_PRO_PRICE.currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(VPO_PRO_PRICE.amount) + '/mes';
-}
+export const proHref = proPlan.landingHref;
 
-export const proPlan = {
-  name: 'VPO PRO',
-  brandName: 'Radar VPO',
-  price: formatProPrice(),
-  priceAmount: VPO_PRO_PRICE.amount,
-  currency: VPO_PRO_PRICE.currency,
-  interval: VPO_PRO_PRICE.interval,
-  stripeLink: process.env.NEXT_PUBLIC_STRIPE_PRO_LINK || '',
-  fallbackHref: '/register?intent=pro',
-  courseLabel: 'Curso Guía VPO',
-  smsLabel: 'Avisos por SMS',
-  emailLabel: 'Avisos por email',
-  ctaLabel: 'Activar VPO PRO',
-};
-
-/** Guest checkout / CTA target (Stripe when configured, otherwise register). */
-export const proHref = proPlan.stripeLink || proPlan.fallbackHref;
-
-/** Logged-in users should never land on register for PRO — Stripe or account. */
+/** Los CTA de PRO llevan siempre a la página que explica la oferta y su precio. */
 export function getProHref(isAuthenticated: boolean): string {
-  if (isAuthenticated) {
-    return proPlan.stripeLink || '/account';
-  }
-  return proHref;
+  return isAuthenticated ? proPlan.checkoutHref : proPlan.landingHref;
 }
 
 export const proActiveMessages = [
-  'Ya formas parte de VPO PRO 🎉',
-  'Buena elección: ya estás un paso por delante.',
-  'VPO PRO activo. Ahora toca no llegar tarde.',
-  'Ya estás dentro. Nosotros vigilamos las promociones.',
+  'Radar VPO PRO está activo en tu cuenta.',
+  'Tienes Radar VPO PRO activo: recibirás los avisos por email y SMS.',
 ] as const;
 
 export function getProActiveMessage(seed?: string): string {
-  if (!seed) {
-    return proActiveMessages[0];
-  }
+  if (!seed) return proActiveMessages[0];
   const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return proActiveMessages[hash % proActiveMessages.length];
 }
 
 export const freePlanFeatures = [
-  'Consultar promociones publicadas',
-  'Ver próximos lanzamientos en la web',
-  'Cuenta y perfil',
+  'Consultar todas las promociones publicadas',
+  'Ver el documento oficial (PDF) de cada promoción',
+  'Guardar hasta 3 promociones en Mi espacio',
+  'Lección de muestra del curso inicial',
 ] as const;
 
 export const proExclusiveFeatures = [
-  'Avisos por email',
-  'Avisos por SMS',
-  'Curso Guía VPO',
+  'Avisos por email de nuevas promociones y próximos lanzamientos',
+  'Avisos por SMS si indicas tu móvil',
+  'Mi espacio sin límite de promociones guardadas',
 ] as const;
 
 export const freeVsProDescription =
-  'La cuenta gratuita te deja consultar promociones y lanzamientos en la web. VPO PRO añade avisos por email y SMS, y el curso Guía VPO.';
+  'Consultar promociones y ver sus documentos oficiales es gratis. PRO añade avisos por email y SMS, y organización sin límite.';
 
 export const proIncludes = [
   {
     title: 'Avisos por email',
-    description: 'Te avisamos al correo cuando detectamos un lanzamiento o se abre un plazo relevante.',
+    description:
+      'Te escribimos cuando se publica una nueva promoción y cuando detectamos un próximo lanzamiento.',
     icon: '📧',
   },
   {
     title: 'Avisos por SMS',
-    description: 'Recibe el aviso en el móvil para no depender de revisar la web cada día.',
+    description: 'El mismo aviso en el móvil, si has indicado tu número en tu cuenta.',
     icon: '📱',
   },
   {
-    title: 'Curso Guía VPO',
-    description: 'Formación práctica para entender requisitos, documentación y errores frecuentes del proceso.',
+    title: 'Mi espacio sin límite',
+    description:
+      'Guarda todas las promociones que te interesen y sigue tu preparación con una lista de pasos.',
+    icon: '🗂️',
+  },
+  {
+    title: 'Curso VPO Inicial incluido',
+    description:
+      'Acceso al curso inicial mientras tu suscripción esté activa (consulta en la página del curso cuántas lecciones hay publicadas).',
     icon: '📚',
   },
 ] as const;
 
-export const proSolutionPoints = [
-  { title: 'Consultas gratis en la web', description: 'Promociones publicadas y próximos lanzamientos sin pagar.' },
-  { title: 'PRO te avisa por email y SMS', description: 'Cuando detectamos una oportunidad relevante en tu zona.' },
-  { title: 'Incluye el curso Guía VPO', description: 'Para llegar al plazo preparado, sin improvisar.' },
+export const proLimits = [
+  'Los avisos cubren las promociones que Radar VPO detecta en las fuentes oficiales que monitoriza; hoy no se pueden filtrar por municipio.',
+  'Las fechas de próximos lanzamientos son estimaciones y se indican como tales: pueden no cumplirse o no publicarse.',
+  'Los SMS solo se envían si tu cuenta tiene un móvil válido.',
+  'Radar VPO informa y organiza: no presenta solicitudes por ti ni garantiza una adjudicación.',
 ] as const;
 
-export const howItWorksSteps = [
-  { step: '01', title: 'Consultas gratis en la web', description: 'Revisa promociones publicadas y próximos lanzamientos cuando quieras.' },
-  { step: '02', title: 'Activa VPO PRO', description: 'Desbloquea avisos por email y SMS, y el curso Guía VPO.' },
-  { step: '03', title: 'Recibes los avisos', description: 'Te notificamos cuando hay novedad relevante en tu zona.' },
-  { step: '04', title: 'Te preparas con la Guía VPO', description: 'Usa el curso incluido para revisar requisitos y documentación antes del plazo.' },
+export const proFaqs = [
+  {
+    question: '¿Qué recibo exactamente con PRO?',
+    answer:
+      'Avisos por email (y por SMS si indicas tu móvil) cuando se publica una nueva promoción o detectamos un próximo lanzamiento, Mi espacio sin límite de promociones guardadas y acceso al Curso VPO Inicial mientras la suscripción esté activa.',
+  },
+  {
+    question: '¿Qué puedo hacer gratis?',
+    answer:
+      'Consultar todas las promociones, abrir su documento oficial en PDF, guardar hasta 3 promociones en Mi espacio y leer la lección de muestra del curso inicial.',
+  },
+  {
+    question: '¿Cuánto cuesta y cómo se cobra?',
+    answer: `${proPriceLabel}, con renovación mensual automática hasta que la canceles. El precio total se muestra antes de pagar y el cobro lo gestiona Stripe.`,
+  },
+  {
+    question: '¿Cómo cancelo?',
+    answer:
+      'Desde Mi cuenta, con un clic y sin llamar a nadie. Mantienes el acceso hasta el final del periodo ya pagado y no se vuelve a cobrar.',
+  },
+  {
+    question: '¿Las fechas de lanzamiento son seguras?',
+    answer:
+      'No. Cuando mostramos una fecha estimada lo indicamos expresamente; solo la fecha de publicación oficial es un dato confirmado.',
+  },
+  {
+    question: '¿Garantiza conseguir una vivienda protegida?',
+    answer:
+      'No. Te ayuda a enterarte y a organizarte. La adjudicación depende siempre de los organismos oficiales.',
+  },
 ] as const;
-
-export const starterCourseKeywords = [
-  'guía',
-  'guia',
-  'iniciación',
-  'iniciacion',
-  'vivienda pública',
-  'vivienda publica',
-  'vpo',
-  'hpo',
-];
 
 export const proComparisonRows = [
-  { feature: 'Ver promociones publicadas', free: true as const, pro: true as const },
-  { feature: 'Ver próximos lanzamientos', free: true as const, pro: true as const },
+  { feature: 'Consultar promociones publicadas', free: true as const, pro: true as const },
+  { feature: 'Ver el documento oficial (PDF)', free: true as const, pro: true as const },
+  { feature: 'Promociones guardadas en Mi espacio', free: 'Hasta 3', pro: 'Sin límite' },
   { feature: 'Avisos por email', free: false as const, pro: true as const },
   { feature: 'Avisos por SMS', free: false as const, pro: true as const },
-  { feature: 'Curso Guía VPO', free: false as const, pro: true as const },
+  { feature: 'Curso VPO Inicial', free: 'Lección de muestra', pro: 'Incluido mientras esté activo' },
 ] as const;
 
 export type ProComparisonCell = boolean | string;

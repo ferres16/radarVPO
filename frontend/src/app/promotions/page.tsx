@@ -7,7 +7,7 @@ import { AlertsProCtaBand } from '@/components/conversion/alerts-pro-cta-band';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
-import { hasPublicFicha } from '@/lib/promotion-access';
+import { canViewPromotionDocument } from '@/lib/promotion-access';
 import { isAmendmentPublication } from '@/lib/promotion-content-filters';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
@@ -16,7 +16,7 @@ export const revalidate = 30;
 export const metadata: Metadata = createMetadata({
   title: 'Promociones publicadas de vivienda protegida en Cataluña',
   description:
-    'Consulta promociones ya abiertas o publicadas oficialmente con requisitos, plazos y documentación en Cataluña.',
+    'Consulta gratis las promociones de vivienda protegida publicadas en Cataluña y lee sus bases y documentos oficiales sin salir de la web.',
   path: '/promotions',
   keywords: ['promociones publicadas VPO', 'vivienda pública cataluña', 'pisos protegidos cataluña'],
 });
@@ -27,7 +27,7 @@ export default async function PromotionsPage() {
     .filter(
       (item) =>
         item.status !== 'archived' &&
-        hasPublicFicha(item) &&
+        canViewPromotionDocument(item) &&
         !isAmendmentPublication(item.title, item.publicDescription),
     )
     .slice(0, 10);
@@ -44,9 +44,9 @@ export default async function PromotionsPage() {
       <PublicPageHero
         animated={false}
         badge={copy.publishedPromotions}
-        title="Promociones ya abiertas"
-        titleAccent="con plazos y requisitos"
-        description={`${copy.publishedPromotionsDesc} Con VPO PRO te avisamos por SMS y email de las nuevas.`}
+        title="Promociones publicadas"
+        titleAccent="con su documento oficial"
+        description="Abre las bases y anexos oficiales de cada promoción sin salir de Radar VPO. Es gratis y no necesitas cuenta."
         actions={
           <div className="lp-hero__actions lp-hero__actions--stack">
             <ButtonLink href="/alerts" size="lg" block>
@@ -73,7 +73,7 @@ export default async function PromotionsPage() {
         <PublicSection animated={false}>
           <SectionHeader
             title="Últimas promociones"
-            description={`${visiblePromotions.length} promociones activas en Cataluña.`}
+            description={`${visiblePromotions.length} promociones publicadas en Cataluña.`}
           />
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {visiblePromotions.map((promotion) => (
@@ -86,9 +86,9 @@ export default async function PromotionsPage() {
 
       <PublicSection animated={false} muted border>
         <AlertsProCtaBand
-          title="Entérate del siguiente antes"
-          description="Consulta las promociones publicadas gratis. Con VPO PRO recibes avisos por SMS y email cuando detectamos novedades."
-          ctaLabel="Obtener avisos SMS y email"
+          title="Recibe un aviso cuando se publique la siguiente"
+          description="Consultar las promociones y sus documentos oficiales es gratis. Con Radar VPO PRO recibes avisos por email y SMS de nuevas promociones."
+          ctaLabel="Ver Radar VPO PRO"
         />
       </PublicSection>
     </PublicPage>

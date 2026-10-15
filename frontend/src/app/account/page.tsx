@@ -12,10 +12,38 @@ import { AccountManagementSection } from '@/components/profile/account-managemen
 import { ProfileCard } from '@/components/profile-card';
 import type { UserCourseProgress, UserProfile } from '@/types';
 
+const ACTIVATION_POLL_ATTEMPTS = 8;
+const ACTIVATION_POLL_INTERVAL_MS = 2500;
+
 export default function AccountPage() {
-  const { me, loading, setMe } = useProAccess();
+  const { me, loading, setMe, refresh } = useProAccess();
   const [courses, setCourses] = useState<UserCourseProgress[]>([]);
   const [coursesError, setCoursesError] = useState('');
+  const [justPaidPro, setJustPaidPro] = useState(false);
+  const [activationTimedOut, setActivationTimedOut] = useState(false);
+
+  // Tras pagar PRO, Stripe avisa por webhook: esperamos unos segundos a que se active.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('checkout') === 'success' && params.get('product') === 'pro') {
+      setJustPaidPro(true);
+    }
+  }, []);
+
+  const proActive = Boolean(me?.proAccess?.hasAccess);
+  useEffect(() => {
+    if (!justPaidPro || proActive || !me) return;
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      attempts += 1;
+      void refresh();
+      if (attempts >= ACTIVATION_POLL_ATTEMPTS) {
+        window.clearInterval(timer);
+        setActivationTimedOut(true);
+      }
+    }, ACTIVATION_POLL_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [justPaidPro, proActive, me, refresh]);
 
   useEffect(() => {
     if (!me) {
@@ -77,6 +105,18 @@ export default function AccountPage() {
     <main className="lp lp--inner lp--app space-y-4 md:space-y-6">
       <div className="shell space-y-4 pb-6 md:space-y-6 md:pb-8">
         <ProfileHeader profile={me} />
+        {justPaidPro ? (
+          <div
+            role="status"
+            className="rounded-2xl border border-[var(--stroke)] bg-white px-4 py-3 text-sm font-semibold text-[var(--ink)]"
+          >
+            {proActive
+              ? 'Pago recibido: Radar VPO PRO ya está activo en tu cuenta.'
+              : activationTimedOut
+                ? 'Hemos recibido el pago, pero la activación está tardando más de lo normal. Recarga la página en unos minutos; si no se activa, escribe a soporte con el correo de tu cuenta.'
+                : 'Pago recibido. Estamos activando Radar VPO PRO…'}
+          </div>
+        ) : null}
         <ProStatusCard profile={me} onProfileUpdate={handleProfileUpdate} />
         <MyCoursesSection courses={courses} error={coursesError} />
         <PersonalInfoSection profile={me} onProfileUpdate={handleProfileUpdate} />

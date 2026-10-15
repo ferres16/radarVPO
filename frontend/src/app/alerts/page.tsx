@@ -3,9 +3,11 @@ import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
+import { AlertsProCtaBand } from '@/components/conversion/alerts-pro-cta-band';
 import { AlertTimeline } from '@/components/saas/alert-timeline';
 import { StructuredData } from '@/components/structured-data';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
+import { getDaysRemaining, shouldShowAlert } from '@/lib/alert-countdown';
 import { isAmendmentPublication } from '@/lib/promotion-content-filters';
 
 export const metadata: Metadata = createMetadata({
@@ -17,9 +19,11 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function AlertsPage() {
-  const alerts = (await api.getAlerts().catch(() => [])).filter(
-    (item) => !isAmendmentPublication(item.title),
-  );
+  const alerts = (await api.getAlerts().catch(() => [])).filter((item) => {
+    if (isAmendmentPublication(item.title)) return false;
+    const daysRemaining = getDaysRemaining(item.estimatedPublicationDate);
+    return daysRemaining === null || shouldShowAlert(daysRemaining);
+  });
 
   return (
     <PublicPage>
@@ -32,9 +36,9 @@ export default async function AlertsPage() {
 
       <PublicPageHero
         badge={copy.upcomingLaunches}
-        title="Sabe qué puede salir"
-        titleAccent="antes de que se publique"
-        description="Monitorizamos señales de vivienda protegida en Cataluña. Consulta los lanzamientos aquí; con VPO PRO te avisamos por SMS y email."
+        title="Próximos lanzamientos"
+        titleAccent="con fecha estimada"
+        description="Promociones que podrían publicarse próximamente en Cataluña. Las fechas son estimaciones: pueden no cumplirse o no llegar a publicarse. Con Radar VPO PRO te avisamos por SMS y email."
         actions={
           <div className="lp-hero__actions lp-hero__actions--stack">
             <ButtonLink href="/promotions" size="lg" block>
@@ -46,8 +50,8 @@ export default async function AlertsPage() {
 
       <PublicSection id="lanzamientos" animated={false}>
         <SectionHeader
-          title="Timeline de lanzamientos"
-          description="Cuenta atrás y ubicación. Activa VPO PRO para recibir avisos por SMS y email."
+          title="Lanzamientos previstos"
+          description="Fecha estimada y ubicación. La única fecha oficial es la de publicación de la promoción."
         />
 
         {alerts.length === 0 ? (
@@ -65,6 +69,14 @@ export default async function AlertsPage() {
             <AlertTimeline alerts={alerts} />
           </div>
         )}
+      </PublicSection>
+
+      <PublicSection animated={false} muted border>
+        <AlertsProCtaBand
+          title="Avisos cuando se confirme una publicación"
+          description="Estas fechas son estimaciones. Con Radar VPO PRO te avisamos por email y SMS cuando se publica una promoción o detectamos un próximo lanzamiento."
+          ctaLabel="Ver Radar VPO PRO"
+        />
       </PublicSection>
     </PublicPage>
   );

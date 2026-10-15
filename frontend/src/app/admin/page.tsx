@@ -77,7 +77,7 @@ export default function AdminPage() {
           <PageHero
             eyebrow="Panel de administración"
             title="Centro operativo para contenido, usuarios y promociones"
-            description="Solo datos clave y accesos directos. La gestión operativa está separada en Promociones, Avisos, Cursos, Acompañamiento, Compras y Anulaciones."
+            description="Solo datos clave y accesos directos. La gestión operativa está separada en Promociones, Avisos, Cursos, Compras y Anulaciones."
             actions={
               <>
                 <ButtonLink href="/admin/promotions">Promociones</ButtonLink>
@@ -99,7 +99,6 @@ export default function AdminPage() {
                 ['/admin/promotions', '10 promociones principales'],
                 ['/admin/alerts', 'Avisos pendientes'],
                 ['/admin/courses', 'Cursos'],
-                ['/admin/services', 'Acompañamiento'],
                 ['/admin/access', 'Compras y accesos'],
                 ['/admin/cancellations', 'Anulaciones PRO'],
               ].map(([href, label]) => (

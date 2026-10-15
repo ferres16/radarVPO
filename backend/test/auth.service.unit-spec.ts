@@ -4,6 +4,7 @@ import { PrismaService } from '../src/prisma/prisma.service';
 import { UsersService } from '../src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { NotificationsService } from '../src/notifications/notifications.service';
 
 describe('AuthService', () => {
   it('should be defined', async () => {
@@ -24,6 +25,10 @@ describe('AuthService', () => {
         },
         {
           provide: ConfigService,
+          useValue: {},
+        },
+        {
+          provide: NotificationsService,
           useValue: {},
         },
       ],

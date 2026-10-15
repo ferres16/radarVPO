@@ -1,15 +1,28 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty()
   @IsEmail()
   email!: string;
 
-  @ApiProperty()
+  @ApiPropertyOptional({
+    description: 'Opcional. Solo se usa para los avisos por SMS de PRO.',
+  })
+  @IsOptional()
   @IsString()
-  @MinLength(7)
-  phone!: string;
+  @MaxLength(30)
+  @Matches(/^(\+?[0-9][0-9\s-]{6,20})?$/, {
+    message: 'El teléfono no tiene un formato válido.',
+  })
+  phone?: string;
 
   @ApiProperty()
   @IsString()

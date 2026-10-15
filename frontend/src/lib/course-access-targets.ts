@@ -1,5 +1,4 @@
-import { proHref, proPlan } from '@/lib/pro';
-import { isSafeExternalCheckoutUrl } from '@/lib/checkout-url';
+import { formatEuro, getCheckoutHref, getCoursePrice, isCourseFree, isCourseSellable } from '@/lib/offer';
 import type { Course } from '@/types';
 
 export function getFirstLessonSlug(course: Pick<Course, 'modules'>): string | null {
@@ -25,48 +24,38 @@ export type CourseAccessTargets = {
 
 export const COURSE_PURCHASE_ANCHOR = '#precio';
 
+/**
+ * Destinos de los botones de un curso.
+ * - Con acceso: entra al curso.
+ * - Sin acceso y a la venta: checkout integrado (pago + activación automática).
+ * - Sin acceso y todavía en preparación: no se vende; lleva al programa.
+ */
 export function buildCourseAccessTargets(course: Course): CourseAccessTargets {
   const lessonSlug = getFirstLessonSlug(course);
   const entryHref = getCourseEntryHref(course);
-  const includedInPro = course.accessType === 'pro';
-  const isFree = course.pricingType === 'free' || course.accessType === 'free';
-  const coursePageHref = `/cursos/${course.slug}${COURSE_PURCHASE_ANCHOR}`;
+  const accessLabel = lessonSlug ? 'Continuar curso' : 'Ver índice';
+  const base = { accessHref: entryHref, accessLabel, hasLessons: Boolean(lessonSlug) };
 
-  if (includedInPro) {
+  if (isCourseFree(course)) {
     return {
-      accessHref: entryHref,
-      lockedHref: proHref,
-      lockedLabel: proPlan.ctaLabel,
-      accessLabel: lessonSlug ? 'Continuar curso' : 'Ver índice',
-      hasLessons: Boolean(lessonSlug),
+      ...base,
+      lockedHref: `/cursos/${course.slug}${COURSE_PURCHASE_ANCHOR}`,
+      lockedLabel: 'Acceder al curso',
     };
   }
 
-  if (course.stripePaymentLink && isSafeExternalCheckoutUrl(course.stripePaymentLink)) {
+  if (isCourseSellable(course)) {
+    const price = getCoursePrice(course);
     return {
-      accessHref: entryHref,
-      lockedHref: course.stripePaymentLink,
-      lockedLabel: 'Comprar curso',
-      accessLabel: lessonSlug ? 'Continuar curso' : 'Ver índice',
-      hasLessons: Boolean(lessonSlug),
-    };
-  }
-
-  if (isFree) {
-    return {
-      accessHref: entryHref,
-      lockedHref: coursePageHref,
-      lockedLabel: 'Comprar curso',
-      accessLabel: lessonSlug ? 'Continuar curso' : 'Ver índice',
-      hasLessons: Boolean(lessonSlug),
+      ...base,
+      lockedHref: getCheckoutHref('course', course.slug),
+      lockedLabel: price !== null ? `Comprar curso · ${formatEuro(price)}` : 'Comprar curso',
     };
   }
 
   return {
-    accessHref: entryHref,
-    lockedHref: coursePageHref,
-    lockedLabel: 'Comprar curso',
-    accessLabel: lessonSlug ? 'Continuar curso' : 'Ver índice',
-    hasLessons: Boolean(lessonSlug),
+    ...base,
+    lockedHref: `/cursos/${course.slug}#indice`,
+    lockedLabel: 'Ver programa',
   };
 }

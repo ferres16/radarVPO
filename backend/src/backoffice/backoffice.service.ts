@@ -10,8 +10,6 @@ import {
   FileEntityType,
   Prisma,
   PromotionStatus,
-  ServiceStatus,
-  ServiceType,
   SubscriptionStatus,
   UserPlan,
   UserRole,
@@ -33,7 +31,6 @@ import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
 import { CreateNewsItemDto } from './dto/create-news-item.dto';
 import { CreatePromotionDto } from './dto/create-promotion.dto';
-import { CreateServiceDto } from './dto/create-service.dto';
 import {
   BackofficeListDto,
   BackofficeListFilesDto,
@@ -50,7 +47,6 @@ import { UpdateCourseModuleDto } from './dto/update-course-module.dto';
 import { UpdatePromotionStatusDto } from './dto/update-promotion-status.dto';
 import { UpdatePromotionDto } from './dto/update-promotion.dto';
 import { UpdatePromotionDocumentDto } from './dto/update-promotion-document.dto';
-import { UpdateServiceDto } from './dto/update-service.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UploadCourseBlockAssetDto } from './dto/upload-course-block-asset.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
@@ -521,86 +517,6 @@ export class BackofficeService {
             : undefined,
       },
     });
-  }
-
-  async listServices(query: BackofficeListDto) {
-    const limit = Math.min(query.limit ?? 100, 500);
-    const offset = query.offset ?? 0;
-    const search = query.q?.trim();
-    return this.prisma.service.findMany({
-      where: search
-        ? {
-            OR: [
-              { key: { contains: search, mode: 'insensitive' } },
-              { name: { contains: search, mode: 'insensitive' } },
-              { description: { contains: search, mode: 'insensitive' } },
-            ],
-          }
-        : undefined,
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      skip: offset,
-    });
-  }
-
-  async createService(dto: CreateServiceDto) {
-    return this.prisma.service.create({
-      data: {
-        key: dto.key,
-        name: dto.name,
-        description: this.nullableText(dto.description),
-        price: this.nullableDecimal(dto.price),
-        salePrice: this.nullableDecimal(dto.salePrice),
-        currency: this.nullableText(dto.currency),
-        status: dto.status ?? ServiceStatus.active,
-        serviceType: dto.serviceType ?? ServiceType.manual,
-        stripePaymentLink: this.nullableText(dto.stripePaymentLink),
-      },
-    });
-  }
-
-  async updateService(serviceId: string, dto: UpdateServiceDto) {
-    return this.prisma.service.update({
-      where: { id: serviceId },
-      data: {
-        key: dto.key,
-        name: dto.name,
-        description: this.nullableText(dto.description),
-        price: this.nullableDecimal(dto.price),
-        salePrice: this.nullableDecimal(dto.salePrice),
-        currency: this.nullableText(dto.currency),
-        status: dto.status,
-        serviceType: dto.serviceType,
-        stripePaymentLink: this.nullableText(dto.stripePaymentLink),
-      },
-    });
-  }
-
-  async deleteService(serviceId: string) {
-    const service = await this.prisma.service.findUnique({
-      where: { id: serviceId },
-    });
-
-    if (!service) {
-      throw new NotFoundException('Service not found');
-    }
-
-    const activeAccess = await this.prisma.userServiceAccess.count({
-      where: { serviceId, isActive: true },
-    });
-
-    if (activeAccess > 0) {
-      const archived = await this.prisma.service.update({
-        where: { id: serviceId },
-        data: { status: ServiceStatus.archived },
-      });
-      return { deleted: false, softDeleted: true, service: archived };
-    }
-
-    await this.fileStorage.deleteAssetsForEntity('service', serviceId);
-    await this.prisma.userServiceAccess.deleteMany({ where: { serviceId } });
-    await this.prisma.service.delete({ where: { id: serviceId } });
-    return { deleted: true, softDeleted: false };
   }
 
   async listAccessUsers(query: BackofficeListDto) {
@@ -1459,23 +1375,28 @@ export class BackofficeService {
   async updatePromotion(promotionId: string, dto: UpdatePromotionDto) {
     await this.ensurePromotion(promotionId);
 
-    const data: Prisma.PromotionUpdateInput = {
-      title: dto.title,
-      location: dto.location,
-      municipality: dto.municipality,
-      province: dto.province,
-      promotionType: dto.promotionType,
-      promoter: dto.promoter,
-      totalHomes: dto.totalHomes,
-      publicDescription: dto.publicDescription,
-      availableUnitsText: dto.availableUnitsText,
-      statusMessage: dto.statusMessage,
-      importantDates: this.parseJsonField(dto.importantDatesJson),
-      requirements: this.parseJsonField(dto.requirementsJson),
-      economicInfo: this.parseJsonField(dto.economicInfoJson),
-      feesAndReservations: this.parseJsonField(dto.feesAndReservationsJson),
-      contactInfo: this.parseJsonField(dto.contactInfoJson),
-    };
+    const data: Prisma.PromotionUpdateInput = {};
+    if (dto.title !== undefined) data.title = dto.title;
+    if (dto.location !== undefined) data.location = dto.location;
+    if (dto.municipality !== undefined) data.municipality = dto.municipality;
+    if (dto.province !== undefined) data.province = dto.province;
+    if (dto.promotionType !== undefined) data.promotionType = dto.promotionType;
+    if (dto.promoter !== undefined) data.promoter = dto.promoter;
+    if (dto.totalHomes !== undefined) data.totalHomes = dto.totalHomes;
+    if (dto.publicDescription !== undefined) data.publicDescription = dto.publicDescription;
+    if (dto.availableUnitsText !== undefined) data.availableUnitsText = dto.availableUnitsText;
+    if (dto.statusMessage !== undefined) data.statusMessage = dto.statusMessage;
+
+    const importantDates = this.parseJsonField(dto.importantDatesJson);
+    if (importantDates !== undefined) data.importantDates = importantDates;
+    const requirements = this.parseJsonField(dto.requirementsJson);
+    if (requirements !== undefined) data.requirements = requirements;
+    const economicInfo = this.parseJsonField(dto.economicInfoJson);
+    if (economicInfo !== undefined) data.economicInfo = economicInfo;
+    const feesAndReservations = this.parseJsonField(dto.feesAndReservationsJson);
+    if (feesAndReservations !== undefined) data.feesAndReservations = feesAndReservations;
+    const contactInfo = this.parseJsonField(dto.contactInfoJson);
+    if (contactInfo !== undefined) data.contactInfo = contactInfo;
 
     return this.prisma.promotion.update({
       where: { id: promotionId },

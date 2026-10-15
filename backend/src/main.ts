@@ -9,7 +9,10 @@ import { AppModule } from './app.module';
 import { buildAllowedOriginSet, resolveOrigin } from './common/request-origin';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, new ExpressAdapter());
+  // rawBody: necesario para verificar la firma de los webhooks de Stripe.
+  const app = await NestFactory.create(AppModule, new ExpressAdapter(), {
+    rawBody: true,
+  });
   const isProduction = process.env.NODE_ENV === 'production';
   const configuredOrigins = [
     process.env.CORS_ORIGIN,

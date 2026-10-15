@@ -24,6 +24,8 @@ type CourseModuleIndexProps = {
   activeLessonSlug?: string;
   defaultOpenFirst?: boolean;
   locked?: boolean;
+  /** Slug de la lección de muestra gratuita (si el curso la tiene). */
+  previewLessonSlug?: string | null;
 };
 
 function findLessonStatus(
@@ -41,6 +43,7 @@ export function CourseModuleIndex({
   activeLessonSlug,
   defaultOpenFirst = true,
   locked = false,
+  previewLessonSlug = null,
 }: CourseModuleIndexProps) {
   return (
     <div className="space-y-3">
@@ -62,8 +65,9 @@ export function CourseModuleIndex({
               </h3>
             </div>
             <span className="shrink-0 rounded-full bg-[var(--bg-eco)] px-2.5 py-1 text-[10px] font-bold text-[var(--green-700)] md:text-xs">
-              {module.lessons?.length || 0}{' '}
-              {(module.lessons?.length || 0) === 1 ? 'lección' : 'lecciones'}
+              {(module.lessons?.length || 0) === 0
+                ? 'Próximamente'
+                : `${module.lessons?.length} ${module.lessons?.length === 1 ? 'lección' : 'lecciones'}`}
             </span>
           </summary>
           <div className="mt-3 space-y-2">
@@ -148,12 +152,17 @@ export function CourseModuleIndex({
                   courseSlug={courseSlug}
                   lessonSlug={lesson.slug}
                   className={baseClass}
+                  isPreview={previewLessonSlug === lesson.slug}
                 >
                   <span className="min-w-0 text-pretty break-words font-semibold text-[var(--ink)]">
                     {lesson.title}
                   </span>
                   <span className="shrink-0 text-xs font-medium text-[var(--ink-soft)]">
-                    {lesson.durationMinutes ? `${lesson.durationMinutes} min` : 'Lección'}
+                    {previewLessonSlug === lesson.slug
+                      ? 'Muestra gratuita'
+                      : lesson.durationMinutes
+                        ? `${lesson.durationMinutes} min`
+                        : 'Lección'}
                   </span>
                 </CourseLessonAccessLink>
               );

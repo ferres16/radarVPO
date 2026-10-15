@@ -19,6 +19,21 @@ export type Promotion = {
   publicDescription?: string | null;
   availableUnitsText?: string | null;
   sourceUrl: string;
+  /** Número de PDF oficiales públicos asociados (solo en listados). */
+  pdfCount?: number;
+};
+
+export type FavoriteStage = 'interested' | 'preparing' | 'applied' | 'discarded';
+
+/** Promoción guardada en "Mi espacio" con el seguimiento personal del usuario. */
+export type SavedPromotion = {
+  id: string;
+  stage: FavoriteStage;
+  notes: string | null;
+  checklistDone: string[];
+  createdAt: string;
+  updatedAt: string;
+  promotion: Promotion;
 };
 
 export type UserProfile = {
@@ -187,7 +202,7 @@ export type CourseAssetKind = 'cover' | 'image' | 'video' | 'document' | 'attach
 
 export type CourseAccessDecision = {
   canAccess: boolean;
-  reason: 'free' | 'plan' | 'entitlement' | 'purchase' | 'subscription' | 'service' | 'manual' | 'locked';
+  reason: 'free' | 'preview' | 'plan' | 'entitlement' | 'purchase' | 'subscription' | 'service' | 'manual' | 'locked';
 };
 
 export type CourseResource = {
