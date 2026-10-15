@@ -31,6 +31,15 @@ function promotionTypeLabel(type: Promotion['promotionType']) {
   return type.charAt(0).toUpperCase() + type.slice(1);
 }
 
+function placeLabel(promotion: Promotion) {
+  const municipality = promotion.municipality?.trim() || '';
+  const province = promotion.province?.trim() || '';
+  if (municipality && province && municipality !== province) {
+    return `${municipality}, ${province}`;
+  }
+  return municipality || province || null;
+}
+
 function CardShell({
   animated,
   className,
@@ -114,6 +123,9 @@ export function PromotionCard({
         <h3 className="mt-3 line-clamp-3 text-[1.0625rem] font-bold leading-snug text-[var(--ink)] group-hover:text-[var(--green-700)] md:text-lg">
           {titleOverride || promotion.title}
         </h3>
+        {placeLabel(promotion) ? (
+          <p className="mt-2 text-sm font-semibold text-[var(--ink)]">{placeLabel(promotion)}</p>
+        ) : null}
         <div className="mt-3 flex flex-wrap gap-2">
           <span className="chip text-xs">{promotionTypeLabel(promotion.promotionType)}</span>
           {dateLabel ? <span className="chip text-xs">{dateLabel}</span> : null}
@@ -143,6 +155,9 @@ export function PromotionCard({
         <h3 className="display-type mt-3 text-lg font-black leading-snug text-[var(--ink)] group-hover:text-[var(--green-700)] md:text-xl md:leading-6">
           {titleOverride || promotion.title}
         </h3>
+        {placeLabel(promotion) ? (
+          <p className="mt-2 text-sm font-semibold text-[var(--ink)]">{placeLabel(promotion)}</p>
+        ) : null}
       </div>
 
       <div className="flex flex-1 flex-col px-5 py-4 md:px-6 md:pb-5">

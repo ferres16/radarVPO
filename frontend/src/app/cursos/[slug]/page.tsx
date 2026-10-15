@@ -10,6 +10,7 @@ import { CourseHubSection } from '@/components/course-hub-section';
 import { CourseModuleIndex } from '@/components/course-module-index';
 import { CoursePublicIndex } from '@/components/course-public-index';
 import { CourseStickyBuyBar } from '@/components/course-sticky-buy-bar';
+import { PageViewTracker } from '@/components/conversion/page-view-tracker';
 import { PublicPage } from '@/components/conversion/public-shell';
 import { StructuredData } from '@/components/structured-data';
 import { buildCourseAccessTargets } from '@/lib/course-access-targets';
@@ -144,6 +145,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
 
   return (
     <PublicPage className={canAccess ? undefined : 'course-detail--locked'}>
+      <PageViewTracker event="course_page_viewed" properties={{ course: course.slug, sellable: status.sellable }} />
       <StructuredData
         data={[
           breadcrumbJsonLd([
@@ -303,6 +305,18 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                         <li key={line}>{line}</li>
                       ))}
                     </ul>
+                    {editorial.outcomes.length > 0 ? (
+                      <>
+                        <p className="mt-5 text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
+                          Qué sabrás hacer
+                        </p>
+                        <ul className="mt-3 space-y-2 text-sm leading-6 text-[var(--ink-soft)]">
+                          {editorial.outcomes.map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : null}
                   </article>
                 ) : null}
 

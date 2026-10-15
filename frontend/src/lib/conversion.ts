@@ -1,53 +1,46 @@
 import { FREE_SAVED_PROMOTIONS_LIMIT } from '@/lib/my-space';
 import { proPriceLabel } from '@/lib/offer';
 
-/** Problemas reales de quien solicita vivienda protegida (sin cifras ni promesas). */
-export const homeProblemCards = [
-  {
-    title: 'La información está dispersa',
-    description:
-      'Las promociones y sus bases se publican en distintos sitios y en documentos largos que cuesta localizar.',
-  },
-  {
-    title: 'Cuesta saber si cumples los requisitos',
-    description:
-      'Cada promoción tiene sus propias condiciones, y los plazos y la documentación pueden sorprender.',
-  },
-  {
-    title: 'Se pierde el hilo de lo que sigues',
-    description:
-      'Con varias promociones a la vez, es fácil olvidar qué has leído, qué falta y qué has presentado ya.',
-  },
-] as const;
-
-/** Tres caminos de entrada: consultar, aprender, avisos. */
-export const homePaths = [
+/** Tres capas de la oferta, con una acción cada una. */
+export const homeOfferLayers = [
   {
     id: 'consult',
     eyebrow: 'Gratis',
     title: 'Consulta las promociones',
-    description:
-      'Mira las promociones publicadas y abre directamente su documento oficial, sin registrarte.',
+    price: '0 €',
+    description: `Abre el PDF oficial de cada convocatoria sin cuenta. Con registro puedes guardar hasta ${FREE_SAVED_PROMOTIONS_LIMIT} promociones.`,
     cta: 'Ver promociones',
     href: '/promotions',
+    event: 'promotion_list_cta_clicked' as const,
   },
   {
     id: 'learn',
-    eyebrow: 'Curso',
+    eyebrow: 'Curso · pago único',
     title: 'Aprende a preparar tu solicitud',
+    price: 'Precio final en la ficha',
     description:
-      'Un curso práctico para entender el proceso: qué es una VPO, requisitos, registro de solicitantes y cómo leer los anuncios.',
+      'Un programa práctico para entender el proceso y leer las bases. No es una suscripción: pagas una vez.',
     cta: 'Ver el curso',
     href: '/cursos',
+    event: 'course_cta_clicked' as const,
   },
   {
     id: 'pro',
     eyebrow: 'Suscripción',
-    title: 'Recibe avisos y organízate',
-    description: `Avisos por email y SMS de nuevas promociones y un espacio para organizar las que sigues. ${proPriceLabel}.`,
+    title: 'Avisos por SMS y organización',
+    price: proPriceLabel,
+    description:
+      'Email y SMS cuando se publica una promoción, Mi espacio sin límite y el curso inicial mientras esté activa.',
     cta: 'Ver Radar VPO PRO',
     href: '/pro',
+    event: 'pro_cta_clicked' as const,
   },
+] as const;
+
+export const homeHeroProof = [
+  'Consultar promociones y su PDF oficial es gratis, sin registrarte.',
+  'El curso es pago único: ves el programa y el precio antes de comprar.',
+  `PRO (${proPriceLabel}) añade SMS, espacio ilimitado y el curso inicial mientras esté activa.`,
 ] as const;
 
 export const homeFaqs = [
@@ -65,9 +58,19 @@ export const homeFaqs = [
     answer: `Una suscripción de ${proPriceLabel} que añade avisos por email y SMS de nuevas promociones, Mi espacio sin límite y acceso al curso inicial mientras esté activa. Se cancela desde Mi cuenta.`,
   },
   {
+    question: 'Hay avisos por correo gratis en otros sitios. ¿Por qué PRO?',
+    answer:
+      'PRO no se vende por el correo. Añade el aviso por SMS (si indicas tu móvil), un espacio personal con cuenta —checklist, etapa y notas en cualquier dispositivo— y el curso inicial mientras la suscripción esté activa. El email, solo, no es el motivo de pago.',
+  },
+  {
     question: '¿Los cursos son una suscripción?',
     answer:
-      'No. Cada curso es un pago único con el precio final visible antes de pagar; no hay renovaciones.',
+      'No. Cada curso es un pago único con el precio final visible antes de pagar; no hay renovaciones. Si cancelas PRO, conservas un curso que hayas comprado.',
+  },
+  {
+    question: '¿Qué curso incluye PRO?',
+    answer:
+      'El curso inicial, mientras la suscripción esté activa. El avanzado, si está a la venta, se compra aparte. En cada ficha se indica el estado real del contenido.',
   },
   {
     question: '¿Radar VPO presenta la solicitud por mí o me asesora individualmente?',
@@ -80,3 +83,11 @@ export const homeFaqs = [
       'No. La adjudicación depende siempre de los organismos oficiales. Radar VPO te ayuda a informarte y a prepararte.',
   },
 ] as const;
+
+export const pdfNextStep = {
+  title: '¿No sabes qué comprobar en estas bases?',
+  description:
+    'El visor te muestra el documento oficial. El curso te explica cómo leerlo y qué pasos suele exigir una solicitud.',
+  cta: 'Ver el curso',
+  href: '/cursos',
+} as const;

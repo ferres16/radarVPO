@@ -144,6 +144,7 @@ export function describeCourseFormat(course: Pick<Course, 'modules'>): string[] 
  */
 export type CourseEditorial = {
   audience: string[];
+  outcomes: string[];
 };
 
 export const courseEditorial: Record<string, CourseEditorial> = {
@@ -152,10 +153,18 @@ export const courseEditorial: Record<string, CourseEditorial> = {
       'Personas que nunca han solicitado una vivienda protegida y quieren entender el proceso desde cero.',
       'Quien ya ha mirado alguna promoción pero no tiene claro si cumple los requisitos ni qué papeles hacen falta.',
     ],
+    outcomes: [
+      'Distinguir qué es una VPO/HPO y qué no garantiza el proceso.',
+      'Saber qué mirar en unas bases oficiales antes de presentar nada.',
+      'Ordenar los pasos previos: registro de solicitantes, requisitos y documentación.',
+    ],
   },
   cursoavanzado: {
     audience: [
       'Quien ya entiende el proceso básico y quiere profundizar cuando el programa esté publicado completo.',
+    ],
+    outcomes: [
+      'El programa detallado aparece en el índice cuando hay lecciones publicadas.',
     ],
   },
 };

@@ -2,8 +2,9 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { ButtonLink } from '@/components/design-system';
+import { TrackedButtonLink } from '@/components/tracked-link';
 import { useOptionalProAccess } from '@/components/pro-access-provider';
+import { trackEvent } from '@/lib/analytics';
 import { getProHref, proPlan } from '@/lib/pro';
 
 type ProCtaProps = {
@@ -32,9 +33,17 @@ export function ProCta({
   }
 
   return (
-    <ButtonLink href={href} size={size} block={block} variant={variant} className={className}>
+    <TrackedButtonLink
+      href={href}
+      size={size}
+      block={block}
+      variant={variant}
+      className={className}
+      event="pro_cta_clicked"
+      eventProperties={{ source: 'pro_cta' }}
+    >
       {content}
-    </ButtonLink>
+    </TrackedButtonLink>
   );
 }
 
@@ -56,7 +65,7 @@ export function ProCtaLink({
   }
 
   return (
-    <Link href={href} className={className}>
+    <Link href={href} className={className} onClick={() => trackEvent('pro_cta_clicked', { source: 'nav' })}>
       {content}
     </Link>
   );

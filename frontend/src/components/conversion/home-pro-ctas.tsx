@@ -1,18 +1,31 @@
 'use client';
 
-import { ButtonLink } from '@/components/design-system';
+import { TrackedButtonLink } from '@/components/tracked-link';
 import { ProGate } from '@/components/pro/pro-cta';
 import { proPlan } from '@/lib/pro';
 
 export function HomeHeroActions() {
   return (
     <div className="lp-hero__actions lp-hero__actions--stack">
-      <ButtonLink href="/promotions" size="lg" block>
+      <TrackedButtonLink
+        href="/promotions"
+        size="lg"
+        block
+        event="promotion_list_cta_clicked"
+        eventProperties={{ source: 'home_hero' }}
+      >
         Ver promociones
-      </ButtonLink>
-      <ButtonLink href="/cursos" variant="secondary" size="lg" block>
-        Aprender a preparar mi solicitud
-      </ButtonLink>
+      </TrackedButtonLink>
+      <TrackedButtonLink
+        href="/cursos"
+        variant="secondary"
+        size="lg"
+        block
+        event="course_cta_clicked"
+        eventProperties={{ source: 'home_hero' }}
+      >
+        Ver el curso
+      </TrackedButtonLink>
     </div>
   );
 }
@@ -22,16 +35,22 @@ export function HomeFinalCtaBand() {
     <ProGate>
       <div className="public-cta-band">
         <div>
-          <h2 className="lp-title lp-title--sm">¿Quieres que te avisemos?</h2>
+          <h2 className="lp-title lp-title--sm">Avisos por SMS y espacio sin límite</h2>
           <p className="lp-lead">
-            {proPlan.name} envía avisos por email y SMS cuando se publica una nueva promoción y te da un espacio para
-            organizarlas. {proPlan.price}.
+            Consultar PDF es gratis. {proPlan.name} añade el aviso en el móvil, organización en tu cuenta y el curso
+            inicial mientras esté activa. {proPlan.price}. Cancelas desde Mi cuenta.
           </p>
         </div>
         <div className="public-cta-band__actions">
-          <ButtonLink href={proPlan.landingHref} size="lg" block>
+          <TrackedButtonLink
+            href={proPlan.landingHref}
+            size="lg"
+            block
+            event="pro_cta_clicked"
+            eventProperties={{ source: 'home_final' }}
+          >
             Ver Radar VPO PRO
-          </ButtonLink>
+          </TrackedButtonLink>
         </div>
       </div>
     </ProGate>

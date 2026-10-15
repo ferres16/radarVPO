@@ -56,26 +56,52 @@ export const proIncludes = [
     title: 'Avisos por email',
     description:
       'Te escribimos cuando se publica una nueva promoción y cuando detectamos un próximo lanzamiento.',
-    icon: '📧',
   },
   {
     title: 'Avisos por SMS',
-    description: 'El mismo aviso en el móvil, si has indicado tu número en tu cuenta.',
-    icon: '📱',
+    description:
+      'El mismo aviso en el móvil, si has indicado tu número en tu cuenta. Es el canal que no está regalado en los avisos gratuitos de terceros.',
   },
   {
     title: 'Mi espacio sin límite',
     description:
-      'Guarda todas las promociones que te interesen y sigue tu preparación con una lista de pasos.',
-    icon: '🗂️',
+      'Guarda las promociones en tu cuenta —no solo en este navegador—, marca la etapa y sigue una lista de pasos.',
   },
   {
     title: 'Curso VPO Inicial incluido',
     description:
-      'Acceso al curso inicial mientras tu suscripción esté activa (consulta en la página del curso cuántas lecciones hay publicadas).',
-    icon: '📚',
+      'Acceso al curso inicial mientras tu suscripción esté activa. Si lo compras aparte, lo conservas aunque canceles PRO.',
   },
 ] as const;
+
+/** Por qué pagar PRO cuando ya hay avisos y guías gratis. Solo hechos del producto. */
+export const proWhyPay = [
+  {
+    title: 'SMS, no solo correo',
+    body: 'Hay avisos por email gratuitos de otros sitios, a menudo con filtro por municipio. PRO añade el aviso por SMS si tu cuenta tiene un móvil válido.',
+  },
+  {
+    title: 'Espacio con cuenta',
+    body: `Con la cuenta gratuita guardas hasta 3 promociones. PRO quita el límite. Los favoritos van con tu usuario: checklist, etapa y notas en cualquier dispositivo.`,
+  },
+  {
+    title: 'Curso inicial mientras esté activa',
+    body: 'Si aún no has comprado el curso, PRO lo incluye durante la suscripción. La compra del curso es pago único y se conserva si cancelas.',
+  },
+] as const;
+
+export const proForWhom = {
+  yes: [
+    'Quieres enterarte en el móvil cuando se publica una convocatoria, no solo al abrir el correo.',
+    'Sigues varias promociones y necesitas una lista con pasos, no un marcador del navegador.',
+    'Quieres el curso inicial ahora y aún no lo has comprado.',
+  ],
+  no: [
+    'Solo quieres mirar PDFs de vez en cuando: eso es gratis, sin PRO.',
+    'Buscas filtro de avisos por municipio: hoy PRO avisa de las promociones que detectamos, sin ese filtro.',
+    'Esperas que presentemos la solicitud o te asesoremos en tu caso: no lo hacemos.',
+  ],
+} as const;
 
 export const proLimits = [
   'Los avisos cubren las promociones que Radar VPO detecta en las fuentes oficiales que monitoriza; hoy no se pueden filtrar por municipio.',
@@ -94,6 +120,11 @@ export const proFaqs = [
     question: '¿Qué puedo hacer gratis?',
     answer:
       'Consultar todas las promociones, abrir su documento oficial en PDF, guardar hasta 3 promociones en Mi espacio y leer la lección de muestra del curso inicial.',
+  },
+  {
+    question: 'Hay avisos por correo gratis. ¿Qué añade PRO?',
+    answer:
+      'El aviso por SMS si indicas tu móvil, Mi espacio sin límite con cuenta, y el curso inicial mientras la suscripción esté activa. El correo, por sí solo, no es el motivo para pagar.',
   },
   {
     question: '¿Cuánto cuesta y cómo se cobra?',

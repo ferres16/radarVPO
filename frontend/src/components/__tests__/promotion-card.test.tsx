@@ -27,6 +27,7 @@ describe('PromotionCard', () => {
     );
 
     expect(screen.getByText('Promocion Demo')).toBeInTheDocument();
+    expect(screen.getByText('Barcelona')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ver PDF de la promoción' })).toBeInTheDocument();
   });
 });

@@ -109,7 +109,7 @@ export function ProStatusCard({ profile, onProfileUpdate }: ProStatusCardProps) 
           <ul className="mt-4 space-y-2">
             {proIncludes.map((item) => (
               <li key={item.title} className="flex items-start gap-2 text-sm text-[var(--ink)]">
-                <span aria-hidden="true">{item.icon}</span>
+                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" aria-hidden="true" />
                 <span>
                   <strong>{item.title}</strong>
                   <span className="block text-[var(--ink-soft)]">{item.description}</span>

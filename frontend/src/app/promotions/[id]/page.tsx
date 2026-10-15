@@ -10,6 +10,7 @@ import { ButtonLink } from '@/components/design-system';
 import { PromotionPdfViewer } from '@/components/pdf-viewer/promotion-pdf-viewer';
 import { SavePromotionButton } from '@/components/save-promotion-button';
 import { StructuredData } from '@/components/structured-data';
+import { pdfNextStep } from '@/lib/conversion';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
 type PromotionDetailParams = {
@@ -125,6 +126,16 @@ export default async function PromotionDetailPage({ params }: PromotionDetailPar
           </div>
         </section>
       )}
+
+      <section className="premium-card p-4 md:p-6" aria-labelledby="pdf-next-title">
+        <h2 id="pdf-next-title" className="text-lg font-bold text-[var(--ink)]">
+          {pdfNextStep.title}
+        </h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">{pdfNextStep.description}</p>
+        <div className="mt-4">
+          <ButtonLink href={pdfNextStep.href}>{pdfNextStep.cta}</ButtonLink>
+        </div>
+      </section>
 
       <p className="px-1 text-xs leading-5 text-[var(--ink-soft)]">
         Documentos publicados por la administración y mostrados tal cual. Radar VPO es un servicio

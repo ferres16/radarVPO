@@ -1,14 +1,13 @@
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
-import { PromotionCard } from '@/components/promotion-card';
 import { InlineAdCard } from '@/components/ads';
 import { AlertsProCtaBand } from '@/components/conversion/alerts-pro-cta-band';
+import { PromotionsExplorer } from '@/components/conversion/promotions-explorer';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
-import { canViewPromotionDocument } from '@/lib/promotion-access';
-import { isAmendmentPublication } from '@/lib/promotion-content-filters';
+import { publicPublishedPromotions } from '@/lib/public-promotions';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
 export const revalidate = 30;
@@ -23,14 +22,7 @@ export const metadata: Metadata = createMetadata({
 
 export default async function PromotionsPage() {
   const promotions = await api.getPromotions('?limit=40').catch(() => []);
-  const visiblePromotions = promotions
-    .filter(
-      (item) =>
-        item.status !== 'archived' &&
-        canViewPromotionDocument(item) &&
-        !isAmendmentPublication(item.title, item.publicDescription),
-    )
-    .slice(0, 10);
+  const visiblePromotions = publicPublishedPromotions(promotions, 24);
 
   return (
     <PublicPage>
@@ -47,25 +39,22 @@ export default async function PromotionsPage() {
         title="Promociones publicadas"
         titleAccent="con su documento oficial"
         description="Abre las bases y anexos oficiales de cada promoción sin salir de Radar VPO. Es gratis y no necesitas cuenta."
-        actions={
-          <div className="lp-hero__actions lp-hero__actions--stack">
-            <ButtonLink href="/alerts" size="lg" block>
-              Ver próximos lanzamientos
-            </ButtonLink>
-          </div>
-        }
       />
 
       {visiblePromotions.length === 0 ? (
         <PublicSection animated={false}>
           <div className="empty-illus">
-            <span className="empty-illus__icon" aria-hidden="true">◎</span>
+            <span className="empty-illus__icon" aria-hidden="true">
+              ○
+            </span>
             <h2 className="lp-title mt-4 text-xl">No hay promociones publicadas ahora mismo</h2>
             <p className="mx-auto mt-2 max-w-md text-sm text-[var(--ink-soft)]">
               Consulta próximos lanzamientos mientras se publican nuevas convocatorias.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <ButtonLink href="/alerts" size="lg">Ver próximos lanzamientos</ButtonLink>
+              <ButtonLink href="/alerts" size="lg">
+                Ver próximos lanzamientos
+              </ButtonLink>
             </div>
           </div>
         </PublicSection>
@@ -73,13 +62,15 @@ export default async function PromotionsPage() {
         <PublicSection animated={false}>
           <SectionHeader
             title="Últimas promociones"
-            description={`${visiblePromotions.length} promociones publicadas en Cataluña.`}
+            description={`${visiblePromotions.length} promociones publicadas. Filtra por municipio si quieres acotar la lista.`}
           />
-          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {visiblePromotions.map((promotion) => (
-              <PromotionCard key={promotion.id} promotion={promotion} layout="grid" animated={false} />
-            ))}
-          </div>
+          <PromotionsExplorer promotions={visiblePromotions} />
+          <p className="mt-6 text-sm text-[var(--ink-soft)]">
+            ¿Aún no está publicada?{' '}
+            <ButtonLink href="/alerts" variant="secondary">
+              Ver próximos lanzamientos
+            </ButtonLink>
+          </p>
           <InlineAdCard className="mt-6" />
         </PublicSection>
       )}

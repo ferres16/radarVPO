@@ -1,29 +1,38 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { api } from '@/lib/api';
-import { ButtonLink } from '@/components/design-system';
+import { TrackedButtonLink } from '@/components/tracked-link';
 import { HomeFaq } from '@/components/conversion/home-faq';
+import { PageViewTracker } from '@/components/conversion/page-view-tracker';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
+import { SpaceDemo } from '@/components/conversion/space-demo';
 import { ProGate, ProOnlyMessage } from '@/components/pro/pro-cta';
 import { ProComparison } from '@/components/pro-comparison';
 import { StructuredData } from '@/components/structured-data';
 import { getCourseStatusSummary, isIncludedInPro } from '@/lib/offer';
-import { proFaqs, proIncludes, proLimits, proPlan } from '@/lib/pro';
+import { publicPublishedPromotions } from '@/lib/public-promotions';
+import { proFaqs, proForWhom, proIncludes, proLimits, proPlan, proWhyPay } from '@/lib/pro';
 import { breadcrumbJsonLd, createMetadata, faqJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Radar VPO PRO: avisos por email y SMS y organización de tus solicitudes',
-  description: `Suscripción mensual (${proPlan.price}) con avisos por email y SMS de nuevas promociones de vivienda protegida y un espacio para organizar tus solicitudes. Cancela cuando quieras.`,
+  title: 'Radar VPO PRO: avisos por SMS y organización de tus solicitudes',
+  description: `Suscripción mensual (${proPlan.price}) con avisos por email y SMS, Mi espacio sin límite y el curso inicial mientras esté activa. Cancela cuando quieras.`,
   path: '/pro',
   keywords: ['alertas vivienda protegida', 'avisos VPO', 'suscripción VPO'],
 });
 
 export default async function ProPage() {
-  const courses = await api.listCourses().catch(() => []);
+  const [courses, promotions] = await Promise.all([
+    api.listCourses().catch(() => []),
+    api.getPromotions('?limit=8').catch(() => []),
+  ]);
   const includedCourses = courses.filter(isIncludedInPro);
+  const sample = publicPublishedPromotions(promotions, 1)[0];
+  const samplePlace = sample?.municipality?.trim() || sample?.province?.trim() || 'tu municipio';
 
   return (
     <PublicPage>
+      <PageViewTracker event="pro_page_viewed" />
       <StructuredData
         data={[
           breadcrumbJsonLd([
@@ -37,14 +46,20 @@ export default async function ProPage() {
       <PublicPageHero
         badge="Suscripción"
         title="Radar VPO PRO"
-        titleAccent="avisos y organización"
-        description={`${proPlan.price}, con renovación mensual. Cancelas cuando quieras desde Mi cuenta y mantienes el acceso hasta el final del periodo pagado.`}
+        titleAccent="SMS, espacio y curso inicial"
+        description={`${proPlan.price}, con renovación mensual. Consultar PDF es gratis. PRO es para quien quiere el aviso en el móvil y seguir varias convocatorias en su cuenta. Cancelas cuando quieras.`}
         actions={
           <>
             <ProGate>
-              <ButtonLink href={proPlan.checkoutHref} size="lg" block>
+              <TrackedButtonLink
+                href={proPlan.checkoutHref}
+                size="lg"
+                block
+                event="pro_cta_clicked"
+                eventProperties={{ source: 'pro_hero' }}
+              >
                 {`${proPlan.ctaLabel} · ${proPlan.price}`}
-              </ButtonLink>
+              </TrackedButtonLink>
             </ProGate>
             <ProOnlyMessage>
               <p className="rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-[var(--ink)]">
@@ -61,19 +76,35 @@ export default async function ProPage() {
 
       <PublicSection>
         <div className="lp-section__head">
+          <p className="lp-eyebrow">Por qué pagar</p>
+          <h2 className="lp-title">Hay avisos y guías gratis. PRO añade otra cosa</h2>
+          <p className="lp-lead">
+            No cobramos por consultar convocatorias. PRO cubre el aviso en el móvil, la organización con cuenta y el
+            curso inicial mientras esté activa.
+          </p>
+        </div>
+        <div className="lp-why-grid">
+          {proWhyPay.map((item) => (
+            <article key={item.title} className="lp-why-card">
+              <h3 className="lp-why-card__title">{item.title}</h3>
+              <p className="lp-why-card__text">{item.body}</p>
+            </article>
+          ))}
+        </div>
+      </PublicSection>
+
+      <PublicSection muted>
+        <div className="lp-section__head">
           <p className="lp-eyebrow">Qué incluye</p>
           <h2 id="pro-includes-title" className="lp-title">
             Solo lo que funciona hoy
           </h2>
         </div>
-        <div className="lp-solution-grid">
+        <div className="lp-why-grid">
           {proIncludes.map((item) => (
-            <article key={item.title} className="lp-solution-card">
-              <span className="lp-solution-card__step" aria-hidden="true">
-                {item.icon}
-              </span>
-              <h3 className="lp-solution-card__title">{item.title}</h3>
-              <p className="lp-solution-card__text">{item.description}</p>
+            <article key={item.title} className="lp-why-card">
+              <h3 className="lp-why-card__title">{item.title}</h3>
+              <p className="lp-why-card__text">{item.description}</p>
             </article>
           ))}
         </div>
@@ -91,26 +122,58 @@ export default async function ProPage() {
         ) : null}
       </PublicSection>
 
-      <PublicSection muted>
-        <div className="lp-section__head">
-          <p className="lp-eyebrow">Ejemplo</p>
-          <h2 className="lp-title">Así es un aviso</h2>
-          <p className="lp-lead">Ejemplo ilustrativo del formato; los datos son de muestra.</p>
+      <PublicSection>
+        <div className="lp-hero__split">
+          <div>
+            <p className="lp-eyebrow">Demostración</p>
+            <h2 className="lp-title">Así llega un aviso</h2>
+            <p className="lp-lead">
+              Formato ilustrativo. Si hay una promoción publicada, usamos su municipio para que se vea el tipo de
+              mensaje; el envío real depende de las fuentes que monitorizamos.
+            </p>
+            <div className="mt-4 grid gap-4">
+              <article className="public-card p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--ink-soft)]">SMS</p>
+                <p className="mt-2 rounded-xl bg-[var(--bg-app)] p-3 text-sm text-[var(--ink)]">
+                  Radar VPO PRO: nueva promoción publicada en {samplePlace}. {sample ? 'radarvpo.com/promotions' : '[enlace]'}
+                </p>
+              </article>
+              <article className="public-card p-4">
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--ink-soft)]">Email</p>
+                <p className="mt-2 rounded-xl bg-[var(--bg-app)] p-3 text-sm text-[var(--ink)]">
+                  Nueva promoción VPO publicada{sample ? `: ${sample.title}` : ': [nombre de la promoción]'}. Puedes
+                  consultar el documento oficial aquí.
+                </p>
+              </article>
+            </div>
+          </div>
+          <SpaceDemo />
         </div>
-        <div className="mx-auto grid max-w-3xl gap-4 sm:grid-cols-2">
-          <article className="public-card p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--ink-soft)]">SMS</p>
-            <p className="mt-2 rounded-xl bg-[var(--bg-app)] p-3 text-sm text-[var(--ink)]">
-              Radar VPO PRO: nueva promoción publicada en [municipio]. [enlace]
-            </p>
-          </article>
-          <article className="public-card p-4">
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--ink-soft)]">Email</p>
-            <p className="mt-2 rounded-xl bg-[var(--bg-app)] p-3 text-sm text-[var(--ink)]">
-              Nueva promoción VPO publicada: [nombre de la promoción]. Puedes consultar el documento oficial de la
-              promoción aquí: [enlace]
-            </p>
-          </article>
+      </PublicSection>
+
+      <PublicSection muted>
+        <div className="lp-hero__split">
+          <div>
+            <p className="lp-eyebrow">Para quién</p>
+            <h2 className="lp-title">Cuándo tiene sentido y cuándo no</h2>
+            <ul className="mt-4 space-y-2 text-sm leading-6 text-[var(--ink)]">
+              {proForWhom.yes.map((item) => (
+                <li key={item} className="flex gap-2">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" aria-hidden="true" />
+                  <span>{item}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="lp-eyebrow">No es para</p>
+            <h2 className="lp-title lp-title--sm">Mejor quédate en gratis si…</h2>
+            <ul className="mt-4 space-y-2 text-sm leading-6 text-[var(--ink-soft)]">
+              {proForWhom.no.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
         </div>
       </PublicSection>
 

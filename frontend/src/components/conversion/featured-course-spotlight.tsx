@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { CourseCoverImage } from '@/components/course-cover-image';
-import { ButtonLink } from '@/components/design-system';
+import { TrackedButtonLink } from '@/components/tracked-link';
 import { formatEuro, getCoursePrice, getCourseStatusSummary } from '@/lib/offer';
 import type { Course } from '@/types';
 
@@ -43,9 +43,14 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
           </p>
         ) : null}
         <div className="spotlight-course__actions">
-          <ButtonLink href={`/cursos/${course.slug}`} size="lg">
+          <TrackedButtonLink
+            href={`/cursos/${course.slug}`}
+            size="lg"
+            event="course_cta_clicked"
+            eventProperties={{ source: 'home_spotlight', course: course.slug }}
+          >
             Ver el curso
-          </ButtonLink>
+          </TrackedButtonLink>
         </div>
       </div>
     </article>

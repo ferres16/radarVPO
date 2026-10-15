@@ -146,6 +146,15 @@ Métricas a llevar **por separado:** ventas de cursos, altas PRO, activación (w
 - Fechas de lanzamiento: estimación, sin cuenta atrás negativa.
 - Eventos de analítica del visor y del checkout.
 
+### Iteración de conversión (2026-10-15, segunda pasada)
+
+- Inicio muestra el producto: visor de ejemplo, 3 promociones reales, oferta en tres capas con un CTA cada una, y maqueta de Mi espacio.
+- Publicadas: municipio visible, filtro por municipio, hasta 24 resultados; el CTA principal ya no envía a lanzamientos.
+- PRO explica por qué pagar frente a avisos de correo gratis, para quién es y para quién no, con ejemplo de SMS/email y demostración de Mi espacio.
+- Cursos distinguen compra única, inclusión en PRO y estado “en preparación”.
+- Tras el PDF, un siguiente paso hacia el curso. En sesión, “Mi espacio” está en la barra.
+- Eventos nuevos: `promotion_list_cta_clicked`, `pro_page_viewed`, `course_page_viewed`.
+
 ### Propuesto (no está en la web)
 
 - Filtro municipal de avisos, Telegram, WhatsApp, push.
