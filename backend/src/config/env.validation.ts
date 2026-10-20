@@ -190,6 +190,10 @@ class EnvironmentVariables {
   OPENAI_IMAGE_MODEL?: string;
 
   @IsOptional()
+  @IsString()
+  JOBS_ADMIN_TOKEN?: string;
+
+  @IsOptional()
   @IsUrl()
   OPENAI_BASE_URL?: string;
 
