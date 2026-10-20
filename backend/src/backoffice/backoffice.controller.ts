@@ -423,6 +423,19 @@ export class BackofficeController {
     return this.backofficeService.deleteCourseAccessRule(ruleId);
   }
 
+  @Post('news/generate-today')
+  generateTodayNews(@Query('force') force?: string) {
+    return this.backofficeService.generateTodayNews(force !== 'false');
+  }
+
+  @Post('news/backfill-covers')
+  backfillNewsCovers(@Query('limit') limit?: string) {
+    const parsed = Number(limit);
+    return this.backofficeService.backfillNewsCovers(
+      Number.isFinite(parsed) ? parsed : 20,
+    );
+  }
+
   @Post('news')
   createNews(@Body() dto: CreateNewsItemDto) {
     return this.backofficeService.createNews(dto);

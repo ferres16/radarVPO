@@ -146,10 +146,11 @@ export class AiProviderService {
   }): Promise<{ buffer: Buffer; contentType: string; prompt: string } | null> {
     const apiKey = process.env.OPENAI_API_KEY?.trim();
     if (!apiKey) {
+      this.logger.warn('News cover skipped: OPENAI_API_KEY missing');
       return null;
     }
 
-    const model = process.env.OPENAI_IMAGE_MODEL?.trim() || 'gpt-image-1';
+    const model = process.env.OPENAI_IMAGE_MODEL?.trim() || 'dall-e-3';
     const baseUrl =
       process.env.OPENAI_BASE_URL?.trim() || 'https://api.openai.com/v1';
 
@@ -168,18 +169,25 @@ export class AiProviderService {
       .join(' ');
 
     try {
+      const body: Record<string, unknown> = {
+        model,
+        prompt,
+        size: '1024x1024',
+        n: 1,
+      };
+      // dall-e-2/3 accept response_format; gpt-image-* usually returns b64 by default.
+      if (model.startsWith('dall-e')) {
+        body.response_format = 'b64_json';
+        body.quality = 'standard';
+      }
+
       const response = await fetch(`${baseUrl}/images/generations`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model,
-          prompt,
-          size: '1024x1024',
-          n: 1,
-        }),
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {

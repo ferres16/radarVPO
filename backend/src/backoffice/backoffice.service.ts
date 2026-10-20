@@ -26,6 +26,7 @@ import { S3StorageService } from '../storage/s3-storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BillingService } from '../billing/billing.service';
 import { NewsCoverService } from '../news/news-cover.service';
+import { NewsAutomationService } from '../jobs/news-automation.service';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
 import { CreateCourseContentBlockDto } from './dto/create-course-content-block.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -64,7 +65,21 @@ export class BackofficeService {
     private readonly notificationsService: NotificationsService,
     private readonly billingService: BillingService,
     private readonly newsCover: NewsCoverService,
+    private readonly newsAutomation: NewsAutomationService,
   ) {}
+
+  /** Genera las noticias del día (force=true ignora el candado diario) y rellena portadas. */
+  async generateTodayNews(force = true) {
+    const generation = await this.newsAutomation.generateDailyCatalunyaNews({
+      force,
+    });
+    const covers = await this.newsCover.backfillMissingCovers(20);
+    return { generation, covers };
+  }
+
+  async backfillNewsCovers(limit = 20) {
+    return this.newsCover.backfillMissingCovers(limit);
+  }
 
   async overview() {
     const [

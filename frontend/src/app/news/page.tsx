@@ -81,8 +81,16 @@ export default async function NewsPage({
             <PublicSection muted>
               <SurfaceCard premium className="overflow-hidden">
                 <div className="grid lg:grid-cols-[0.35fr_1fr]">
-                  <div className="min-h-40 bg-[#f3faf7] p-5">
-                    <span className="lp-hero__badge">Destacada</span>
+                  <div className="relative min-h-40 overflow-hidden bg-[var(--bg-eco)]">
+                    {featured.coverImageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={featured.coverImageUrl}
+                        alt=""
+                        className="absolute inset-0 h-full w-full object-cover"
+                      />
+                    ) : null}
+                    <span className="lp-hero__badge absolute left-4 top-4 z-10">Destacada</span>
                   </div>
                   <div className="p-5 md:p-6">
                     <p className="lp-eyebrow">{featured.category || featured.topic || featured.relevance}</p>

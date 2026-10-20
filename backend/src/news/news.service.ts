@@ -26,6 +26,10 @@ export class NewsService {
     this.cache.set(key, { value, expiresAt: Date.now() + ttl * 1000 });
   }
 
+  clearCache() {
+    this.cache.clear();
+  }
+
   async list(query: ListNewsDto): Promise<unknown[]> {
     const limit = Math.min(query.limit ?? 20, 100);
     const offset = query.offset ?? 0;

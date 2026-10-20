@@ -67,14 +67,14 @@ export class NewsAutomationService {
     private readonly newsCover: NewsCoverService,
   ) {}
 
-  async generateDailyCatalunyaNews() {
+  async generateDailyCatalunyaNews(options: { force?: boolean } = {}) {
     const today = new Date().toISOString().slice(0, 10);
     const lastRun = await this.prisma.systemSetting.findUnique({
       where: { key: 'news.last_generated_day' },
       select: { value: true },
     });
 
-    if (this.settingDate(lastRun?.value) === today) {
+    if (!options.force && this.settingDate(lastRun?.value) === today) {
       return {
         inserted: 0,
         cached: 0,

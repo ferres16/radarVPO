@@ -15,6 +15,6 @@ import { NewsAutomationService } from './news-automation.service';
     RegistreScraperService,
     NewsAutomationService,
   ],
-  exports: [RegistreScraperService],
+  exports: [RegistreScraperService, NewsAutomationService],
 })
 export class JobsModule {}
