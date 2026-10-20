@@ -166,6 +166,15 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     };
   }, [courseId]);
 
+  const isGuideFormat = (courseDraft.format || course?.format || 'standard') === 'guide_pdf';
+  const guideTopicsText = useMemo(() => {
+    const raw = courseDraft.seoMetadata?.topics;
+    if (Array.isArray(raw)) {
+      return raw.map((item) => String(item)).join('\n');
+    }
+    if (typeof raw === 'string') return raw;
+    return '';
+  }, [courseDraft.seoMetadata?.topics]);
   const visibleModules = useMemo(() => {
     return [...modules].sort((a, b) => a.order - b.order || a.title.localeCompare(b.title));
   }, [modules]);
@@ -179,6 +188,25 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     return null;
   }, [activePanel, modules]);
   const publicationChecklist = useMemo(() => {
+    if (isGuideFormat) {
+      const topics = guideTopicsText
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+      return [
+        { label: 'Título y slug', done: Boolean(courseDraft.title && courseDraft.slug) },
+        { label: 'Descripción', done: Boolean(courseDraft.shortDescription || courseDraft.longDescription) },
+        { label: 'Temas de la guía', done: topics.length > 0 },
+        { label: 'PDF de la guía subido', done: Boolean(course?.guidePdfAssetId || courseDraft.guidePdfAssetId) },
+        {
+          label: 'Acceso y precio',
+          done:
+            courseDraft.accessType === 'free' ||
+            Boolean(courseDraft.price) ||
+            courseDraft.accessType === 'pro',
+        },
+      ];
+    }
     const lessons = modules.flatMap((module) => module.lessons || []);
     return [
       { label: 'Título y slug', done: Boolean(courseDraft.title && courseDraft.slug) },
@@ -189,7 +217,28 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
       { label: 'Recursos S3 cargados', done: lessons.some((lesson) => (lesson.resources || []).length > 0) },
       { label: 'Acceso y precio coherentes', done: courseDraft.accessType !== 'paid' || Boolean(courseDraft.price && courseDraft.stripePaymentLink) },
     ];
-  }, [course?.coverImage, courseDraft.accessType, courseDraft.coverImage, courseDraft.price, courseDraft.shortDescription, courseDraft.slug, courseDraft.stripePaymentLink, courseDraft.title, modules]);
+  }, [
+    course?.coverImage,
+    course?.guidePdfAssetId,
+    courseDraft.accessType,
+    courseDraft.coverImage,
+    courseDraft.guidePdfAssetId,
+    courseDraft.longDescription,
+    courseDraft.price,
+    courseDraft.shortDescription,
+    courseDraft.slug,
+    courseDraft.stripePaymentLink,
+    courseDraft.title,
+    guideTopicsText,
+    isGuideFormat,
+    modules,
+  ]);
+
+  useEffect(() => {
+    if (isGuideFormat && activePanel.type !== 'settings') {
+      setActivePanel({ type: 'settings' });
+    }
+  }, [activePanel.type, isGuideFormat]);
 
   async function saveCourseSettings() {
     if (!course) return;
@@ -215,6 +264,10 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         seoMetadata: {
           ...(courseDraft.seoMetadata || {}),
           salePrice: courseDraft.salePrice ? String(courseDraft.salePrice) : null,
+          topics: guideTopicsText
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean),
         },
         publishedAt: courseDraft.publishedAt || undefined,
       });
@@ -502,10 +555,14 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         <AdminNav />
         <div className="space-y-4">
       <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--green-700)]">Constructor de curso</p>
-        <h1 className="mt-2 text-2xl font-bold text-[var(--ink)]">Contenido del curso</h1>
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--green-700)]">
+          {isGuideFormat ? 'Constructor de guía PDF' : 'Constructor de curso'}
+        </p>
+        <h1 className="mt-2 text-2xl font-bold text-[var(--ink)]">
+          {isGuideFormat ? 'Guía PDF' : 'Contenido del curso'}
+        </h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
-          {course ? course.title : 'Curso'}
+          {course ? course.title : isGuideFormat ? 'Guía' : 'Curso'}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Link
@@ -519,11 +576,37 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
               href={`/cursos/${course.slug}`}
               className="rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white"
             >
-              Previsualizar curso
+              {isGuideFormat ? 'Previsualizar guía' : 'Previsualizar curso'}
             </Link>
           ) : null}
         </div>
-        {course ? (
+        {course && isGuideFormat ? (
+          <div className="mt-4 rounded-2xl border border-[var(--green-700)]/20 bg-[var(--bg-eco)] p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--green-700)]">
+              Archivo de la guía (único contenido)
+            </p>
+            <p className="mt-1 text-sm text-[var(--ink-soft)]">
+              {course.guidePdfAssetId || courseDraft.guidePdfAssetId
+                ? 'PDF subido. El usuario lo consulta en pantalla; no puede descargarlo.'
+                : 'Sube un único PDF. No hace falta crear módulos ni lecciones.'}
+            </p>
+            <label className="mt-3 inline-flex w-fit rounded-xl bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white shadow-sm">
+              {savingId === 'course-guide-pdf' ? 'Subiendo…' : 'Subir PDF de la guía'}
+              <input
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (!file) return;
+                  void uploadCourseGuidePdf(file);
+                  event.currentTarget.value = '';
+                }}
+              />
+            </label>
+          </div>
+        ) : null}
+        {course && !isGuideFormat ? (
           <div className="mt-4 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">Portada pública del curso</p>
             <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -556,30 +639,6 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 className="ds-control flex-1"
               />
             </div>
-            <div className="mt-4 border-t border-[var(--stroke)] pt-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">
-                Guía PDF (solo visualización, sin descarga)
-              </p>
-              <p className="mt-1 text-sm text-[var(--ink-soft)]">
-                {course.guidePdfAssetId || courseDraft.guidePdfAssetId
-                  ? 'Hay un PDF de guía subido. Al publicarlo, el usuario lo consulta en pantalla.'
-                  : 'Sube un PDF cuando el formato sea «Guía PDF».'}
-              </p>
-              <label className="mt-3 inline-flex w-fit rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-sm">
-                {savingId === 'course-guide-pdf' ? 'Subiendo…' : 'Subir guía PDF'}
-                <input
-                  type="file"
-                  accept="application/pdf"
-                  className="hidden"
-                  onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (!file) return;
-                    void uploadCourseGuidePdf(file);
-                    event.currentTarget.value = '';
-                  }}
-                />
-              </label>
-            </div>
           </div>
         ) : null}
       </header>
@@ -598,47 +657,55 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
               <h2 className="mt-2 text-lg font-black text-[var(--ink)]">{course?.title || 'Curso'}</h2>
             </div>
           </div>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <button
-              type="button"
-              onClick={() => setActivePanel({ type: 'settings' })}
-              className={`w-full rounded-2xl px-3 py-2 text-left text-sm font-semibold ${activePanel.type === 'settings' ? 'bg-[var(--green-500)] text-white' : 'bg-[var(--bg-app)] text-[var(--ink)]'}`}
-            >
-              Configuración del curso
-            </button>
-            <button
-              type="button"
-              onClick={() => setActivePanel({ type: 'new-module' })}
-              className={`w-full rounded-2xl px-3 py-2 text-left text-sm font-semibold ${activePanel.type === 'new-module' ? 'bg-[var(--green-500)] text-white' : 'bg-[var(--bg-app)] text-[var(--ink)]'}`}
-            >
-              Añadir módulo
-            </button>
-          </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {visibleModules.map((module) => (
-              <div key={module.id} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-2">
+          {isGuideFormat ? (
+            <p className="mt-4 rounded-2xl bg-[var(--bg-app)] p-3 text-sm text-[var(--ink-soft)]">
+              Modo guía PDF: no hay módulos ni lecciones. Solo configuración, temas y el archivo PDF.
+            </p>
+          ) : (
+            <>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
                 <button
                   type="button"
-                  onClick={() => setActivePanel({ type: 'module', moduleId: module.id })}
-                  className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold ${activePanel.type === 'module' && activePanel.moduleId === module.id ? 'bg-[var(--ink)] text-white' : 'text-[var(--ink)]'}`}
+                  onClick={() => setActivePanel({ type: 'settings' })}
+                  className={`w-full rounded-2xl px-3 py-2 text-left text-sm font-semibold ${activePanel.type === 'settings' ? 'bg-[var(--green-500)] text-white' : 'bg-[var(--bg-app)] text-[var(--ink)]'}`}
                 >
-                  {module.title}
+                  Configuración del curso
                 </button>
-                <div className="mt-1 space-y-1">
-                  {(module.lessons || []).map((lesson) => (
-                    <button
-                      key={lesson.id}
-                      type="button"
-                      onClick={() => setActivePanel({ type: 'lesson', moduleId: module.id, lessonId: lesson.id })}
-                      className={`w-full rounded-xl px-3 py-2 text-left text-xs font-semibold ${activePanel.type === 'lesson' && activePanel.lessonId === lesson.id ? 'bg-[var(--green-500)] text-white' : 'text-[var(--ink-soft)] hover:bg-white'}`}
-                    >
-                      {lesson.title}
-                    </button>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setActivePanel({ type: 'new-module' })}
+                  className={`w-full rounded-2xl px-3 py-2 text-left text-sm font-semibold ${activePanel.type === 'new-module' ? 'bg-[var(--green-500)] text-white' : 'bg-[var(--bg-app)] text-[var(--ink)]'}`}
+                >
+                  Añadir módulo
+                </button>
               </div>
-            ))}
-          </div>
+              <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {visibleModules.map((module) => (
+                  <div key={module.id} className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-2">
+                    <button
+                      type="button"
+                      onClick={() => setActivePanel({ type: 'module', moduleId: module.id })}
+                      className={`w-full rounded-xl px-3 py-2 text-left text-sm font-bold ${activePanel.type === 'module' && activePanel.moduleId === module.id ? 'bg-[var(--ink)] text-white' : 'text-[var(--ink)]'}`}
+                    >
+                      {module.title}
+                    </button>
+                    <div className="mt-1 space-y-1">
+                      {(module.lessons || []).map((lesson) => (
+                        <button
+                          key={lesson.id}
+                          type="button"
+                          onClick={() => setActivePanel({ type: 'lesson', moduleId: module.id, lessonId: lesson.id })}
+                          className={`w-full rounded-xl px-3 py-2 text-left text-xs font-semibold ${activePanel.type === 'lesson' && activePanel.lessonId === lesson.id ? 'bg-[var(--green-500)] text-white' : 'text-[var(--ink-soft)] hover:bg-white'}`}
+                        >
+                          {lesson.title}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </aside>
 
         <div className="min-w-0 space-y-4">
@@ -648,15 +715,23 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
           <article className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-semibold text-[var(--ink)]">Configuración editorial</h2>
-                <p className="mt-1 text-sm text-[var(--ink-soft)]">Organiza el curso por bloques de información para evitar formularios interminables.</p>
+                <h2 className="text-lg font-semibold text-[var(--ink)]">
+                  {isGuideFormat ? 'Configuración de la guía' : 'Configuración editorial'}
+                </h2>
+                <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                  {isGuideFormat
+                    ? 'Título, descripción, temas y precio. El contenido es un único PDF.'
+                    : 'Organiza el curso por bloques de información para evitar formularios interminables.'}
+                </p>
               </div>
               <button type="button" onClick={() => void saveCourseSettings()} disabled={savingId === 'course-settings'} className="rounded-xl bg-[var(--green-500)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60">{savingId === 'course-settings' ? 'Guardando...' : 'Guardar configuración'}</button>
             </div>
 
             <div className="mt-5 grid gap-4 xl:grid-cols-2">
               <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4">
-                <h3 className="text-sm font-bold text-[var(--ink)]">Identidad del curso</h3>
+                <h3 className="text-sm font-bold text-[var(--ink)]">
+                  {isGuideFormat ? 'Identidad de la guía' : 'Identidad del curso'}
+                </h3>
                 <div className="mt-3 grid gap-3 md:grid-cols-2">
                   <label className="text-sm font-semibold text-[var(--ink)]">Título<input className="ds-control mt-1 w-full" value={courseDraft.title || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, title: e.target.value }))} /></label>
                   <label className="text-sm font-semibold text-[var(--ink)]">Slug<input className="ds-control mt-1 w-full" value={courseDraft.slug || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, slug: e.target.value }))} /></label>
@@ -679,7 +754,9 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 <div className="mt-3 grid gap-3 md:grid-cols-[1fr_120px]">
                   <label className="text-sm font-semibold text-[var(--ink)]">Precio final<input className="ds-control mt-1 w-full" value={courseDraft.price || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, price: e.target.value, salePrice: '' }))} /></label>
                   <label className="text-sm font-semibold text-[var(--ink)]">Moneda<input className="ds-control mt-1 w-full" value={courseDraft.currency || 'EUR'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, currency: e.target.value }))} /></label>
-                  <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Stripe Payment Link (legado; el cobro actual usa Checkout Sessions)<input className="ds-control mt-1 w-full" value={courseDraft.stripePaymentLink || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, stripePaymentLink: e.target.value }))} /></label>
+                  {!isGuideFormat ? (
+                    <label className="text-sm font-semibold text-[var(--ink)] md:col-span-2">Stripe Payment Link (legado; el cobro actual usa Checkout Sessions)<input className="ds-control mt-1 w-full" value={courseDraft.stripePaymentLink || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, stripePaymentLink: e.target.value }))} /></label>
+                  ) : null}
                 </div>
               </section>
 
@@ -698,6 +775,29 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                   <label className="text-sm font-semibold text-[var(--ink)]">Descripción larga<textarea className="ds-control mt-1 min-h-24 w-full" value={courseDraft.longDescription || ''} onChange={(e) => setCourseDraft((prev) => ({ ...prev, longDescription: e.target.value }))} /></label>
                 </div>
               </section>
+
+              {isGuideFormat ? (
+                <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-4 xl:col-span-2">
+                  <h3 className="text-sm font-bold text-[var(--ink)]">Temas que se tratan</h3>
+                  <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                    Un tema por línea. Se muestran en la página pública de la guía.
+                  </p>
+                  <textarea
+                    className="ds-control mt-3 min-h-32 w-full"
+                    value={guideTopicsText}
+                    onChange={(e) =>
+                      setCourseDraft((prev) => ({
+                        ...prev,
+                        seoMetadata: {
+                          ...(prev.seoMetadata || {}),
+                          topics: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder={'Registro de solicitantes\nDocumentación necesaria\nPlazos y trámites'}
+                  />
+                </section>
+              ) : null}
             </div>
           </article>
 
@@ -715,7 +815,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         </section>
       ) : null}
 
-      {activePanel.type === 'new-module' ? (
+      {!isGuideFormat && activePanel.type === 'new-module' ? (
       <section className="rounded-2xl border border-[var(--stroke)] bg-white p-5 shadow-card">
         <h2 className="text-lg font-semibold text-[var(--ink)]">Nuevo modulo</h2>
         <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -768,7 +868,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
       </section>
       ) : null}
 
-      {(activePanel.type === 'module' || activePanel.type === 'lesson') && activeModule ? (
+      {!isGuideFormat && (activePanel.type === 'module' || activePanel.type === 'lesson') && activeModule ? (
       <section className="space-y-4">
         {[activeModule].map((module) => {
           const moduleDraft = moduleDrafts[module.id] || {};

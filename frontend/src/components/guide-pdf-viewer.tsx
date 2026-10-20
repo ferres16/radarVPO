@@ -10,12 +10,13 @@ type Props = {
 
 /**
  * Visor de guía PDF: carga el documento vía proxy del backend (inline).
- * No ofrece botón de descarga ni enlace al original.
+ * Sin botón de descarga, sin enlace al original y con menú contextual bloqueado.
  */
 export function GuidePdfViewer({ slug, title, canAccess }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [pageCount, setPageCount] = useState(0);
 
   useEffect(() => {
     if (!canAccess) {
@@ -51,6 +52,7 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
         const host = containerRef.current;
         if (!host) return;
         host.innerHTML = '';
+        setPageCount(pdf.numPages);
 
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum += 1) {
           const page = await pdf.getPage(pageNum);
@@ -60,6 +62,7 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
           canvas.height = viewport.height;
           canvas.className = 'mb-4 w-full rounded-lg border border-[var(--stroke)] bg-white';
           canvas.setAttribute('aria-label', `${title} · página ${pageNum}`);
+          canvas.draggable = false;
           const context = canvas.getContext('2d');
           if (!context) continue;
           await page.render({ canvasContext: context, viewport, canvas }).promise;
@@ -82,22 +85,38 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
 
   if (!canAccess) {
     return (
-      <p className="rounded-xl border border-[var(--stroke)] bg-white p-4 text-sm text-[var(--ink-soft)]">
-        Compra o activa el acceso para consultar esta guía en pantalla. No se puede descargar.
-      </p>
+      <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-5">
+        <p className="text-sm font-semibold text-[var(--ink)]">Consulta en pantalla</p>
+        <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
+          Compra o activa el acceso para ver esta guía aquí. No se puede descargar el PDF.
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--green-700)]">
-        Guía PDF · solo consulta (sin descarga)
-      </p>
-      {loading ? (
-        <p className="text-sm text-[var(--ink-soft)]">Cargando la guía…</p>
-      ) : null}
+    <div
+      className="space-y-3"
+      onContextMenu={(e) => e.preventDefault()}
+      onDragStart={(e) => e.preventDefault()}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--green-700)]">
+          Guía PDF · solo consulta (sin descarga)
+        </p>
+        {pageCount > 0 ? (
+          <p className="text-xs text-[var(--ink-soft)]">
+            {pageCount} {pageCount === 1 ? 'página' : 'páginas'}
+          </p>
+        ) : null}
+      </div>
+      {loading ? <p className="text-sm text-[var(--ink-soft)]">Cargando la guía…</p> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
-      <div ref={containerRef} className="select-none" onContextMenu={(e) => e.preventDefault()} />
+      <div
+        ref={containerRef}
+        className="select-none"
+        style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
+      />
     </div>
   );
 }

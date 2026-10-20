@@ -23,6 +23,7 @@ import {
   getCourseAuthor,
   getCoursePrice,
   getCourseStatusSummary,
+  getGuideTopics,
   getPreviewLessonSlug,
   isCourseFree,
   isGuidePdf,
@@ -123,8 +124,10 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
     accessHref: courseEntryHref,
     lockedHref: lockedAccessHref,
     lockedLabel: lockedAccessLabel,
+    accessLabel: courseAccessLabel,
     hasLessons,
   } = buildCourseAccessTargets(course);
+  const guideTopics = getGuideTopics(course);
 
   const priceLabel = isFree ? 'Gratis' : price !== null ? formatEuro(price) : 'Consultar precio';
 
@@ -199,13 +202,13 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                   <span className="rounded-full bg-[rgba(232,184,74,0.16)] px-3 py-1 text-[#7a5600]">En preparación</span>
                 ) : null}
               </div>
-              {canAccess && hasLessons ? (
+              {canAccess && (hasLessons || guideMode) ? (
                 <div className="mt-5 lg:hidden">
                   <CourseAccessLink
                     hrefWhenAccess={courseEntryHref}
                     hrefWhenLocked={lockedAccessHref}
                     lockedLabel={lockedAccessLabel}
-                    accessLabel="Continuar curso"
+                    accessLabel={courseAccessLabel}
                     className="inline-flex w-full items-center justify-center rounded-full bg-[var(--green-700)] px-5 py-3 text-sm font-bold text-white shadow-glow transition hover:bg-[var(--green-900)] sm:w-auto"
                   />
                 </div>
@@ -228,21 +231,26 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                     hrefWhenAccess={courseEntryHref}
                     hrefWhenLocked={lockedAccessHref}
                     lockedLabel={lockedAccessLabel}
-                    accessLabel={hasLessons ? 'Continuar curso' : 'Ver índice'}
+                    accessLabel={courseAccessLabel}
                     className="flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
                   />
                 ) : (
                   <p className="rounded-xl bg-white/10 px-3 py-2 text-sm leading-6 text-white/90">
-                    Este curso todavía se está preparando ({status.statusText}). No se puede comprar hasta que
-                    tenga contenido publicado suficiente.
+                    {guideMode
+                      ? `Esta guía todavía se está preparando (${status.statusText}). Sube el PDF para ponerla a la venta.`
+                      : `Este curso todavía se está preparando (${status.statusText}). No se puede comprar hasta que tenga contenido publicado suficiente.`}
                   </p>
                 )}
 
                 <ul className="space-y-1.5 text-xs leading-5 text-white/75">
-                  <li>{COURSE_ACCESS_DURATION_TEXT}</li>
+                  <li>
+                    {guideMode
+                      ? 'Consulta en pantalla · sin descarga del PDF'
+                      : COURSE_ACCESS_DURATION_TEXT}
+                  </li>
                   {includedInPro ? (
                     <li>
-                      Si ya tienes {proPlan.name} activo ({proPlan.price}), este curso está incluido mientras la
+                      Si ya tienes {proPlan.name} activo ({proPlan.price}), este contenido está incluido mientras la
                       suscripción siga activa.{' '}
                       <Link href="/pro" className="font-bold underline">
                         Ver PRO
@@ -251,7 +259,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                   ) : null}
                 </ul>
 
-                {previewLessonSlug ? (
+                {!guideMode && previewLessonSlug ? (
                   <Link
                     href={`/cursos/${course.slug}/${previewLessonSlug}`}
                     className="text-sm font-bold text-white underline"
@@ -265,14 +273,78 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
         </header>
 
         {guideMode ? (
-          <section id="guia" className="shell scroll-mt-24 py-6 md:py-8">
-            <article className="public-card p-4 md:p-6">
+          <section className="shell scroll-mt-24 space-y-6 py-6 md:py-8">
+            <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6">
+              <article className="public-card p-5 md:p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
+                  Sobre esta guía
+                </p>
+                <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
+                  Descripción
+                </h2>
+                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--ink-soft)] md:text-base">
+                  {course.longDescription ||
+                    course.shortDescription ||
+                    'Guía PDF para consultar en pantalla. No se puede descargar.'}
+                </p>
+              </article>
+
+              <article className="public-card p-5 md:p-6">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
+                  Contenido
+                </p>
+                <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
+                  Temas que se tratan
+                </h2>
+                {guideTopics.length > 0 ? (
+                  <ul className="mt-4 space-y-2.5">
+                    {guideTopics.map((topic) => (
+                      <li
+                        key={topic}
+                        className="flex gap-2 text-sm leading-6 text-[var(--ink-soft)]"
+                      >
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" />
+                        <span>{topic}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm text-[var(--ink-soft)]">
+                    Los temas de esta guía se publicarán en esta ficha.
+                  </p>
+                )}
+                <p className="mt-5 text-xs leading-5 text-[var(--ink-soft)]">
+                  Formato: PDF solo visualización · sin descarga
+                </p>
+              </article>
+            </div>
+
+            <article id="guia" className="public-card scroll-mt-24 p-4 md:p-6">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
+                    Lectura
+                  </p>
+                  <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
+                    Visor de la guía
+                  </h2>
+                </div>
+                {(canAccess || isFree) ? (
+                  <p className="text-xs font-semibold text-[var(--green-700)]">Acceso activo · sin descarga</p>
+                ) : null}
+              </div>
               <GuidePdfViewer
                 slug={course.slug}
                 title={course.title}
                 canAccess={canAccess || isFree}
               />
             </article>
+
+            <div className="pb-2">
+              <Link href="/cursos" className="text-sm font-bold text-[var(--green-700)]">
+                Ver todas las guías
+              </Link>
+            </div>
           </section>
         ) : null}
 

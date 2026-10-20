@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
 import { ButtonLink, PageHero, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { api } from '@/lib/api';
-import type { Course, CourseAccessType, CourseStatus, UserProfile } from '@/types';
+import type { Course, CourseAccessType, CourseFormat, CourseStatus, UserProfile } from '@/types';
 
 const emptyCourse: Partial<Course> = {
   title: '',
@@ -17,11 +17,13 @@ const emptyCourse: Partial<Course> = {
   currency: 'EUR',
   status: 'draft',
   accessType: 'free',
+  format: 'standard',
   order: 0,
 };
 
 const statusOptions: CourseStatus[] = ['draft', 'published', 'archived'];
 const accessOptions: CourseAccessType[] = ['free', 'paid', 'pro'];
+const formatOptions: CourseFormat[] = ['standard', 'guide_pdf'];
 
 /** seguimiento es un tipo heredado (acompañamiento 1:1 retirado): solo se muestra si el curso ya lo tiene. */
 const accessOptionsFor = (current?: CourseAccessType): CourseAccessType[] =>
@@ -148,6 +150,7 @@ export default function AdminCoursesPage() {
         coverImage: newCourse.coverImage || undefined,
         status: (newCourse.status as CourseStatus) || 'draft',
         accessType: (newCourse.accessType as CourseAccessType) || 'free',
+        format: (newCourse.format as CourseFormat) || 'standard',
         order: newCourse.order ?? 0,
         price: newCourse.price ? String(newCourse.price) : undefined,
         currency: newCourse.currency || undefined,
@@ -303,7 +306,7 @@ export default function AdminCoursesPage() {
       </section>
 
       <section className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
-        <h2 className="text-lg font-semibold text-[var(--ink)]">Nuevo curso</h2>
+        <h2 className="text-lg font-semibold text-[var(--ink)]">Nuevo curso / guía</h2>
         <div className="mt-3 grid gap-3 md:grid-cols-4">
           <input
             value={newCourse.title || ''}
@@ -335,14 +338,31 @@ export default function AdminCoursesPage() {
             placeholder="Descripcion corta"
             className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
           />
-          <input
-            value={newCourse.coverImage || ''}
-            onChange={(e) => setNewCourse((prev) => ({ ...prev, coverImage: e.target.value }))}
-            placeholder="Cover image URL"
-            className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
-          />
+          {newCourse.format !== 'guide_pdf' ? (
+            <input
+              value={newCourse.coverImage || ''}
+              onChange={(e) => setNewCourse((prev) => ({ ...prev, coverImage: e.target.value }))}
+              placeholder="Cover image URL"
+              className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm md:col-span-2"
+            />
+          ) : (
+            <p className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm text-[var(--ink-soft)] md:col-span-2">
+              Guía PDF: tras crearla, entra al editor y sube el único archivo PDF.
+            </p>
+          )}
         </div>
         <div className="mt-3 grid gap-3 md:grid-cols-4">
+          <select
+            value={newCourse.format || 'standard'}
+            onChange={(e) => setNewCourse((prev) => ({ ...prev, format: e.target.value as CourseFormat }))}
+            className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+          >
+            {formatOptions.map((format) => (
+              <option key={format} value={format}>
+                {format === 'guide_pdf' ? 'Guía PDF (solo visualización)' : 'Curso con lecciones'}
+              </option>
+            ))}
+          </select>
           <select
             value={newCourse.status || 'draft'}
             onChange={(e) => setNewCourse((prev) => ({ ...prev, status: e.target.value as CourseStatus }))}
@@ -382,7 +402,7 @@ export default function AdminCoursesPage() {
             disabled={savingId === 'new'}
             className="rounded-xl bg-[var(--green-500)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--green-700)] disabled:opacity-60"
           >
-            {savingId === 'new' ? 'Creando...' : 'Crear curso'}
+            {savingId === 'new' ? 'Creando...' : newCourse.format === 'guide_pdf' ? 'Crear guía' : 'Crear curso'}
           </button>
         </div>
       </section>

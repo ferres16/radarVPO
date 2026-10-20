@@ -125,6 +125,23 @@ export function getPreviewLessonSlug(course: Pick<Course, 'seoMetadata'>): strin
   return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
+/** Temas de una guía PDF (seoMetadata.topics: string[] o texto con saltos de línea). */
+export function getGuideTopics(course: Pick<Course, 'seoMetadata'>): string[] {
+  const raw = course.seoMetadata?.topics;
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter(Boolean);
+  }
+  if (typeof raw === 'string') {
+    return raw
+      .split(/\r?\n|,/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
 export function getCheckoutHref(
   product: 'pro' | 'course',
   courseSlug?: string,
