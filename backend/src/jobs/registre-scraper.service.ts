@@ -402,7 +402,7 @@ export class RegistreScraperService {
         title,
         detailUrl,
         publishedAt,
-        isAlertEntry: isProperaAdjudicacioAlert(title, containerText),
+        isAlertEntry: isProperaAdjudicacioAlert(title),
         alertLeadDays: this.extractAlertLeadDays(`${title}\n${containerText}`),
         isAnnouncement: this.looksLikeAnnouncement(
           `${title}\n${containerText}`,
