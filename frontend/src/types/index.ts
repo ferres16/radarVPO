@@ -184,6 +184,23 @@ export type StripeCancellationResult = {
   skippedReason?: string;
 };
 
+export type CommerceSettings = {
+  proEnabled: boolean;
+  coursesEnabled: boolean;
+  maintenanceMessage: string;
+  proPackGuideSlug: string;
+};
+
+export type CheckoutStatus = {
+  enabled: boolean;
+  proEnabled: boolean;
+  coursesEnabled: boolean;
+  maintenanceMessage: string;
+  proPackGuideSlug: string;
+  proPriceCents: number;
+  currency: string;
+};
+
 export type BackofficeCancellationProcessResult = {
   user: BackofficeUser;
   stripe: StripeCancellationResult;

@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { BillingModule } from '../billing/billing.module';
+import { CommerceModule } from '../commerce/commerce.module';
 import { JobsModule } from '../jobs/jobs.module';
 import { NewsModule } from '../news/news.module';
 import { NotificationsModule } from '../notifications/notifications.module';
@@ -12,6 +13,7 @@ import { BackofficeService } from './backoffice.service';
     StorageModule,
     NotificationsModule,
     BillingModule,
+    CommerceModule,
     NewsModule,
     forwardRef(() => JobsModule),
   ],

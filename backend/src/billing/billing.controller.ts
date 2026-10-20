@@ -23,7 +23,7 @@ import { CreateCheckoutDto } from './dto/create-checkout.dto';
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
-  /** Público: indica si el pago integrado está operativo (Stripe + webhook). */
+  /** Público: indica si el pago integrado está operativo (Stripe + webhook + toggles admin). */
   @Get('checkout-status')
   checkoutStatus() {
     return this.billingService.getCheckoutStatus();

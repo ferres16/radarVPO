@@ -15,6 +15,7 @@ import {
 } from '@prisma/client';
 import type Stripe from 'stripe';
 import { resolvePublicSiteUrl } from '../common/public-site-url';
+import { CommerceService } from '../commerce/commerce.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
@@ -54,6 +55,7 @@ export class BillingService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly notifications: NotificationsService,
+    private readonly commerce: CommerceService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -79,9 +81,15 @@ export class BillingService {
     );
   }
 
-  getCheckoutStatus() {
+  async getCheckoutStatus() {
+    const commerce = await this.commerce.getSettings();
+    const stripeReady = this.isCheckoutConfigured();
     return {
-      enabled: this.isCheckoutConfigured(),
+      enabled: stripeReady,
+      proEnabled: stripeReady && commerce.proEnabled,
+      coursesEnabled: stripeReady && commerce.coursesEnabled,
+      maintenanceMessage: commerce.maintenanceMessage,
+      proPackGuideSlug: commerce.proPackGuideSlug,
       proPriceCents: this.getProPriceCents(),
       currency: 'eur',
     };
@@ -104,6 +112,13 @@ export class BillingService {
       throw new ServiceUnavailableException(
         'El pago online no está disponible en este momento.',
       );
+    }
+    const commerce = await this.commerce.getSettings();
+    if (dto.product === 'pro' && !commerce.proEnabled) {
+      throw new ServiceUnavailableException(commerce.maintenanceMessage);
+    }
+    if (dto.product === 'course' && !commerce.coursesEnabled) {
+      throw new ServiceUnavailableException(commerce.maintenanceMessage);
     }
     if (!dto.acceptedTerms) {
       throw new BadRequestException(

@@ -25,8 +25,11 @@ import {
 import { S3StorageService } from '../storage/s3-storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BillingService } from '../billing/billing.service';
+import { CommerceService } from '../commerce/commerce.service';
+import type { CommerceSettings } from '../commerce/commerce.types';
 import { NewsCoverService } from '../news/news-cover.service';
 import { NewsAutomationService } from '../jobs/news-automation.service';
+import { UpdateCommerceSettingsDto } from './dto/update-commerce-settings.dto';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
 import { CreateCourseContentBlockDto } from './dto/create-course-content-block.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -64,9 +67,20 @@ export class BackofficeService {
     private readonly fileStorage: FileStorageService,
     private readonly notificationsService: NotificationsService,
     private readonly billingService: BillingService,
+    private readonly commerce: CommerceService,
     private readonly newsCover: NewsCoverService,
     private readonly newsAutomation: NewsAutomationService,
   ) {}
+
+  getCommerceSettings(): Promise<CommerceSettings> {
+    return this.commerce.getSettings();
+  }
+
+  updateCommerceSettings(
+    dto: UpdateCommerceSettingsDto,
+  ): Promise<CommerceSettings> {
+    return this.commerce.updateSettings(dto);
+  }
 
   /** Genera las noticias del día (force=true ignora el candado diario) y rellena portadas. */
   async generateTodayNews(force = true) {

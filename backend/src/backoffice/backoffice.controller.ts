@@ -38,6 +38,7 @@ import { ReorderCourseItemsDto } from './dto/reorder-course-items.dto';
 import { ReorderUnitsDto } from './dto/reorder-units.dto';
 import { UpdateAccessDto } from './dto/update-access.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
+import { UpdateCommerceSettingsDto } from './dto/update-commerce-settings.dto';
 import { UpdateCourseAccessRuleDto } from './dto/update-course-access-rule.dto';
 import { UpdateCourseContentBlockDto } from './dto/update-course-content-block.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -165,6 +166,16 @@ export class BackofficeController {
   @Post('cancellations/:id/process')
   processCancellationRequest(@Param('id') userId: string) {
     return this.backofficeService.processCancellationRequest(userId);
+  }
+
+  @Get('commerce')
+  getCommerceSettings() {
+    return this.backofficeService.getCommerceSettings();
+  }
+
+  @Patch('commerce')
+  updateCommerceSettings(@Body() dto: UpdateCommerceSettingsDto) {
+    return this.backofficeService.updateCommerceSettings(dto);
   }
 
   @Get('news')

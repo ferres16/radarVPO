@@ -13,6 +13,7 @@ const adminLinks = [
   { href: '/admin/users', label: 'Usuarios' },
   { href: '/admin/access', label: 'Compras y accesos' },
   { href: '/admin/cancellations', label: 'Anulaciones' },
+  { href: '/admin/commerce', label: 'Comercio' },
 ];
 
 export function AdminNav() {

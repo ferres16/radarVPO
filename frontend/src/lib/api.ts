@@ -6,6 +6,8 @@ import {
   BackofficeCancellationProcessResult,
   BackofficeUser,
   CatalogStats,
+  CheckoutStatus,
+  CommerceSettings,
   Course,
   CourseAccessRule,
   CourseAccessRuleType,
@@ -233,8 +235,7 @@ export const api = {
       `/promotions/${promotionId}/favorite`,
       { method: 'PATCH', body: JSON.stringify(payload) },
     ),
-  getCheckoutStatus: () =>
-    request<{ enabled: boolean; proPriceCents: number; currency: string }>('/billing/checkout-status'),
+  getCheckoutStatus: () => request<CheckoutStatus>('/billing/checkout-status'),
   createCheckout: (payload: {
     product: 'pro' | 'course';
     courseSlug?: string;
@@ -353,6 +354,12 @@ export const api = {
   processBackofficeCancellation: (id: string) =>
     request<BackofficeCancellationProcessResult>(`/backoffice/cancellations/${id}/process`, {
       method: 'POST',
+    }),
+  getBackofficeCommerce: () => request<CommerceSettings>('/backoffice/commerce'),
+  updateBackofficeCommerce: (payload: Partial<CommerceSettings>) =>
+    request<CommerceSettings>('/backoffice/commerce', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     }),
   getBackofficeNews: () => request<BackofficeNewsItem[]>('/backoffice/news'),
   createBackofficeNews: (

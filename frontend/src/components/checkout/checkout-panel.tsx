@@ -26,6 +26,9 @@ export type CheckoutSummary = {
 export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary; canceled: boolean }) {
   const { me, loading } = useProAccess();
   const [paymentsEnabled, setPaymentsEnabled] = useState<boolean | null>(null);
+  const [maintenanceMessage, setMaintenanceMessage] = useState(
+    'El pago online todavía no está activo. Vuelve a intentarlo más adelante.',
+  );
   const [apiProPriceLabel, setApiProPriceLabel] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedImmediate, setAcceptedImmediate] = useState(false);
@@ -47,7 +50,9 @@ export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary;
       .getCheckoutStatus()
       .then((status) => {
         if (!active) return;
-        setPaymentsEnabled(status.enabled);
+        const productEnabled = isCourse ? status.coursesEnabled : status.proEnabled;
+        setPaymentsEnabled(Boolean(status.enabled && productEnabled));
+        if (status.maintenanceMessage) setMaintenanceMessage(status.maintenanceMessage);
         if (
           summary.product === 'pro' &&
           Number.isInteger(status.proPriceCents) &&
@@ -62,7 +67,7 @@ export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary;
     return () => {
       active = false;
     };
-  }, [summary.product, summary.courseSlug]);
+  }, [summary.product, summary.courseSlug, isCourse]);
 
   async function startCheckout() {
     setSubmitting(true);
@@ -190,7 +195,7 @@ export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary;
 
             {paymentsEnabled === false ? (
               <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">
-                El pago online todavía no está activo. Vuelve a intentarlo más adelante.
+                {maintenanceMessage}
               </p>
             ) : null}
 
