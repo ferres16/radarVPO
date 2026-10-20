@@ -132,6 +132,19 @@ $ npm run test:cov
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
+## Stripe billing (PRO + courses/guides)
+
+Checkout Sessions activate access via webhooks — no Payment Links required.
+
+1. Set on the API host: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, optional `STRIPE_PRO_PRICE_CENTS` (default `999`), plus `FRONTEND_URL` / `PUBLIC_SITE_URL`.
+2. Stripe Dashboard → Developers → Webhooks → endpoint  
+   `POST https://<API_HOST>/api/v1/billing/webhook`  
+   Events: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`.
+3. Enable Customer Portal in Stripe (cancel from `/account`).
+4. Sanity check: `GET /api/v1/billing/checkout-status` → `{ "enabled": true, "proPriceCents": 999, ... }`.
+
+Without `STRIPE_WEBHOOK_SECRET`, checkout stays disabled so the site never promises instant access it cannot grant.
+
 ## Course assets and S3
 
 Course covers, lesson media, PDFs and attachments are stored in S3 through `FileStorageService`. Configure:

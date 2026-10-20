@@ -6,6 +6,7 @@ import { ButtonLink } from '@/components/design-system';
 import { useProAccess } from '@/components/pro-access-provider';
 import { api } from '@/lib/api';
 import { trackEvent } from '@/lib/analytics';
+import { formatEuro } from '@/lib/offer';
 
 export type CheckoutSummary = {
   product: 'pro' | 'course';
@@ -25,6 +26,7 @@ export type CheckoutSummary = {
 export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary; canceled: boolean }) {
   const { me, loading } = useProAccess();
   const [paymentsEnabled, setPaymentsEnabled] = useState<boolean | null>(null);
+  const [apiProPriceLabel, setApiProPriceLabel] = useState<string | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [acceptedImmediate, setAcceptedImmediate] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -35,6 +37,8 @@ export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary;
     ? `/checkout?product=course&course=${encodeURIComponent(summary.courseSlug ?? '')}`
     : '/checkout?product=pro';
   const alreadyPro = summary.product === 'pro' && Boolean(me?.proAccess?.hasAccess ?? me?.plan === 'pro');
+  const displayPriceLabel =
+    summary.product === 'pro' && apiProPriceLabel ? apiProPriceLabel : summary.priceLabel;
 
   useEffect(() => {
     trackEvent('checkout_viewed', { product: summary.product, course: summary.courseSlug ?? null });
@@ -42,7 +46,15 @@ export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary;
     api
       .getCheckoutStatus()
       .then((status) => {
-        if (active) setPaymentsEnabled(status.enabled);
+        if (!active) return;
+        setPaymentsEnabled(status.enabled);
+        if (
+          summary.product === 'pro' &&
+          Number.isInteger(status.proPriceCents) &&
+          status.proPriceCents > 0
+        ) {
+          setApiProPriceLabel(formatEuro(status.proPriceCents / 100, { decimals: 2 }));
+        }
       })
       .catch(() => {
         if (active) setPaymentsEnabled(false);
@@ -81,7 +93,8 @@ export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary;
           {summary.title}
         </h2>
         <p className="mt-3 text-3xl font-black text-[var(--ink)]">
-          {summary.priceLabel} <span className="text-base font-semibold text-[var(--ink-soft)]">{summary.cadenceLabel}</span>
+          {displayPriceLabel}{' '}
+          <span className="text-base font-semibold text-[var(--ink-soft)]">{summary.cadenceLabel}</span>
         </p>
         <p className="mt-2 text-sm text-[var(--ink-soft)]">{summary.recurrenceNote}</p>
         <ul className="mt-4 space-y-2 text-sm leading-6 text-[var(--ink)]">
@@ -193,7 +206,7 @@ export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary;
               disabled={!canSubmit}
               className="btn btn--primary btn--lg btn--block"
             >
-              {submitting ? 'Redirigiendo a Stripe…' : `Pagar ${summary.priceLabel} ${summary.cadenceLabel}`.trim()}
+              {submitting ? 'Redirigiendo a Stripe…' : `Pagar ${displayPriceLabel} ${summary.cadenceLabel}`.trim()}
             </button>
             <p className="text-center text-xs text-[var(--ink-soft)]">
               Pago seguro con Stripe. No almacenamos los datos de tu tarjeta.

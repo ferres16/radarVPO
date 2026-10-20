@@ -9,7 +9,8 @@ import type { Course } from '@/types';
  * - Los precios de los cursos NO están aquí: salen siempre del curso (campo
  *   `price`), que es lo mismo que cobra Stripe. Así web y cobro no pueden divergir.
  * - El precio de PRO debe coincidir con `STRIPE_PRO_PRICE_CENTS` del backend
- *   (por defecto 999 céntimos).
+ *   (por defecto 999 céntimos). En `/checkout`, el panel usa `proPriceCents`
+ *   de `GET /billing/checkout-status` cuando está disponible.
  */
 
 export const PRO_PRICE_AMOUNT = 9.99;

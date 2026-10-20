@@ -234,6 +234,15 @@ class EnvironmentVariables {
   STRIPE_SECRET_KEY?: string;
 
   @IsOptional()
+  @IsString()
+  STRIPE_WEBHOOK_SECRET?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  STRIPE_PRO_PRICE_CENTS?: number;
+
+  @IsOptional()
   @IsUrl({ require_tld: false })
   STRIPE_PORTAL_RETURN_URL?: string;
 

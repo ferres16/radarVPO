@@ -215,7 +215,10 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
       { label: 'Módulo visible', done: modules.some((module) => module.visibility === 'visible') },
       { label: 'Lección publicada', done: lessons.some((lesson) => lesson.status === 'published') },
       { label: 'Recursos S3 cargados', done: lessons.some((lesson) => (lesson.resources || []).length > 0) },
-      { label: 'Acceso y precio coherentes', done: courseDraft.accessType !== 'paid' || Boolean(courseDraft.price && courseDraft.stripePaymentLink) },
+      {
+        label: 'Acceso y precio coherentes',
+        done: courseDraft.accessType !== 'paid' || Boolean(courseDraft.price),
+      },
     ];
   }, [
     course?.coverImage,
@@ -227,7 +230,6 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     courseDraft.price,
     courseDraft.shortDescription,
     courseDraft.slug,
-    courseDraft.stripePaymentLink,
     courseDraft.title,
     guideTopicsText,
     isGuideFormat,

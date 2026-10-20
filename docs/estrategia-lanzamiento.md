@@ -174,7 +174,7 @@ En Vercel / `.env` del frontend:
 - `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS`, `NEXT_PUBLIC_SUPPORT_EMAIL`
 - `NEXT_PUBLIC_COURSE_AUTHOR_NAME`, `NEXT_PUBLIC_COURSE_AUTHOR_BIO`
 
-En Stripe / backend: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_CENTS=999`, productos/precios de cursos alineados con el CMS. En Brevo: remitente verificado y SMS transaccional. Sin webhook de Stripe la web **no** ofrece pago (el backend lo exige para poder activar el acceso).
+En Stripe / backend: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_CENTS=999`, productos/precios de cursos alineados con el CMS. Webhook: `POST https://<API>/api/v1/billing/webhook` con eventos `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created|updated|deleted`, `charge.refunded`. Activar Customer Portal para bajas. Comprobar `GET /api/v1/billing/checkout-status` → `{ enabled: true }`. En Brevo: remitente verificado y SMS transaccional. Sin webhook de Stripe la web **no** ofrece pago (el backend lo exige para poder activar el acceso).
 
 Comprobado el 15/10/2026 contra el CMS que sirve la web local: el curso inicial tiene 2 lecciones publicadas (no se vende hasta 3) y el avanzado 1 lección, con precio **149 €** todavía en base de datos. La migración `20261015120000_commercial_launch` deja el avanzado en 89 € sin precio tachado: hay que aplicarla en el entorno real. Completar el programa del inicial es el bloqueo comercial nº 1.
 
