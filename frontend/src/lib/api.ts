@@ -218,7 +218,7 @@ export const api = {
   getPromotions: (query = '') => requestPublic<Promotion[]>(`/promotions${query}`),
   getCatalogStats: () => requestPublic<CatalogStats>('/promotions/stats', 120),
   getPromotionById: (id: string) => requestPublic<PromotionDetail>(`/promotions/${id}`, 30),
-  getAlerts: () => requestPublic<Promotion[]>('/alerts/upcoming'),
+  getAlerts: () => requestPublic<Promotion[]>('/alerts/upcoming', 15),
   getNews: () => requestPublic<NewsItem[]>('/news'),
   getNewsById: (id: string) => requestPublic<NewsItem & { rawText?: string }>(`/news/${id}`, 60),
   getMe: () => request<UserProfile>('/users/me'),

@@ -8,7 +8,10 @@ function normalizeForMatch(text: string): string {
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[''`´]/g, "'");
+    // Straight + curly/typographic apostrophes → '
+    .replace(/[\u0027\u2018\u2019\u201A\u2032\u0060\u00B4]/g, "'")
+    // Catalan geminate L separator (l·l) and bullets
+    .replace(/[\u00B7\u2022]/g, '');
 }
 
 const AMENDMENT_TOKENS = new Set([
@@ -51,7 +54,7 @@ export function isAlertCancellationNotice(
   if (!text) return false;
   return (
     /\bavis:\s*anul/.test(text) ||
-    /\banul[\s·.-]*lacio\s+de\s+l['']?alerta\b/.test(text) ||
+    /\banul[\s·.-]*l+acio\s+de\s+l['']?alerta\b/.test(text) ||
     /\bcancel+aci[oó]n\s+de\s+(la\s+)?alerta\b/.test(text)
   );
 }

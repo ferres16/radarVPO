@@ -113,6 +113,11 @@ describe('isAlertCancellationNotice', () => {
     expect(
       isAlertCancellationNotice("Avís: Anul·lació de l'alerta de Girona"),
     ).toBe(true);
+    expect(
+      isAlertCancellationNotice(
+        'AVÍS: Anul·lació de l\u2019alerta del procediment d\u2019adjudicació dels habitatges a Mataró',
+      ),
+    ).toBe(true);
   });
 
   it('allows real launch alerts', () => {

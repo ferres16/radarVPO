@@ -37,18 +37,33 @@ export class AlertsService {
       },
     });
 
-    return alerts
-      .filter(
-        (alert) =>
-          isProperaAdjudicacioAlert(alert.title) &&
-          !isAmendmentPublication(alert.title) &&
-          !isAlertCancellationNotice(alert.title),
-      )
-      .map((alert) =>
-        withPromotionView({
-          ...alert,
-          title: shortenAlertTitle(alert.title),
-        }),
-      );
+    const valid = alerts.filter(
+      (alert) =>
+        isProperaAdjudicacioAlert(alert.title) &&
+        !isAmendmentPublication(alert.title) &&
+        !isAlertCancellationNotice(alert.title),
+    );
+    const junkIds = alerts
+      .filter((alert) => !valid.some((item) => item.id === alert.id))
+      .map((alert) => alert.id);
+
+    // Archive AVÍS / non-ALERTA rows that landed in pending_review (legacy scraper).
+    if (junkIds.length > 0) {
+      await this.prisma.promotion.updateMany({
+        where: { id: { in: junkIds }, status: 'pending_review' },
+        data: {
+          status: 'archived',
+          statusMessage:
+            'Archivada automáticamente: solo cuentan como lanzamiento los títulos "ALERTA: Propera adjudicació…".',
+        },
+      });
+    }
+
+    return valid.map((alert) =>
+      withPromotionView({
+        ...alert,
+        title: shortenAlertTitle(alert.title),
+      }),
+    );
   }
 }

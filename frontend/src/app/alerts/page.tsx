@@ -10,7 +10,11 @@ import { StructuredData } from '@/components/structured-data';
 import { buildProofItems } from '@/lib/catalog-stats';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 import { getDaysRemaining, shouldShowAlert } from '@/lib/alert-countdown';
-import { isAmendmentPublication } from '@/lib/promotion-content-filters';
+import {
+  isAlertCancellationNotice,
+  isAmendmentPublication,
+  isProperaAdjudicacioAlert,
+} from '@/lib/promotion-content-filters';
 
 export const metadata: Metadata = createMetadata({
   title: 'Próximos lanzamientos de vivienda protegida',
@@ -26,6 +30,9 @@ export default async function AlertsPage() {
     api.getCatalogStats().catch(() => null),
   ]);
   const alerts = rawAlerts.filter((item) => {
+    // Solo "ALERTA: Propera adjudicació…". AVÍS de anulación no es lanzamiento.
+    if (!isProperaAdjudicacioAlert(item.title)) return false;
+    if (isAlertCancellationNotice(item.title)) return false;
     if (isAmendmentPublication(item.title)) return false;
     const daysRemaining = getDaysRemaining(item.estimatedPublicationDate);
     return daysRemaining === null || shouldShowAlert(daysRemaining);
