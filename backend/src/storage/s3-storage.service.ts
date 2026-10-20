@@ -46,6 +46,8 @@ export class S3StorageService {
     fileName: string;
     contentType: string;
     content: Buffer;
+    /** Si true, intenta ACL public-read (puede fallar si el bucket tiene ACLs desactivadas). */
+    isPublic?: boolean;
   }): Promise<{ key: string; url: string }> {
     if (!this.client || !this.bucket) {
       throw new InternalServerErrorException(
@@ -63,11 +65,38 @@ export class S3StorageService {
           Key: key,
           Body: params.content,
           ContentType: params.contentType,
+          ...(params.isPublic ? { ACL: 'public-read' as const } : {}),
         }),
       );
     } catch (error) {
-      this.logS3Error('PutObject', key, error);
-      throw error;
+      // Reintento sin ACL si el bucket usa Object Ownership (ACLs disabled).
+      const err = error as { name?: string; Code?: string; message?: string };
+      const aclBlocked =
+        params.isPublic &&
+        (err.Code === 'AccessControlListNotSupported' ||
+          err.name === 'AccessControlListNotSupported' ||
+          /ACL/i.test(err.message || ''));
+      if (aclBlocked) {
+        this.logger.warn(
+          `PutObject ACL public-read not supported for ${key}; uploading without ACL`,
+        );
+        try {
+          await this.client.send(
+            new PutObjectCommand({
+              Bucket: this.bucket,
+              Key: key,
+              Body: params.content,
+              ContentType: params.contentType,
+            }),
+          );
+        } catch (retryError) {
+          this.logS3Error('PutObject', key, retryError);
+          throw retryError;
+        }
+      } else {
+        this.logS3Error('PutObject', key, error);
+        throw error;
+      }
     }
 
     const url = this.publicBaseUrl

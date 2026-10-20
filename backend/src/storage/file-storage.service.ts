@@ -100,6 +100,7 @@ export class FileStorageService {
         fileName: params.fileName,
         contentType: params.contentType,
         content: params.content,
+        isPublic: params.isPublic,
       });
     } catch (error) {
       const err = error as { name?: string; Code?: string; message?: string };

@@ -175,8 +175,12 @@ export class AiProviderService {
         size: '1024x1024',
         n: 1,
       };
-      // dall-e-2/3 accept response_format; gpt-image-* usually returns b64 by default.
-      if (model.startsWith('dall-e')) {
+      // Solo dall-e-2/3 en api.openai.com; Azure/gpt-image no aceptan response_format.
+      const isClassicDallE =
+        /^dall-e-[23]$/i.test(model) &&
+        !baseUrl.includes('azure') &&
+        !baseUrl.includes('cognitiveservices');
+      if (isClassicDallE) {
         body.response_format = 'b64_json';
         body.quality = 'standard';
       }
