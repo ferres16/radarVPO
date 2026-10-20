@@ -11,6 +11,7 @@ export function PublicPageHero({
   titleAccent,
   description,
   actions,
+  footer,
   animated = true,
 }: {
   badge: string;
@@ -18,6 +19,7 @@ export function PublicPageHero({
   titleAccent?: string;
   description: string;
   actions?: ReactNode;
+  footer?: ReactNode;
   animated?: boolean;
 }) {
   const content = (
@@ -31,6 +33,7 @@ export function PublicPageHero({
         </h1>
         <p className="lp-page-hero__subtitle">{description}</p>
         {actions ? <div className="lp-hero__actions lp-hero__actions--stack">{actions}</div> : null}
+        {footer}
       </div>
     </section>
   );

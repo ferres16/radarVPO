@@ -16,6 +16,7 @@ export function HomeOfferStrip() {
               event={layer.event}
               eventProperties={{ source: 'home_offer', layer: layer.id }}
               variant={layer.id === 'consult' ? 'primary' : 'secondary'}
+              block
             >
               {layer.cta}
             </TrackedButtonLink>

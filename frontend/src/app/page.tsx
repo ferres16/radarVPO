@@ -6,11 +6,13 @@ import { HomeFaq } from '@/components/conversion/home-faq';
 import { HomeFinalCtaBand, HomeHeroActions } from '@/components/conversion/home-pro-ctas';
 import { HomeOfferStrip } from '@/components/conversion/home-offer-strip';
 import { PdfViewerDemo } from '@/components/conversion/pdf-viewer-demo';
+import { ProofStats } from '@/components/conversion/proof-stats';
 import { SpaceDemo } from '@/components/conversion/space-demo';
 import { PromotionCard } from '@/components/promotion-card';
 import { StructuredData } from '@/components/structured-data';
-import { homeFaqs, homeHeroProof } from '@/lib/conversion';
-import { publicPublishedPromotions } from '@/lib/public-promotions';
+import { buildProofItems } from '@/lib/catalog-stats';
+import { homeFaqs } from '@/lib/conversion';
+import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
@@ -29,16 +31,23 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function Home() {
-  const [courses, promotions] = await Promise.all([
+  const [courses, promotions, stats] = await Promise.all([
     api.listCourses().catch(() => []),
-    api.getPromotions('?limit=12').catch(() => []),
+    api.getPromotions('?limit=40').catch(() => []),
+    api.getCatalogStats().catch(() => null),
   ]);
   const sortedCourses = [...courses].sort(
     (a, b) => a.order - b.order || a.title.localeCompare(b.title),
   );
   const featuredCourse =
     sortedCourses.find((course) => course.slug === 'vpo-inicial') ?? sortedCourses[0];
-  const previewPromotions = publicPublishedPromotions(promotions, 3);
+  const listed = publicPublishedPromotions(promotions);
+  const previewPromotions = listed.slice(0, 3);
+  const samplePromotion = previewPromotions[0];
+  const proofItems = buildProofItems(stats, {
+    published: listed.length,
+    municipalities: uniqueMunicipalities(listed).length,
+  });
 
   return (
     <>
@@ -52,24 +61,17 @@ export default async function Home() {
               <div className="lp-hero__inner">
                 <span className="lp-hero__badge">Vivienda protegida · Cataluña</span>
                 <h1 id="hero-title" className="lp-hero__title">
-                  Aprende a preparar tus solicitudes de vivienda protegida
-                  <span className="lp-hero__title-accent"> y organiza tus oportunidades en un solo lugar.</span>
+                  Prepara tu solicitud de vivienda protegida
+                  <span className="lp-hero__title-accent"> con el PDF oficial, el curso y tus oportunidades.</span>
                 </h1>
                 <p className="lp-hero__subtitle">
-                  Consulta las convocatorias con su PDF oficial, entiende el proceso con un curso y sigue las
-                  que te interesan. Empieza gratis, sin cuenta.
+                  Empieza gratis en el móvil. Sin cuenta para consultar las bases. El curso es pago único; PRO
+                  avisa por SMS.
                 </p>
                 <HomeHeroActions />
-                <ul className="lp-hero__proof">
-                  {homeHeroProof.map((item) => (
-                    <li key={item}>
-                      <span className="lp-hero__proof-mark" aria-hidden="true" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
+                <ProofStats items={proofItems} />
               </div>
-              <PdfViewerDemo />
+              {samplePromotion ? <PdfViewerDemo promotion={samplePromotion} /> : null}
             </div>
           </div>
         </section>
@@ -102,7 +104,9 @@ export default async function Home() {
                 ))}
               </div>
               <div className="mt-6">
-                <ButtonLink href="/promotions">Ver todas las promociones</ButtonLink>
+                <ButtonLink href="/promotions" className="w-full sm:w-auto">
+                  Ver todas las promociones
+                </ButtonLink>
               </div>
             </div>
           </section>
@@ -139,12 +143,12 @@ export default async function Home() {
                 SMS.
               </p>
               <div className="mt-6">
-                <ButtonLink href="/pro" variant="secondary">
+                <ButtonLink href="/pro" variant="secondary" className="w-full sm:w-auto">
                   Ver qué incluye PRO
                 </ButtonLink>
               </div>
             </div>
-            <SpaceDemo />
+            {samplePromotion ? <SpaceDemo promotion={samplePromotion} /> : null}
           </div>
         </section>
 

@@ -46,6 +46,7 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
           <TrackedButtonLink
             href={`/cursos/${course.slug}`}
             size="lg"
+            block
             event="course_cta_clicked"
             eventProperties={{ source: 'home_spotlight', course: course.slug }}
           >

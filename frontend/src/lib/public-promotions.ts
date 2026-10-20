@@ -24,3 +24,19 @@ export function uniqueMunicipalities(promotions: readonly Promotion[]): string[]
   }
   return [...values].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 }
+
+/** Misma localización que usa el SMS/email de PRO (municipio, provincia). */
+export function promotionNotifyLocation(
+  promotion: Pick<Promotion, 'municipality' | 'province'>,
+): string {
+  return [promotion.municipality, promotion.province].filter(Boolean).join(', ') || 'Cataluña';
+}
+
+export function promotionPlaceLabel(
+  promotion: Pick<Promotion, 'municipality' | 'province'>,
+): string {
+  const municipality = promotion.municipality?.trim() || '';
+  const province = promotion.province?.trim() || '';
+  if (municipality && province && municipality !== province) return `${municipality}, ${province}`;
+  return municipality || province || 'Cataluña';
+}

@@ -5,6 +5,7 @@ import {
   BackofficeCancellationRequest,
   BackofficeCancellationProcessResult,
   BackofficeUser,
+  CatalogStats,
   Course,
   CourseAccessRule,
   CourseAccessRuleType,
@@ -212,6 +213,7 @@ async function requestForm<T>(path: string, body: FormData): Promise<T> {
 
 export const api = {
   getPromotions: (query = '') => requestPublic<Promotion[]>(`/promotions${query}`),
+  getCatalogStats: () => requestPublic<CatalogStats>('/promotions/stats', 120),
   getPromotionById: (id: string) => requestPublic<PromotionDetail>(`/promotions/${id}`, 30),
   getAlerts: () => requestPublic<Promotion[]>('/alerts/upcoming'),
   getNews: () => requestPublic<NewsItem[]>('/news'),

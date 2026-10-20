@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, PromotionStatus } from '@prisma/client';
+import { Prisma, PromotionStatus, SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
 import { UpdateFavoriteDto } from './dto/update-favorite.dto';
@@ -324,5 +324,52 @@ export class PromotionsService {
     );
 
     return { ...promotion, documents };
+  }
+
+  async publicStats() {
+    const publishedWhere: Prisma.PromotionWhereInput = {
+      status: { in: PUBLIC_PROMOTION_STATUSES },
+      AND: [
+        { NOT: { title: { contains: 'alerta', mode: 'insensitive' } } },
+        ...AMENDMENT_TITLE_CONTAINS.map((term) => ({
+          NOT: { title: { contains: term, mode: 'insensitive' as const } },
+        })),
+      ],
+    };
+
+    const [publishedPromotions, groupedMunicipalities, accounts, proSubscriptions] =
+      await Promise.all([
+        this.prisma.promotion.count({ where: publishedWhere }),
+        this.prisma.promotion.groupBy({
+          by: ['municipality'],
+          where: { ...publishedWhere, municipality: { not: null } },
+        }),
+        this.prisma.user.count(),
+        this.prisma.user.count({
+          where: {
+            OR: [
+              { plan: 'pro' },
+              {
+                subscriptions: {
+                  some: {
+                    planKey: 'pro',
+                    status: {
+                      in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+                    },
+                  },
+                },
+              },
+            ],
+          },
+        }),
+      ]);
+
+    return {
+      publishedPromotions,
+      municipalities: groupedMunicipalities.filter((row) => row.municipality?.trim())
+        .length,
+      accounts,
+      proSubscriptions,
+    };
   }
 }

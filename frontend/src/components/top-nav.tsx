@@ -90,9 +90,16 @@ export function TopNav() {
           </span>
         </Link>
 
+        <div className="ml-auto flex min-w-0 items-center gap-2 lg:hidden">
+          {!hasPro ? (
+            <ProCtaLink
+              label="Hazte PRO"
+              className="inline-flex min-h-11 shrink-0 items-center rounded-full bg-[var(--green-700)] px-3.5 text-sm font-black text-white"
+            />
+          ) : null}
         <button
           type="button"
-          className="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--stroke)] bg-white/90 text-[var(--ink)] transition hover:bg-[var(--bg-eco)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] lg:hidden"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--stroke)] bg-white/90 text-[var(--ink)] transition hover:bg-[var(--bg-eco)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
           onClick={() => setMobileOpen((value) => !value)}
           aria-expanded={mobileOpen}
           aria-controls="mobile-navigation"
@@ -105,6 +112,7 @@ export function TopNav() {
             <span className={`block h-0.5 w-5 rounded-full bg-current transition ${mobileOpen ? '-translate-y-2 -rotate-45' : ''}`} />
           </span>
         </button>
+        </div>
 
         <div className="hidden min-w-0 flex-1 items-center justify-end gap-2 lg:flex xl:gap-3">
           <nav

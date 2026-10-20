@@ -33,6 +33,11 @@ export class PromotionsController {
     return this.promotionsService.listFavorites(user.sub);
   }
 
+  @Get('stats')
+  async stats() {
+    return this.promotionsService.publicStats();
+  }
+
   @Get(':id')
   async byId(@Param('id') id: string) {
     return this.promotionsService.getById(id);

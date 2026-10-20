@@ -4,10 +4,12 @@ import { copy } from '@/lib/navigation';
 import { InlineAdCard } from '@/components/ads';
 import { AlertsProCtaBand } from '@/components/conversion/alerts-pro-cta-band';
 import { PromotionsExplorer } from '@/components/conversion/promotions-explorer';
+import { ProofStats } from '@/components/conversion/proof-stats';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
-import { publicPublishedPromotions } from '@/lib/public-promotions';
+import { buildProofItems } from '@/lib/catalog-stats';
+import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
 export const revalidate = 30;
@@ -21,8 +23,16 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function PromotionsPage() {
-  const promotions = await api.getPromotions('?limit=40').catch(() => []);
-  const visiblePromotions = publicPublishedPromotions(promotions, 24);
+  const [promotions, stats] = await Promise.all([
+    api.getPromotions('?limit=50').catch(() => []),
+    api.getCatalogStats().catch(() => null),
+  ]);
+  const listed = publicPublishedPromotions(promotions);
+  const visiblePromotions = listed.slice(0, 24);
+  const proofItems = buildProofItems(stats, {
+    published: listed.length,
+    municipalities: uniqueMunicipalities(listed).length,
+  });
 
   return (
     <PublicPage>
@@ -39,6 +49,7 @@ export default async function PromotionsPage() {
         title="Promociones publicadas"
         titleAccent="con su documento oficial"
         description="Abre las bases y anexos oficiales de cada promoción sin salir de Radar VPO. Es gratis y no necesitas cuenta."
+        footer={<ProofStats items={proofItems} />}
       />
 
       {visiblePromotions.length === 0 ? (

@@ -1,11 +1,13 @@
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
+import { ProofStats } from '@/components/conversion/proof-stats';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { AlertsProCtaBand } from '@/components/conversion/alerts-pro-cta-band';
 import { AlertTimeline } from '@/components/saas/alert-timeline';
 import { StructuredData } from '@/components/structured-data';
+import { buildProofItems } from '@/lib/catalog-stats';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 import { getDaysRemaining, shouldShowAlert } from '@/lib/alert-countdown';
 import { isAmendmentPublication } from '@/lib/promotion-content-filters';
@@ -19,11 +21,27 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function AlertsPage() {
-  const alerts = (await api.getAlerts().catch(() => [])).filter((item) => {
+  const [rawAlerts, stats] = await Promise.all([
+    api.getAlerts().catch(() => []),
+    api.getCatalogStats().catch(() => null),
+  ]);
+  const alerts = rawAlerts.filter((item) => {
     if (isAmendmentPublication(item.title)) return false;
     const daysRemaining = getDaysRemaining(item.estimatedPublicationDate);
     return daysRemaining === null || shouldShowAlert(daysRemaining);
   });
+  const proofItems = [
+    ...(alerts.length > 0
+      ? [
+          {
+            value: String(alerts.length),
+            label: alerts.length === 1 ? 'lanzamiento estimado' : 'lanzamientos estimados',
+          },
+        ]
+      : []),
+    ...buildProofItems(stats).filter((item) => item.label !== 'consultar el PDF oficial'),
+    { value: '0 €', label: 'consultar el PDF oficial' },
+  ];
 
   return (
     <PublicPage>
@@ -46,6 +64,7 @@ export default async function AlertsPage() {
             </ButtonLink>
           </div>
         }
+        footer={<ProofStats items={proofItems} />}
       />
 
       <PublicSection id="lanzamientos" animated={false}>

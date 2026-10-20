@@ -23,6 +23,14 @@ export type Promotion = {
   pdfCount?: number;
 };
 
+/** Recuentos públicos del catálogo. Cifras exactas de la base; el front las redondea a umbrales. */
+export type CatalogStats = {
+  publishedPromotions: number;
+  municipalities: number;
+  accounts: number;
+  proSubscriptions: number;
+};
+
 export type FavoriteStage = 'interested' | 'preparing' | 'applied' | 'discarded';
 
 /** Promoción guardada en "Mi espacio" con el seguimiento personal del usuario. */

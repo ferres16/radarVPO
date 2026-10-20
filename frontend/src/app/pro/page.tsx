@@ -3,14 +3,17 @@ import Link from 'next/link';
 import { api } from '@/lib/api';
 import { TrackedButtonLink } from '@/components/tracked-link';
 import { HomeFaq } from '@/components/conversion/home-faq';
+import { NotifyPreview } from '@/components/conversion/notify-preview';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
+import { ProofStats } from '@/components/conversion/proof-stats';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { SpaceDemo } from '@/components/conversion/space-demo';
 import { ProGate, ProOnlyMessage } from '@/components/pro/pro-cta';
 import { ProComparison } from '@/components/pro-comparison';
 import { StructuredData } from '@/components/structured-data';
+import { buildProofItems } from '@/lib/catalog-stats';
 import { getCourseStatusSummary, isIncludedInPro } from '@/lib/offer';
-import { publicPublishedPromotions } from '@/lib/public-promotions';
+import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
 import { proFaqs, proForWhom, proIncludes, proLimits, proPlan, proWhyPay } from '@/lib/pro';
 import { breadcrumbJsonLd, createMetadata, faqJsonLd } from '@/lib/seo';
 
@@ -22,13 +25,18 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function ProPage() {
-  const [courses, promotions] = await Promise.all([
+  const [courses, promotions, stats] = await Promise.all([
     api.listCourses().catch(() => []),
-    api.getPromotions('?limit=8').catch(() => []),
+    api.getPromotions('?limit=50').catch(() => []),
+    api.getCatalogStats().catch(() => null),
   ]);
   const includedCourses = courses.filter(isIncludedInPro);
-  const sample = publicPublishedPromotions(promotions, 1)[0];
-  const samplePlace = sample?.municipality?.trim() || sample?.province?.trim() || 'tu municipio';
+  const listed = publicPublishedPromotions(promotions);
+  const sample = listed[0];
+  const proofItems = buildProofItems(stats, {
+    published: listed.length,
+    municipalities: uniqueMunicipalities(listed).length,
+  });
 
   return (
     <PublicPage>
@@ -72,6 +80,7 @@ export default async function ProPage() {
             </ProOnlyMessage>
           </>
         }
+        footer={<ProofStats items={proofItems} />}
       />
 
       <PublicSection>
@@ -127,27 +136,20 @@ export default async function ProPage() {
           <div>
             <p className="lp-eyebrow">Demostración</p>
             <h2 className="lp-title">Así llega un aviso</h2>
-            <p className="lp-lead">
-              Formato ilustrativo. Si hay una promoción publicada, usamos su municipio para que se vea el tipo de
-              mensaje; el envío real depende de las fuentes que monitorizamos.
-            </p>
-            <div className="mt-4 grid gap-4">
-              <article className="public-card p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--ink-soft)]">SMS</p>
-                <p className="mt-2 rounded-xl bg-[var(--bg-app)] p-3 text-sm text-[var(--ink)]">
-                  Radar VPO PRO: nueva promoción publicada en {samplePlace}. {sample ? 'radarvpo.com/promotions' : '[enlace]'}
-                </p>
-              </article>
-              <article className="public-card p-4">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--ink-soft)]">Email</p>
-                <p className="mt-2 rounded-xl bg-[var(--bg-app)] p-3 text-sm text-[var(--ink)]">
-                  Nueva promoción VPO publicada{sample ? `: ${sample.title}` : ': [nombre de la promoción]'}. Puedes
-                  consultar el documento oficial aquí.
-                </p>
-              </article>
-            </div>
+            {sample ? (
+              <p className="lp-lead">
+                Texto real del sistema para una promoción publicada ahora. El envío depende de las fuentes que
+                monitorizamos.
+              </p>
+            ) : (
+              <p className="lp-lead">
+                Cuando se publique una promoción, el SMS incluye el municipio y el enlace a su ficha. No mostramos un
+                ejemplo inventado.
+              </p>
+            )}
+            {sample ? <div className="mt-4"><NotifyPreview promotion={sample} /></div> : null}
           </div>
-          <SpaceDemo />
+          {sample ? <SpaceDemo promotion={sample} /> : null}
         </div>
       </PublicSection>
 
