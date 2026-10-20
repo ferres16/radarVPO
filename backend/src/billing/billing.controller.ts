@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
-import { SkipThrottle, Throttle } from '@nestjs/throttler';
+import { minutes, seconds, SkipThrottle, Throttle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -32,7 +32,7 @@ export class BillingController {
   @Post('checkout')
   @ApiCookieAuth('access_token')
   @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { limit: 10, ttl: 60 } })
+  @Throttle({ default: { limit: 10, ttl: seconds(60) } })
   createCheckout(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateCheckoutDto,
@@ -54,7 +54,7 @@ export class BillingController {
   @Post('create-portal-session')
   @ApiCookieAuth('access_token')
   @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { limit: 5, ttl: 60 } })
+  @Throttle({ default: { limit: 5, ttl: seconds(60) } })
   createPortalSession(@CurrentUser() user: CurrentUserPayload) {
     return this.billingService.createPortalSession(user.sub);
   }
@@ -62,7 +62,7 @@ export class BillingController {
   @Post('request-cancellation')
   @ApiCookieAuth('access_token')
   @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { limit: 3, ttl: 3600 } })
+  @Throttle({ default: { limit: 3, ttl: minutes(60) } })
   requestCancellation(@CurrentUser() user: CurrentUserPayload) {
     return this.billingService.requestCancellation(user.sub);
   }
@@ -70,7 +70,7 @@ export class BillingController {
   @Post('withdraw-cancellation')
   @ApiCookieAuth('access_token')
   @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { limit: 5, ttl: 60 } })
+  @Throttle({ default: { limit: 5, ttl: seconds(60) } })
   withdrawCancellation(@CurrentUser() user: CurrentUserPayload) {
     return this.billingService.withdrawCancellation(user.sub);
   }

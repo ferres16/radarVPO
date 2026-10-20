@@ -18,8 +18,8 @@ export function buildProofItems(
   stats: Partial<CatalogStats> | null,
   listed?: { published: number; municipalities: number },
 ): ProofItem[] {
-  const published = stats?.publishedPromotions || listed?.published || 0;
-  const municipalities = stats?.municipalities || listed?.municipalities || 0;
+  const published = listed?.published ?? stats?.publishedPromotions ?? 0;
+  const municipalities = listed?.municipalities ?? stats?.municipalities ?? 0;
   const items: ProofItem[] = [];
 
   if (published > 0) {

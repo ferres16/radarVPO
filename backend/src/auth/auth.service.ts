@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -23,6 +24,8 @@ import {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly usersService: UsersService,
@@ -36,7 +39,9 @@ export class AuthService {
       dto.email.toLowerCase(),
     );
     if (existing) {
-      throw new BadRequestException('Email already in use');
+      throw new BadRequestException(
+        'No se ha podido crear la cuenta con esos datos. Si ya tienes cuenta, inicia sesión.',
+      );
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
@@ -49,6 +54,19 @@ export class AuthService {
         passwordHash,
         role: 'user',
         plan: 'free',
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        action: 'auth.register.privacy_accepted',
+        entity: 'User',
+        entityId: user.id,
+        metadata: {
+          source: 'register',
+          acceptedAt: new Date().toISOString(),
+        },
       },
     });
 
@@ -151,10 +169,7 @@ export class AuthService {
         recentRequest.createdAt,
       );
       if (remainingMs > 0) {
-        const remainingHours = Math.ceil(remainingMs / (60 * 60 * 1000));
-        throw new BadRequestException(
-          `Solo puedes solicitar un enlace de recuperación una vez cada 24 horas. Vuelve a intentarlo en ${remainingHours} h.`,
-        );
+        return genericResponse;
       }
     }
 
@@ -177,9 +192,7 @@ export class AuthService {
     });
 
     if (!sent) {
-      throw new BadRequestException(
-        'No se pudo enviar el correo de recuperación. Inténtalo más tarde.',
-      );
+      this.logger.warn(`Password reset email was not sent for user ${user.id}`);
     }
 
     return genericResponse;

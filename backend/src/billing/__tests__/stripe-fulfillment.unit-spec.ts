@@ -3,6 +3,7 @@ import {
   amountToCents,
   centsToAmount,
   extractSubscriptionPeriod,
+  isOneOffPurchasableAccessType,
   mapStripeSubscriptionStatus,
   parseCheckoutMetadata,
   shouldKeepProPlan,
@@ -17,7 +18,9 @@ describe('parseCheckoutMetadata', () => {
   });
 
   it('requires a course id for course checkouts', () => {
-    expect(parseCheckoutMetadata({ product: 'course', userId: 'u' })).toBeNull();
+    expect(
+      parseCheckoutMetadata({ product: 'course', userId: 'u' }),
+    ).toBeNull();
     expect(
       parseCheckoutMetadata({
         product: 'course',
@@ -34,7 +37,9 @@ describe('parseCheckoutMetadata', () => {
   });
 
   it('rejects unknown products or missing users', () => {
-    expect(parseCheckoutMetadata({ product: 'service', userId: 'u' })).toBeNull();
+    expect(
+      parseCheckoutMetadata({ product: 'service', userId: 'u' }),
+    ).toBeNull();
     expect(parseCheckoutMetadata({ product: 'pro' })).toBeNull();
     expect(parseCheckoutMetadata(null)).toBeNull();
   });
@@ -42,11 +47,21 @@ describe('parseCheckoutMetadata', () => {
 
 describe('mapStripeSubscriptionStatus', () => {
   it('maps the statuses we act on', () => {
-    expect(mapStripeSubscriptionStatus('active')).toBe(SubscriptionStatus.active);
-    expect(mapStripeSubscriptionStatus('trialing')).toBe(SubscriptionStatus.trialing);
-    expect(mapStripeSubscriptionStatus('past_due')).toBe(SubscriptionStatus.past_due);
-    expect(mapStripeSubscriptionStatus('unpaid')).toBe(SubscriptionStatus.past_due);
-    expect(mapStripeSubscriptionStatus('canceled')).toBe(SubscriptionStatus.canceled);
+    expect(mapStripeSubscriptionStatus('active')).toBe(
+      SubscriptionStatus.active,
+    );
+    expect(mapStripeSubscriptionStatus('trialing')).toBe(
+      SubscriptionStatus.trialing,
+    );
+    expect(mapStripeSubscriptionStatus('past_due')).toBe(
+      SubscriptionStatus.past_due,
+    );
+    expect(mapStripeSubscriptionStatus('unpaid')).toBe(
+      SubscriptionStatus.past_due,
+    );
+    expect(mapStripeSubscriptionStatus('canceled')).toBe(
+      SubscriptionStatus.canceled,
+    );
     expect(mapStripeSubscriptionStatus('incomplete_expired')).toBe(
       SubscriptionStatus.expired,
     );
@@ -55,6 +70,18 @@ describe('mapStripeSubscriptionStatus', () => {
   it('ignores pending payments', () => {
     expect(mapStripeSubscriptionStatus('incomplete')).toBeNull();
     expect(mapStripeSubscriptionStatus('paused')).toBeNull();
+  });
+});
+
+describe('isOneOffPurchasableAccessType', () => {
+  it('allows paid and free courses to be sold as a one-off purchase', () => {
+    expect(isOneOffPurchasableAccessType('paid')).toBe(true);
+    expect(isOneOffPurchasableAccessType('free')).toBe(true);
+  });
+
+  it('rejects PRO-included and legacy 1:1 access types', () => {
+    expect(isOneOffPurchasableAccessType('pro')).toBe(false);
+    expect(isOneOffPurchasableAccessType('seguimiento')).toBe(false);
   });
 });
 
@@ -76,7 +103,14 @@ describe('extractSubscriptionPeriod', () => {
     const period = extractSubscriptionPeriod({
       status: 'active',
       cancel_at_period_end: true,
-      items: { data: [{ current_period_start: 1_700_000_000, current_period_end: 1_702_592_000 }] },
+      items: {
+        data: [
+          {
+            current_period_start: 1_700_000_000,
+            current_period_end: 1_702_592_000,
+          },
+        ],
+      },
     });
     expect(period.start?.toISOString()).toBe('2023-11-14T22:13:20.000Z');
     expect(period.end?.toISOString()).toBe('2023-12-14T22:13:20.000Z');

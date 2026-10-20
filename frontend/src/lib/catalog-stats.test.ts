@@ -31,6 +31,14 @@ describe('buildProofItems', () => {
     expect(items.some((item) => item.label.includes('registrad'))).toBe(false);
   });
 
+  it('uses the listed count when it differs from catalog stats', () => {
+    const items = buildProofItems(
+      { publishedPromotions: 35, municipalities: 16 },
+      { published: 24, municipalities: 16 },
+    );
+    expect(items.find((item) => item.label === 'promociones publicadas')?.value).toBe('24');
+  });
+
   it('adds PRO when live count reaches the floor', () => {
     const items = buildProofItems({
       publishedPromotions: 24,

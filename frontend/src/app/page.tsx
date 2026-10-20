@@ -12,13 +12,14 @@ import { PromotionCard } from '@/components/promotion-card';
 import { StructuredData } from '@/components/structured-data';
 import { buildProofItems } from '@/lib/catalog-stats';
 import { homeFaqs } from '@/lib/conversion';
+import { pickFeaturedPublicCourse } from '@/lib/public-courses';
 import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Prepara tus solicitudes de vivienda protegida en Cataluña',
+  title: 'Consulta promociones de vivienda protegida en Cataluña',
   description:
-    'Consulta promociones de vivienda protegida con su documento oficial, aprende a preparar tu solicitud con un curso y organiza tus oportunidades en un solo lugar.',
+    'Consulta promociones de vivienda protegida con su documento oficial, entiende el contexto con una guía y organiza tus oportunidades en un solo lugar.',
   path: '/',
   keywords: [
     'vivienda protegida Cataluña',
@@ -33,14 +34,10 @@ export const metadata: Metadata = createMetadata({
 export default async function Home() {
   const [courses, promotions, stats] = await Promise.all([
     api.listCourses().catch(() => []),
-    api.getPromotions('?limit=40').catch(() => []),
+    api.getPromotions('?limit=100').catch(() => []),
     api.getCatalogStats().catch(() => null),
   ]);
-  const sortedCourses = [...courses].sort(
-    (a, b) => a.order - b.order || a.title.localeCompare(b.title),
-  );
-  const featuredCourse =
-    sortedCourses.find((course) => course.slug === 'vpo-inicial') ?? sortedCourses[0];
+  const featuredCourse = pickFeaturedPublicCourse(courses);
   const listed = publicPublishedPromotions(promotions);
   const previewPromotions = listed.slice(0, 3);
   const samplePromotion = previewPromotions[0];
@@ -61,12 +58,12 @@ export default async function Home() {
               <div className="lp-hero__inner">
                 <span className="lp-hero__badge">Vivienda protegida · Cataluña</span>
                 <h1 id="hero-title" className="lp-hero__title">
-                  Prepara tu solicitud de vivienda protegida
-                  <span className="lp-hero__title-accent"> con el PDF oficial, el curso y tus oportunidades.</span>
+                  Consulta la vivienda protegida en Cataluña
+                  <span className="lp-hero__title-accent"> con el PDF oficial, las guías y tus oportunidades.</span>
                 </h1>
                 <p className="lp-hero__subtitle">
-                  Empieza gratis en el móvil. Sin cuenta para consultar las bases. El curso es pago único; PRO
-                  avisa por SMS.
+                  Empieza gratis en el móvil. Sin cuenta para consultar las bases. La primera guía trata contexto,
+                  ayudas e hipoteca; PRO avisa por SMS.
                 </p>
                 <HomeHeroActions />
                 <ProofStats items={proofItems} />
@@ -118,11 +115,11 @@ export default async function Home() {
               <div className="lp-section__head">
                 <p className="lp-eyebrow">Curso</p>
                 <h2 id="courses-title" className="lp-title">
-                  Un programa para preparar la solicitud
+                  Una guía para entender contexto, ayudas e hipoteca
                 </h2>
                 <p className="lp-lead">
-                  Pago único, sin renovaciones. Ves el índice real y el precio final antes de comprar. PRO incluye el
-                  inicial solo mientras la suscripción esté activa.
+                  Pago único, sin renovaciones. Ves el índice real y el precio final antes de comprar. La preparación
+                  de la solicitud corresponde a una guía posterior.
                 </p>
               </div>
               <FeaturedCourseSpotlight course={featuredCourse} />

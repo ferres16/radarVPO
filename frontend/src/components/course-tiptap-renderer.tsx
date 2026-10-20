@@ -1,5 +1,6 @@
 import type { JSX as ReactJSX, ReactNode } from 'react';
 import { CourseHostedVideoPlayer } from '@/components/course-hosted-video-player';
+import { sanitizeHref, sanitizeImageSrc, sanitizeYoutubeEmbedSrc } from '@/lib/safe-media-url';
 
 type RichMark = {
   type?: string;
@@ -30,7 +31,7 @@ function renderInline(nodes?: RichNode[]): ReactNode {
         if (mark.type === 'italic') text = <em key={`${key}-i`}>{text}</em>;
         if (mark.type === 'highlight') text = <mark key={`${key}-h`} className="rounded bg-amber-100 px-1">{text}</mark>;
         if (mark.type === 'link') {
-          const href = getMarkHref(mark.attrs);
+          const href = sanitizeHref(getMarkHref(mark.attrs));
           if (href) {
             text = (
               <a key={`${key}-l`} href={href} className="font-semibold text-[var(--green-700)] underline" target="_blank" rel="noopener noreferrer">
@@ -96,7 +97,7 @@ function renderNodes(nodes?: RichNode[]): ReactNode {
       );
     }
     if (node.type === 'image') {
-      const src = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
+      const src = sanitizeImageSrc(typeof node.attrs?.src === 'string' ? node.attrs.src : '');
       const alt = typeof node.attrs?.alt === 'string' ? node.attrs.alt : '';
       if (!src) return null;
       return (
@@ -105,7 +106,7 @@ function renderNodes(nodes?: RichNode[]): ReactNode {
       );
     }
     if (node.type === 'youtube') {
-      const src = typeof node.attrs?.src === 'string' ? node.attrs.src : '';
+      const src = sanitizeYoutubeEmbedSrc(typeof node.attrs?.src === 'string' ? node.attrs.src : '');
       if (!src) return null;
       return (
         <iframe
@@ -120,7 +121,7 @@ function renderNodes(nodes?: RichNode[]): ReactNode {
     }
     if (node.type === 'hostedVideo') {
       const assetId = typeof node.attrs?.assetId === 'string' ? node.attrs.assetId : null;
-      const fallbackSrc = typeof node.attrs?.src === 'string' ? node.attrs.src : null;
+      const fallbackSrc = sanitizeHref(typeof node.attrs?.src === 'string' ? node.attrs.src : null);
       const title = typeof node.attrs?.title === 'string' ? node.attrs.title : 'Vídeo de la lección';
       return (
         <CourseHostedVideoPlayer

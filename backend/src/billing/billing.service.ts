@@ -14,6 +14,7 @@ import {
   UserPlan,
 } from '@prisma/client';
 import type Stripe from 'stripe';
+import { isInternalCatalogCourse } from '../common/public-courses';
 import { resolvePublicSiteUrl } from '../common/public-site-url';
 import { CommerceService } from '../commerce/commerce.service';
 import { PromoRulesService } from '../commerce/promo-rules.service';
@@ -26,6 +27,7 @@ import {
   DEFAULT_PRO_PRICE_CENTS,
   extractSubscriptionPeriod,
   formatEuroAmount,
+  isOneOffPurchasableAccessType,
   mapStripeSubscriptionStatus,
   MIN_PUBLISHED_LESSONS_TO_SELL,
   parseCheckoutMetadata,
@@ -273,7 +275,11 @@ export class BillingService {
         },
       },
     });
-    if (!course || course.status !== CourseStatus.published) {
+    if (
+      !course ||
+      course.status !== CourseStatus.published ||
+      isInternalCatalogCourse(course)
+    ) {
       throw new BadRequestException('Curso no disponible.');
     }
     const isGuide = course.format === 'guide_pdf';
@@ -291,7 +297,8 @@ export class BillingService {
     if (
       !unitAmount ||
       course.pricingType !== 'premium' ||
-      (course.currency && course.currency.toLowerCase() !== 'eur')
+      (course.currency && course.currency.toLowerCase() !== 'eur') ||
+      !isOneOffPurchasableAccessType(course.accessType)
     ) {
       throw new BadRequestException('Este curso no está a la venta.');
     }
@@ -397,14 +404,24 @@ export class BillingService {
         break;
     }
 
-    await this.prisma.auditLog.create({
-      data: {
-        action: 'stripe.webhook.processed',
-        entity: 'StripeEvent',
-        entityId: event.id,
-        metadata: { type: event.type } as Prisma.InputJsonValue,
-      },
-    });
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          action: 'stripe.webhook.processed',
+          entity: 'StripeEvent',
+          entityId: event.id,
+          metadata: { type: event.type } as Prisma.InputJsonValue,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        return { received: true, duplicate: true };
+      }
+      throw error;
+    }
 
     return { received: true };
   }
@@ -498,7 +515,6 @@ export class BillingService {
           notes: `Stripe checkout ${session.id}`,
         },
       });
-
       const course = await this.prisma.course.findUnique({
         where: { id: meta.courseId },
         select: { title: true, slug: true },
@@ -523,6 +539,7 @@ export class BillingService {
           fallbackHtml: `<p>Hola ${displayName},</p><p>Tu compra se ha confirmado. Ya puedes acceder.</p>`,
         })
         .catch(() => undefined);
+      await this.recordCheckoutConsent(user.id, session);
       return;
     }
 
@@ -595,7 +612,30 @@ export class BillingService {
           fallbackHtml: `<p>Hola ${displayName},</p><p>Tu suscripción PRO ya está activa.</p>`,
         })
         .catch(() => undefined);
+      await this.recordCheckoutConsent(user.id, session);
     }
+  }
+
+  private async recordCheckoutConsent(
+    userId: string,
+    session: Stripe.Checkout.Session,
+  ) {
+    const termsAcceptedAt = session.metadata?.termsAcceptedAt;
+    if (!termsAcceptedAt) return;
+    await this.prisma.auditLog.create({
+      data: {
+        userId,
+        action: 'billing.checkout.terms_accepted',
+        entity: 'CheckoutSession',
+        entityId: session.id,
+        metadata: {
+          product: session.metadata?.product ?? null,
+          termsAcceptedAt,
+          immediateAccessAccepted:
+            session.metadata?.immediateAccessAccepted ?? null,
+        } as Prisma.InputJsonValue,
+      },
+    });
   }
 
   /**
@@ -989,7 +1029,6 @@ export class BillingService {
         },
       },
       data: {
-        status: SubscriptionStatus.canceled,
         cancelAt: latestPeriodEnd ? new Date(latestPeriodEnd) : new Date(),
       },
     });

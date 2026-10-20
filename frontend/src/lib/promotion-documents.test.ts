@@ -7,6 +7,8 @@ import {
   clampPage,
   clampZoom,
   getViewableDocuments,
+  isBlockedHostname,
+  isBlockedResolvedAddress,
   isSafePdfUrl,
 } from './promotion-documents';
 
@@ -37,6 +39,19 @@ describe('isSafePdfUrl', () => {
     expect(isSafePdfUrl('javascript:alert(1)')).toBe(false);
     expect(isSafePdfUrl('')).toBe(false);
     expect(isSafePdfUrl(null)).toBe(false);
+    expect(isSafePdfUrl('https://metadata.google.internal/latest')).toBe(false);
+  });
+});
+
+describe('resolved address blocking', () => {
+  it('blocks private, loopback and metadata ranges', () => {
+    expect(isBlockedResolvedAddress('127.0.0.1')).toBe(true);
+    expect(isBlockedResolvedAddress('10.0.0.8')).toBe(true);
+    expect(isBlockedResolvedAddress('192.168.1.1')).toBe(true);
+    expect(isBlockedResolvedAddress('169.254.169.254')).toBe(true);
+    expect(isBlockedResolvedAddress('::1')).toBe(true);
+    expect(isBlockedResolvedAddress('8.8.8.8')).toBe(false);
+    expect(isBlockedHostname('metadata.google.internal')).toBe(true);
   });
 });
 

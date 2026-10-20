@@ -4,11 +4,13 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { primaryNavLinks } from '@/lib/navigation';
 import { supportEmail } from '@/lib/legal';
+import { useOptionalConsent } from '@/components/consent/consent-provider';
 import { useProAccess } from '@/components/pro-access-provider';
 
 export function SiteFooter() {
   const pathname = usePathname();
   const { me, loading } = useProAccess();
+  const consent = useOptionalConsent();
 
   if (pathname.startsWith('/admin')) {
     return null;
@@ -20,7 +22,7 @@ export function SiteFooter() {
         <div>
           <p className="site-footer__brand">Radar VPO</p>
           <p className="site-footer__tagline">
-            Consulta promociones de vivienda protegida en Cataluña, aprende a preparar tu solicitud y organiza tus oportunidades.
+            Consulta promociones de vivienda protegida en Cataluña, entiende el contexto con una guía y organiza tus oportunidades.
           </p>
           {supportEmail ? (
             <p className="site-footer__tagline">
@@ -50,13 +52,34 @@ export function SiteFooter() {
       <div className="shell site-footer__legal">
         <p>
           © {new Date().getFullYear()} Radar VPO. Información orientativa; no sustituye fuentes oficiales.{' '}
+          <Link href="/contacto" className="underline">
+            Contacto
+          </Link>{' '}
+          ·{' '}
+          <Link href="/aviso-legal" className="underline">
+            Aviso legal
+          </Link>{' '}
+          ·{' '}
           <Link href="/condiciones" className="underline">
             Condiciones
           </Link>{' '}
           ·{' '}
           <Link href="/privacidad" className="underline">
             Privacidad
+          </Link>{' '}
+          ·{' '}
+          <Link href="/cookies" className="underline">
+            Cookies
           </Link>
+          {consent ? (
+            <>
+              {' '}
+              ·{' '}
+              <button type="button" className="underline" onClick={consent.openSettings}>
+                Gestionar cookies
+              </button>
+            </>
+          ) : null}
         </p>
       </div>
     </footer>

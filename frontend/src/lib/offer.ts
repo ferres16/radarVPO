@@ -211,5 +211,12 @@ export function getCourseAuthor(): { name: string; bio: string } | null {
   return { name, bio };
 }
 
-export const COURSE_ACCESS_DURATION_TEXT =
-  'Pago único. Sin cuotas de renovación: el acceso se mantiene mientras el curso siga publicado en Radar VPO.';
+export const COURSE_ACCESS_MIN_MONTHS = 24;
+
+export const PRICE_FINAL_NOTE =
+  'El precio mostrado es el importe final que se cobra. No se añade ningún recargo extra en el pago.';
+
+export const COURSE_ACCESS_DURATION_TEXT = `Pago único. Acceso durante al menos ${COURSE_ACCESS_MIN_MONTHS} meses desde la compra. Si el producto se retira antes, conservas el acceso hasta completar ese plazo. Después, mientras siga publicado.`;
+
+export const GUIDE_FORMAT_TEXT =
+  'Formato: lectura en pantalla. No es un archivo descargable.';

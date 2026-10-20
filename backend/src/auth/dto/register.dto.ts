@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  Equals,
+  IsBoolean,
   IsEmail,
   IsOptional,
   IsString,
@@ -33,4 +35,13 @@ export class RegisterDto {
   @IsString()
   @MinLength(2)
   fullName!: string;
+
+  @ApiProperty({
+    description: 'Aceptación de la política de privacidad (obligatoria).',
+  })
+  @IsBoolean()
+  @Equals(true, {
+    message: 'Debes aceptar la política de privacidad para crear la cuenta.',
+  })
+  acceptedPrivacy!: boolean;
 }

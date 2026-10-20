@@ -1,6 +1,13 @@
+import { promises as dns } from 'node:dns';
 import { NextRequest, NextResponse } from 'next/server';
 import { getBackendApiUrl } from '@/lib/backend-url';
-import { buildPdfFileName, isPdfDocument, isSafePdfUrl } from '@/lib/promotion-documents';
+import {
+  buildPdfFileName,
+  isBlockedHostname,
+  isBlockedResolvedAddress,
+  isPdfDocument,
+  isSafePdfUrl,
+} from '@/lib/promotion-documents';
 import type { PromotionDetail } from '@/types';
 
 // Proxy de solo lectura para los PDF oficiales de una promoción.
@@ -25,10 +32,28 @@ function errorResponse(status: number, code: string) {
   );
 }
 
+async function isPublicHttpsTarget(raw: string): Promise<boolean> {
+  if (!isSafePdfUrl(raw)) return false;
+  let hostname: string;
+  try {
+    hostname = new URL(raw).hostname;
+  } catch {
+    return false;
+  }
+  if (isBlockedHostname(hostname)) return false;
+  try {
+    const records = await dns.lookup(hostname, { all: true });
+    if (records.length === 0) return false;
+    return records.every((record) => !isBlockedResolvedAddress(record.address));
+  } catch {
+    return false;
+  }
+}
+
 async function fetchUpstream(startUrl: string, range: string | null) {
   let current = startUrl;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
-    if (!isSafePdfUrl(current)) return null;
+    if (!(await isPublicHttpsTarget(current))) return null;
     const response = await fetch(current, {
       redirect: 'manual',
       cache: 'no-store',

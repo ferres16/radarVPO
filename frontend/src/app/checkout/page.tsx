@@ -6,10 +6,15 @@ import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversi
 import { ButtonLink } from '@/components/design-system';
 import {
   COURSE_ACCESS_DURATION_TEXT,
+  GUIDE_FORMAT_TEXT,
+  PRICE_FINAL_NOTE,
   formatEuro,
   getCourseStatusSummary,
   getCoursePrice,
+  isGuidePdf,
 } from '@/lib/offer';
+import { isInternalCatalogCourse } from '@/lib/public-courses';
+import { supportEmail } from '@/lib/legal';
 import { proIncludes, proPlan } from '@/lib/pro';
 import { createMetadata } from '@/lib/seo';
 
@@ -46,14 +51,22 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
   let summary: CheckoutSummary;
 
   if (params.product === 'pro') {
+    const checkoutStatus = await api.getCheckoutStatus().catch(() => null);
+    const proAmount =
+      checkoutStatus && Number.isInteger(checkoutStatus.proPriceCents) && checkoutStatus.proPriceCents > 0
+        ? checkoutStatus.proPriceCents / 100
+        : proPlan.priceAmount;
     summary = {
       product: 'pro',
       title: proPlan.name,
-      priceLabel: proPlan.priceShort,
+      priceLabel: formatEuro(proAmount, { decimals: 2 }),
       cadenceLabel: 'al mes',
       recurrenceNote:
         'Suscripción mensual con renovación automática. Cancelas cuando quieras desde Mi cuenta y conservas el acceso hasta el final del periodo pagado.',
-      bullets: proIncludes.map((item) => `${item.title}: ${item.description}`),
+      bullets: [
+        ...proIncludes.map((item) => `${item.title}: ${item.description}`),
+        PRICE_FINAL_NOTE,
+      ],
       backHref: '/pro',
       backLabel: 'Volver a Radar VPO PRO',
     };
@@ -76,7 +89,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
     };
   } else if (params.product === 'course' && params.course) {
     const course = await api.getCourse(params.course).catch(() => null);
-    if (!course) {
+    if (!course || isInternalCatalogCourse(course)) {
       return <Unavailable message="No encontramos este curso." href="/cursos" label="Ver cursos" />;
     }
     const status = getCourseStatusSummary(course);
@@ -97,7 +110,13 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
       priceLabel: formatEuro(price),
       cadenceLabel: 'pago único',
       recurrenceNote: 'Sin renovaciones ni cuotas posteriores.',
-      bullets: [status.statusText, COURSE_ACCESS_DURATION_TEXT, 'Acceso inmediato tras confirmarse el pago.'],
+      bullets: [
+        status.statusText,
+        COURSE_ACCESS_DURATION_TEXT,
+        ...(isGuidePdf(course) ? [GUIDE_FORMAT_TEXT] : []),
+        PRICE_FINAL_NOTE,
+        'Acceso inmediato tras confirmarse el pago.',
+      ],
       backHref: `/cursos/${course.slug}`,
       backLabel: 'Volver al curso',
     };
@@ -119,7 +138,11 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
           ¿Dudas sobre tu compra? Consulta las{' '}
           <Link href="/condiciones" className="font-semibold text-[var(--green-700)]">
             condiciones
-          </Link>
+          </Link>{' '}
+          o escribe a{' '}
+          <a href={`mailto:${supportEmail}`} className="font-semibold text-[var(--green-700)] underline">
+            {supportEmail}
+          </a>
           .
         </p>
       </PublicSection>

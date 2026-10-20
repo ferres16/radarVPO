@@ -711,6 +711,7 @@ export class NotificationsService {
           </a>
         </p>
         <p style="margin:0;font-size:13px;color:#6b7280;">Si el botón no funciona, copia este enlace: <a href="${this.escapeHtml(pageUrl)}">${this.escapeHtml(pageUrl)}</a></p>
+        <p style="margin:16px 0 0;font-size:12px;color:#6b7280;">Recibes este aviso porque tienes Radar VPO PRO. No es publicidad: forma parte del servicio contratado. Gestiona tu suscripción en <a href="${this.escapeHtml(this.publicSiteUrl)}/account">${this.escapeHtml(this.publicSiteUrl)}/account</a>.</p>
       </div>
     `;
   }

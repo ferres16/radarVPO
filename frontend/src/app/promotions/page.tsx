@@ -24,11 +24,11 @@ export const metadata: Metadata = createMetadata({
 
 export default async function PromotionsPage() {
   const [promotions, stats] = await Promise.all([
-    api.getPromotions('?limit=50').catch(() => []),
+    api.getPromotions('?limit=100').catch(() => []),
     api.getCatalogStats().catch(() => null),
   ]);
   const listed = publicPublishedPromotions(promotions);
-  const visiblePromotions = listed.slice(0, 24);
+  const visiblePromotions = listed;
   const proofItems = buildProofItems(stats, {
     published: listed.length,
     municipalities: uniqueMunicipalities(listed).length,
@@ -73,7 +73,9 @@ export default async function PromotionsPage() {
         <PublicSection animated={false}>
           <SectionHeader
             title="Últimas promociones"
-            description={`${visiblePromotions.length} promociones publicadas. Filtra por municipio si quieres acotar la lista.`}
+            description={`${visiblePromotions.length} ${
+              visiblePromotions.length === 1 ? 'promoción publicada' : 'promociones publicadas'
+            } con documento consultable. El recuento de esta página y el de cabecera usan la misma lista.`}
           />
           <PromotionsExplorer promotions={visiblePromotions} />
           <p className="mt-6 text-sm text-[var(--ink-soft)]">

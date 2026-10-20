@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { LegalDocument, LegalSection, OwnerIdentity } from '@/components/legal-document';
+import { adsConfig } from '@/lib/ads';
 import { supportEmail } from '@/lib/legal';
 import { createMetadata } from '@/lib/seo';
 
@@ -15,57 +17,114 @@ export default function PrivacyPage() {
       badge="Privacidad"
       title="Política de privacidad"
       description="Qué datos tratamos, para qué, con quién los compartimos y cómo ejercer tus derechos."
-      updatedAt="15 de octubre de 2026"
+      updatedAt="20 de octubre de 2026"
     >
       <LegalSection title="1. Responsable del tratamiento">
         <OwnerIdentity />
+        <p>
+          Puedes escribir a{' '}
+          <a href={`mailto:${supportEmail}`} className="font-semibold text-[var(--green-700)] underline">
+            {supportEmail}
+          </a>{' '}
+          o usar la página de{' '}
+          <Link href="/contacto" className="font-semibold text-[var(--green-700)]">
+            contacto
+          </Link>
+          . No hace falta iniciar sesión.
+        </p>
       </LegalSection>
 
-      <LegalSection title="2. Datos que tratamos y para qué">
-        <ul className="list-disc space-y-1 pl-5">
+      <LegalSection title="2. Finalidades y bases jurídicas">
+        <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong className="text-[var(--ink)]">Cuenta:</strong> nombre, correo y contraseña (almacenada cifrada). Para
-            crear y gestionar tu cuenta y darte acceso a lo que has contratado.
+            <strong className="text-[var(--ink)]">Cuenta:</strong> nombre y correo para crear y gestionar el
+            acceso. Base jurídica: ejecución del contrato. El nombre sirve para dirigirnos a ti; no exigimos
+            apellidos.
           </li>
           <li>
-            <strong className="text-[var(--ink)]">Móvil (opcional):</strong> solo para enviarte los avisos por SMS de
-            Radar VPO PRO.
+            <strong className="text-[var(--ink)]">Contraseña:</strong> se guarda como hash irreversible (bcrypt),
+            no como cifrado reversible. Base jurídica: ejecución del contrato y seguridad del servicio.
           </li>
           <li>
-            <strong className="text-[var(--ink)]">Uso del servicio:</strong> promociones guardadas, notas, lista de pasos
-            y progreso en los cursos, para prestarte esas funciones.
+            <strong className="text-[var(--ink)]">Móvil:</strong> solo si lo añades para recibir SMS de Radar VPO
+            PRO. No es necesario para crear una cuenta gratuita. Base jurídica: ejecución del contrato de la
+            suscripción.
           </li>
           <li>
-            <strong className="text-[var(--ink)]">Compras:</strong> producto contratado, importe, fecha y estado del
-            pago. Los datos de tu tarjeta los trata Stripe; Radar VPO no los almacena.
+            <strong className="text-[var(--ink)]">Uso del servicio:</strong> promociones guardadas, notas, lista de
+            pasos y progreso en las guías. Base jurídica: ejecución del contrato.
           </li>
           <li>
-            <strong className="text-[var(--ink)]">Avisos:</strong> correo y, si lo has indicado, móvil, para enviarte los
-            avisos del servicio PRO y mensajes necesarios sobre tu cuenta o compra.
+            <strong className="text-[var(--ink)]">Compras y suscripción:</strong> producto, importe, fecha, estado
+            del pago y evidencias de aceptación de condiciones. Los datos de tarjeta los trata Stripe; Radar VPO no
+            los almacena. Base jurídica: contrato y obligación legal de facturación.
+          </li>
+          <li>
+            <strong className="text-[var(--ink)]">Avisos contratados:</strong> correo y, si lo has indicado, móvil.
+            Son comunicaciones del servicio PRO, no marketing publicitario. Base jurídica: ejecución del contrato.
+          </li>
+          <li>
+            <strong className="text-[var(--ink)]">Medición y publicidad:</strong> Vercel Analytics, el contador
+            propio de visitas y, si en el futuro se activa, Google AdSense. Solo si aceptas esas cookies. Base
+            jurídica: consentimiento. Hoy la publicidad está desactivada en el lanzamiento
+            {adsConfig.enabled ? ', salvo que se reactive de forma expresa.' : '.'} Detalle en la{' '}
+            <Link href="/cookies" className="font-semibold text-[var(--green-700)]">
+              política de cookies
+            </Link>
+            .
           </li>
         </ul>
-        <p>La base jurídica es la ejecución del contrato o de tus solicitudes y, para la analítica, el interés legítimo.</p>
       </LegalSection>
 
-      <LegalSection title="3. Con quién compartimos datos">
+      <LegalSection title="3. Destinatarios y transferencias">
+        <p>Solo con quienes prestan un servicio necesario para operar Radar VPO. No vendemos tus datos.</p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Stripe: pagos, facturas y portal de facturación.</li>
+          <li>Brevo: envío de emails transaccionales y, si hay móvil, SMS de avisos PRO.</li>
+          <li>Alojamiento: frontend en Vercel y API y base de datos en Railway.</li>
+          <li>Almacenamiento de archivos: Amazon S3 (documentos y material de cursos).</li>
+          {adsConfig.enabled ? <li>Google AdSense: solo si consientes cookies de publicidad.</li> : null}
+          <li>Vercel Analytics: solo si consientes cookies de analítica.</li>
+          <li>
+            Proveedores de IA y OCR (OpenAI, Azure OpenAI, Anthropic, OCR.Space): tratan documentos oficiales de
+            promociones para extraer datos públicos, no tu cuenta.
+          </li>
+        </ul>
         <p>
-          Solo con proveedores que nos prestan servicio: Stripe (pagos), Brevo (envío de emails y SMS), y proveedores de
-          alojamiento e infraestructura. También se utiliza analítica de uso de la web. No vendemos tus datos.
+          Algunos de estos proveedores pueden tratar datos fuera del Espacio Económico Europeo. En ese caso se
+          aplican las garantías que cada proveedor publique (cláusulas contractuales tipo u otras).
         </p>
       </LegalSection>
 
       <LegalSection title="4. Conservación">
-        <p>
-          Conservamos tus datos mientras mantengas la cuenta y, después, durante los plazos legales aplicables (por
-          ejemplo, obligaciones fiscales y contables sobre las compras).
-        </p>
+        <ul className="list-disc space-y-1 pl-5">
+          <li>Cuenta: mientras esté activa.</li>
+          <li>
+            Si eliminas la cuenta: anonimizamos identidad, teléfono y acceso. Conservamos los registros de compra
+            durante los plazos legales de facturación y tributación.
+          </li>
+          <li>Sesiones y tokens de recuperación: caducan de forma automática.</li>
+          <li>Consentimiento de cookies: hasta 13 meses.</li>
+          <li>Contador de visitas: cookie de un día, si has aceptado analítica.</li>
+        </ul>
       </LegalSection>
 
-      <LegalSection title="5. Tus derechos">
+      <LegalSection title="5. Cómo ejercer tus derechos">
         <p>
-          Puedes acceder, rectificar, suprimir, oponerte, limitar el tratamiento y solicitar la portabilidad de tus datos
-          escribiendo a {supportEmail ?? 'el correo de soporte'}. Si consideras que no hemos atendido tus derechos, puedes
-          reclamar ante la Agencia Española de Protección de Datos (aepd.es).
+          Puedes acceder, rectificar, suprimir, oponerte, limitar el tratamiento y solicitar la portabilidad. Desde{' '}
+          <Link href="/account" className="font-semibold text-[var(--green-700)]">
+            Mi cuenta
+          </Link>{' '}
+          puedes descargar una copia de tus datos o solicitar la eliminación. También puedes escribir a{' '}
+          <a href={`mailto:${supportEmail}`} className="font-semibold text-[var(--green-700)] underline">
+            {supportEmail}
+          </a>{' '}
+          sin iniciar sesión, o usar{' '}
+          <Link href="/contacto" className="font-semibold text-[var(--green-700)]">
+            /contacto
+          </Link>
+          . Si consideras que no hemos atendido tus derechos, puedes reclamar ante la Agencia Española de Protección
+          de Datos (aepd.es).
         </p>
       </LegalSection>
     </LegalDocument>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useOptionalConsent } from '@/components/consent/consent-provider';
 import { getBrowserApiBaseUrl } from '@/lib/backend-url';
 
 const COOKIE = 'rv_visit_day';
@@ -11,8 +12,12 @@ function todayKey() {
 
 /** Cuenta un visitante único aproximado (una vez por navegador y día). */
 export function VisitTracker() {
+  const consent = useOptionalConsent();
+  const analyticsAllowed = Boolean(consent?.preferences?.analytics);
+
   useEffect(() => {
     try {
+      if (!analyticsAllowed) return;
       if (typeof document === 'undefined') return;
       const today = todayKey();
       const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE}=([^;]*)`));
@@ -28,7 +33,7 @@ export function VisitTracker() {
     } catch {
       // No bloqueamos la página si falla la métrica.
     }
-  }, []);
+  }, [analyticsAllowed]);
 
   return null;
 }

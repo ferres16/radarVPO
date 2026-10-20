@@ -2,16 +2,27 @@ import { buildAllowedOriginSet, resolveOrigin } from '../request-origin';
 
 describe('request origin helpers', () => {
   it('accepts www and apex variants of the frontend URL', () => {
-    const allowed = buildAllowedOriginSet([
-      'https://radar-vpo-frontend-ten.vercel.app',
-    ]);
+    const allowed = buildAllowedOriginSet(
+      ['https://radar-vpo-frontend-ten.vercel.app'],
+      { includeCanonicalSites: true },
+    );
 
     expect(allowed.has('https://www.radarvpo.com')).toBe(true);
     expect(allowed.has('https://radarvpo.com')).toBe(true);
     expect(allowed.has('https://radar-vpo-frontend-ten.vercel.app')).toBe(true);
-    expect(
-      allowed.has('https://www.radar-vpo-frontend-ten.vercel.app'),
-    ).toBe(true);
+    expect(allowed.has('https://www.radar-vpo-frontend-ten.vercel.app')).toBe(
+      true,
+    );
+  });
+
+  it('does not inject canonical production domains in local or fork origins', () => {
+    const allowed = buildAllowedOriginSet([
+      'https://radar-vpo-frontend-ten.vercel.app',
+    ]);
+
+    expect(allowed.has('https://www.radarvpo.com')).toBe(false);
+    expect(allowed.has('https://radarvpo.com')).toBe(false);
+    expect(allowed.has('https://radar-vpo-frontend-ten.vercel.app')).toBe(true);
   });
 
   it('parses origins from full URLs', () => {

@@ -86,7 +86,19 @@ export default async function NewsDetailPage({ params }: NewsDetailParams) {
         <div className="p-6">
           <h1 className="text-2xl font-bold text-[var(--ink)]">{item.title}</h1>
           <p className="mt-1 text-sm text-[var(--ink-soft)]">
-            {item.sourceName} - {item.publishedAt.slice(0, 10)}
+            {item.sourceUrl?.startsWith('http') ? (
+              <a
+                href={item.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[var(--green-700)] underline"
+              >
+                {item.sourceName || 'Fuente original'}
+              </a>
+            ) : (
+              item.sourceName
+            )}{' '}
+            - {item.publishedAt.slice(0, 10)}
           </p>
           <p className="mt-4 text-sm text-[var(--ink)]">{item.summary || 'Sin resumen disponible.'}</p>
           <InlineAdCard className="mt-5" />

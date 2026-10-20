@@ -1,6 +1,14 @@
-import { Body, Controller, Get, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { minutes, seconds, Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -22,7 +30,7 @@ export class UsersController {
   @Patch('me')
   @ApiCookieAuth('access_token')
   @UseGuards(JwtAuthGuard)
-  @Throttle({ default: { limit: 10, ttl: 60 } })
+  @Throttle({ default: { limit: 10, ttl: seconds(60) } })
   async updateMe(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateProfileDto,
@@ -45,5 +53,22 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   access(@CurrentUser() user: CurrentUserPayload) {
     return this.usersService.getAccessSummary(user.sub);
+  }
+
+  @Get('me/export')
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 5, ttl: minutes(60) } })
+  exportMyData(@CurrentUser() user: CurrentUserPayload) {
+    return this.usersService.exportMyData(user.sub);
+  }
+
+  @Delete('me')
+  @HttpCode(200)
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 3, ttl: minutes(60) } })
+  deleteMe(@CurrentUser() user: CurrentUserPayload) {
+    return this.usersService.deleteMyAccount(user.sub);
   }
 }

@@ -1,7 +1,6 @@
-const defaultClientId = 'ca-pub-9530052824706142';
-const defaultPublisherId = 'pub-9530052824706142';
-
-export const adsTxtContent = `google.com, ${defaultPublisherId}, DIRECT, f08c47fec0942fa0`;
+export const adsTxtContent = process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID
+  ? `google.com, ${process.env.NEXT_PUBLIC_ADSENSE_PUBLISHER_ID.trim()}, DIRECT, f08c47fec0942fa0`
+  : '# Publicidad desactivada en el lanzamiento.';
 
 export const adUnitPlacements = {
   sidebar: 'Rail izquierdo en desktop (pantalla >= 1280px), todas las páginas públicas',
@@ -10,8 +9,8 @@ export const adUnitPlacements = {
 } as const;
 
 export const adsConfig = {
-  enabled: process.env.NEXT_PUBLIC_ADSENSE_ENABLED !== 'false',
-  clientId: process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID || defaultClientId,
+  enabled: process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true',
+  clientId: process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() || '',
   slots: {
     sidebar: process.env.NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR || '',
     inline: process.env.NEXT_PUBLIC_ADSENSE_SLOT_INLINE || '',
@@ -25,11 +24,19 @@ const excludedPrefixes = [
   '/account',
   '/login',
   '/register',
+  '/forgot-password',
+  '/reset-password',
   '/checkout',
   '/payment',
-  '/cursos/',
-  '/promotions/',
+  '/cursos',
+  '/promotions',
   '/mi-espacio',
+  '/aviso-legal',
+  '/privacidad',
+  '/cookies',
+  '/condiciones',
+  '/contacto',
+  '/pro',
 ];
 
 const placeholderSlotPattern = /^123456789\d$/;
@@ -40,15 +47,19 @@ export function isUsableAdSlot(slotId?: string) {
   return !placeholderSlotPattern.test(id);
 }
 
+function matchesExcludedPath(pathname: string, prefix: string) {
+  return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
 export function shouldShowAds(pathname: string) {
   if (!adsConfig.enabled || !adsConfig.clientId) return false;
-  return !excludedPrefixes.some((prefix) => pathname === prefix || pathname.startsWith(prefix));
+  return !excludedPrefixes.some((prefix) => matchesExcludedPath(pathname, prefix));
 }
 
 export function shouldRenderAdPlaceholder(pathname: string) {
   if (process.env.NODE_ENV === 'production') return false;
   if (!shouldShowAds(pathname)) {
-    return !excludedPrefixes.some((prefix) => pathname.startsWith(prefix));
+    return false;
   }
   return true;
 }

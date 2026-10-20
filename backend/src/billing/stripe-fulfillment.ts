@@ -10,6 +10,14 @@ export const DEFAULT_PRO_PRICE_CENTS = 999;
 /** Un curso con menos lecciones publicadas se muestra "en preparación" y no se vende. */
 export const MIN_PUBLISHED_LESSONS_TO_SELL = 3;
 
+/**
+ * Un curso incluido en PRO o un resto de acompañamiento 1:1 no se vende
+ * como compra única: el acceso lo da la suscripción o un alta histórica.
+ */
+export function isOneOffPurchasableAccessType(accessType: string): boolean {
+  return accessType !== 'pro' && accessType !== 'seguimiento';
+}
+
 export type CheckoutProduct = 'pro' | 'pro_pack_3m' | 'course';
 
 export type CheckoutMetadata = {

@@ -21,8 +21,7 @@ export class CreateCheckoutDto {
   @IsBoolean()
   acceptedTerms!: boolean;
 
-  /** Solo cursos: conformidad con el acceso inmediato al contenido digital. */
-  @IsOptional()
+  /** Conformidad con el acceso inmediato (cursos y suscripción PRO). */
   @IsBoolean()
-  acceptedImmediateAccess?: boolean;
+  acceptedImmediateAccess!: boolean;
 }

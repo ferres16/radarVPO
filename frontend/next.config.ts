@@ -1,6 +1,35 @@
 import type { NextConfig } from "next";
 
 const isProduction = process.env.NODE_ENV === "production";
+const adsEnabled = process.env.NEXT_PUBLIC_ADSENSE_ENABLED === "true";
+
+const scriptSrc = [
+  "'self'",
+  "'unsafe-inline'",
+  isProduction ? "" : "'unsafe-eval'",
+  adsEnabled ? "https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net" : "",
+]
+  .filter(Boolean)
+  .join(" ");
+
+const connectSrc = [
+  "'self'",
+  "https://vitals.vercel-insights.com",
+  "https://va.vercel-scripts.com",
+  adsEnabled ? "https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net" : "",
+  isProduction ? "" : "http://localhost:*",
+]
+  .filter(Boolean)
+  .join(" ");
+
+const frameSrc = [
+  "'self'",
+  "https://www.youtube.com",
+  "https://www.youtube-nocookie.com",
+  adsEnabled ? "https://googleads.g.doubleclick.net https://tpc.googlesyndication.com" : "",
+]
+  .filter(Boolean)
+  .join(" ");
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -12,10 +41,10 @@ const contentSecurityPolicy = [
   "media-src 'self' blob: https:",
   "font-src 'self' data:",
   "style-src 'self' 'unsafe-inline'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net",
-  `connect-src 'self' https:${isProduction ? "" : " http://localhost:*"}`,
+  `script-src ${scriptSrc}`,
+  `connect-src ${connectSrc}`,
   "worker-src 'self' blob:",
-  "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://googleads.g.doubleclick.net https://tpc.googlesyndication.com",
+  `frame-src ${frameSrc}`,
   isProduction ? "upgrade-insecure-requests" : "",
 ].filter(Boolean).join("; ");
 

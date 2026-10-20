@@ -12,6 +12,7 @@ import {
   SubscriptionStatus,
 } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import { isInternalCatalogCourse } from '../common/public-courses';
 import { PrismaService } from '../prisma/prisma.service';
 import { FileStorageService } from '../storage/file-storage.service';
 import { S3StorageService } from '../storage/s3-storage.service';
@@ -76,47 +77,59 @@ export class CoursesService {
       },
     });
 
-    return this.withPublicCoursesPresentation(courses);
+    return this.withPublicCoursesPresentation(
+      courses.filter((course) => !isInternalCatalogCourse(course)),
+    );
   }
 
   async listCoursesForUser(userId: string) {
-    const [courses, profile] = await Promise.all([
-      this.prisma.course.findMany({
-        where: { status: CourseStatus.published },
-        orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
-        include: {
-          modules: {
-            where: { visibility: 'visible' },
-            orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
-            include: {
-              lessons: {
-                where: { status: 'published' },
-                orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
-                select: {
-                  id: true,
-                  title: true,
-                  slug: true,
-                  summary: true,
-                  order: true,
-                  durationMinutes: true,
-                  status: true,
-                  type: true,
-                },
+    const profile = await this.getAccessProfile(userId);
+    const ownedIds = profile.courseAccesses.map((access) => access.courseId);
+    const courses = await this.prisma.course.findMany({
+      where: {
+        OR: [
+          { status: CourseStatus.published },
+          ...(ownedIds.length > 0 ? [{ id: { in: ownedIds } }] : []),
+        ],
+      },
+      orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+      include: {
+        modules: {
+          where: { visibility: 'visible' },
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            lessons: {
+              where: { status: 'published' },
+              orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+                summary: true,
+                order: true,
+                durationMinutes: true,
+                status: true,
+                type: true,
               },
             },
           },
-          accessRules: { orderBy: { createdAt: 'asc' } },
         },
-      }),
-      this.getAccessProfile(userId),
-    ]);
+        accessRules: { orderBy: { createdAt: 'asc' } },
+      },
+    });
 
     const presented = await this.withPublicCoursesPresentation(courses);
 
-    return presented.map((course) => ({
-      ...this.stripInternalCourseFields(course),
-      access: this.evaluateAccess(course, profile),
-    }));
+    return presented
+      .filter(
+        (course) =>
+          !isInternalCatalogCourse(course) ||
+          this.evaluateAccess(course, profile).canAccess,
+      )
+      .map((course) => ({
+        ...this.stripInternalCourseFields(course),
+        access: this.evaluateAccess(course, profile),
+      }));
   }
 
   private async getPublishedCourseBySlug(
@@ -143,11 +156,22 @@ export class CoursesService {
       },
     });
 
-    if (!course || course.status !== CourseStatus.published) {
+    if (!course) {
       throw new NotFoundException('Course not found');
     }
 
     return course;
+  }
+
+  private isPublicCatalogCourse(course: {
+    status: CourseStatus;
+    title: string;
+    slug: string;
+  }) {
+    return (
+      course.status === CourseStatus.published &&
+      !isInternalCatalogCourse(course)
+    );
   }
 
   private stripInternalCourseFields<T extends { accessRules?: unknown }>(
@@ -160,6 +184,9 @@ export class CoursesService {
 
   async getCourseBySlug(slug: string) {
     const course = await this.getPublishedCourseBySlug(slug);
+    if (!this.isPublicCatalogCourse(course)) {
+      throw new NotFoundException('Course not found');
+    }
     const presented = await this.withPublicCoursePresentation(course);
     return this.stripInternalCourseFields(presented);
   }
@@ -179,7 +206,6 @@ export class CoursesService {
 
     if (
       !course ||
-      course.status !== CourseStatus.published ||
       course.format !== CourseFormat.guide_pdf ||
       !course.guidePdfAssetId ||
       !course.guidePdfAsset ||
@@ -191,14 +217,23 @@ export class CoursesService {
     const isFree =
       course.accessType === CourseAccessType.free &&
       course.pricingType !== 'premium';
+    const hidden = !this.isPublicCatalogCourse(course);
 
-    if (!isFree) {
+    if (hidden || !isFree) {
       if (!userId) {
-        throw new ForbiddenException('Debes iniciar sesión para ver esta guía.');
+        if (hidden) {
+          throw new NotFoundException('Guide PDF not found');
+        }
+        throw new ForbiddenException(
+          'Debes iniciar sesión para ver esta guía.',
+        );
       }
       const profile = await this.getAccessProfile(userId);
       const access = this.evaluateAccess(course, profile);
       if (!access.canAccess) {
+        if (hidden) {
+          throw new NotFoundException('Guide PDF not found');
+        }
         throw new ForbiddenException('No tienes acceso a esta guía.');
       }
     }
@@ -216,11 +251,15 @@ export class CoursesService {
       this.getPublishedCourseBySlug(slug, true),
       this.getAccessProfile(userId),
     ]);
+    const access = this.evaluateAccess(course, profile);
+    if (!this.isPublicCatalogCourse(course) && !access.canAccess) {
+      throw new NotFoundException('Course not found');
+    }
     const presented = await this.withPublicCoursePresentation(course);
 
     return {
       ...this.stripInternalCourseFields(presented),
-      access: this.evaluateAccess(course, profile),
+      access,
     };
   }
 
@@ -232,6 +271,9 @@ export class CoursesService {
     const course = await this.getPublishedCourseBySlug(courseSlug, true);
     const profile = await this.getAccessProfile(userId);
     const courseAccess = this.evaluateAccess(course, profile);
+    if (!this.isPublicCatalogCourse(course) && !courseAccess.canAccess) {
+      throw new NotFoundException('Course not found');
+    }
 
     const lesson = await this.prisma.courseLesson.findFirst({
       where: {
@@ -266,7 +308,10 @@ export class CoursesService {
     }
 
     // Lección de muestra: se configura en seoMetadata.previewLessonSlug y es visible sin comprar.
-    const isPreviewLesson = this.isPreviewLesson(course.seoMetadata, lesson.slug);
+    const isPreviewLesson = this.isPreviewLesson(
+      course.seoMetadata,
+      lesson.slug,
+    );
     const access: AccessDecision =
       !courseAccess.canAccess && isPreviewLesson
         ? { canAccess: true, reason: 'preview' }
@@ -359,7 +404,11 @@ export class CoursesService {
   }
 
   private async withAccessibleCourseAsset<
-    T extends { fileAssetId: string | null; url: string | null; fileAsset?: unknown },
+    T extends {
+      fileAssetId: string | null;
+      url: string | null;
+      fileAsset?: unknown;
+    },
   >(asset: T) {
     const { fileAsset, ...publicAsset } = asset;
     if (!asset.fileAssetId) {
@@ -447,7 +496,10 @@ export class CoursesService {
       throw new ForbiddenException('Access denied');
     }
 
-    return this.fileStorage.getAccessibleUrl(asset.fileAssetId, access.canAccess);
+    return this.fileStorage.getAccessibleUrl(
+      asset.fileAssetId,
+      access.canAccess,
+    );
   }
 
   async getCourseProgressBySlug(userId: string, courseSlug: string) {
@@ -468,7 +520,10 @@ export class CoursesService {
         completedLessons: 0,
         totalLessons,
         lastLessonId: null,
-        lessons: [] as Array<{ lessonId: string; status: LessonProgressStatus }>,
+        lessons: [] as Array<{
+          lessonId: string;
+          status: LessonProgressStatus;
+        }>,
       };
     }
 
@@ -828,7 +883,9 @@ export class CoursesService {
     if (
       course.accessType === CourseAccessType.pro &&
       (profile.plan === 'pro' ||
-        profile.subscriptions.some((subscription) => subscription.planKey === 'pro'))
+        profile.subscriptions.some(
+          (subscription) => subscription.planKey === 'pro',
+        ))
     ) {
       return { canAccess: true, reason: 'plan' };
     }

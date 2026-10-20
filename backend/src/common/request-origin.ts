@@ -25,14 +25,19 @@ function withWwwVariant(origin: string): string[] {
   }
 }
 
-export function buildAllowedOriginSet(rawOrigins: string[]): Set<string> {
+export function buildAllowedOriginSet(
+  rawOrigins: string[],
+  options: { includeCanonicalSites?: boolean } = {},
+): Set<string> {
   const expanded = rawOrigins.flatMap((value) => {
     const origin = resolveOrigin(value.trim()) || value.trim();
     return origin ? withWwwVariant(origin) : [];
   });
 
-  for (const site of ['https://www.radarvpo.com', 'https://radarvpo.com']) {
-    expanded.push(...withWwwVariant(site));
+  if (options.includeCanonicalSites) {
+    for (const site of ['https://www.radarvpo.com', 'https://radarvpo.com']) {
+      expanded.push(...withWwwVariant(site));
+    }
   }
 
   return new Set(expanded.filter(Boolean));

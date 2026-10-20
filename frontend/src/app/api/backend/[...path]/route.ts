@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { isBlockedBackendProxyPath } from '@/lib/backend-proxy-paths';
 import { buildBackendProxyHeaders } from '@/lib/backend-proxy-headers';
 import { getBackendApiUrl } from '@/lib/backend-url';
 
@@ -8,6 +9,9 @@ type RouteContext = {
 
 async function proxy(request: NextRequest, context: RouteContext) {
   const { path } = await context.params;
+  if (isBlockedBackendProxyPath(path)) {
+    return NextResponse.json({ error: { message: 'Not found' } }, { status: 404 });
+  }
   const target = `${getBackendApiUrl()}/${path.join('/')}${request.nextUrl.search}`;
 
   const headers = buildBackendProxyHeaders(request);

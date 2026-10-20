@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next';
 import { api } from '@/lib/api';
 import { isAmendmentPublication } from '@/lib/promotion-content-filters';
+import { publicCatalogCourses } from '@/lib/public-courses';
 import { absoluteUrl } from '@/lib/seo';
 
 const staticRoutes = [
@@ -11,6 +12,9 @@ const staticRoutes = [
   '/pro',
   '/condiciones',
   '/privacidad',
+  '/cookies',
+  '/aviso-legal',
+  '/contacto',
   '/news',
 ];
 
@@ -42,7 +46,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     })) satisfies MetadataRoute.Sitemap;
 
-  const courseEntries = courses.map((course) => ({
+  const courseEntries = publicCatalogCourses(courses).map((course) => ({
     url: absoluteUrl(`/cursos/${course.slug}`),
     lastModified: course.updatedAt ? new Date(course.updatedAt) : course.publishedAt ? new Date(course.publishedAt) : now,
     changeFrequency: 'monthly' as const,

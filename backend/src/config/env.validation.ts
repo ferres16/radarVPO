@@ -301,5 +301,20 @@ export function validateEnv(config: Record<string, unknown>) {
     throw new Error('CORS_ORIGIN and FRONTEND_URL are required in production');
   }
 
+  const jobsToken = stringValue(config.JOBS_ADMIN_TOKEN);
+  if (nodeEnv === 'production' && jobsToken && jobsToken.length < 24) {
+    throw new Error(
+      'JOBS_ADMIN_TOKEN must be at least 24 characters in production',
+    );
+  }
+
+  const stripeSecret = stringValue(config.STRIPE_SECRET_KEY);
+  const stripeWebhook = stringValue(config.STRIPE_WEBHOOK_SECRET);
+  if (nodeEnv === 'production' && stripeSecret && !stripeWebhook) {
+    throw new Error(
+      'STRIPE_WEBHOOK_SECRET is required in production when STRIPE_SECRET_KEY is set',
+    );
+  }
+
   return validatedConfig;
 }

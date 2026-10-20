@@ -706,10 +706,22 @@ export const api = {
       method: 'POST',
     });
   },
-  register: async (email: string, password: string, fullName: string, phone?: string) => {
+  register: async (
+    email: string,
+    password: string,
+    fullName: string,
+    phone?: string,
+    acceptedPrivacy = false,
+  ) => {
     return authRequest<{ user: { id: string; email: string } }>('/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, fullName, phone: phone?.trim() || undefined }),
+      body: JSON.stringify({
+        email,
+        password,
+        fullName,
+        phone: phone?.trim() || undefined,
+        acceptedPrivacy,
+      }),
     });
   },
   requestPasswordReset: (email: string) =>
@@ -726,6 +738,11 @@ export const api = {
     request<UserProfile>('/users/me', {
       method: 'PATCH',
       body: JSON.stringify(payload),
+    }),
+  exportMyData: () => request<Record<string, unknown>>('/users/me/export'),
+  deleteMyAccount: () =>
+    request<{ success: true; message: string }>('/users/me', {
+      method: 'DELETE',
     }),
   createBillingPortalSession: () =>
     request<{ url: string }>('/billing/create-portal-session', {

@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/next";
 import { Inter } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
 import { PublicAdFrame } from "@/components/ads";
+import { ConsentProvider } from "@/components/consent/consent-provider";
+import { ConsentedScripts } from "@/components/consent/consented-scripts";
+import { CookieBanner } from "@/components/consent/cookie-banner";
 import { VisitTracker } from "@/components/conversion/visit-tracker";
 import { ProAccessProvider } from "@/components/pro-access-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { TopNav } from "@/components/top-nav";
-import { adsConfig } from "@/lib/ads";
 import { siteConfig } from "@/lib/seo";
 import "./globals.css";
 
@@ -69,32 +70,21 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const adsenseClientId = adsConfig.clientId;
-
   return (
     <html lang="es" className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}>
-      <head>
-        {adsConfig.enabled && adsenseClientId ? (
-          <>
-            <meta name="google-adsense-account" content={adsenseClientId} />
-            <script
-              async
-              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseClientId}`}
-              crossOrigin="anonymous"
-            />
-          </>
-        ) : null}
-      </head>
       <body className="min-h-full flex flex-col pt-[4.25rem] md:pt-20">
-        <ProAccessProvider>
-          <VisitTracker />
-          <TopNav />
-          <div className="flex-1">
-            <PublicAdFrame>{children}</PublicAdFrame>
-          </div>
-          <SiteFooter />
-        </ProAccessProvider>
-        <Analytics />
+        <ConsentProvider>
+          <ProAccessProvider>
+            <VisitTracker />
+            <TopNav />
+            <div className="flex-1">
+              <PublicAdFrame>{children}</PublicAdFrame>
+            </div>
+            <SiteFooter />
+            <CookieBanner />
+          </ProAccessProvider>
+          <ConsentedScripts />
+        </ConsentProvider>
       </body>
     </html>
   );

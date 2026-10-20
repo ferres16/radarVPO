@@ -13,13 +13,14 @@ import { ProComparison } from '@/components/pro-comparison';
 import { StructuredData } from '@/components/structured-data';
 import { buildProofItems } from '@/lib/catalog-stats';
 import { getCourseStatusSummary, isIncludedInPro } from '@/lib/offer';
+import { publicCatalogCourses } from '@/lib/public-courses';
 import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
-import { proFaqs, proForWhom, proIncludes, proLimits, proPlan, proWhyPay } from '@/lib/pro';
+import { proFaqs, proForWhom, proIncludedGuidesCopy, proIncludes, proLimits, proPlan, proWhyPay } from '@/lib/pro';
 import { breadcrumbJsonLd, createMetadata, faqJsonLd } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
   title: 'Radar VPO PRO: avisos por SMS y organización de tus solicitudes',
-  description: `Suscripción mensual (${proPlan.price}) con avisos por email y SMS, Mi espacio sin límite y el curso inicial mientras esté activa. Cancela cuando quieras.`,
+  description: `Suscripción mensual (${proPlan.price}) con avisos por email y SMS y Mi espacio sin límite. Cancela cuando quieras.`,
   path: '/pro',
   keywords: ['alertas vivienda protegida', 'avisos VPO', 'suscripción VPO'],
 });
@@ -27,10 +28,11 @@ export const metadata: Metadata = createMetadata({
 export default async function ProPage() {
   const [courses, promotions, stats] = await Promise.all([
     api.listCourses().catch(() => []),
-    api.getPromotions('?limit=50').catch(() => []),
+    api.getPromotions('?limit=100').catch(() => []),
     api.getCatalogStats().catch(() => null),
   ]);
-  const includedCourses = courses.filter(isIncludedInPro);
+  const includedCourses = publicCatalogCourses(courses).filter(isIncludedInPro);
+  const includedGuides = proIncludedGuidesCopy(includedCourses.map((course) => course.title));
   const listed = publicPublishedPromotions(promotions);
   const sample = listed[0];
   const proofItems = buildProofItems(stats, {
@@ -54,8 +56,8 @@ export default async function ProPage() {
       <PublicPageHero
         badge="Suscripción"
         title="Radar VPO PRO"
-        titleAccent="SMS, espacio y curso inicial"
-        description={`${proPlan.price}, con renovación mensual. Consultar PDF es gratis. PRO es para quien quiere el aviso en el móvil y seguir varias convocatorias en su cuenta. Cancelas cuando quieras.`}
+        titleAccent="SMS y espacio con cuenta"
+        description={`${proPlan.price}, con renovación mensual. Ese es el importe final. Consultar PDF es gratis. PRO es para quien quiere el aviso en el móvil y seguir varias convocatorias en su cuenta. Cancelas cuando quieras.`}
         actions={
           <>
             <ProGate>
@@ -88,8 +90,7 @@ export default async function ProPage() {
           <p className="lp-eyebrow">Por qué pagar</p>
           <h2 className="lp-title">Hay avisos y guías gratis. PRO añade otra cosa</h2>
           <p className="lp-lead">
-            No cobramos por consultar convocatorias. PRO cubre el aviso en el móvil, la organización con cuenta y el
-            curso inicial mientras esté activa.
+            No cobramos por consultar convocatorias. PRO cubre el aviso en el móvil y la organización con cuenta.
           </p>
         </div>
         <div className="lp-why-grid">
@@ -116,6 +117,12 @@ export default async function ProPage() {
               <p className="lp-why-card__text">{item.description}</p>
             </article>
           ))}
+          {includedGuides ? (
+            <article className="lp-why-card">
+              <h3 className="lp-why-card__title">{includedGuides.title}</h3>
+              <p className="lp-why-card__text">{includedGuides.description}</p>
+            </article>
+          ) : null}
         </div>
         {includedCourses.length > 0 ? (
           <ul className="mt-4 space-y-1 text-sm text-[var(--ink-soft)]">

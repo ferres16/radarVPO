@@ -2,12 +2,14 @@
 
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { useOptionalConsent } from '@/components/consent/consent-provider';
 import { adsConfig, isUsableAdSlot, shouldShowAds } from '@/lib/ads';
 import { AdSlot } from './ad-slot';
 
 export function PublicAdFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const showAds = shouldShowAds(pathname);
+  const consent = useOptionalConsent();
+  const showAds = Boolean(consent?.preferences?.ads) && shouldShowAds(pathname);
   const showSidebar = showAds && isUsableAdSlot(adsConfig.slots.sidebar);
   const showCard = showAds && isUsableAdSlot(adsConfig.slots.card);
 

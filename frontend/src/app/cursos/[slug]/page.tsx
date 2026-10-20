@@ -17,6 +17,8 @@ import { StructuredData } from '@/components/structured-data';
 import { buildCourseAccessTargets } from '@/lib/course-access-targets';
 import {
   COURSE_ACCESS_DURATION_TEXT,
+  GUIDE_FORMAT_TEXT,
+  PRICE_FINAL_NOTE,
   courseEditorial,
   describeCourseFormat,
   formatEuro,
@@ -29,6 +31,7 @@ import {
   isGuidePdf,
   isIncludedInPro,
 } from '@/lib/offer';
+import { isInternalCatalogCourse } from '@/lib/public-courses';
 import { proPlan } from '@/lib/pro';
 import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 import type { Course } from '@/types';
@@ -69,7 +72,7 @@ export async function generateMetadata({ params }: CourseDetailParams): Promise<
   const { slug } = await params;
   const course = await getPublicCourse(slug);
 
-  if (!course) {
+  if (!course || isInternalCatalogCourse(course)) {
     return createMetadata({
       title: 'Guía no disponible',
       description: 'Contenido de Radar VPO no disponible.',
@@ -100,7 +103,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
   ]);
   const course = courseWithAccess || publicCourse;
 
-  if (!course) {
+  if (!course || (isInternalCatalogCourse(course) && !course.access?.canAccess)) {
     return notFound();
   }
 
@@ -226,7 +229,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                   </p>
                   <p className="display-type mt-2 text-3xl font-black text-white">{priceLabel}</p>
                   {!isFree && price !== null ? (
-                    <p className="mt-1 text-xs text-white/70">Pago único · sin renovaciones</p>
+                    <p className="mt-1 text-xs text-white/70">Pago único · sin renovaciones · {PRICE_FINAL_NOTE}</p>
                   ) : null}
                 </div>
 
@@ -247,7 +250,8 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                 )}
 
                 <ul className="space-y-1.5 text-xs leading-5 text-white/75">
-                  <li>{guideMode ? 'Acceso inmediato · lectura en pantalla' : COURSE_ACCESS_DURATION_TEXT}</li>
+                  <li>{COURSE_ACCESS_DURATION_TEXT}</li>
+                  {guideMode ? <li>{GUIDE_FORMAT_TEXT}</li> : null}
                   {includedInPro ? (
                     <li>
                       Incluido con {proPlan.name} activo ({proPlan.price}).{' '}
@@ -430,6 +434,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                     <li>{status.statusText}</li>
                     {formatParts.length > 0 ? <li>{formatParts.join(' · ')}</li> : null}
                     <li>{COURSE_ACCESS_DURATION_TEXT}</li>
+                    {guideMode ? <li>{GUIDE_FORMAT_TEXT}</li> : null}
                   </ul>
                 </article>
 

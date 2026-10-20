@@ -33,6 +33,10 @@ type EventProperties = Record<string, string | number | boolean | null>;
 export function trackEvent(name: AnalyticsEventName, properties?: EventProperties) {
   if (typeof window === 'undefined') return;
   try {
+    const match = document.cookie.match(/(?:^|; )rv_consent=([^;]*)/);
+    if (!match?.[1]) return;
+    const parsed = JSON.parse(decodeURIComponent(match[1])) as { analytics?: unknown };
+    if (parsed.analytics !== true) return;
     track(name, properties);
   } catch {
     // El análisis nunca debe romper la experiencia.

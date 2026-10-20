@@ -327,12 +327,19 @@ export class BackofficeService {
       );
     }
 
+    const periodEnd = stripe.periodEnd ? new Date(stripe.periodEnd) : null;
+    const keepAccessUntilPeriodEnd = Boolean(
+      stripe.canceled > 0 && periodEnd && periodEnd.getTime() > Date.now(),
+    );
+
     await this.prisma.$transaction([
       this.prisma.user.update({
         where: { id: userId },
         data: {
-          plan: UserPlan.free,
-          proCancellationRequestedAt: null,
+          plan: keepAccessUntilPeriodEnd ? UserPlan.pro : UserPlan.free,
+          proCancellationRequestedAt: keepAccessUntilPeriodEnd
+            ? existing.proCancellationRequestedAt
+            : null,
           stripeCustomerId: stripe.customerId ?? existing.stripeCustomerId,
         },
       }),
@@ -344,10 +351,14 @@ export class BackofficeService {
             in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
           },
         },
-        data: {
-          status: SubscriptionStatus.canceled,
-          cancelAt: stripe.periodEnd ? new Date(stripe.periodEnd) : new Date(),
-        },
+        data: keepAccessUntilPeriodEnd
+          ? {
+              cancelAt: periodEnd,
+            }
+          : {
+              status: SubscriptionStatus.canceled,
+              cancelAt: periodEnd ?? new Date(),
+            },
       }),
     ]);
 

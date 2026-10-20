@@ -24,7 +24,9 @@ async function bootstrap() {
     .filter(Boolean);
 
   const corsOrigins = [...new Set(configuredOrigins)];
-  const allowedOriginSet = buildAllowedOriginSet(corsOrigins);
+  const allowedOriginSet = buildAllowedOriginSet(corsOrigins, {
+    includeCanonicalSites: isProduction,
+  });
   const isSafeMethod = (method?: string) =>
     !method || ['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
 
@@ -40,6 +42,17 @@ async function bootstrap() {
 
   app.use(helmet());
   app.use(cookieParser());
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const path = req.path || '';
+    if (
+      /\/(users|backoffice|auth|billing|promotions\/user|courses\/.+\/access)/.test(
+        path,
+      )
+    ) {
+      res.setHeader('Cache-Control', 'private, no-store');
+    }
+    next();
+  });
   app.enableCors({
     origin: (
       origin: string | undefined,

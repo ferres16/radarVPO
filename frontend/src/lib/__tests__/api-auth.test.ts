@@ -28,4 +28,26 @@ describe('api auth transport', () => {
       }),
     );
   });
+
+  it('sends privacy acceptance on register', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ user: { id: 'u1', email: 'user@example.com' } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.register('user@example.com', 'password123', 'Ada Lovelace', '', true);
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/register',
+      expect.objectContaining({
+        body: JSON.stringify({
+          email: 'user@example.com',
+          password: 'password123',
+          fullName: 'Ada Lovelace',
+          acceptedPrivacy: true,
+        }),
+      }),
+    );
+  });
 });

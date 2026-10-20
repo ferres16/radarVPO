@@ -2900,6 +2900,82 @@ select:focus,
   pointer-events: none;
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.cookie-banner {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 80;
+  padding: 0.75rem;
+  background: rgba(248, 250, 249, 0.96);
+  border-top: 1px solid var(--stroke);
+}
+
+.cookie-banner__panel {
+  margin: 0 auto;
+  max-width: 72rem;
+}
+
+.cookie-banner__title {
+  font-size: 1.125rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.cookie-banner__text {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}
+
+.cookie-banner__choices {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.cookie-banner__choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+.cookie-banner__choice input {
+  margin-top: 0.2rem;
+}
+
+.cookie-banner__actions {
+  margin-top: 0.85rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cookie-banner__actions .btn {
+  min-height: 2.75rem;
+  min-width: 10.5rem;
+}
+
+@media (min-width: 768px) {
+  .cookie-banner {
+    padding: 1rem 1.25rem;
+  }
+}
+
 /* Final override: kill leftover decorative box-shadows (keep focus via outline). */
 *,
 *::before,

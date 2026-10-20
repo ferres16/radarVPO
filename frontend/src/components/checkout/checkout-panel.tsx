@@ -122,7 +122,7 @@ export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary;
           ))}
         </ul>
         <p className="mt-4 text-xs leading-5 text-[var(--ink-soft)]">
-          El importe final, con impuestos si procede, aparece en la pantalla de pago de Stripe antes de confirmar.
+          El precio de este resumen es el importe que se cobra. No se añade un recargo extra en el pago.
         </p>
         <Link href={summary.backHref} className="mt-4 inline-block text-sm font-bold text-[var(--green-700)]">
           {summary.backLabel}

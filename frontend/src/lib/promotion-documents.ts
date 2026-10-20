@@ -21,7 +21,7 @@ export function isSafePdfUrl(raw: string | null | undefined): boolean {
   if (url.username || url.password) return false;
 
   const host = url.hostname.toLowerCase();
-  if (!host || host === 'localhost') return false;
+  if (!host || host === 'localhost' || isBlockedHostname(host)) return false;
   if (host.endsWith('.local') || host.endsWith('.internal') || host.endsWith('.localhost')) {
     return false;
   }
@@ -31,6 +31,37 @@ export function isSafePdfUrl(raw: string | null | undefined): boolean {
   }
   if (!host.includes('.')) return false;
   return true;
+}
+
+const BLOCKED_HOSTNAMES = new Set([
+  'metadata.google.internal',
+  'metadata.goog',
+  'kubernetes.default',
+  'kubernetes.default.svc',
+]);
+
+export function isBlockedHostname(host: string): boolean {
+  const value = host.toLowerCase();
+  return BLOCKED_HOSTNAMES.has(value) || value.endsWith('.internal') || value.endsWith('.local');
+}
+
+export function isBlockedResolvedAddress(address: string): boolean {
+  const value = address.toLowerCase().replace(/^\[|\]$/g, '');
+  if (value === '::1' || value === '0:0:0:0:0:0:0:1') return true;
+  if (value.startsWith('fe80:') || value.startsWith('fc') || value.startsWith('fd')) return true;
+  if (value.startsWith('::ffff:')) {
+    return isBlockedResolvedAddress(value.slice('::ffff:'.length));
+  }
+  const parts = value.split('.');
+  if (parts.length !== 4 || parts.some((part) => !/^\d{1,3}$/.test(part))) return false;
+  const [a, b] = [Number(parts[0]), Number(parts[1])];
+  if (a === 0 || a === 10 || a === 127) return true;
+  if (a === 169 && b === 254) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true;
+  if (a >= 224) return true;
+  return false;
 }
 
 function safeDecode(value: string): string {

@@ -32,7 +32,7 @@ export class PromotionsService {
   ) {}
 
   async list(filters: ListPromotionsDto) {
-    const limit = Math.min(filters.limit ?? 10, 50);
+    const limit = Math.min(filters.limit ?? 10, 100);
     const offset = filters.offset ?? 0;
     const statusFilter = filters.status
       ? PUBLIC_PROMOTION_STATUSES.includes(filters.status as PromotionStatus)
@@ -74,7 +74,7 @@ export class PromotionsService {
     const items = await this.prisma.promotion.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      take: Math.min(limit * 3, 100),
+      take: Math.min(limit * 3, 200),
       skip: offset,
       select: {
         id: true,

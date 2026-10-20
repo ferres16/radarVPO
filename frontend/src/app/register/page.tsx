@@ -1,18 +1,39 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { freePlanFeatures } from '@/lib/pro';
 import { safeNextPath } from '@/lib/safe-next';
 import { FormField } from '@/components/design-system';
 
 export default function RegisterPage() {
-  const [nextPath, setNextPath] = useState('');
+  return (
+    <Suspense
+      fallback={
+        <main className="lp lp--inner lp--app auth-shell">
+          <section className="shell py-4 md:py-10">
+            <p className="text-sm text-[var(--ink-soft)]">Cargando…</p>
+          </section>
+        </main>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
+  const searchParams = useSearchParams();
+  const nextPath = useMemo(() => {
+    const legacyIntent = searchParams.get('intent') === 'pro' ? '/checkout?product=pro' : '';
+    return safeNextPath(searchParams.get('next'), legacyIntent);
+  }, [searchParams]);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -27,20 +48,13 @@ export default function RegisterPage() {
 
   const passwordLabel = ['Muy débil', 'Básica', 'Media', 'Buena', 'Fuerte'][passwordScore];
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    // Compatibilidad con enlaces antiguos (?intent=pro): llevan al checkout de PRO.
-    const legacyIntent = params.get('intent') === 'pro' ? '/checkout?product=pro' : '';
-    setNextPath(safeNextPath(params.get('next'), legacyIntent));
-  }, []);
-
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      await api.register(email, password, fullName, phone);
+      await api.register(email, password, fullName, undefined, acceptedPrivacy);
       window.location.assign(safeNextPath(nextPath));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta');
@@ -68,14 +82,20 @@ export default function RegisterPage() {
             </p>
 
             <form className="mt-5 space-y-4" onSubmit={onSubmit}>
-              <FormField id="fullName" label="Nombre completo">
-                <input id="fullName" autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="ds-control w-full" />
+              <p className="rounded-xl bg-[var(--bg-eco)] px-3 py-2 text-xs leading-5 text-[var(--ink)]">
+                Recogemos tu nombre y correo para crear la cuenta (relación contractual). La contraseña se guarda
+                como hash, no como cifrado reversible. El móvil no hace falta ahora: lo pediremos si activas los SMS
+                de PRO. Más detalle en la{' '}
+                <Link href="/privacidad" className="font-semibold underline">
+                  política de privacidad
+                </Link>
+                .
+              </p>
+              <FormField id="fullName" label="Nombre" hint="Para dirigirnos a ti en los emails. Basta con un nombre.">
+                <input id="fullName" autoComplete="given-name" value={fullName} onChange={(e) => setFullName(e.target.value)} required minLength={2} className="ds-control w-full" />
               </FormField>
               <FormField id="email" label="Email">
                 <input id="email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required className="ds-control w-full" />
-              </FormField>
-              <FormField id="phone" label="Móvil (opcional)" hint="Solo se usa para los avisos por SMS de Radar VPO PRO. Puedes añadirlo después.">
-                <input id="phone" type="tel" autoComplete="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className="ds-control w-full" />
               </FormField>
               <FormField id="password" label="Contraseña">
                 <input
@@ -96,20 +116,36 @@ export default function RegisterPage() {
                 </div>
                 <p className="mt-1 text-xs text-[var(--ink-soft)]">Fortaleza: {passwordLabel}</p>
               </div>
+              <label className="flex items-start gap-3 text-sm leading-6 text-[var(--ink)]">
+                <input
+                  type="checkbox"
+                  checked={acceptedPrivacy}
+                  onChange={(event) => setAcceptedPrivacy(event.target.checked)}
+                  required
+                  className="mt-1 h-4 w-4 shrink-0"
+                />
+                <span>
+                  He leído y acepto la{' '}
+                  <Link href="/privacidad" className="font-semibold text-[var(--green-700)] underline">
+                    política de privacidad
+                  </Link>{' '}
+                  y las{' '}
+                  <Link href="/condiciones" className="font-semibold text-[var(--green-700)] underline">
+                    condiciones del servicio
+                  </Link>
+                  .
+                </span>
+              </label>
               {error ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="alert" aria-live="polite">
                   {error}
                 </p>
               ) : null}
-              <button type="submit" disabled={loading} className="btn btn--primary btn--lg btn--block">
+              <button type="submit" disabled={loading || !acceptedPrivacy} className="btn btn--primary btn--lg btn--block">
                 {loading ? 'Creando...' : buying ? 'Crear cuenta y continuar' : 'Crear cuenta gratis'}
               </button>
               <p className="text-center text-xs text-[var(--ink-soft)]">
-                Al crear la cuenta aceptas las{' '}
-                <Link href="/condiciones" className="font-semibold text-[var(--green-700)]">
-                  condiciones del servicio
-                </Link>
-                . La información es orientativa y no sustituye a las fuentes oficiales.
+                La información es orientativa y no sustituye a las fuentes oficiales.
               </p>
             </form>
 

@@ -12,6 +12,7 @@ import {
   isGuidePdf,
   isIncludedInPro,
 } from '@/lib/offer';
+import { publicCatalogCourses } from '@/lib/public-courses';
 import { proPlan } from '@/lib/pro';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 import type { Course } from '@/types';
@@ -75,7 +76,7 @@ function pickGeneralGuide(courses: Course[]): Course | null {
 
 export default async function CoursesPage() {
   const courses = await api.listCourses().catch(() => []);
-  const visibleCourses = [...courses].sort(
+  const visibleCourses = publicCatalogCourses(courses).sort(
     (a, b) => a.order - b.order || a.title.localeCompare(b.title),
   );
   const generalGuide = pickGeneralGuide(visibleCourses);
@@ -229,11 +230,11 @@ export default async function CoursesPage() {
               También con {proPlan.name}
             </p>
             <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">
-              Pack inicial incluido mientras esté activa
+              PRO no promete un curso que no exista
             </h2>
             <p className="mt-3 text-sm leading-7 text-[var(--ink-soft)]">
-              En cada ficha se indica qué guías forman parte del pack y cuáles se compran por separado.
-              Renovación mensual · {proPlan.price}.
+              Si una guía está incluida en PRO, su ficha lo indica. No prometemos un curso cuya ruta no
+              esté publicada. Renovación mensual · {proPlan.price}.
             </p>
           </div>
           <ButtonLink href={proPlan.landingHref} variant="secondary" size="lg">

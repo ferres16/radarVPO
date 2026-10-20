@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
-import { isLegalIdentityComplete, legalOwner, supportEmail } from '@/lib/legal';
+import { isTaxIdPublished, legalOwner, supportEmail } from '@/lib/legal';
 
 export function LegalSection({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -12,30 +12,35 @@ export function LegalSection({ title, children }: { title: string; children: Rea
 }
 
 export function OwnerIdentity() {
-  if (!isLegalIdentityComplete()) {
-    return (
-      <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
-        Los datos identificativos del titular todavía no están publicados. Para cualquier consulta sobre una compra
-        {supportEmail ? ` escribe a ${supportEmail}.` : ' utiliza el formulario de contacto de tu cuenta.'}
-      </p>
-    );
-  }
+  const taxIdLabel = isTaxIdPublished() ? legalOwner.taxId : 'Pendiente de publicación';
+  const addressLabel = legalOwner.address || 'Pendiente de publicación';
 
   return (
-    <ul className="space-y-1">
-      <li>
-        <strong className="text-[var(--ink)]">Titular:</strong> {legalOwner.name}
-      </li>
-      <li>
-        <strong className="text-[var(--ink)]">NIF/CIF:</strong> {legalOwner.taxId}
-      </li>
-      <li>
-        <strong className="text-[var(--ink)]">Domicilio:</strong> {legalOwner.address}
-      </li>
-      <li>
-        <strong className="text-[var(--ink)]">Contacto:</strong> {supportEmail}
-      </li>
-    </ul>
+    <div className="space-y-3">
+      <ul className="space-y-1">
+        <li>
+          <strong className="text-[var(--ink)]">Titular:</strong> {legalOwner.name}
+        </li>
+        <li>
+          <strong className="text-[var(--ink)]">NIF/CIF:</strong> {taxIdLabel}
+        </li>
+        <li>
+          <strong className="text-[var(--ink)]">Domicilio:</strong> {addressLabel}
+        </li>
+        <li>
+          <strong className="text-[var(--ink)]">Contacto:</strong>{' '}
+          <a href={`mailto:${supportEmail}`} className="font-semibold text-[var(--green-700)] underline">
+            {supportEmail}
+          </a>
+        </li>
+      </ul>
+      {!isTaxIdPublished() || !legalOwner.address ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
+          El NIF y el domicilio se completarán en cuanto estén disponibles. El canal de contacto ya está
+          publicado y no requiere iniciar sesión.
+        </p>
+      ) : null}
+    </div>
   );
 }
 

@@ -2,7 +2,7 @@ import { PRO_PRICE_AMOUNT, formatEuro, proPriceLabel } from '@/lib/offer';
 
 /**
  * Definición de Radar VPO PRO. Solo prestaciones que existen hoy en el producto.
- * Cualquier mejora futura se documenta en docs/estrategia-lanzamiento.md, no aquí.
+ * Las guías incluidas se listan desde el catálogo publicado, no desde una ruta fija.
  */
 export const proPlan = {
   name: 'Radar VPO PRO',
@@ -39,7 +39,7 @@ export const freePlanFeatures = [
   'Consultar todas las promociones publicadas',
   'Ver el documento oficial (PDF) de cada promoción',
   'Guardar hasta 3 promociones en Mi espacio',
-  'Lección de muestra del curso inicial',
+  'Lección de muestra de las guías que la tengan',
 ] as const;
 
 export const proExclusiveFeatures = [
@@ -67,12 +67,19 @@ export const proIncludes = [
     description:
       'Guarda las promociones en tu cuenta —no solo en este navegador—, marca la etapa y sigue una lista de pasos.',
   },
-  {
-    title: 'Curso VPO Inicial incluido',
-    description:
-      'Acceso al curso inicial mientras tu suscripción esté activa. Si lo compras aparte, lo conservas aunque canceles PRO.',
-  },
 ] as const;
+
+export function proIncludedGuidesCopy(titles: string[]): {
+  title: string;
+  description: string;
+} | null {
+  const published = titles.map((title) => title.trim()).filter(Boolean);
+  if (published.length === 0) return null;
+  return {
+    title: published.length === 1 ? 'Guía incluida mientras esté activa' : 'Guías incluidas mientras esté activa',
+    description: `${published.join(', ')}. Si las compras aparte, las conservas aunque canceles PRO.`,
+  };
+}
 
 /** Por qué pagar PRO cuando ya hay avisos y guías gratis. Solo hechos del producto. */
 export const proWhyPay = [
@@ -85,8 +92,8 @@ export const proWhyPay = [
     body: `Con la cuenta gratuita guardas hasta 3 promociones. PRO quita el límite. Los favoritos van con tu usuario: checklist, etapa y notas en cualquier dispositivo.`,
   },
   {
-    title: 'Curso inicial mientras esté activa',
-    body: 'Si aún no has comprado el curso, PRO lo incluye durante la suscripción. La compra del curso es pago único y se conserva si cancelas.',
+    title: 'Solo lo publicado',
+    body: 'Si una guía está incluida en PRO, su ficha lo indica y el enlace funciona. No prometemos cursos o rutas que no estén publicados.',
   },
 ] as const;
 
@@ -94,7 +101,6 @@ export const proForWhom = {
   yes: [
     'Quieres enterarte en el móvil cuando se publica una convocatoria, no solo al abrir el correo.',
     'Sigues varias promociones y necesitas una lista con pasos, no un marcador del navegador.',
-    'Quieres el curso inicial ahora y aún no lo has comprado.',
   ],
   no: [
     'Solo quieres mirar PDFs de vez en cuando: eso es gratis, sin PRO.',
@@ -108,27 +114,28 @@ export const proLimits = [
   'Las fechas de próximos lanzamientos son estimaciones y se indican como tales: pueden no cumplirse o no publicarse.',
   'Los SMS solo se envían si tu cuenta tiene un móvil válido.',
   'Radar VPO informa y organiza: no presenta solicitudes por ti ni garantiza una adjudicación.',
+  'PRO no incluye una guía o curso concreto si esa ficha no está publicada.',
 ] as const;
 
 export const proFaqs = [
   {
     question: '¿Qué recibo exactamente con PRO?',
     answer:
-      'Avisos por email (y por SMS si indicas tu móvil) cuando se publica una nueva promoción o detectamos un próximo lanzamiento, Mi espacio sin límite de promociones guardadas y acceso al Curso VPO Inicial mientras la suscripción esté activa.',
+      'Avisos por email (y por SMS si indicas tu móvil) cuando se publica una nueva promoción o detectamos un próximo lanzamiento, y Mi espacio sin límite de promociones guardadas. Si una guía publicada está marcada como incluida, también puedes consultarla mientras la suscripción esté activa.',
   },
   {
     question: '¿Qué puedo hacer gratis?',
     answer:
-      'Consultar todas las promociones, abrir su documento oficial en PDF, guardar hasta 3 promociones en Mi espacio y leer la lección de muestra del curso inicial.',
+      'Consultar todas las promociones, abrir su documento oficial en PDF, guardar hasta 3 promociones en Mi espacio y leer la lección de muestra de las guías que la tengan.',
   },
   {
     question: 'Hay avisos por correo gratis. ¿Qué añade PRO?',
     answer:
-      'El aviso por SMS si indicas tu móvil, Mi espacio sin límite con cuenta, y el curso inicial mientras la suscripción esté activa. El correo, por sí solo, no es el motivo para pagar.',
+      'El aviso por SMS si indicas tu móvil y Mi espacio sin límite con cuenta. El correo, por sí solo, no es el motivo para pagar.',
   },
   {
     question: '¿Cuánto cuesta y cómo se cobra?',
-    answer: `${proPriceLabel}, con renovación mensual automática hasta que la canceles. El precio total se muestra antes de pagar y el cobro lo gestiona Stripe.`,
+    answer: `${proPriceLabel}. Ese es el importe final que se cobra cada mes, con renovación automática hasta que la canceles. El mismo precio aparece en la ficha, en el resumen del pedido y en el pago.`,
   },
   {
     question: '¿Cómo cancelo?',
@@ -153,7 +160,11 @@ export const proComparisonRows = [
   { feature: 'Promociones guardadas en Mi espacio', free: 'Hasta 3', pro: 'Sin límite' },
   { feature: 'Avisos por email', free: false as const, pro: true as const },
   { feature: 'Avisos por SMS', free: false as const, pro: true as const },
-  { feature: 'Curso VPO Inicial', free: 'Lección de muestra', pro: 'Incluido mientras esté activo' },
+  {
+    feature: 'Guías incluidas en PRO',
+    free: 'No',
+    pro: 'Solo las que su ficha marque como incluidas',
+  },
 ] as const;
 
 export type ProComparisonCell = boolean | string;

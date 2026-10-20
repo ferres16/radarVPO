@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { useOptionalConsent } from '@/components/consent/consent-provider';
 import { adsConfig, isUsableAdSlot, shouldRenderAdPlaceholder, shouldShowAds } from '@/lib/ads';
 
 declare global {
@@ -26,8 +27,14 @@ export function AdSlot({
   label = 'Publicidad',
 }: AdSlotProps) {
   const pathname = usePathname();
+  const consent = useOptionalConsent();
   const slotId = adsConfig.slots[slot];
-  const canShowRealAd = Boolean(shouldShowAds(pathname) && adsConfig.clientId && isUsableAdSlot(slotId));
+  const canShowRealAd = Boolean(
+    consent?.preferences?.ads &&
+      shouldShowAds(pathname) &&
+      adsConfig.clientId &&
+      isUsableAdSlot(slotId),
+  );
   const canShowPlaceholder = shouldRenderAdPlaceholder(pathname);
 
   useEffect(() => {

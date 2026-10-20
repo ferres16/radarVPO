@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LegalDocument, LegalSection, OwnerIdentity } from '@/components/legal-document';
 import { SUPPORT_SCOPE, supportEmail } from '@/lib/legal';
+import { COURSE_ACCESS_DURATION_TEXT, PRICE_FINAL_NOTE } from '@/lib/offer';
 import { proPlan } from '@/lib/pro';
 import { createMetadata } from '@/lib/seo';
 
@@ -18,7 +19,7 @@ export default function ConditionsPage() {
       badge="Condiciones"
       title="Condiciones de contratación"
       description="Qué compras, cuánto cuesta, cómo se cobra, cómo se cancela y qué no incluye Radar VPO."
-      updatedAt="15 de octubre de 2026"
+      updatedAt="20 de octubre de 2026"
     >
       <LegalSection title="1. Quién presta el servicio">
         <OwnerIdentity />
@@ -35,8 +36,8 @@ export default function ConditionsPage() {
           </li>
           <li>
             <strong className="text-[var(--ink)]">{proPlan.name}:</strong> suscripción mensual con avisos por email y
-            SMS de nuevas promociones, espacio personal sin límite de promociones guardadas y acceso a los cursos
-            marcados como incluidos mientras la suscripción esté activa.
+            SMS de nuevas promociones y espacio personal sin límite de promociones guardadas. Solo incluye una guía
+            o curso si su ficha publicada lo indica.
           </li>
         </ul>
         <p>
@@ -49,24 +50,26 @@ export default function ConditionsPage() {
 
       <LegalSection title="3. Precios y pago">
         <p>
-          El precio de cada producto se muestra en su página y en el resumen del pedido antes de pagar. El importe final,
-          con los impuestos que correspondan, aparece en la pantalla de pago antes de confirmar. El cobro se realiza en
-          euros a través de Stripe; Radar VPO no almacena los datos de tu tarjeta.
+          El precio de cada producto se muestra en su ficha, en el resumen del pedido y en el botón de pago.{' '}
+          {PRICE_FINAL_NOTE} El cobro se realiza en euros a través de Stripe; Radar VPO no almacena los datos de tu
+          tarjeta.
         </p>
       </LegalSection>
 
       <LegalSection title="4. Cursos (pago único)">
         <p>
-          Pagas una sola vez, sin renovaciones. El acceso se activa automáticamente al confirmarse el pago y se mantiene
-          mientras el curso siga publicado en Radar VPO. Un curso solo se pone a la venta cuando tiene contenido
-          publicado suficiente; los cursos en preparación se muestran como tales y no se pueden comprar.
+          Pagas una sola vez, sin renovaciones. El acceso se activa automáticamente al confirmarse el pago.{' '}
+          {COURSE_ACCESS_DURATION_TEXT} Las guías se consultan en pantalla y no son descargables. Un producto solo se
+          pone a la venta cuando tiene contenido publicado suficiente; los textos provisionales o de prueba no se
+          ofrecen al público.
         </p>
       </LegalSection>
 
       <LegalSection title={`5. ${proPlan.name} (suscripción mensual)`}>
         <p>
-          El precio es de {proPlan.price}. La suscripción se renueva automáticamente cada mes hasta que la canceles. Puedes
-          cancelarla en cualquier momento desde{' '}
+          El precio vigente se muestra en la página de {proPlan.name} y en el resumen del pedido antes de pagar. La
+          suscripción se renueva automáticamente cada mes hasta que la canceles. Puedes cancelarla en cualquier momento
+          desde{' '}
           <Link href="/account" className="font-semibold text-[var(--green-700)]">
             Mi cuenta
           </Link>
@@ -97,15 +100,27 @@ export default function ConditionsPage() {
           </li>
         </ul>
         <p>
-          Para ejercer tus derechos o solicitar una devolución escribe a {supportEmail ?? 'soporte'} indicando el correo de
-          tu cuenta.
+          Para ejercer tus derechos o solicitar una devolución escribe a{' '}
+          <a href={`mailto:${supportEmail}`} className="font-semibold text-[var(--green-700)] underline">
+            {supportEmail}
+          </a>{' '}
+          indicando el correo de tu cuenta. También puedes usar{' '}
+          <Link href="/contacto" className="font-semibold text-[var(--green-700)]">
+            /contacto
+          </Link>
+          , sin iniciar sesión.
         </p>
       </LegalSection>
 
       <LegalSection title="7. Soporte">
         <p>
           El soporte atiende incidencias de {SUPPORT_SCOPE}. No incluye asesoramiento sobre tu caso particular.
-          {supportEmail ? ` Escríbenos a ${supportEmail}.` : ''}
+          {' '}
+          Escríbenos a{' '}
+          <a href={`mailto:${supportEmail}`} className="font-semibold text-[var(--green-700)] underline">
+            {supportEmail}
+          </a>
+          .
         </p>
       </LegalSection>
 

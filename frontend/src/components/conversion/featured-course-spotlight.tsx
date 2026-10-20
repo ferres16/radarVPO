@@ -33,7 +33,8 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
           <Link href={`/cursos/${course.slug}`}>{course.title}</Link>
         </h3>
         <p className="spotlight-course__desc">
-          {course.shortDescription || 'Formación práctica para preparar tu solicitud de vivienda protegida.'}
+          {course.shortDescription ||
+            'Guía para entender el contexto, las ayudas y el presupuesto de una vivienda protegida.'}
         </p>
         {price !== null ? (
           <p className="spotlight-course__note">

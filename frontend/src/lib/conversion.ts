@@ -16,10 +16,10 @@ export const homeOfferLayers = [
   {
     id: 'learn',
     eyebrow: 'Guía · pago único',
-    title: 'Decide con información que gana',
+    title: 'Entiende contexto, ayudas e hipoteca',
     price: 'Precio final en la ficha',
     description:
-      'Guías al grano sobre vivienda protegida. Entras al contenido al momento y pagas una sola vez.',
+      'La primera guía trata el contexto de la VPO, las ayudas y el ahorro necesario. La preparación de la solicitud corresponde a una guía posterior.',
     cta: 'Ver las guías',
     href: '/cursos',
     event: 'course_cta_clicked' as const,
@@ -30,7 +30,7 @@ export const homeOfferLayers = [
     title: 'Avisos por SMS y organización',
     price: proPriceLabel,
     description:
-      'Email y SMS cuando se publica una promoción, Mi espacio sin límite y el curso inicial mientras esté activa.',
+      'Email y SMS cuando se publica una promoción, y Mi espacio sin límite. Las guías incluidas, si las hay, aparecen en su ficha.',
     cta: 'Ver Radar VPO PRO',
     href: '/pro',
     event: 'pro_cta_clicked' as const,
@@ -39,15 +39,15 @@ export const homeOfferLayers = [
 
 export const homeHeroProof = [
   'Consultar promociones y su PDF oficial es gratis, sin registrarte.',
-  'El curso es pago único: ves el programa y el precio antes de comprar.',
-  `PRO (${proPriceLabel}) añade SMS, espacio ilimitado y el curso inicial mientras esté activa.`,
+  'Cada guía muestra el precio final antes de comprar; no se añade un recargo en el pago.',
+  `PRO (${proPriceLabel}) añade SMS y espacio ilimitado.`,
 ] as const;
 
 export const homeFaqs = [
   {
     question: '¿Qué es Radar VPO?',
     answer:
-      'Un sitio para consultar promociones de vivienda protegida en Cataluña con su documento oficial, aprender a preparar la solicitud con un curso y organizar las oportunidades que sigues.',
+      'Un sitio para consultar promociones de vivienda protegida en Cataluña con su documento oficial, entender el contexto con una guía y organizar las oportunidades que sigues.',
   },
   {
     question: '¿Puedo ver promociones sin pagar?',
@@ -55,39 +55,31 @@ export const homeFaqs = [
   },
   {
     question: '¿Qué es Radar VPO PRO?',
-    answer: `Una suscripción de ${proPriceLabel} que añade avisos por email y SMS de nuevas promociones, Mi espacio sin límite y acceso al curso inicial mientras esté activa. Se cancela desde Mi cuenta.`,
+    answer: `Una suscripción de ${proPriceLabel} que añade avisos por email y SMS de nuevas promociones y Mi espacio sin límite. Si una guía publicada está marcada como incluida, también puedes consultarla mientras esté activa. Se cancela desde Mi cuenta.`,
   },
   {
     question: 'Hay avisos por correo gratis en otros sitios. ¿Por qué PRO?',
     answer:
-      'PRO no se vende por el correo. Añade el aviso por SMS (si indicas tu móvil), un espacio personal con cuenta —checklist, etapa y notas en cualquier dispositivo— y el curso inicial mientras la suscripción esté activa. El email, solo, no es el motivo de pago.',
+      'PRO no se vende por el correo. Añade el aviso por SMS (si indicas tu móvil) y un espacio personal con cuenta —checklist, etapa y notas en cualquier dispositivo—. El email, solo, no es el motivo de pago.',
   },
   {
     question: '¿Los cursos son una suscripción?',
     answer:
-      'No. Cada curso es un pago único con el precio final visible antes de pagar; no hay renovaciones. Si cancelas PRO, conservas un curso que hayas comprado.',
+      'No. Cada guía o curso es un pago único con el precio final visible antes de pagar; no hay renovaciones. Si cancelas PRO, conservas lo que hayas comprado.',
   },
   {
-    question: '¿Qué curso incluye PRO?',
+    question: '¿Qué incluye PRO además de los avisos?',
     answer:
-      'El curso inicial, mientras la suscripción esté activa. El avanzado, si está a la venta, se compra aparte. En cada ficha se indica el estado real del contenido.',
+      'Mi espacio sin límite. Una guía concreta solo si su ficha publicada lo indica. No prometemos rutas o cursos que no estén a la venta.',
   },
   {
     question: '¿Radar VPO presenta la solicitud por mí o me asesora individualmente?',
     answer:
-      'No. Radar VPO ofrece información, un curso y herramientas de organización. Cada persona presenta su propia solicitud ante los organismos oficiales.',
+      'No. Radar VPO ofrece información, guías y herramientas de organización. Cada persona presenta su propia solicitud ante los organismos oficiales.',
   },
   {
-    question: '¿Garantiza conseguir un piso protegido?',
+    question: '¿El acompañamiento individual sigue existiendo?',
     answer:
-      'No. La adjudicación depende siempre de los organismos oficiales. Radar VPO te ayuda a informarte y a prepararte.',
+      'No. Esa oferta se retiró. Las direcciones antiguas llevan al catálogo de guías.',
   },
-] as const;
-
-export const pdfNextStep = {
-  title: '¿No sabes qué comprobar en estas bases?',
-  description:
-    'El visor te muestra el documento oficial. El curso te explica cómo leerlo y qué pasos suele exigir una solicitud.',
-  cta: 'Ver el curso',
-  href: '/cursos',
-} as const;
+];

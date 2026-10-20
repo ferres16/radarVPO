@@ -79,6 +79,8 @@ export function CourseLessonEditor({
       }),
       Link.configure({
         openOnClick: false,
+        protocols: ['https'],
+        HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' },
       }),
       TaskList,
       TaskItem.configure({ nested: true }),

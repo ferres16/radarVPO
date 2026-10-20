@@ -4,9 +4,9 @@ export const siteConfig = {
   name: 'Radar VPO',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'https://www.radarvpo.com',
   locale: 'es_ES',
-  title: 'Radar VPO | Prepara tus solicitudes de vivienda protegida en Cataluña',
+  title: 'Radar VPO | Consulta promociones de vivienda protegida en Cataluña',
   description:
-    'Consulta promociones de vivienda protegida con su documento oficial, aprende a preparar tu solicitud con un curso y organiza tus oportunidades. Avisos por email y SMS con Radar VPO PRO.',
+    'Consulta promociones de vivienda protegida con su documento oficial, entiende el contexto con una guía y organiza tus oportunidades. Avisos por email y SMS con Radar VPO PRO.',
   keywords: [
     'vivienda pública cataluña',
     'vivienda publica catalunya',
@@ -79,9 +79,12 @@ export function organizationJsonLd() {
     name: siteConfig.name,
     url: siteConfig.url,
     sameAs: [],
+    legalName: 'Carlos Tena',
+    email: 'radarvpo@gmail.com',
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'customer support',
+      email: 'radarvpo@gmail.com',
       areaServed: 'Catalonia',
       availableLanguage: ['es', 'ca'],
     },

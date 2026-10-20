@@ -33,12 +33,24 @@ export function NewsCard({ item }: { item: NewsItem }) {
         </div>
         <h3 className="display-type text-lg font-black text-[var(--ink)]">{item.title}</h3>
         <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{item.summary || 'Sin resumen disponible.'}</p>
-        <Link
-          href={`/news/${item.id}`}
-          className="mt-4 inline-flex rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white outline-none transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
-        >
-          Leer
-        </Link>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Link
+            href={`/news/${item.id}`}
+            className="inline-flex rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-semibold text-white outline-none transition hover:-translate-y-0.5 hover:bg-[var(--green-900)] focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+          >
+            Leer
+          </Link>
+          {item.sourceUrl?.startsWith('http') ? (
+            <a
+              href={item.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-semibold text-[var(--green-700)] underline"
+            >
+              Fuente: {item.sourceName || 'artículo original'}
+            </a>
+          ) : null}
+        </div>
       </div>
     </MotionCard>
   );
