@@ -12,7 +12,8 @@ export type CommerceSettings = {
   /** Permitir códigos de promoción de Stripe en Checkout. */
   allowPromotionCodes: boolean;
   /**
-   * Stripe Tax (automatic_tax). Activar solo tras confirmar IVA/gestoría
+   * Stripe Tax (automatic_tax). Mantener false en fase de validación de producto
+   * (antes de alta de autónomo). Activar solo tras confirmar IVA/gestoría
    * y configurar Tax en el Dashboard de Stripe.
    */
   stripeAutomaticTax: boolean;

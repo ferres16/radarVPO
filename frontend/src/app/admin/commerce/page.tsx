@@ -195,8 +195,9 @@ export default function AdminCommercePage() {
             <span>
               <strong className="font-bold">Stripe Tax (automatic_tax)</strong>
               <span className="mt-1 block text-[var(--ink-soft)]">
-                Actívalo solo tras confirmar IVA con gestoría y configurar Tax en Stripe Dashboard.
-                Checkout pedirá dirección de facturación.
+                Déjalo desactivado mientras validas el producto y antes de darte de alta como
+                autónomo. Solo actívalo cuando gestoría confirme IVA/facturación y Tax esté
+                configurado en Stripe Dashboard. Checkout pedirá dirección de facturación.
               </span>
             </span>
           </label>
