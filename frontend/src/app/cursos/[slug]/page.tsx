@@ -85,10 +85,10 @@ export async function generateMetadata({ params }: CourseDetailParams): Promise<
       course.shortDescription ||
       course.longDescription ||
       (guide
-        ? 'Guía PDF de vivienda protegida en Cataluña (solo visualización).'
+        ? 'Guía Radar VPO sobre vivienda protegida en Cataluña.'
         : 'Formación práctica de vivienda protegida en Cataluña.'),
     path: `/cursos/${course.slug}`,
-    keywords: [guide ? 'guía VPO PDF' : 'curso vivienda protegida', course.title],
+    keywords: [guide ? 'guía VPO' : 'curso vivienda protegida', course.title],
   });
 }
 
@@ -184,7 +184,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
             <div className="absolute inset-0 bg-gradient-to-t from-[rgba(11,18,32,0.85)] via-[rgba(11,18,32,0.35)] to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70 md:text-[11px]">
-                {guideMode ? 'Guía PDF Radar VPO' : 'Curso Radar VPO'}
+                {guideMode ? 'Guía Radar VPO' : 'Curso Radar VPO'}
               </p>
               <h1 className="display-type mt-1 text-2xl font-black text-white sm:mt-2 sm:text-3xl md:text-5xl">{course.title}</h1>
             </div>
@@ -192,7 +192,11 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           <div className={`shell py-4 md:py-5 ${canAccess ? '' : 'md:grid md:grid-cols-[1.15fr_0.85fr] md:items-start md:gap-8'}`}>
             <div className="min-w-0">
               <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
-                {course.longDescription || course.shortDescription || 'Formación práctica para preparar tu solicitud de vivienda protegida.'}
+                {course.longDescription ||
+                  course.shortDescription ||
+                  (guideMode
+                    ? 'Una guía clara para tomar mejores decisiones sobre vivienda protegida.'
+                    : 'Formación práctica sobre vivienda protegida en Cataluña.')}
               </p>
               <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-soft)] md:mt-5">
                 <span className="rounded-full bg-[var(--bg-app)] px-3 py-1">{status.statusText}</span>
@@ -243,15 +247,10 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                 )}
 
                 <ul className="space-y-1.5 text-xs leading-5 text-white/75">
-                  <li>
-                    {guideMode
-                      ? 'Consulta en pantalla · sin descarga del PDF'
-                      : COURSE_ACCESS_DURATION_TEXT}
-                  </li>
+                  <li>{guideMode ? 'Acceso inmediato · lectura en pantalla' : COURSE_ACCESS_DURATION_TEXT}</li>
                   {includedInPro ? (
                     <li>
-                      Si ya tienes {proPlan.name} activo ({proPlan.price}), este contenido está incluido mientras la
-                      suscripción siga activa.{' '}
+                      Incluido con {proPlan.name} activo ({proPlan.price}).{' '}
                       <Link href="/pro" className="font-bold underline">
                         Ver PRO
                       </Link>
@@ -274,27 +273,30 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
 
         {guideMode ? (
           <section className="shell scroll-mt-24 space-y-6 py-6 md:py-8">
-            <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr] lg:gap-6">
+            <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
               <article className="public-card p-5 md:p-6">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
-                  Sobre esta guía
+                  Por qué esta guía
                 </p>
                 <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
-                  Descripción
+                  Lo que necesitas saber, sin rodeos
                 </h2>
                 <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--ink-soft)] md:text-base">
                   {course.longDescription ||
                     course.shortDescription ||
-                    'Guía PDF para consultar en pantalla. No se puede descargar.'}
+                    'Contenido claro para orientarte con criterio en vivienda protegida.'}
+                </p>
+                <p className="mt-4 text-xs leading-5 text-[var(--ink-soft)]">
+                  Lectura en pantalla · no descargable
                 </p>
               </article>
 
               <article className="public-card p-5 md:p-6">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
-                  Contenido
+                  Dentro encontrarás
                 </p>
                 <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
-                  Temas que se tratan
+                  Temas clave
                 </h2>
                 {guideTopics.length > 0 ? (
                   <ul className="mt-4 space-y-2.5">
@@ -310,28 +312,20 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                   </ul>
                 ) : (
                   <p className="mt-3 text-sm text-[var(--ink-soft)]">
-                    Los temas de esta guía se publicarán en esta ficha.
+                    Los temas de esta guía aparecerán aquí.
                   </p>
                 )}
-                <p className="mt-5 text-xs leading-5 text-[var(--ink-soft)]">
-                  Formato: PDF solo visualización · sin descarga
-                </p>
               </article>
             </div>
 
             <article id="guia" className="public-card scroll-mt-24 p-4 md:p-6">
-              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
-                    Lectura
-                  </p>
-                  <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
-                    Visor de la guía
-                  </h2>
-                </div>
-                {(canAccess || isFree) ? (
-                  <p className="text-xs font-semibold text-[var(--green-700)]">Acceso activo · sin descarga</p>
-                ) : null}
+              <div className="mb-4">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
+                  Lectura
+                </p>
+                <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
+                  Empieza ahora
+                </h2>
               </div>
               <GuidePdfViewer
                 slug={course.slug}

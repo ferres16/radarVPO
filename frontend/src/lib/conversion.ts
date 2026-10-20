@@ -16,10 +16,10 @@ export const homeOfferLayers = [
   {
     id: 'learn',
     eyebrow: 'Guía · pago único',
-    title: 'Aprende a preparar tu solicitud',
+    title: 'Decide con información que gana',
     price: 'Precio final en la ficha',
     description:
-      'Empieza con una guía PDF (consulta en pantalla, sin descarga) o con un programa por lecciones. Pagas una vez.',
+      'Guías al grano sobre vivienda protegida. Entras al contenido al momento y pagas una sola vez.',
     cta: 'Ver las guías',
     href: '/cursos',
     event: 'course_cta_clicked' as const,

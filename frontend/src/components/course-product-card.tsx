@@ -62,8 +62,8 @@ export function CourseProductCard({ course, className = '', layout = 'grid' }: C
           <p className="mt-1.5 line-clamp-2 text-sm leading-5 text-[var(--ink-soft)]">
             {course.shortDescription ||
               (guide
-                ? 'Guía PDF para consultar en pantalla (sin descarga).'
-                : 'Formación práctica para preparar tu solicitud.')}
+                ? 'Guía clara para decidir con criterio.'
+                : 'Formación práctica sobre vivienda protegida.')}
           </p>
           <div className="mt-3 flex items-end justify-between gap-2">
             <p className="text-lg font-black text-[var(--ink)]">{priceText(course, status.sellable)}</p>

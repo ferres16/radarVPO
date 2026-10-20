@@ -101,9 +101,7 @@ export function getCourseStatusSummary(course: Course): CourseStatusSummary {
       modulesTotal: total,
       modulesWithLessons: withLessons,
       sellable,
-      statusText: course.guidePdfAssetId
-        ? 'Guía PDF lista para consultar (sin descarga)'
-        : 'Guía PDF pendiente de subir',
+      statusText: course.guidePdfAssetId ? 'Guía lista' : 'Guía pendiente de subir',
     };
   }
 
