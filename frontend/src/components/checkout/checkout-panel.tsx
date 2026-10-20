@@ -162,6 +162,16 @@ export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary;
             </Link>
             .
           </p>
+        ) : !me.emailVerifiedAt ? (
+          <div className="mt-4 space-y-3">
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              Debes verificar <strong>{me.email}</strong> antes de pagar. Revisa tu bandeja o
+              reenvía el enlace.
+            </p>
+            <ButtonLink href="/verify-email" size="lg" block>
+              Verificar email
+            </ButtonLink>
+          </div>
         ) : (
           <div className="mt-4 space-y-4">
             <p className="text-sm text-[var(--ink-soft)]">

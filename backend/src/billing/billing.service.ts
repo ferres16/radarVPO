@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   ServiceUnavailableException,
@@ -155,6 +156,7 @@ export class BillingService {
       select: {
         id: true,
         email: true,
+        emailVerifiedAt: true,
         plan: true,
         stripeCustomerId: true,
         subscriptions: {
@@ -169,6 +171,11 @@ export class BillingService {
     });
     if (!user) {
       throw new BadRequestException('Usuario no encontrado.');
+    }
+    if (!user.emailVerifiedAt) {
+      throw new ForbiddenException(
+        'Debes verificar tu email antes de comprar. Revisa tu bandeja o solicita un nuevo enlace desde Mi cuenta.',
+      );
     }
 
     const stripe = await this.getStripe();
@@ -216,6 +223,7 @@ export class BillingService {
             price_data: {
               currency: 'eur',
               unit_amount: unitAmount,
+              tax_behavior: commerce.stripeAutomaticTax ? 'inclusive' : undefined,
               recurring: isPack
                 ? { interval: 'month', interval_count: 3 }
                 : { interval: 'month' },
@@ -234,6 +242,13 @@ export class BillingService {
         subscription_data: { metadata },
         locale: 'es',
         allow_promotion_codes: commerce.allowPromotionCodes,
+        ...(commerce.stripeAutomaticTax
+          ? {
+              automatic_tax: { enabled: true },
+              billing_address_collection: 'required' as const,
+              tax_id_collection: { enabled: true },
+            }
+          : {}),
         custom_text: {
           submit: {
             message: isPack
@@ -330,6 +345,7 @@ export class BillingService {
           price_data: {
             currency: 'eur',
             unit_amount: unitAmount,
+            tax_behavior: commerce.stripeAutomaticTax ? 'inclusive' : undefined,
             product_data: { name: course.title },
           },
         },
@@ -338,6 +354,13 @@ export class BillingService {
       payment_intent_data: { metadata, description: course.title },
       locale: 'es',
       allow_promotion_codes: commerce.allowPromotionCodes,
+      ...(commerce.stripeAutomaticTax
+        ? {
+            automatic_tax: { enabled: true },
+            billing_address_collection: 'required' as const,
+            tax_id_collection: { enabled: true },
+          }
+        : {}),
       custom_text: {
         submit: {
           message: `Pago único de ${formatEuroAmount(unitAmount)}. Sin renovaciones. Acceso inmediato al curso tras confirmarse el pago.`,
@@ -376,35 +399,62 @@ export class BillingService {
       throw new BadRequestException('Firma de webhook no válida.');
     }
 
-    const alreadyProcessed = await this.prisma.auditLog.findFirst({
-      where: { entity: 'StripeEvent', entityId: event.id },
-      select: { id: true },
+    // Claim atómico por evt_… (unique PK). Si ya está processed → duplicate.
+    // Si falló antes, se puede reclamar para reintentar el fulfill.
+    const existing = await this.prisma.stripeProcessedEvent.findUnique({
+      where: { eventId: event.id },
+      select: { status: true },
     });
-    if (alreadyProcessed) {
+    if (existing?.status === 'processed') {
       return { received: true, duplicate: true };
     }
-
-    switch (event.type) {
-      case 'checkout.session.completed':
-      case 'checkout.session.async_payment_succeeded':
-        await this.fulfillCheckoutSession(
-          stripe,
-          event.data.object as Stripe.Checkout.Session,
-        );
-        break;
-      case 'customer.subscription.created':
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted':
-        await this.syncSubscription(event.data.object as Stripe.Subscription);
-        break;
-      case 'charge.refunded':
-        await this.handleChargeRefunded(event.data.object as Stripe.Charge);
-        break;
-      default:
-        break;
+    if (existing?.status === 'processing') {
+      // Otro worker lo está tratando ahora.
+      return { received: true, duplicate: true };
+    }
+    if (existing?.status === 'failed') {
+      await this.prisma.stripeProcessedEvent.delete({
+        where: { eventId: event.id },
+      });
     }
 
     try {
+      await this.prisma.stripeProcessedEvent.create({
+        data: {
+          eventId: event.id,
+          type: event.type,
+          status: 'processing',
+        },
+      });
+    } catch {
+      return { received: true, duplicate: true };
+    }
+
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed':
+        case 'checkout.session.async_payment_succeeded':
+          await this.fulfillCheckoutSession(
+            stripe,
+            event.data.object as Stripe.Checkout.Session,
+          );
+          break;
+        case 'customer.subscription.created':
+        case 'customer.subscription.updated':
+        case 'customer.subscription.deleted':
+          await this.syncSubscription(event.data.object as Stripe.Subscription);
+          break;
+        case 'charge.refunded':
+          await this.handleChargeRefunded(event.data.object as Stripe.Charge);
+          break;
+        default:
+          break;
+      }
+
+      await this.prisma.stripeProcessedEvent.update({
+        where: { eventId: event.id },
+        data: { status: 'processed', processedAt: new Date(), errorMessage: null },
+      });
       await this.prisma.auditLog.create({
         data: {
           action: 'stripe.webhook.processed',
@@ -413,17 +463,16 @@ export class BillingService {
           metadata: { type: event.type } as Prisma.InputJsonValue,
         },
       });
+      return { received: true };
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        return { received: true, duplicate: true };
-      }
+      const message =
+        error instanceof Error ? error.message.slice(0, 500) : 'webhook_failed';
+      await this.prisma.stripeProcessedEvent.update({
+        where: { eventId: event.id },
+        data: { status: 'failed', errorMessage: message },
+      });
       throw error;
     }
-
-    return { received: true };
   }
 
   private async fulfillCheckoutSession(

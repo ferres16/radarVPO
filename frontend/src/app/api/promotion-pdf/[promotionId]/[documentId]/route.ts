@@ -12,8 +12,7 @@ import type { PromotionDetail } from '@/types';
 
 // Proxy de solo lectura para los PDF oficiales de una promoción.
 // - Solo sirve documentos asociados a esa promoción en la base de datos (la URL nunca viene del cliente).
-// - Solo https y hosts públicos; sigue un máximo de 3 redirecciones, comprobando cada destino.
-// - Soporta peticiones Range para que el visor cargue por tramos.
+// - Solo https y DNS a IP pública; revalida cada redirección.
 
 export const dynamic = 'force-dynamic';
 

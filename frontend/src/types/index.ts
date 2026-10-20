@@ -53,6 +53,7 @@ export type UserProfile = {
   phone?: string | null;
   role: string;
   plan: string;
+  emailVerifiedAt?: string | null;
   createdAt?: string;
   lastLoginAt?: string | null;
   proAccess?: {
@@ -190,6 +191,7 @@ export type CommerceSettings = {
   maintenanceMessage: string;
   proPackGuideSlug: string;
   allowPromotionCodes: boolean;
+  stripeAutomaticTax: boolean;
 };
 
 export type CheckoutStatus = {

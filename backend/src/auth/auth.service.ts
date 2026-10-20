@@ -15,6 +15,14 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import {
+  createEmailVerificationToken,
+  EMAIL_VERIFY_RESEND_COOLDOWN_MS,
+  EMAIL_VERIFY_RESEND_MAX_PER_DAY,
+  EMAIL_VERIFY_TOKEN_TTL_MS,
+  hashEmailVerificationToken,
+} from './email-verification.util';
 import {
   createPasswordResetToken,
   getPasswordResetCooldownRemainingMs,
@@ -54,6 +62,7 @@ export class AuthService {
         passwordHash,
         role: 'user',
         plan: 'free',
+        emailVerifiedAt: null,
       },
     });
 
@@ -69,6 +78,10 @@ export class AuthService {
         },
       },
     });
+
+    await this.sendVerificationEmail(user.id, user.email, user.fullName).catch(
+      () => undefined,
+    );
 
     return this.issueTokens(user.id, user.email, user.role, user.plan, true);
   }
@@ -196,6 +209,123 @@ export class AuthService {
     }
 
     return genericResponse;
+  }
+
+  async verifyEmail(dto: VerifyEmailDto) {
+    const tokenHash = hashEmailVerificationToken(dto.token.trim());
+    const row = await this.prisma.emailVerificationToken.findUnique({
+      where: { tokenHash },
+      include: { user: { select: { id: true, email: true, emailVerifiedAt: true } } },
+    });
+
+    if (!row || row.usedAt || row.expiresAt < new Date()) {
+      throw new BadRequestException(
+        'El enlace de verificación no es válido o ha caducado.',
+      );
+    }
+
+    const usedAt = new Date();
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: row.userId },
+        data: { emailVerifiedAt: usedAt },
+      }),
+      this.prisma.emailVerificationToken.update({
+        where: { id: row.id },
+        data: { usedAt },
+      }),
+      this.prisma.emailVerificationToken.updateMany({
+        where: { userId: row.userId, usedAt: null, id: { not: row.id } },
+        data: { usedAt },
+      }),
+    ]);
+
+    return {
+      success: true,
+      message: 'Email verificado. Ya puedes comprar y activar avisos PRO.',
+    };
+  }
+
+  async resendVerificationEmail(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        emailVerifiedAt: true,
+      },
+    });
+    if (!user) {
+      throw new BadRequestException('Usuario no encontrado.');
+    }
+    if (user.emailVerifiedAt) {
+      return { success: true, message: 'Tu email ya está verificado.' };
+    }
+
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const recent = await this.prisma.emailVerificationToken.findMany({
+      where: { userId, createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+      take: EMAIL_VERIFY_RESEND_MAX_PER_DAY,
+      select: { createdAt: true },
+    });
+    if (recent.length >= EMAIL_VERIFY_RESEND_MAX_PER_DAY) {
+      throw new BadRequestException(
+        'Has alcanzado el límite de reenvíos. Prueba mañana o revisa tu bandeja de spam.',
+      );
+    }
+    if (recent[0]) {
+      const elapsed = Date.now() - recent[0].createdAt.getTime();
+      if (elapsed < EMAIL_VERIFY_RESEND_COOLDOWN_MS) {
+        throw new BadRequestException(
+          'Espera un minuto antes de solicitar otro correo de verificación.',
+        );
+      }
+    }
+
+    await this.sendVerificationEmail(user.id, user.email, user.fullName);
+    return {
+      success: true,
+      message: 'Te hemos enviado un nuevo enlace de verificación.',
+    };
+  }
+
+  private async sendVerificationEmail(
+    userId: string,
+    email: string,
+    fullName: string | null,
+  ) {
+    const { rawToken, tokenHash } = createEmailVerificationToken();
+    const expiresAt = new Date(Date.now() + EMAIL_VERIFY_TOKEN_TTL_MS);
+    await this.prisma.emailVerificationToken.create({
+      data: { userId, tokenHash, expiresAt },
+    });
+    const verifyUrl = `${resolvePublicSiteUrl()}/verify-email?token=${rawToken}`;
+    const displayName = fullName?.trim() || email;
+    const sent = await this.notifications.sendTemplatedEmail({
+      templateKey: 'auth.verify_email',
+      toEmail: email,
+      toName: displayName,
+      vars: {
+        name: displayName,
+        email,
+        url: verifyUrl,
+        title: '',
+        location: '',
+        date: '',
+        product: '',
+        price: '',
+        phone: '',
+      },
+      fallbackSubject: 'Confirma tu email en Radar VPO',
+      fallbackHtml: `<p>Hola ${displayName},</p><p>Confirma tu dirección de correo para comprar y recibir avisos.</p><p><a href="${verifyUrl}">Verificar email</a></p>`,
+    });
+    if (!sent) {
+      throw new BadRequestException(
+        'No se pudo enviar el correo de verificación. Inténtalo más tarde.',
+      );
+    }
   }
 
   async resetPassword(dto: ResetPasswordDto) {

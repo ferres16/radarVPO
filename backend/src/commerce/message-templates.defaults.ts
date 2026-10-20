@@ -112,4 +112,14 @@ export const MESSAGE_TEMPLATE_SEEDS: MessageTemplateSeed[] = [
       '<p>Hola {{name}},</p><p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en Radar VPO.</p><p><a href="{{url}}">Restablecer contraseña</a></p><p style="font-size:13px;color:#6b7280;">El enlace caduca en 1 hora. Si no has solicitado este cambio, ignora este correo.</p>',
     smsBody: null,
   },
+  {
+    key: 'auth.verify_email',
+    label: 'Auth · Verificar email',
+    description: 'Confirmación de email antes de comprar o activar avisos',
+    channel: 'email',
+    emailSubject: 'Confirma tu email en Radar VPO',
+    emailBody:
+      '<p>Hola {{name}},</p><p>Confirma tu dirección de correo para poder comprar y recibir avisos PRO.</p><p><a href="{{url}}">Verificar email</a></p><p style="font-size:13px;color:#6b7280;">El enlace caduca en 24 horas.</p>',
+    smsBody: null,
+  },
 ];

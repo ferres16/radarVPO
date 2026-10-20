@@ -13,6 +13,7 @@ const emptySettings: CommerceSettings = {
     'El pago online está temporalmente en mantenimiento. Vuelve a intentarlo más adelante.',
   proPackGuideSlug: 'vpo-inicial',
   allowPromotionCodes: false,
+  stripeAutomaticTax: false,
 };
 
 const PACK_KEY = 'pro_pack_3m_grants_guide';
@@ -178,6 +179,24 @@ export default function AdminCommercePage() {
               <span className="mt-1 block text-[var(--ink-soft)]">
                 El cliente podrá escribir un código. Crea el cupón en Stripe Dashboard → Productos →
                 Cupones.
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 text-sm text-[var(--ink)]">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4"
+              checked={draft.stripeAutomaticTax}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, stripeAutomaticTax: e.target.checked }))
+              }
+            />
+            <span>
+              <strong className="font-bold">Stripe Tax (automatic_tax)</strong>
+              <span className="mt-1 block text-[var(--ink-soft)]">
+                Actívalo solo tras confirmar IVA con gestoría y configurar Tax en Stripe Dashboard.
+                Checkout pedirá dirección de facturación.
               </span>
             </span>
           </label>

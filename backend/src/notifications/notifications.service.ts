@@ -509,8 +509,9 @@ export class NotificationsService {
   ) {
     const users = await this.prisma.user.findMany({
       where: onlyUserId
-        ? { id: onlyUserId }
+        ? { id: onlyUserId, emailVerifiedAt: { not: null } }
         : {
+            emailVerifiedAt: { not: null },
             OR: [
               { plan: 'pro' },
               {

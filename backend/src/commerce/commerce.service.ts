@@ -42,6 +42,10 @@ export class CommerceService {
         raw.allowPromotionCodes,
         DEFAULT_COMMERCE_SETTINGS.allowPromotionCodes,
       ),
+      stripeAutomaticTax: asBoolean(
+        raw.stripeAutomaticTax,
+        DEFAULT_COMMERCE_SETTINGS.stripeAutomaticTax,
+      ),
     };
   }
 
@@ -68,6 +72,10 @@ export class CommerceService {
         typeof patch.allowPromotionCodes === 'boolean'
           ? patch.allowPromotionCodes
           : current.allowPromotionCodes,
+      stripeAutomaticTax:
+        typeof patch.stripeAutomaticTax === 'boolean'
+          ? patch.stripeAutomaticTax
+          : current.stripeAutomaticTax,
     };
 
     await this.prisma.systemSetting.upsert({

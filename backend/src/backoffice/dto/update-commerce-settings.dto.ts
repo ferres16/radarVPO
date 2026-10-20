@@ -24,4 +24,8 @@ export class UpdateCommerceSettingsDto {
   @IsOptional()
   @IsBoolean()
   allowPromotionCodes?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  stripeAutomaticTax?: boolean;
 }

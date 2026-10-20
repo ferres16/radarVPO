@@ -456,7 +456,28 @@ export class RegistreScraperService {
       }
     });
 
-    return [...links.values()];
+    return [...links.values()].filter((link) => this.isAllowedOfficialPdfUrl(link));
+  }
+
+  /** Solo guarda enlaces PDF de dominios oficiales (mitiga SSRF/importación arbitraria). */
+  private isAllowedOfficialPdfUrl(raw: string): boolean {
+    try {
+      const url = new URL(raw);
+      if (url.protocol !== 'https:') return false;
+      if (url.username || url.password) return false;
+      const host = url.hostname.toLowerCase();
+      const suffixes = [
+        'registresolicitants.cat',
+        'gencat.cat',
+        'ajuntament.barcelona.cat',
+        'barcelona.cat',
+        'diba.cat',
+        'amb.cat',
+      ];
+      return suffixes.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
+    } catch {
+      return false;
+    }
   }
 
   private extractText(html: string): string {

@@ -5,15 +5,20 @@ import {
   Post,
   Req,
   Res,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import { minutes, seconds, Throttle } from '@nestjs/throttler';
 import type { CookieOptions, Request, Response } from 'express';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import type { CurrentUserPayload } from '../common/decorators/current-user.decorator';
+import { JwtAuthGuard } from './jwt-auth.guard';
 import { AuthService } from './auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 const isProduction = process.env.NODE_ENV === 'production';
 const cookieDomain = process.env.COOKIE_DOMAIN;
@@ -123,6 +128,20 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: seconds(60) } })
   resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto);
+  }
+
+  @Post('verify-email')
+  @Throttle({ default: { limit: 10, ttl: seconds(60) } })
+  verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmail(dto);
+  }
+
+  @Post('resend-verification')
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 3, ttl: minutes(10) } })
+  resendVerification(@CurrentUser() user: CurrentUserPayload) {
+    return this.authService.resendVerificationEmail(user.sub);
   }
 
   private writeAuthCookies(

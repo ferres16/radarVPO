@@ -11,6 +11,11 @@ export type CommerceSettings = {
   proPackGuideSlug: string;
   /** Permitir códigos de promoción de Stripe en Checkout. */
   allowPromotionCodes: boolean;
+  /**
+   * Stripe Tax (automatic_tax). Activar solo tras confirmar IVA/gestoría
+   * y configurar Tax en el Dashboard de Stripe.
+   */
+  stripeAutomaticTax: boolean;
 };
 
 export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
@@ -20,4 +25,5 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
     'El pago online está temporalmente en mantenimiento. Vuelve a intentarlo más adelante.',
   proPackGuideSlug: 'vpo-inicial',
   allowPromotionCodes: false,
+  stripeAutomaticTax: false,
 };

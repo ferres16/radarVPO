@@ -191,6 +191,8 @@ model User {
   passwordHash               String              @map("password_hash")
   role                       UserRole            @default(user)
   plan                       UserPlan            @default(free)
+  /** null = pendiente de verificar (cuentas nuevas). Cuentas legacy se rellenan en migración. */
+  emailVerifiedAt            DateTime?           @map("email_verified_at")
   stripeCustomerId           String?             @map("stripe_customer_id")
   proCancellationRequestedAt DateTime?           @map("pro_cancellation_requested_at")
   createdAt                  DateTime            @default(now()) @map("created_at")
@@ -211,6 +213,7 @@ model User {
   serviceAccesses UserServiceAccess[]
   uploadedFiles FileAsset[]
   passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
 
   @@map("users")
 }
@@ -226,6 +229,32 @@ model PasswordResetToken {
 
   @@index([userId, createdAt])
   @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("email_verification_tokens")
+}
+
+/** Claim atómico de eventos Stripe (evt_…) para idempotencia del webhook. */
+model StripeProcessedEvent {
+  eventId     String   @id @map("event_id")
+  type        String
+  status      String   @default("processing")
+  errorMessage String? @map("error_message")
+  createdAt   DateTime @default(now()) @map("created_at")
+  processedAt DateTime? @map("processed_at")
+
+  @@index([status, createdAt])
+  @@map("stripe_processed_events")
 }
 
 model Session {
@@ -758,6 +787,7 @@ model Purchase {
 
   @@index([userId, status])
   @@index([courseId, status])
+  @@unique([provider, providerRef])
   @@map("purchases")
 }
 
@@ -776,6 +806,7 @@ model Subscription {
 
   @@index([userId, status])
   @@index([status, currentPeriodEnd])
+  @@unique([provider, providerRef])
   @@map("subscriptions")
 }
 
