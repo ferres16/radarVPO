@@ -1,4 +1,5 @@
-import { isBlockedIpAddress, parseHttpsPublicUrl, isOfficialPdfHost } from '../safe-remote-url';
+import { describe, expect, it } from 'vitest';
+import { isBlockedIpAddress, parseHttpsPublicUrl, isOfficialPdfHost } from './safe-remote-url';
 
 describe('safe-remote-url', () => {
   it('rejects private IPv4 ranges', () => {
