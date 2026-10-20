@@ -2,6 +2,7 @@ import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PromotionsService } from '../src/promotions/promotions.service';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { FileStorageService } from '../src/storage/file-storage.service';
+import { MetricsService } from '../src/metrics/metrics.service';
 
 type FavoriteOptions = {
   existing?: { id: string } | null;
@@ -38,7 +39,11 @@ function buildService(options: FavoriteOptions = {}) {
 
   return {
     favorite,
-    service: new PromotionsService(prisma, {} as FileStorageService),
+    service: new PromotionsService(
+      prisma,
+      {} as FileStorageService,
+      { getVisitorCount: jest.fn().mockResolvedValue(0) } as unknown as MetricsService,
+    ),
   };
 }
 

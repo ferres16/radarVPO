@@ -69,6 +69,12 @@ enum CoursePricingType {
   premium
 }
 
+/** standard = lecciones; guide_pdf = una sola guía PDF (solo visualización). */
+enum CourseFormat {
+  standard
+  guide_pdf
+}
+
 enum CourseModuleVisibility {
   visible
   hidden
@@ -346,6 +352,7 @@ model FileAsset {
   promotionDocuments PromotionDocument[]
   courseResources CourseResource[]
   courseAssets CourseAsset[]
+  guideCourses Course[] @relation("CourseGuidePdf")
 
   @@unique([s3Bucket, s3Key])
   @@index([entityType, entityId])
@@ -409,6 +416,9 @@ model NewsItem {
   category    String   @default("general")
   topic       String?
   municipality String?
+  /** URL pública de la imagen de portada en S3 (generada o subida). */
+  coverImageUrl String? @map("cover_image_url")
+  coverImageAssetId String? @map("cover_image_asset_id")
   contentHash String   @unique @map("content_hash")
   publishedAt DateTime @map("published_at")
   createdAt   DateTime @default(now()) @map("created_at")
@@ -467,6 +477,9 @@ model Course {
   stripePaymentLink String?          @map("stripe_payment_link")
   status            CourseStatus     @default(draft)
   accessType        CourseAccessType @default(free) @map("access_type")
+  format            CourseFormat     @default(standard)
+  /** PDF de la guía (solo visualización; no descarga pública). */
+  guidePdfAssetId   String?          @map("guide_pdf_asset_id")
   order             Int              @default(0)
   seoTitle          String?          @map("seo_title")
   seoDescription    String?          @map("seo_description")
@@ -483,9 +496,11 @@ model Course {
   lessonProgresses  LessonProgress[]
   purchases         Purchase[]
   userAccesses       UserCourseAccess[]
+  guidePdfAsset     FileAsset?       @relation("CourseGuidePdf", fields: [guidePdfAssetId], references: [id], onDelete: SetNull)
 
   @@index([status, accessType])
   @@index([status, order, createdAt])
+  @@index([format])
   @@map("courses")
 }
 

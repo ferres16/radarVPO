@@ -13,6 +13,7 @@ import {
   AMENDMENT_TITLE_CONTAINS,
   isAmendmentPublication,
 } from '../common/promotion-content-filters';
+import { MetricsService } from '../metrics/metrics.service';
 import { FileStorageService } from '../storage/file-storage.service';
 
 export const FREE_SAVED_PROMOTIONS_LIMIT = 3;
@@ -27,6 +28,7 @@ export class PromotionsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly fileStorage: FileStorageService,
+    private readonly metrics: MetricsService,
   ) {}
 
   async list(filters: ListPromotionsDto) {
@@ -337,7 +339,7 @@ export class PromotionsService {
       ],
     };
 
-    const [publishedPromotions, groupedMunicipalities, accounts, proSubscriptions] =
+    const [publishedPromotions, groupedMunicipalities, accounts, proSubscriptions, visitors] =
       await Promise.all([
         this.prisma.promotion.count({ where: publishedWhere }),
         this.prisma.promotion.groupBy({
@@ -362,6 +364,7 @@ export class PromotionsService {
             ],
           },
         }),
+        this.metrics.getVisitorCount(),
       ]);
 
     return {
@@ -370,6 +373,7 @@ export class PromotionsService {
         .length,
       accounts,
       proSubscriptions,
+      visitors,
     };
   }
 }

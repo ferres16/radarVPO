@@ -67,12 +67,18 @@ export function isIncludedInPro(course: Pick<Course, 'accessType'>): boolean {
   return course.accessType === 'pro';
 }
 
+export function isGuidePdf(course: Pick<Course, 'format'>): boolean {
+  return course.format === 'guide_pdf';
+}
+
 /**
- * Un curso solo se vende cuando tiene precio y un mínimo de lecciones publicadas.
- * Mientras tanto se muestra como "en preparación" con su estado real.
+ * Un curso estándar se vende con precio y mínimo de lecciones.
+ * Una guía PDF se vende con precio y PDF subido (sin lecciones).
  */
 export function isCourseSellable(course: Course): boolean {
-  return getCoursePrice(course) !== null && countPublishedLessons(course) >= COURSE_MIN_LESSONS_TO_SELL;
+  if (getCoursePrice(course) === null) return false;
+  if (isGuidePdf(course)) return Boolean(course.guidePdfAssetId);
+  return countPublishedLessons(course) >= COURSE_MIN_LESSONS_TO_SELL;
 }
 
 export type CourseStatusSummary = {
@@ -88,6 +94,18 @@ export function getCourseStatusSummary(course: Course): CourseStatusSummary {
   const publishedLessons = countPublishedLessons(course);
   const { total, withLessons } = countModules(course);
   const sellable = isCourseSellable(course);
+
+  if (isGuidePdf(course)) {
+    return {
+      publishedLessons,
+      modulesTotal: total,
+      modulesWithLessons: withLessons,
+      sellable,
+      statusText: course.guidePdfAssetId
+        ? 'Guía PDF lista para consultar (sin descarga)'
+        : 'Guía PDF pendiente de subir',
+    };
+  }
 
   const lessonsText =
     publishedLessons === 1 ? '1 lección publicada' : `${publishedLessons} lecciones publicadas`;

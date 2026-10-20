@@ -29,6 +29,8 @@ export type CatalogStats = {
   municipalities: number;
   accounts: number;
   proSubscriptions: number;
+  /** Visitantes únicos aproximados (1 por navegador/día). */
+  visitors?: number;
 };
 
 export type FavoriteStage = 'interested' | 'preparing' | 'applied' | 'discarded';
@@ -143,6 +145,7 @@ export type NewsItem = {
   municipality?: string | null;
   relevance: string;
   publishedAt: string;
+  coverImageUrl?: string | null;
 };
 
 export type BackofficeOverview = {
@@ -189,6 +192,7 @@ export type BackofficeCancellationProcessResult = {
 export type CourseStatus = 'draft' | 'published' | 'archived';
 export type CourseAccessType = 'free' | 'paid' | 'pro' | 'seguimiento';
 export type CoursePricingType = 'free' | 'premium';
+export type CourseFormat = 'standard' | 'guide_pdf';
 export type CourseModuleVisibility = 'visible' | 'hidden';
 export type LessonStatus = 'draft' | 'published';
 export type LessonType = 'text' | 'video' | 'downloadable' | 'faq';
@@ -307,6 +311,8 @@ export type Course = {
   stripePaymentLink?: string | null;
   status: CourseStatus;
   accessType: CourseAccessType;
+  format?: CourseFormat;
+  guidePdfAssetId?: string | null;
   order: number;
   seoTitle?: string | null;
   seoDescription?: string | null;

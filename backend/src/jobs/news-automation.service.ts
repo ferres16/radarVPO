@@ -7,6 +7,7 @@ import {
   AiProviderService,
   GeneratedNewsDraft,
 } from '../ai/ai.provider.service';
+import { NewsCoverService } from '../news/news-cover.service';
 
 const CATEGORY_PRIORITY: Record<GeneratedNewsDraft['category'], number> = {
   vpo: 40,
@@ -63,6 +64,7 @@ export class NewsAutomationService {
     private readonly prisma: PrismaService,
     private readonly rssNewsService: RssNewsService,
     private readonly aiProvider: AiProviderService,
+    private readonly newsCover: NewsCoverService,
   ) {}
 
   async generateDailyCatalunyaNews() {
@@ -640,7 +642,7 @@ export class NewsAutomationService {
         continue;
       }
 
-      await this.prisma.newsItem.create({
+      const created = await this.prisma.newsItem.create({
         data: {
           slug,
           sourceName: source.sourceName,
@@ -660,6 +662,8 @@ export class NewsAutomationService {
           publishedAt: source.publishedAt,
         } as Prisma.NewsItemCreateInput,
       });
+
+      await this.newsCover.attachGeneratedCover(created.id).catch(() => false);
 
       await this.prisma.newsFeedItem.update({
         where: { id: source.id },

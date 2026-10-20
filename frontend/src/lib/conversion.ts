@@ -15,12 +15,12 @@ export const homeOfferLayers = [
   },
   {
     id: 'learn',
-    eyebrow: 'Curso · pago único',
+    eyebrow: 'Guía · pago único',
     title: 'Aprende a preparar tu solicitud',
     price: 'Precio final en la ficha',
     description:
-      'Un programa práctico para entender el proceso y leer las bases. No es una suscripción: pagas una vez.',
-    cta: 'Ver el curso',
+      'Empieza con una guía PDF (consulta en pantalla, sin descarga) o con un programa por lecciones. Pagas una vez.',
+    cta: 'Ver las guías',
     href: '/cursos',
     event: 'course_cta_clicked' as const,
   },

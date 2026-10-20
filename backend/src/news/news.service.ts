@@ -55,6 +55,10 @@ export class NewsService {
         summary: true,
         publishedAt: true,
         createdAt: true,
+        coverImageUrl: true,
+        category: true,
+        topic: true,
+        relevance: true,
       },
     });
 
@@ -81,6 +85,7 @@ export class NewsService {
         municipality: true,
         publishedAt: true,
         createdAt: true,
+        coverImageUrl: true,
       },
     });
     if (!item) {

@@ -29,6 +29,7 @@ export async function generateMetadata({ params }: NewsDetailParams): Promise<Me
     description: item.summary || item.practicalImpact || 'Noticia sobre vivienda protegida y vivienda pública.',
     path: `/news/${item.id}`,
     type: 'article',
+    image: item.coverImageUrl || undefined,
     keywords: [item.topic || '', item.category || '', 'vivienda protegida'].filter(Boolean),
   });
 }
@@ -48,6 +49,7 @@ export default async function NewsDetailPage({ params }: NewsDetailParams) {
     description: item.summary || item.practicalImpact || undefined,
     datePublished: item.publishedAt,
     mainEntityOfPage: absoluteUrl(`/news/${item.id}`),
+    image: item.coverImageUrl ? [item.coverImageUrl] : undefined,
     author: {
       '@type': 'Organization',
       name: 'Radar VPO',
@@ -70,12 +72,28 @@ export default async function NewsDetailPage({ params }: NewsDetailParams) {
           articleJsonLd,
         ]}
       />
-      <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
-        <h1 className="text-2xl font-bold text-[var(--ink)]">{item.title}</h1>
-        <p className="mt-1 text-sm text-[var(--ink-soft)]">{item.sourceName} - {item.publishedAt.slice(0, 10)}</p>
-        <p className="mt-4 text-sm text-[var(--ink)]">{item.summary || 'Sin resumen disponible.'}</p>
-        <InlineAdCard className="mt-5" />
-        <p className="mt-4 whitespace-pre-wrap text-sm text-[var(--ink)]">{item.body || 'Sin desarrollo adicional.'}</p>
+      <article className="overflow-hidden rounded-3xl border border-[var(--stroke)] bg-white shadow-card">
+        {item.coverImageUrl ? (
+          <div className="relative aspect-[16/9] w-full bg-[var(--bg-eco)]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.coverImageUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          </div>
+        ) : null}
+        <div className="p-6">
+          <h1 className="text-2xl font-bold text-[var(--ink)]">{item.title}</h1>
+          <p className="mt-1 text-sm text-[var(--ink-soft)]">
+            {item.sourceName} - {item.publishedAt.slice(0, 10)}
+          </p>
+          <p className="mt-4 text-sm text-[var(--ink)]">{item.summary || 'Sin resumen disponible.'}</p>
+          <InlineAdCard className="mt-5" />
+          <p className="mt-4 whitespace-pre-wrap text-sm text-[var(--ink)]">
+            {item.body || 'Sin desarrollo adicional.'}
+          </p>
+        </div>
       </article>
     </main>
   );

@@ -11,11 +11,11 @@ import { proPlan } from '@/lib/pro';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Cursos para preparar tu solicitud de vivienda protegida',
+  title: 'Guías para preparar tu solicitud de vivienda protegida',
   description:
-    'Cursos de pago único para entender y preparar tu solicitud de vivienda protegida en Cataluña. Programa, precio final y estado del contenido visibles antes de comprar.',
+    'Guías PDF y formación de pago único para entender y preparar tu solicitud de vivienda protegida en Cataluña. Contenido y precio final visibles antes de comprar.',
   path: '/cursos',
-  keywords: ['curso VPO', 'formación vivienda protegida', 'Cataluña'],
+  keywords: ['guía VPO', 'curso VPO', 'formación vivienda protegida', 'Cataluña'],
 });
 
 export default async function CoursesPage() {
@@ -34,15 +34,15 @@ export default async function CoursesPage() {
       <StructuredData
         data={breadcrumbJsonLd([
           { name: 'Inicio', path: '/' },
-          { name: 'Cursos', path: '/cursos' },
+          { name: 'Guías', path: '/cursos' },
         ])}
       />
 
       <PublicPageHero
-        badge="Cursos"
-        title="Aprende a preparar"
-        titleAccent="tu solicitud de vivienda protegida"
-        description="Pago único, sin renovaciones. Ves el programa, el estado real del contenido y el precio final antes de comprar. PRO incluye el curso inicial solo mientras la suscripción esté activa."
+        badge="Guías"
+        title="Prepara tu solicitud"
+        titleAccent="con una guía clara"
+        description="Pago único, sin renovaciones. Puedes empezar con una guía PDF (solo visualización, sin descarga) o con un programa por lecciones. PRO incluye el contenido inicial mientras la suscripción esté activa."
         actions={
           featured ? (
             <div className="lp-hero__actions lp-hero__actions--stack">
@@ -59,22 +59,23 @@ export default async function CoursesPage() {
       <PublicSection>
         <div className="lp-why-grid">
           <article className="lp-why-card">
-            <h2 className="lp-why-card__title">Comprar el curso</h2>
+            <h2 className="lp-why-card__title">Compra única</h2>
             <p className="lp-why-card__text">
-              Pago único. Conservas el acceso si cancelas PRO, mientras el curso siga publicado.
+              Pagas una vez. Conservas el acceso si cancelas PRO, mientras el contenido siga publicado.
             </p>
           </article>
           <article className="lp-why-card">
             <h2 className="lp-why-card__title">Incluido en PRO</h2>
             <p className="lp-why-card__text">
-              El inicial entra con {proPlan.name} ({proPlan.price}) solo mientras la suscripción esté activa. El
-              avanzado, si está a la venta, se compra aparte.
+              El contenido inicial entra con {proPlan.name} ({proPlan.price}) solo mientras la suscripción esté
+              activa. El avanzado, si está a la venta, se compra aparte.
             </p>
           </article>
           <article className="lp-why-card">
-            <h2 className="lp-why-card__title">En preparación</h2>
+            <h2 className="lp-why-card__title">Guía PDF o lecciones</h2>
             <p className="lp-why-card__text">
-              Si un curso tiene pocas lecciones publicadas, se muestra el programa y no se puede comprar todavía.
+              Las guías PDF se consultan en pantalla (sin descarga). Los programas por lecciones se muestran
+              cuando hay contenido publicado.
             </p>
           </article>
         </div>
@@ -82,14 +83,17 @@ export default async function CoursesPage() {
 
       {visibleCourses.length === 0 ? (
         <PublicSection>
-          <EmptyState title="Sin cursos publicados" description="El catálogo aparecerá aquí cuando haya contenido disponible." />
+          <EmptyState
+            title="Sin guías publicadas"
+            description="El catálogo aparecerá aquí cuando haya contenido disponible."
+          />
         </PublicSection>
       ) : (
         <PublicSection id="catalogo">
           <SectionHeader
             eyebrow="Catálogo"
-            title="Cursos"
-            description="Cada ficha indica si está a la venta, si lo incluye PRO y cuántas lecciones hay publicadas."
+            title="Guías"
+            description="Cada ficha indica si está a la venta, si lo incluye PRO y si es una guía PDF o un programa por lecciones."
           />
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-3">
             {visibleCourses.map((course) => (

@@ -7,7 +7,7 @@ const tabLinks = [
   { href: '/', label: 'Inicio', icon: 'home' as const },
   { href: '/alerts', label: 'Alertas', icon: 'alerts' as const },
   { href: '/promotions', label: 'Publicadas', icon: 'promotions' as const },
-  { href: '/cursos', label: 'Cursos', icon: 'courses' as const },
+  { href: '/cursos', label: 'Guías', icon: 'courses' as const },
   { href: '/account', label: 'Cuenta', icon: 'account' as const },
 ];
 

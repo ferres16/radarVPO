@@ -6,6 +6,7 @@ import {
 import {
   CourseAssetKind,
   CourseAccessRuleType,
+  CourseFormat,
   FileAssetStatus,
   FileEntityType,
   Prisma,
@@ -24,6 +25,7 @@ import {
 import { S3StorageService } from '../storage/s3-storage.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { BillingService } from '../billing/billing.service';
+import { NewsCoverService } from '../news/news-cover.service';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
 import { CreateCourseContentBlockDto } from './dto/create-course-content-block.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -61,6 +63,7 @@ export class BackofficeService {
     private readonly fileStorage: FileStorageService,
     private readonly notificationsService: NotificationsService,
     private readonly billingService: BillingService,
+    private readonly newsCover: NewsCoverService,
   ) {}
 
   async overview() {
@@ -477,6 +480,7 @@ export class BackofficeService {
         stripePaymentLink: this.nullableText(dto.stripePaymentLink),
         status: dto.status,
         accessType: dto.accessType,
+        format: dto.format ?? CourseFormat.standard,
         order: dto.order ?? 0,
         seoTitle: this.nullableText(dto.seoTitle),
         seoDescription: this.nullableText(dto.seoDescription),
@@ -506,6 +510,7 @@ export class BackofficeService {
         stripePaymentLink: this.nullableText(dto.stripePaymentLink),
         status: dto.status,
         accessType: dto.accessType,
+        format: dto.format,
         order: dto.order,
         seoTitle: this.nullableText(dto.seoTitle),
         seoDescription: this.nullableText(dto.seoDescription),
@@ -1202,7 +1207,7 @@ export class BackofficeService {
       dto.itemUrl ?? `${dto.sourceUrl.replace(/\/$/, '')}#manual-${token}`;
     const slug = this.buildSlug(dto.title, token);
 
-    return this.prisma.newsItem.create({
+    const created = await this.prisma.newsItem.create({
       data: {
         slug,
         sourceName: dto.sourceName,
@@ -1218,6 +1223,56 @@ export class BackofficeService {
         category: 'general',
         contentHash: `manual-${token}`,
         publishedAt: new Date(dto.publishedAt),
+      },
+    });
+
+    await this.newsCover.attachGeneratedCover(created.id).catch(() => false);
+    return this.prisma.newsItem.findUniqueOrThrow({ where: { id: created.id } });
+  }
+
+  /** Sube el PDF de una guía (solo lectura en el producto; privado en S3). */
+  async uploadCourseGuidePdf(
+    courseId: string,
+    file: Express.Multer.File,
+    uploadedByUserId?: string,
+  ) {
+    const course = await this.ensureCourse(courseId);
+    if (file.mimetype !== 'application/pdf') {
+      throw new BadRequestException('La guía debe ser un PDF.');
+    }
+
+    if (course.guidePdfAssetId) {
+      await this.fileStorage
+        .deleteAsset(course.guidePdfAssetId)
+        .catch(() => undefined);
+    }
+
+    const asset = await this.fileStorage.uploadFile({
+      entityType: 'course',
+      entityId: courseId,
+      folder: `courses/${courseId}/guide`,
+      file,
+      isPublic: false,
+      uploadedByUserId,
+      allowedMimeTypes: ['application/pdf'],
+      maxSizeBytes: getCourseAssetMaxSizeBytes(),
+    });
+
+    return this.prisma.course.update({
+      where: { id: courseId },
+      data: {
+        format: CourseFormat.guide_pdf,
+        guidePdfAssetId: asset.id,
+      },
+      include: {
+        modules: {
+          orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+          include: {
+            lessons: {
+              orderBy: [{ order: 'asc' }, { createdAt: 'asc' }],
+            },
+          },
+        },
       },
     });
   }
@@ -2161,7 +2216,7 @@ export class BackofficeService {
   private async ensureCourse(courseId: string) {
     const course = await this.prisma.course.findUnique({
       where: { id: courseId },
-      select: { id: true },
+      select: { id: true, guidePdfAssetId: true, format: true },
     });
 
     if (!course) {

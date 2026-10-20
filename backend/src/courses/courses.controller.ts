@@ -1,6 +1,16 @@
-import { Controller, Get, Param, Post, Redirect, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Header,
+  Param,
+  Post,
+  Redirect,
+  StreamableFile,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import { CoursesService } from './courses.service';
@@ -58,6 +68,23 @@ export class CoursesController {
   async getCourseCover(@Param('slug') slug: string) {
     const url = await this.coursesService.getCourseCoverRedirectUrl(slug);
     return { url, statusCode: 302 };
+  }
+
+  @Get(':slug/guide-pdf')
+  @UseGuards(OptionalJwtAuthGuard)
+  @Header('Content-Type', 'application/pdf')
+  @Header('Content-Disposition', 'inline')
+  @Header('Cache-Control', 'private, no-store')
+  @Header('X-Content-Type-Options', 'nosniff')
+  async getGuidePdf(
+    @Param('slug') slug: string,
+    @CurrentUser() user?: CurrentUserPayload | null,
+  ) {
+    const pdf = await this.coursesService.getGuidePdfForView(slug, user?.sub);
+    return new StreamableFile(pdf.body, {
+      type: pdf.contentType,
+      disposition: 'inline',
+    });
   }
 
   @Get(':slug')

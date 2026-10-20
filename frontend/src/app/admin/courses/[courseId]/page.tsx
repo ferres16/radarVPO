@@ -9,6 +9,7 @@ import { CourseLessonEditor } from '@/components/course-lesson-editor';
 import type {
   Course,
   CourseAccessType,
+  CourseFormat,
   CourseLesson,
   CourseModule,
   CourseModuleVisibility,
@@ -41,6 +42,7 @@ const lessonStatusOptions: LessonStatus[] = ['draft', 'published'];
 const lessonTypeOptions: LessonType[] = ['text', 'video', 'downloadable', 'faq'];
 const courseStatusOptions: CourseStatus[] = ['draft', 'published', 'archived'];
 const courseAccessOptions: CourseAccessType[] = ['free', 'paid', 'pro'];
+const courseFormatOptions: CourseFormat[] = ['standard', 'guide_pdf'];
 
 const getCourseSalePrice = (course: Pick<Course, 'salePrice' | 'seoMetadata'>) => {
   const metadataSalePrice = course.seoMetadata?.salePrice;
@@ -108,6 +110,8 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 stripePaymentLink: selected.stripePaymentLink || '',
                 status: selected.status,
                 accessType: selected.accessType,
+                format: selected.format || 'standard',
+                guidePdfAssetId: selected.guidePdfAssetId || null,
                 order: selected.order,
                 seoTitle: selected.seoTitle || '',
                 seoDescription: selected.seoDescription || '',
@@ -204,6 +208,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
         stripePaymentLink: courseDraft.stripePaymentLink,
         status: courseDraft.status,
         accessType: courseDraft.accessType,
+        format: courseDraft.format || 'standard',
         order: courseDraft.order,
         seoTitle: courseDraft.seoTitle,
         seoDescription: courseDraft.seoDescription,
@@ -425,6 +430,25 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
     }
   }
 
+  async function uploadCourseGuidePdf(file: File) {
+    if (!course) return;
+    setSavingId('course-guide-pdf');
+    setError('');
+    try {
+      const updated = await api.uploadBackofficeCourseGuidePdf(course.id, file);
+      setCourse(updated);
+      setCourseDraft((prev) => ({
+        ...prev,
+        format: 'guide_pdf',
+        guidePdfAssetId: updated.guidePdfAssetId || null,
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo subir la guía PDF');
+    } finally {
+      setSavingId('');
+    }
+  }
+
   async function deleteResource(resourceId: string) {
     const accepted = window.confirm('Se eliminara el recurso tambien de S3. ¿Continuar?');
     if (!accepted) return;
@@ -532,6 +556,30 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 className="ds-control flex-1"
               />
             </div>
+            <div className="mt-4 border-t border-[var(--stroke)] pt-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ink-soft)]">
+                Guía PDF (solo visualización, sin descarga)
+              </p>
+              <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                {course.guidePdfAssetId || courseDraft.guidePdfAssetId
+                  ? 'Hay un PDF de guía subido. Al publicarlo, el usuario lo consulta en pantalla.'
+                  : 'Sube un PDF cuando el formato sea «Guía PDF».'}
+              </p>
+              <label className="mt-3 inline-flex w-fit rounded-xl bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] shadow-sm">
+                {savingId === 'course-guide-pdf' ? 'Subiendo…' : 'Subir guía PDF'}
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    void uploadCourseGuidePdf(file);
+                    event.currentTarget.value = '';
+                  }}
+                />
+              </label>
+            </div>
           </div>
         ) : null}
       </header>
@@ -620,6 +668,7 @@ export default function AdminCourseModulesPage({ params }: PageProps) {
                 <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                   <label className="text-sm font-semibold text-[var(--ink)]">Estado<select className="ds-control mt-1 w-full" value={courseDraft.status || 'draft'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, status: e.target.value as CourseStatus }))}>{courseStatusOptions.map((status) => <option key={status} value={status}>{status}</option>)}</select></label>
                   <label className="text-sm font-semibold text-[var(--ink)]">Acceso<select className="ds-control mt-1 w-full" value={courseDraft.accessType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, accessType: e.target.value as CourseAccessType }))}>{(courseDraft.accessType === 'seguimiento' ? [...courseAccessOptions, 'seguimiento'] : courseAccessOptions).map((access) => <option key={access} value={access}>{access}</option>)}</select></label>
+                  <label className="text-sm font-semibold text-[var(--ink)]">Formato<select className="ds-control mt-1 w-full" value={courseDraft.format || 'standard'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, format: e.target.value as CourseFormat }))}>{courseFormatOptions.map((format) => <option key={format} value={format}>{format === 'guide_pdf' ? 'Guía PDF (solo visualización)' : 'Curso con lecciones'}</option>)}</select></label>
                   <label className="text-sm font-semibold text-[var(--ink)]">Tipo comercial<select className="ds-control mt-1 w-full" value={courseDraft.pricingType || 'free'} onChange={(e) => setCourseDraft((prev) => ({ ...prev, pricingType: e.target.value as Course['pricingType'] }))}><option value="free">Gratuito</option><option value="premium">Premium</option></select></label>
                   <label className="text-sm font-semibold text-[var(--ink)]">Fecha publicación<input type="datetime-local" className="ds-control mt-1 w-full" value={(courseDraft.publishedAt || '').slice(0, 16)} onChange={(e) => setCourseDraft((prev) => ({ ...prev, publishedAt: e.target.value }))} /></label>
                 </div>

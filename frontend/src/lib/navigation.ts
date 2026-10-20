@@ -15,7 +15,7 @@ export const primaryNavLinks: NavLink[] = [
     navLabel: 'Lanzamientos',
     mobileLabel: 'Próximos lanzamientos',
   },
-  { href: '/cursos', label: 'Cursos' },
+  { href: '/cursos', label: 'Guías', navLabel: 'Guías', mobileLabel: 'Guías' },
   { href: '/pro', label: 'Radar VPO PRO', navLabel: 'PRO', mobileLabel: 'Radar VPO PRO' },
   { href: '/news', label: 'Noticias', mobileLabel: 'Noticias' },
 ];

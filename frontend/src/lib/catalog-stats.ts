@@ -14,6 +14,13 @@ export function floorSocialCount(count: number): string | null {
   return floor ? `${floor}+` : null;
 }
 
+/** Cuentas: exactas si hay al menos 1; umbral a partir de 20. */
+export function formatRegisteredCount(count: number): string | null {
+  if (!Number.isFinite(count) || count < 1) return null;
+  if (count < 20) return String(Math.floor(count));
+  return floorSocialCount(count);
+}
+
 export function buildProofItems(
   stats: Partial<CatalogStats> | null,
   listed?: { published: number; municipalities: number },
@@ -35,12 +42,22 @@ export function buildProofItems(
     });
   }
 
+  const registered = formatRegisteredCount(stats?.accounts ?? 0);
+  if (registered) {
+    items.push({
+      value: registered,
+      label: registered === '1' ? 'persona registrada' : 'personas registradas',
+    });
+  }
+
+  const visitors = floorSocialCount(stats?.visitors ?? 0);
+  if (visitors) {
+    items.push({ value: visitors, label: 'visitantes' });
+  }
+
   const pro = floorSocialCount(stats?.proSubscriptions ?? 0);
-  const accounts = floorSocialCount(stats?.accounts ?? 0);
   if (pro) {
     items.push({ value: pro, label: 'suscripciones PRO' });
-  } else if (accounts) {
-    items.push({ value: accounts, label: 'cuentas creadas' });
   }
 
   items.push({ value: '0 €', label: 'consultar el PDF oficial' });

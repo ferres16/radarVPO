@@ -134,6 +134,94 @@ export class AiProviderService {
       }));
   }
 
+  /**
+   * Genera una imagen de portada coherente con la noticia (OpenAI Images).
+   * Devuelve null si no hay API key o el proveedor falla (la noticia se publica igual).
+   */
+  async generateNewsCoverImage(input: {
+    title: string;
+    summary?: string | null;
+    category?: string | null;
+    municipality?: string | null;
+  }): Promise<{ buffer: Buffer; contentType: string; prompt: string } | null> {
+    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    if (!apiKey) {
+      return null;
+    }
+
+    const model = process.env.OPENAI_IMAGE_MODEL?.trim() || 'gpt-image-1';
+    const baseUrl =
+      process.env.OPENAI_BASE_URL?.trim() || 'https://api.openai.com/v1';
+
+    const place = input.municipality?.trim() || 'Catalunya';
+    const topic = input.category?.trim() || 'vivienda';
+    const summary = (input.summary || '').trim().slice(0, 280);
+    const prompt = [
+      'Editorial illustration for a Catalonia housing news article.',
+      'Clean modern style, soft greens and blues, no text, no logos, no watermarks,',
+      'no readable letters, photorealistic or flat illustration suitable as a card cover.',
+      `Topic: ${topic}. Place: ${place}.`,
+      `Headline context: ${input.title.slice(0, 160)}.`,
+      summary ? `Summary: ${summary}` : '',
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    try {
+      const response = await fetch(`${baseUrl}/images/generations`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model,
+          prompt,
+          size: '1024x1024',
+          n: 1,
+        }),
+      });
+
+      if (!response.ok) {
+        const detail = await response.text().catch(() => '');
+        this.logger.warn(
+          `News cover image failed with ${response.status}: ${detail}`,
+        );
+        return null;
+      }
+
+      const data = (await response.json()) as {
+        data?: Array<{ b64_json?: string; url?: string }>;
+      };
+      const item = data.data?.[0];
+      if (item?.b64_json) {
+        return {
+          buffer: Buffer.from(item.b64_json, 'base64'),
+          contentType: 'image/png',
+          prompt,
+        };
+      }
+      if (item?.url) {
+        const imageResponse = await fetch(item.url);
+        if (!imageResponse.ok) return null;
+        const arrayBuffer = await imageResponse.arrayBuffer();
+        const contentType =
+          imageResponse.headers.get('content-type') || 'image/png';
+        return {
+          buffer: Buffer.from(arrayBuffer),
+          contentType,
+          prompt,
+        };
+      }
+      return null;
+    } catch (error) {
+      this.logger.warn(
+        `News cover image error: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return null;
+    }
+  }
+
   private normalizeCategory(category?: string): GeneratedNewsDraft['category'] {
     const value = category?.toLowerCase().trim();
     if (

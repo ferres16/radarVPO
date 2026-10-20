@@ -23,6 +23,7 @@ export const siteConfig = {
 };
 
 export function absoluteUrl(path = '/') {
+  if (/^https?:\/\//i.test(path)) return path;
   const base = siteConfig.url.replace(/\/$/, '');
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
   return `${base}${normalizedPath}`;

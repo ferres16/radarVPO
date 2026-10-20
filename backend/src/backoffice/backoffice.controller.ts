@@ -54,6 +54,7 @@ import { UpsertUnitDto } from './dto/upsert-unit.dto';
 import {
   ALLOWED_COURSE_ASSET_MIME_TYPES,
   ALLOWED_COURSE_COVER_MIME_TYPES,
+  getCourseAssetMaxSizeBytes,
   getCourseCoverMaxSizeBytes,
   MULTER_COURSE_ASSET_MAX_BYTES,
 } from '../storage/upload-limits';
@@ -249,6 +250,25 @@ export class BackofficeController {
     @CurrentUser() admin: CurrentUserPayload,
   ) {
     return this.backofficeService.uploadCourseCover(courseId, file, admin.sub);
+  }
+
+  @Post('courses/:id/guide-pdf/upload')
+  @ApiConsumes('multipart/form-data')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: getCourseAssetMaxSizeBytes() },
+      fileFilter: createMimeFilter(['application/pdf']),
+    }),
+  )
+  uploadCourseGuidePdf(
+    @Param('id') courseId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() admin: CurrentUserPayload,
+  ) {
+    if (!file) {
+      throw new BadRequestException('Falta el archivo PDF de la guía.');
+    }
+    return this.backofficeService.uploadCourseGuidePdf(courseId, file, admin.sub);
   }
 
   @Post('courses/:id/modules')

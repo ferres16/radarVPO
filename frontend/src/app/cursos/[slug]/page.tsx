@@ -10,6 +10,7 @@ import { CourseHubSection } from '@/components/course-hub-section';
 import { CourseModuleIndex } from '@/components/course-module-index';
 import { CoursePublicIndex } from '@/components/course-public-index';
 import { CourseStickyBuyBar } from '@/components/course-sticky-buy-bar';
+import { GuidePdfViewer } from '@/components/guide-pdf-viewer';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
 import { PublicPage } from '@/components/conversion/public-shell';
 import { StructuredData } from '@/components/structured-data';
@@ -24,6 +25,7 @@ import {
   getCourseStatusSummary,
   getPreviewLessonSlug,
   isCourseFree,
+  isGuidePdf,
   isIncludedInPro,
 } from '@/lib/offer';
 import { proPlan } from '@/lib/pro';
@@ -68,21 +70,24 @@ export async function generateMetadata({ params }: CourseDetailParams): Promise<
 
   if (!course) {
     return createMetadata({
-      title: 'Curso no disponible',
-      description: 'Curso de Radar VPO no disponible.',
+      title: 'Guía no disponible',
+      description: 'Contenido de Radar VPO no disponible.',
       path: `/cursos/${slug}`,
     });
   }
 
+  const guide = course.format === 'guide_pdf';
   return createMetadata({
     title: course.seoTitle || course.title,
     description:
       course.seoDescription ||
       course.shortDescription ||
       course.longDescription ||
-      'Curso práctico de vivienda protegida en Cataluña.',
+      (guide
+        ? 'Guía PDF de vivienda protegida en Cataluña (solo visualización).'
+        : 'Formación práctica de vivienda protegida en Cataluña.'),
     path: `/cursos/${course.slug}`,
-    keywords: ['curso vivienda protegida', course.title],
+    keywords: [guide ? 'guía VPO PDF' : 'curso vivienda protegida', course.title],
   });
 }
 
@@ -102,6 +107,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
   const status = getCourseStatusSummary(course);
   const lessonCount = status.publishedLessons;
   const canAccess = Boolean(course.access?.canAccess);
+  const guideMode = isGuidePdf(course);
   const includedInPro = isIncludedInPro(course);
   const isFree = isCourseFree(course);
   const price = getCoursePrice(course);
@@ -150,7 +156,7 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
         data={[
           breadcrumbJsonLd([
             { name: 'Inicio', path: '/' },
-            { name: 'Cursos', path: '/cursos' },
+            { name: 'Guías', path: '/cursos' },
             { name: course.title, path: `/cursos/${course.slug}` },
           ]),
           courseJsonLd,
@@ -174,7 +180,9 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[rgba(11,18,32,0.85)] via-[rgba(11,18,32,0.35)] to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70 md:text-[11px]">Curso Radar VPO</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70 md:text-[11px]">
+                {guideMode ? 'Guía PDF Radar VPO' : 'Curso Radar VPO'}
+              </p>
               <h1 className="display-type mt-1 text-2xl font-black text-white sm:mt-2 sm:text-3xl md:text-5xl">{course.title}</h1>
             </div>
           </div>
@@ -256,8 +264,21 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
           </div>
         </header>
 
-        <CourseHubSection course={course} lessonCount={lessonCount} />
+        {guideMode ? (
+          <section id="guia" className="shell scroll-mt-24 py-6 md:py-8">
+            <article className="public-card p-4 md:p-6">
+              <GuidePdfViewer
+                slug={course.slug}
+                title={course.title}
+                canAccess={canAccess || isFree}
+              />
+            </article>
+          </section>
+        ) : null}
 
+        {!guideMode ? <CourseHubSection course={course} lessonCount={lessonCount} /> : null}
+
+        {!guideMode ? (
         <CoursePublicIndex>
           <section id="indice" className="shell scroll-mt-24 pb-8 md:pb-12">
             <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr] lg:gap-5">
@@ -357,12 +378,13 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
                 ) : null}
 
                 <Link href="/cursos" className="inline-block text-sm font-bold text-[var(--green-700)]">
-                  Ver todos los cursos
+                  Ver todas las guías
                 </Link>
               </aside>
             </div>
           </section>
         </CoursePublicIndex>
+        ) : null}
         {!canAccess && (status.sellable || isFree) ? (
           <CourseStickyBuyBar
             priceLabel={priceLabel}

@@ -1,6 +1,12 @@
 import Link from 'next/link';
 import { CourseCoverImage } from '@/components/course-cover-image';
-import { formatEuro, getCoursePrice, getCourseStatusSummary, isCourseFree } from '@/lib/offer';
+import {
+  formatEuro,
+  getCoursePrice,
+  getCourseStatusSummary,
+  isCourseFree,
+  isGuidePdf,
+} from '@/lib/offer';
 import type { Course } from '@/types';
 
 type CourseProductCardProps = {
@@ -18,6 +24,7 @@ function priceText(course: Course, sellable: boolean) {
 
 export function CourseProductCard({ course, className = '', layout = 'grid' }: CourseProductCardProps) {
   const status = getCourseStatusSummary(course);
+  const guide = isGuidePdf(course);
   const shellClass =
     layout === 'rail' ? 'saas-card-rail h-full' : 'product-card public-card public-card--hover group';
 
@@ -42,7 +49,7 @@ export function CourseProductCard({ course, className = '', layout = 'grid' }: C
             </>
           ) : null}
           <span className="product-card__badge bg-white/95 text-[var(--ink)]">
-            {status.sellable ? 'Curso' : 'En preparación'}
+            {status.sellable ? (guide ? 'Guía PDF' : 'Guía') : 'En preparación'}
           </span>
         </div>
         <div className={layout === 'rail' ? 'mt-3' : 'product-card__body'}>
@@ -53,11 +60,16 @@ export function CourseProductCard({ course, className = '', layout = 'grid' }: C
             {course.title}
           </h3>
           <p className="mt-1.5 line-clamp-2 text-sm leading-5 text-[var(--ink-soft)]">
-            {course.shortDescription || 'Formación práctica para preparar tu solicitud.'}
+            {course.shortDescription ||
+              (guide
+                ? 'Guía PDF para consultar en pantalla (sin descarga).'
+                : 'Formación práctica para preparar tu solicitud.')}
           </p>
           <div className="mt-3 flex items-end justify-between gap-2">
             <p className="text-lg font-black text-[var(--ink)]">{priceText(course, status.sellable)}</p>
-            <span className="text-xs font-bold text-[var(--green-700)]">Ver programa →</span>
+            <span className="text-xs font-bold text-[var(--green-700)]">
+              {guide ? 'Ver guía →' : 'Ver programa →'}
+            </span>
           </div>
         </div>
       </Link>

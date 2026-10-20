@@ -1,5 +1,10 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { CourseAccessType, CoursePricingType, CourseStatus } from '@prisma/client';
+import {
+  CourseAccessType,
+  CourseFormat,
+  CoursePricingType,
+  CourseStatus,
+} from '@prisma/client';
 import {
   IsDecimal,
   IsEnum,
@@ -82,6 +87,11 @@ export class UpdateCourseDto {
   @IsOptional()
   @IsEnum(CourseAccessType)
   accessType?: CourseAccessType;
+
+  @ApiPropertyOptional({ enum: CourseFormat })
+  @IsOptional()
+  @IsEnum(CourseFormat)
+  format?: CourseFormat;
 
   @ApiPropertyOptional()
   @IsOptional()

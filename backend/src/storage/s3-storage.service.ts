@@ -119,6 +119,40 @@ export class S3StorageService {
     }
   }
 
+  /** Lee el objeto completo (para proxy de PDF en línea, sin descarga). */
+  async getObjectBuffer(key: string): Promise<{
+    body: Buffer;
+    contentType?: string;
+    contentLength?: number;
+  }> {
+    if (!this.client || !this.bucket) {
+      throw new InternalServerErrorException(
+        'S3 storage is not configured. Configure AWS_* or S3_* variables.',
+      );
+    }
+
+    try {
+      const response = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+        }),
+      );
+      const bytes = await response.Body?.transformToByteArray();
+      if (!bytes) {
+        throw new InternalServerErrorException('Empty S3 object body');
+      }
+      return {
+        body: Buffer.from(bytes),
+        contentType: response.ContentType,
+        contentLength: response.ContentLength,
+      };
+    } catch (error) {
+      this.logS3Error('GetObject', key, error);
+      throw error;
+    }
+  }
+
   private buildFallbackUrl(key: string) {
     const endpoint = process.env.AWS_S3_ENDPOINT || process.env.S3_ENDPOINT;
     if (endpoint) {

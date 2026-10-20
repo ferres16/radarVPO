@@ -12,7 +12,12 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { CourseAccessType, CoursePricingType, CourseStatus } from '@prisma/client';
+import {
+  CourseAccessType,
+  CourseFormat,
+  CoursePricingType,
+  CourseStatus,
+} from '@prisma/client';
 
 export class CreateCourseDto {
   @ApiProperty()
@@ -78,6 +83,16 @@ export class CreateCourseDto {
   @ApiProperty({ enum: CourseAccessType, default: CourseAccessType.free })
   @IsEnum(CourseAccessType)
   accessType!: CourseAccessType;
+
+  @ApiProperty({
+    enum: CourseFormat,
+    default: CourseFormat.standard,
+    required: false,
+    description: 'guide_pdf = una sola guía PDF solo visualización',
+  })
+  @IsOptional()
+  @IsEnum(CourseFormat)
+  format?: CourseFormat;
 
   @ApiProperty({ required: false, default: 0 })
   @IsOptional()

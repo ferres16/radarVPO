@@ -6,6 +6,7 @@ import {
 import {
   CourseAccessRuleType,
   CourseAccessType,
+  CourseFormat,
   CourseStatus,
   LessonProgressStatus,
   SubscriptionStatus,
@@ -13,6 +14,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FileStorageService } from '../storage/file-storage.service';
+import { S3StorageService } from '../storage/s3-storage.service';
 
 type AccessDecision = {
   canAccess: boolean;
@@ -33,6 +35,7 @@ export class CoursesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly fileStorage: FileStorageService,
+    private readonly s3: S3StorageService,
   ) {}
 
   private readonly publicLessonSelect = {
@@ -159,6 +162,53 @@ export class CoursesService {
     const course = await this.getPublishedCourseBySlug(slug);
     const presented = await this.withPublicCoursePresentation(course);
     return this.stripInternalCourseFields(presented);
+  }
+
+  /**
+   * Sirve el PDF de una guía solo para visualización (inline).
+   * No expone URL de descarga pública.
+   */
+  async getGuidePdfForView(slug: string, userId?: string | null) {
+    const course = await this.prisma.course.findUnique({
+      where: { slug },
+      include: {
+        accessRules: { orderBy: { createdAt: 'asc' } },
+        guidePdfAsset: true,
+      },
+    });
+
+    if (
+      !course ||
+      course.status !== CourseStatus.published ||
+      course.format !== CourseFormat.guide_pdf ||
+      !course.guidePdfAssetId ||
+      !course.guidePdfAsset ||
+      course.guidePdfAsset.status !== 'active'
+    ) {
+      throw new NotFoundException('Guide PDF not found');
+    }
+
+    const isFree =
+      course.accessType === CourseAccessType.free &&
+      course.pricingType !== 'premium';
+
+    if (!isFree) {
+      if (!userId) {
+        throw new ForbiddenException('Debes iniciar sesión para ver esta guía.');
+      }
+      const profile = await this.getAccessProfile(userId);
+      const access = this.evaluateAccess(course, profile);
+      if (!access.canAccess) {
+        throw new ForbiddenException('No tienes acceso a esta guía.');
+      }
+    }
+
+    const object = await this.s3.getObjectBuffer(course.guidePdfAsset.s3Key);
+    return {
+      body: object.body,
+      contentType: object.contentType || 'application/pdf',
+      fileName: course.guidePdfAsset.originalName || `${course.slug}.pdf`,
+    };
   }
 
   async getCourseBySlugForUser(slug: string, userId: string) {

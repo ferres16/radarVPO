@@ -186,6 +186,10 @@ class EnvironmentVariables {
   OPENAI_MODEL?: string;
 
   @IsOptional()
+  @IsString()
+  OPENAI_IMAGE_MODEL?: string;
+
+  @IsOptional()
   @IsUrl()
   OPENAI_BASE_URL?: string;
 

@@ -220,6 +220,8 @@ export class BillingService {
         status: true,
         pricingType: true,
         accessType: true,
+        format: true,
+        guidePdfAssetId: true,
         _count: {
           select: { lessons: { where: { status: LessonStatus.published } } },
         },
@@ -228,7 +230,13 @@ export class BillingService {
     if (!course || course.status !== CourseStatus.published) {
       throw new BadRequestException('Curso no disponible.');
     }
-    if (course._count.lessons < MIN_PUBLISHED_LESSONS_TO_SELL) {
+    const isGuide = course.format === 'guide_pdf';
+    if (isGuide && !course.guidePdfAssetId) {
+      throw new BadRequestException(
+        'Esta guía todavía no tiene el PDF publicado y no se puede comprar.',
+      );
+    }
+    if (!isGuide && course._count.lessons < MIN_PUBLISHED_LESSONS_TO_SELL) {
       throw new BadRequestException(
         'Este curso todavía está en preparación y no se puede comprar.',
       );

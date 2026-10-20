@@ -52,13 +52,54 @@ export class FileStorageService {
       maxSizeBytes: params.maxSizeBytes,
     });
 
+    return this.persistUpload({
+      entityType: params.entityType,
+      entityId: params.entityId,
+      folder: params.folder,
+      fileName: params.file.originalname,
+      contentType: params.file.mimetype,
+      content: params.file.buffer,
+      size: params.file.size,
+      isPublic: params.isPublic,
+      uploadedByUserId: params.uploadedByUserId,
+    });
+  }
+
+  /** Sube un buffer ya generado (p. ej. imagen IA) sin pasar por Multer. */
+  async uploadBuffer(params: {
+    entityType: FileEntityType;
+    entityId: string;
+    folder: string;
+    fileName: string;
+    contentType: string;
+    content: Buffer;
+    isPublic: boolean;
+    uploadedByUserId?: string;
+  }) {
+    return this.persistUpload({
+      ...params,
+      size: params.content.length,
+    });
+  }
+
+  private async persistUpload(params: {
+    entityType: FileEntityType;
+    entityId: string;
+    folder: string;
+    fileName: string;
+    contentType: string;
+    content: Buffer;
+    size: number;
+    isPublic: boolean;
+    uploadedByUserId?: string;
+  }) {
     let upload: { key: string; url: string };
     try {
       upload = await this.s3.upload({
         folder: params.folder,
-        fileName: params.file.originalname,
-        contentType: params.file.mimetype,
-        content: params.file.buffer,
+        fileName: params.fileName,
+        contentType: params.contentType,
+        content: params.content,
       });
     } catch (error) {
       const err = error as { name?: string; Code?: string; message?: string };
@@ -76,9 +117,9 @@ export class FileStorageService {
           entityType: params.entityType,
           entityId: params.entityId,
           fileName: this.fileNameFromKey(upload.key),
-          originalName: params.file.originalname,
-          mimeType: params.file.mimetype,
-          size: params.file.size,
+          originalName: params.fileName,
+          mimeType: params.contentType,
+          size: params.size,
           s3Key: upload.key,
           s3Bucket: this.s3.bucket || '',
           url: params.isPublic ? upload.url : null,

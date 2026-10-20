@@ -45,6 +45,7 @@ type CourseMutationPayload = Partial<
     | 'stripePaymentLink'
     | 'status'
     | 'accessType'
+    | 'format'
     | 'order'
     | 'seoTitle'
     | 'seoDescription'
@@ -522,6 +523,11 @@ export const api = {
     const form = new FormData();
     form.append('file', file);
     return requestForm<Course>(`/backoffice/courses/${courseId}/cover/upload`, form);
+  },
+  uploadBackofficeCourseGuidePdf: (courseId: string, file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return requestForm<Course>(`/backoffice/courses/${courseId}/guide-pdf/upload`, form);
   },
   getBackofficeAccessUsers: (q?: string) =>
     request<BackofficeUser[]>(`/backoffice/access/users${queryString({ q })}`),
