@@ -39,6 +39,8 @@ import { ReorderUnitsDto } from './dto/reorder-units.dto';
 import { UpdateAccessDto } from './dto/update-access.dto';
 import { UpdateBackofficeNewsItemDto } from './dto/update-backoffice-news-item.dto';
 import { UpdateCommerceSettingsDto } from './dto/update-commerce-settings.dto';
+import { UpdateMessageTemplateDto } from './dto/update-message-template.dto';
+import { UpdatePromoRuleDto } from './dto/update-promo-rule.dto';
 import { UpdateCourseAccessRuleDto } from './dto/update-course-access-rule.dto';
 import { UpdateCourseContentBlockDto } from './dto/update-course-content-block.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
@@ -176,6 +178,29 @@ export class BackofficeController {
   @Patch('commerce')
   updateCommerceSettings(@Body() dto: UpdateCommerceSettingsDto) {
     return this.backofficeService.updateCommerceSettings(dto);
+  }
+
+  @Get('message-templates')
+  listMessageTemplates() {
+    return this.backofficeService.listMessageTemplates();
+  }
+
+  @Patch('message-templates/:key')
+  updateMessageTemplate(
+    @Param('key') key: string,
+    @Body() dto: UpdateMessageTemplateDto,
+  ) {
+    return this.backofficeService.updateMessageTemplate(key, dto);
+  }
+
+  @Get('promo-rules')
+  listPromoRules() {
+    return this.backofficeService.listPromoRules();
+  }
+
+  @Patch('promo-rules/:key')
+  updatePromoRule(@Param('key') key: string, @Body() dto: UpdatePromoRuleDto) {
+    return this.backofficeService.updatePromoRule(key, dto);
   }
 
   @Get('news')

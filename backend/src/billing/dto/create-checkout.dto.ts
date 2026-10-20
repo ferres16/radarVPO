@@ -8,8 +8,8 @@ import {
 } from 'class-validator';
 
 export class CreateCheckoutDto {
-  @IsIn(['pro', 'course'])
-  product!: 'pro' | 'course';
+  @IsIn(['pro', 'pro_pack_3m', 'course'])
+  product!: 'pro' | 'pro_pack_3m' | 'course';
 
   @IsOptional()
   @IsString()

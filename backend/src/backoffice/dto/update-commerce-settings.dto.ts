@@ -20,4 +20,8 @@ export class UpdateCommerceSettingsDto {
   @MinLength(1)
   @MaxLength(120)
   proPackGuideSlug?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  allowPromotionCodes?: boolean;
 }

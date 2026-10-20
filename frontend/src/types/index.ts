@@ -189,16 +189,48 @@ export type CommerceSettings = {
   coursesEnabled: boolean;
   maintenanceMessage: string;
   proPackGuideSlug: string;
+  allowPromotionCodes: boolean;
 };
 
 export type CheckoutStatus = {
   enabled: boolean;
   proEnabled: boolean;
   coursesEnabled: boolean;
+  proPackEnabled?: boolean;
   maintenanceMessage: string;
   proPackGuideSlug: string;
+  allowPromotionCodes?: boolean;
   proPriceCents: number;
+  proPackPriceCents?: number;
   currency: string;
+};
+
+export type MessageTemplate = {
+  id: string;
+  key: string;
+  label: string;
+  description: string | null;
+  channel: string;
+  emailSubject: string | null;
+  emailBody: string | null;
+  smsBody: string | null;
+  active: boolean;
+  updatedAt: string;
+};
+
+export type CommercePromoRule = {
+  id: string;
+  key: string;
+  name: string;
+  ruleType: string;
+  enabled: boolean;
+  config: {
+    guideSlug?: string;
+    months?: number;
+    priceCents?: number;
+    [key: string]: unknown;
+  };
+  updatedAt: string;
 };
 
 export type BackofficeCancellationProcessResult = {

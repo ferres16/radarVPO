@@ -7,7 +7,9 @@ import {
   BackofficeUser,
   CatalogStats,
   CheckoutStatus,
+  CommercePromoRule,
   CommerceSettings,
+  MessageTemplate,
   Course,
   CourseAccessRule,
   CourseAccessRuleType,
@@ -237,7 +239,7 @@ export const api = {
     ),
   getCheckoutStatus: () => request<CheckoutStatus>('/billing/checkout-status'),
   createCheckout: (payload: {
-    product: 'pro' | 'course';
+    product: 'pro' | 'pro_pack_3m' | 'course';
     courseSlug?: string;
     acceptedTerms: boolean;
     acceptedImmediateAccess?: boolean;
@@ -358,6 +360,22 @@ export const api = {
   getBackofficeCommerce: () => request<CommerceSettings>('/backoffice/commerce'),
   updateBackofficeCommerce: (payload: Partial<CommerceSettings>) =>
     request<CommerceSettings>('/backoffice/commerce', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  getBackofficeMessageTemplates: () =>
+    request<MessageTemplate[]>('/backoffice/message-templates'),
+  updateBackofficeMessageTemplate: (key: string, payload: Partial<MessageTemplate>) =>
+    request<MessageTemplate>(`/backoffice/message-templates/${encodeURIComponent(key)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    }),
+  getBackofficePromoRules: () => request<CommercePromoRule[]>('/backoffice/promo-rules'),
+  updateBackofficePromoRule: (
+    key: string,
+    payload: Partial<Pick<CommercePromoRule, 'name' | 'enabled' | 'config'>>,
+  ) =>
+    request<CommercePromoRule>(`/backoffice/promo-rules/${encodeURIComponent(key)}`, {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
 import { api } from '@/lib/api';
-import type { CommerceSettings, UserProfile } from '@/types';
+import type { CommercePromoRule, CommerceSettings, UserProfile } from '@/types';
 
 const emptySettings: CommerceSettings = {
   proEnabled: true,
@@ -12,11 +12,15 @@ const emptySettings: CommerceSettings = {
   maintenanceMessage:
     'El pago online está temporalmente en mantenimiento. Vuelve a intentarlo más adelante.',
   proPackGuideSlug: 'vpo-inicial',
+  allowPromotionCodes: false,
 };
+
+const PACK_KEY = 'pro_pack_3m_grants_guide';
 
 export default function AdminCommercePage() {
   const [me, setMe] = useState<UserProfile | null>(null);
   const [draft, setDraft] = useState<CommerceSettings>(emptySettings);
+  const [packRule, setPackRule] = useState<CommercePromoRule | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -33,9 +37,13 @@ export default function AdminCommercePage() {
           setError('No tienes permisos de administrador.');
           return;
         }
-        const settings = await api.getBackofficeCommerce();
+        const [settings, rules] = await Promise.all([
+          api.getBackofficeCommerce(),
+          api.getBackofficePromoRules(),
+        ]);
         if (!active) return;
-        setDraft(settings);
+        setDraft({ ...emptySettings, ...settings });
+        setPackRule(rules.find((rule) => rule.key === PACK_KEY) || null);
       } catch (err) {
         if (active) {
           setError(err instanceof Error ? err.message : 'No se pudo cargar el comercio.');
@@ -55,8 +63,19 @@ export default function AdminCommercePage() {
     setMessage('');
     try {
       const updated = await api.updateBackofficeCommerce(draft);
-      setDraft(updated);
-      setMessage('Ajustes de comercio guardados. El checkout los aplica al instante.');
+      setDraft({ ...emptySettings, ...updated });
+      if (packRule) {
+        const next = await api.updateBackofficePromoRule(PACK_KEY, {
+          enabled: packRule.enabled,
+          config: {
+            guideSlug: draft.proPackGuideSlug || 'vpo-inicial',
+            months: Number(packRule.config.months) || 3,
+            priceCents: Number(packRule.config.priceCents) || 2997,
+          },
+        });
+        setPackRule(next);
+      }
+      setMessage('Ajustes de comercio y pack guardados.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudieron guardar los ajustes.');
     } finally {
@@ -89,6 +108,8 @@ export default function AdminCommercePage() {
     );
   }
 
+  const packPriceEuros = ((Number(packRule?.config.priceCents) || 2997) / 100).toFixed(2);
+
   return (
     <div className="admin-shell">
       <AdminNav />
@@ -97,8 +118,11 @@ export default function AdminCommercePage() {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Backoffice</p>
           <h1 className="display-type mt-1 text-3xl font-black text-[var(--ink)]">Comercio</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
-            Activa o pausa PRO y la venta de cursos/guías sin tocar Stripe. Útil para mantenimiento o
-            lanzamientos controlados.
+            Pausar ventas, cupones Stripe y pack PRO 3 meses (incluye guía). Textos de email/SMS en{' '}
+            <Link href="/admin/message-templates" className="font-semibold text-[var(--green-700)]">
+              Emails / SMS
+            </Link>
+            .
           </p>
         </header>
 
@@ -114,6 +138,7 @@ export default function AdminCommercePage() {
         ) : null}
 
         <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-5 space-y-5">
+          <h2 className="text-sm font-bold text-[var(--ink)]">Interruptores</h2>
           <label className="flex items-start gap-3 text-sm text-[var(--ink)]">
             <input
               type="checkbox"
@@ -123,9 +148,7 @@ export default function AdminCommercePage() {
             />
             <span>
               <strong className="font-bold">Venta de Radar VPO PRO</strong>
-              <span className="mt-1 block text-[var(--ink-soft)]">
-                Si lo desactivas, el checkout de suscripción muestra el mensaje de mantenimiento.
-              </span>
+              <span className="mt-1 block text-[var(--ink-soft)]">Mensual y pack 3 meses.</span>
             </span>
           </label>
 
@@ -138,8 +161,23 @@ export default function AdminCommercePage() {
             />
             <span>
               <strong className="font-bold">Venta de cursos y guías</strong>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 text-sm text-[var(--ink)]">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4"
+              checked={draft.allowPromotionCodes}
+              onChange={(e) =>
+                setDraft((prev) => ({ ...prev, allowPromotionCodes: e.target.checked }))
+              }
+            />
+            <span>
+              <strong className="font-bold">Cupones Stripe en Checkout</strong>
               <span className="mt-1 block text-[var(--ink-soft)]">
-                Controla los pagos únicos. No afecta a quien ya compró.
+                El cliente podrá escribir un código. Crea el cupón en Stripe Dashboard → Productos →
+                Cupones.
               </span>
             </span>
           </label>
@@ -152,40 +190,62 @@ export default function AdminCommercePage() {
               onChange={(e) => setDraft((prev) => ({ ...prev, maintenanceMessage: e.target.value }))}
             />
           </label>
+        </section>
+
+        <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-5 space-y-5">
+          <h2 className="text-sm font-bold text-[var(--ink)]">Descuento / pack: PRO 3 meses → guía gratis</h2>
+          <label className="flex items-start gap-3 text-sm text-[var(--ink)]">
+            <input
+              type="checkbox"
+              className="mt-1 h-4 w-4"
+              checked={Boolean(packRule?.enabled)}
+              onChange={(e) =>
+                setPackRule((prev) =>
+                  prev ? { ...prev, enabled: e.target.checked } : prev,
+                )
+              }
+            />
+            <span>
+              <strong className="font-bold">Activar pack PRO 3 meses</strong>
+              <span className="mt-1 block text-[var(--ink-soft)]">
+                Cobro cada 3 meses e incluye acceso permanente a la guía configurada.
+              </span>
+            </span>
+          </label>
 
           <label className="block text-sm font-semibold text-[var(--ink)]">
-            Slug de la guía del pack PRO 3 meses
+            Slug de la guía incluida
             <input
               className="ds-control mt-1 w-full"
               value={draft.proPackGuideSlug}
               onChange={(e) => setDraft((prev) => ({ ...prev, proPackGuideSlug: e.target.value }))}
             />
-            <span className="mt-1 block text-xs font-normal text-[var(--ink-soft)]">
-              Se usará cuando activemos el pack trimestral (por defecto <code>vpo-inicial</code>).
-            </span>
           </label>
 
-          <button
-            type="button"
-            className="btn btn--primary"
-            disabled={saving}
-            onClick={() => void save()}
-          >
-            {saving ? 'Guardando…' : 'Guardar ajustes'}
-          </button>
+          <label className="block text-sm font-semibold text-[var(--ink)]">
+            Precio del pack (€)
+            <input
+              className="ds-control mt-1 w-full"
+              type="number"
+              step="0.01"
+              min="1"
+              value={packPriceEuros}
+              onChange={(e) => {
+                const euros = Number(e.target.value);
+                const cents = Number.isFinite(euros) ? Math.round(euros * 100) : 2997;
+                setPackRule((prev) =>
+                  prev
+                    ? { ...prev, config: { ...prev.config, priceCents: cents } }
+                    : prev,
+                );
+              }}
+            />
+          </label>
         </section>
 
-        <p className="text-xs text-[var(--ink-soft)]">
-          Las anulaciones de PRO se gestionan en{' '}
-          <Link href="/admin/cancellations" className="font-semibold text-[var(--green-700)]">
-            Anulaciones
-          </Link>
-          . Accesos manuales en{' '}
-          <Link href="/admin/access" className="font-semibold text-[var(--green-700)]">
-            Compras y accesos
-          </Link>
-          .
-        </p>
+        <button type="button" className="btn btn--primary" disabled={saving} onClick={() => void save()}>
+          {saving ? 'Guardando…' : 'Guardar ajustes'}
+        </button>
       </main>
     </div>
   );

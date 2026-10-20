@@ -9,7 +9,7 @@ import { trackEvent } from '@/lib/analytics';
 import { formatEuro } from '@/lib/offer';
 
 export type CheckoutSummary = {
-  product: 'pro' | 'course';
+  product: 'pro' | 'pro_pack_3m' | 'course';
   courseSlug?: string;
   title: string;
   /** Importe visible, p. ej. "29 €" o "9,99 €". */
@@ -36,12 +36,14 @@ export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary;
   const [error, setError] = useState('');
 
   const isCourse = summary.product === 'course';
+  const isProProduct = summary.product === 'pro' || summary.product === 'pro_pack_3m';
   const checkoutPath = isCourse
     ? `/checkout?product=course&course=${encodeURIComponent(summary.courseSlug ?? '')}`
-    : '/checkout?product=pro';
-  const alreadyPro = summary.product === 'pro' && Boolean(me?.proAccess?.hasAccess ?? me?.plan === 'pro');
+    : `/checkout?product=${summary.product}`;
+  const alreadyPro =
+    isProProduct && Boolean(me?.proAccess?.hasAccess ?? me?.plan === 'pro');
   const displayPriceLabel =
-    summary.product === 'pro' && apiProPriceLabel ? apiProPriceLabel : summary.priceLabel;
+    isProProduct && apiProPriceLabel ? apiProPriceLabel : summary.priceLabel;
 
   useEffect(() => {
     trackEvent('checkout_viewed', { product: summary.product, course: summary.courseSlug ?? null });
@@ -50,15 +52,22 @@ export function CheckoutPanel({ summary, canceled }: { summary: CheckoutSummary;
       .getCheckoutStatus()
       .then((status) => {
         if (!active) return;
-        const productEnabled = isCourse ? status.coursesEnabled : status.proEnabled;
+        const productEnabled = isCourse
+          ? status.coursesEnabled
+          : summary.product === 'pro_pack_3m'
+            ? Boolean(status.proPackEnabled)
+            : status.proEnabled;
         setPaymentsEnabled(Boolean(status.enabled && productEnabled));
         if (status.maintenanceMessage) setMaintenanceMessage(status.maintenanceMessage);
-        if (
-          summary.product === 'pro' &&
-          Number.isInteger(status.proPriceCents) &&
-          status.proPriceCents > 0
-        ) {
+        if (summary.product === 'pro' && Number.isInteger(status.proPriceCents) && status.proPriceCents > 0) {
           setApiProPriceLabel(formatEuro(status.proPriceCents / 100, { decimals: 2 }));
+        }
+        if (
+          summary.product === 'pro_pack_3m' &&
+          Number.isInteger(status.proPackPriceCents) &&
+          (status.proPackPriceCents ?? 0) > 0
+        ) {
+          setApiProPriceLabel(formatEuro((status.proPackPriceCents ?? 0) / 100, { decimals: 2 }));
         }
       })
       .catch(() => {

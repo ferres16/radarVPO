@@ -10,13 +10,14 @@ export const DEFAULT_PRO_PRICE_CENTS = 999;
 /** Un curso con menos lecciones publicadas se muestra "en preparación" y no se vende. */
 export const MIN_PUBLISHED_LESSONS_TO_SELL = 3;
 
-export type CheckoutProduct = 'pro' | 'course';
+export type CheckoutProduct = 'pro' | 'pro_pack_3m' | 'course';
 
 export type CheckoutMetadata = {
   userId: string;
   product: CheckoutProduct;
   courseId?: string;
   courseSlug?: string;
+  guideSlug?: string;
 };
 
 export function parseCheckoutMetadata(
@@ -25,7 +26,10 @@ export function parseCheckoutMetadata(
 ): CheckoutMetadata | null {
   const userId = (clientReferenceId || metadata?.userId || '').trim();
   const product = metadata?.product;
-  if (!userId || (product !== 'pro' && product !== 'course')) {
+  if (
+    !userId ||
+    (product !== 'pro' && product !== 'pro_pack_3m' && product !== 'course')
+  ) {
     return null;
   }
   if (product === 'course') {
@@ -38,7 +42,11 @@ export function parseCheckoutMetadata(
       courseSlug: metadata?.courseSlug?.trim() || undefined,
     };
   }
-  return { userId, product };
+  return {
+    userId,
+    product,
+    guideSlug: metadata?.guideSlug?.trim() || undefined,
+  };
 }
 
 /** Estados de Stripe -> estados internos. `null` = no registrar todavía (pago pendiente). */

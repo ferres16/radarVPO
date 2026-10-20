@@ -7,8 +7,10 @@ export type CommerceSettings = {
   coursesEnabled: boolean;
   /** Mensaje público cuando algo está en mantenimiento. */
   maintenanceMessage: string;
-  /** Slug de la guía que incluye el pack PRO 3 meses (fase posterior). */
+  /** Slug de la guía que incluye el pack PRO 3 meses. */
   proPackGuideSlug: string;
+  /** Permitir códigos de promoción de Stripe en Checkout. */
+  allowPromotionCodes: boolean;
 };
 
 export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
@@ -17,4 +19,5 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
   maintenanceMessage:
     'El pago online está temporalmente en mantenimiento. Vuelve a intentarlo más adelante.',
   proPackGuideSlug: 'vpo-inicial',
+  allowPromotionCodes: false,
 };

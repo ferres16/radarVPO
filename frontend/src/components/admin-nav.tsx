@@ -14,6 +14,7 @@ const adminLinks = [
   { href: '/admin/access', label: 'Compras y accesos' },
   { href: '/admin/cancellations', label: 'Anulaciones' },
   { href: '/admin/commerce', label: 'Comercio' },
+  { href: '/admin/message-templates', label: 'Emails / SMS' },
 ];
 
 export function AdminNav() {

@@ -38,6 +38,10 @@ export class CommerceService {
         raw.proPackGuideSlug,
         DEFAULT_COMMERCE_SETTINGS.proPackGuideSlug,
       ),
+      allowPromotionCodes: asBoolean(
+        raw.allowPromotionCodes,
+        DEFAULT_COMMERCE_SETTINGS.allowPromotionCodes,
+      ),
     };
   }
 
@@ -60,6 +64,10 @@ export class CommerceService {
         typeof patch.proPackGuideSlug === 'string'
           ? patch.proPackGuideSlug.trim() || DEFAULT_COMMERCE_SETTINGS.proPackGuideSlug
           : current.proPackGuideSlug,
+      allowPromotionCodes:
+        typeof patch.allowPromotionCodes === 'boolean'
+          ? patch.allowPromotionCodes
+          : current.allowPromotionCodes,
     };
 
     await this.prisma.systemSetting.upsert({

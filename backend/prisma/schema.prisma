@@ -462,6 +462,43 @@ model SystemSetting {
   @@map("system_settings")
 }
 
+/** Plantillas de email/SMS editables desde el admin (Brevo sigue siendo el envío). */
+model MessageTemplate {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  label       String
+  description String?
+  /** email | sms | both */
+  channel     String   @default("both")
+  emailSubject String? @map("email_subject")
+  /** HTML o texto con {{variables}} */
+  emailBody   String?  @map("email_body") @db.Text
+  smsBody     String?  @map("sms_body")
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("message_templates")
+}
+
+/**
+ * Reglas comerciales gestionables (packs, regalos de guía, etc.).
+ * ruleType ejemplos: pro_pack_3m_grants_guide
+ */
+model CommercePromoRule {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  name      String
+  ruleType  String   @map("rule_type")
+  enabled   Boolean  @default(true)
+  /** JSON: guideSlug, months, priceCents, … */
+  config    Json?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("commerce_promo_rules")
+}
+
 
 model Course {
   id                String           @id @default(cuid())

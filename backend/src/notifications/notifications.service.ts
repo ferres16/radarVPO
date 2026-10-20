@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AudienceType, Prisma, Promotion, SubscriptionStatus } from '@prisma/client';
+import { MessageTemplatesService } from '../commerce/message-templates.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizePhoneForSms } from './phone-normalize';
 import {
@@ -14,7 +15,7 @@ import {
   PRO_NOTIFY_SOURCE_KIND,
   type ProNotifyKind,
 } from './pro-notify.util';
-import { buildProNotifyCopy } from './pro-notify-copy';
+import { buildProNotifyCopy, PUBLICATION_UNCERTAINTY_DISCLAIMER } from './pro-notify-copy';
 
 type ProAlertPromotion = Pick<
   Promotion,
@@ -76,7 +77,10 @@ export class NotificationsService {
   private readonly proAlertsEnabled = process.env.BREVO_PRO_ALERTS_ENABLED === 'true';
   private readonly publicSiteUrl = resolvePublicSiteUrl();
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly templates: MessageTemplatesService,
+  ) {}
 
   isProAlertsConfigured() {
     return Boolean(this.proAlertsEnabled && this.apiKey);
@@ -528,7 +532,7 @@ export class NotificationsService {
     let sent = 0;
     let emailsSent = 0;
     let smsSent = 0;
-    const copy = this.buildProCopy(promotion, kind);
+    const copy = await this.buildProCopy(promotion, kind);
 
     for (const user of users) {
       const displayName = user.fullName || 'usuario PRO';
@@ -580,7 +584,7 @@ export class NotificationsService {
     };
   }
 
-  private buildProCopy(promotion: ProAlertPromotion, kind: ProNotifyKind) {
+  private async buildProCopy(promotion: ProAlertPromotion, kind: ProNotifyKind) {
     const title = shortenAlertTitle(promotion.title);
     const location =
       [promotion.municipality, promotion.province].filter(Boolean).join(', ') ||
@@ -590,14 +594,78 @@ export class NotificationsService {
           timeZone: 'Europe/Madrid',
         })
       : null;
+    const alertsUrl = `${this.publicSiteUrl}/alerts`;
+    const promotionsUrl = `${this.publicSiteUrl}/promotions/${promotion.id}`;
+    const pageUrl = kind === 'new_publication' ? promotionsUrl : alertsUrl;
 
-    return buildProNotifyCopy({
+    const fallback = buildProNotifyCopy({
       kind,
       title,
       location,
       estimatedDate,
-      alertsUrl: `${this.publicSiteUrl}/alerts`,
-      promotionsUrl: `${this.publicSiteUrl}/promotions/${promotion.id}`,
+      alertsUrl,
+      promotionsUrl,
+    });
+
+    const templateKey =
+      kind === 'new_publication'
+        ? 'pro.new_publication'
+        : kind === 'reminder_7d'
+          ? 'pro.reminder_7d'
+          : kind === 'reminder_1d'
+            ? 'pro.reminder_1d'
+            : 'pro.new_alert';
+    const tpl = await this.templates.getByKey(templateKey);
+    if (!tpl || !tpl.active) return fallback;
+
+    const vars = {
+      name: '',
+      email: '',
+      title,
+      location,
+      date: estimatedDate || '',
+      url: pageUrl,
+      product: title,
+      price: '',
+      phone: '',
+    };
+    return {
+      ...fallback,
+      subject: this.templates.render(tpl.emailSubject, vars) || fallback.subject,
+      intro: this.templates.render(tpl.emailBody, vars) || fallback.intro,
+      sms: this.templates.render(tpl.smsBody, vars) || fallback.sms,
+      disclaimer:
+        kind === 'new_publication' ? null : PUBLICATION_UNCERTAINTY_DISCLAIMER,
+    };
+  }
+
+  /** Email transaccional usando plantilla admin (fallback HTML sencillo). */
+  async sendTemplatedEmail(input: {
+    templateKey: string;
+    toEmail: string;
+    toName?: string | null;
+    vars: Record<string, string>;
+    fallbackSubject: string;
+    fallbackHtml: string;
+  }): Promise<boolean> {
+    if (!this.apiKey) return false;
+    const tpl = await this.templates.getByKey(input.templateKey);
+    const subject =
+      tpl?.active && tpl.emailSubject
+        ? this.templates.render(tpl.emailSubject, input.vars)
+        : input.fallbackSubject;
+    const body =
+      tpl?.active && tpl.emailBody
+        ? this.templates.render(tpl.emailBody, input.vars)
+        : input.fallbackHtml;
+    const html = body.includes('<')
+      ? body
+      : `<div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">${body}</div>`;
+    return this.sendEmail({
+      sender: this.parseEmailSender(),
+      to: [{ email: input.toEmail, name: input.toName || undefined }],
+      subject: subject.slice(0, 140),
+      htmlContent: html,
     });
   }
 
@@ -670,33 +738,28 @@ export class NotificationsService {
     }
 
     const displayName = input.fullName?.trim() || input.email;
-    const requestedAt = input.requestedAt.toLocaleString('es-ES', {
-      timeZone: 'Europe/Madrid',
-    });
     const panelUrl = `${this.publicSiteUrl}/admin/cancellations`;
-    const sent = await this.sendEmail({
-      sender: this.parseEmailSender(),
-      to: recipients.map((email) => ({ email })),
-      subject: `[Radar VPO] Baja PRO solicitada: ${displayName}`,
-      htmlContent: `
-        <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">
-          <p style="margin:0 0 16px;">Un usuario ha solicitado dar de baja VPO PRO.</p>
-          <div style="margin:0 0 20px;padding:16px 18px;border:1px solid #e5e7eb;border-radius:16px;background:#f8faf9;">
-            <p style="margin:0 0 8px;font-size:18px;font-weight:700;">${this.escapeHtml(displayName)}</p>
-            <p style="margin:0 0 4px;color:#4b5563;">Email: ${this.escapeHtml(input.email)}</p>
-            <p style="margin:0 0 4px;color:#4b5563;">Teléfono: ${this.escapeHtml(input.phone || 'n/d')}</p>
-            <p style="margin:0;color:#4b5563;">Solicitado: ${this.escapeHtml(requestedAt)}</p>
-          </div>
-          <p style="margin:0 0 20px;color:#4b5563;">Entra al panel de anulaciones para procesar la baja en Stripe y en Radar VPO.</p>
-          <p style="margin:0 0 24px;">
-            <a href="${this.escapeHtml(panelUrl)}" style="display:inline-block;background:#167055;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;">
-              Ver anulaciones
-            </a>
-          </p>
-          <p style="margin:0;font-size:13px;color:#6b7280;">ID usuario: ${this.escapeHtml(input.userId)}</p>
-        </div>
-      `,
-    });
+    let sent = false;
+    for (const email of recipients) {
+      const ok = await this.sendTemplatedEmail({
+        templateKey: 'cancel.pro_admin',
+        toEmail: email,
+        vars: {
+          name: displayName,
+          email: input.email,
+          phone: input.phone || 'n/d',
+          url: panelUrl,
+          title: '',
+          location: '',
+          date: '',
+          product: 'PRO',
+          price: '',
+        },
+        fallbackSubject: `[Radar VPO] Baja PRO solicitada: ${displayName}`,
+        fallbackHtml: `<p>Un usuario ha solicitado dar de baja VPO PRO.</p><p><strong>${this.escapeHtml(displayName)}</strong><br/>${this.escapeHtml(input.email)}</p><p><a href="${this.escapeHtml(panelUrl)}">Ver anulaciones</a></p>`,
+      });
+      sent = sent || ok;
+    }
 
     if (!sent) {
       this.logger.warn(
@@ -718,23 +781,23 @@ export class NotificationsService {
     }
 
     const displayName = input.fullName?.trim() || input.email;
-    return this.sendEmail({
-      sender: this.parseEmailSender(),
-      to: [{ email: input.email, name: displayName }],
-      subject: 'Restablece tu contraseña de Radar VPO',
-      htmlContent: `
-        <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">
-          <p style="margin:0 0 16px;">Hola ${this.escapeHtml(displayName)},</p>
-          <p style="margin:0 0 16px;">Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en Radar VPO.</p>
-          <p style="margin:0 0 24px;">
-            <a href="${this.escapeHtml(input.resetUrl)}" style="display:inline-block;background:#167055;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;">
-              Restablecer contraseña
-            </a>
-          </p>
-          <p style="margin:0 0 12px;font-size:13px;color:#6b7280;">El enlace caduca en 1 hora. Si no has solicitado este cambio, puedes ignorar este correo.</p>
-          <p style="margin:0;font-size:13px;color:#6b7280;">Si el botón no funciona, copia este enlace: <a href="${this.escapeHtml(input.resetUrl)}">${this.escapeHtml(input.resetUrl)}</a></p>
-        </div>
-      `,
+    return this.sendTemplatedEmail({
+      templateKey: 'auth.password_reset',
+      toEmail: input.email,
+      toName: displayName,
+      vars: {
+        name: displayName,
+        email: input.email,
+        url: input.resetUrl,
+        title: '',
+        location: '',
+        date: '',
+        product: '',
+        price: '',
+        phone: '',
+      },
+      fallbackSubject: 'Restablece tu contraseña de Radar VPO',
+      fallbackHtml: `<p>Hola ${this.escapeHtml(displayName)},</p><p>Hemos recibido una solicitud para restablecer la contraseña.</p><p><a href="${this.escapeHtml(input.resetUrl)}">Restablecer contraseña</a></p>`,
     });
   }
 

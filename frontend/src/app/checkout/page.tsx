@@ -57,6 +57,23 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
       backHref: '/pro',
       backLabel: 'Volver a Radar VPO PRO',
     };
+  } else if (params.product === 'pro_pack_3m') {
+    summary = {
+      product: 'pro_pack_3m',
+      title: 'Radar VPO PRO · Pack 3 meses',
+      priceLabel: formatEuro(29.97, { decimals: 2 }),
+      cadenceLabel: 'cada 3 meses',
+      recurrenceNote:
+        'Incluye avisos PRO y la guía inicial de forma permanente. El cobro se renueva cada 3 meses hasta que canceles.',
+      bullets: [
+        ...proIncludes
+          .filter((item) => !item.title.toLowerCase().includes('curso'))
+          .map((item) => `${item.title}: ${item.description}`),
+        'Guía inicial incluida al pagar el pack (acceso permanente).',
+      ],
+      backHref: '/pro',
+      backLabel: 'Volver a Radar VPO PRO',
+    };
   } else if (params.product === 'course' && params.course) {
     const course = await api.getCourse(params.course).catch(() => null);
     if (!course) {

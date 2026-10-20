@@ -16,6 +16,7 @@ import {
 import type Stripe from 'stripe';
 import { resolvePublicSiteUrl } from '../common/public-site-url';
 import { CommerceService } from '../commerce/commerce.service';
+import { PromoRulesService } from '../commerce/promo-rules.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
@@ -56,6 +57,7 @@ export class BillingService {
     private readonly config: ConfigService,
     private readonly notifications: NotificationsService,
     private readonly commerce: CommerceService,
+    private readonly promoRules: PromoRulesService,
   ) {}
 
   // ---------------------------------------------------------------------------
@@ -83,14 +85,18 @@ export class BillingService {
 
   async getCheckoutStatus() {
     const commerce = await this.commerce.getSettings();
+    const pack = await this.promoRules.getProPack3m();
     const stripeReady = this.isCheckoutConfigured();
     return {
       enabled: stripeReady,
       proEnabled: stripeReady && commerce.proEnabled,
       coursesEnabled: stripeReady && commerce.coursesEnabled,
+      proPackEnabled: stripeReady && commerce.proEnabled && Boolean(pack?.enabled),
       maintenanceMessage: commerce.maintenanceMessage,
-      proPackGuideSlug: commerce.proPackGuideSlug,
+      proPackGuideSlug: pack?.guideSlug || commerce.proPackGuideSlug,
+      allowPromotionCodes: commerce.allowPromotionCodes,
       proPriceCents: this.getProPriceCents(),
+      proPackPriceCents: pack?.priceCents ?? this.getProPriceCents() * 3,
       currency: 'eur',
     };
   }
@@ -114,11 +120,22 @@ export class BillingService {
       );
     }
     const commerce = await this.commerce.getSettings();
-    if (dto.product === 'pro' && !commerce.proEnabled) {
+    if (
+      (dto.product === 'pro' || dto.product === 'pro_pack_3m') &&
+      !commerce.proEnabled
+    ) {
       throw new ServiceUnavailableException(commerce.maintenanceMessage);
     }
     if (dto.product === 'course' && !commerce.coursesEnabled) {
       throw new ServiceUnavailableException(commerce.maintenanceMessage);
+    }
+    if (dto.product === 'pro_pack_3m') {
+      const pack = await this.promoRules.getProPack3m();
+      if (!pack?.enabled) {
+        throw new ServiceUnavailableException(
+          'El pack PRO de 3 meses no está disponible ahora mismo.',
+        );
+      }
     }
     if (!dto.acceptedTerms) {
       throw new BadRequestException(
@@ -167,16 +184,23 @@ export class BillingService {
       ? { customer: user.stripeCustomerId }
       : { customer_email: user.email };
 
-    if (dto.product === 'pro') {
+    if (dto.product === 'pro' || dto.product === 'pro_pack_3m') {
       if (user.plan === UserPlan.pro || user.subscriptions.length > 0) {
         throw new BadRequestException('Ya tienes Radar VPO PRO activo.');
       }
 
-      const unitAmount = this.getProPriceCents();
+      const isPack = dto.product === 'pro_pack_3m';
+      const pack = isPack ? await this.promoRules.getProPack3m() : null;
+      const unitAmount = isPack
+        ? (pack?.priceCents ?? this.getProPriceCents() * 3)
+        : this.getProPriceCents();
       const priceLabel = formatEuroAmount(unitAmount);
+      const guideSlug =
+        pack?.guideSlug || commerce.proPackGuideSlug || 'vpo-inicial';
       const metadata = {
         userId: user.id,
-        product: 'pro',
+        product: isPack ? 'pro_pack_3m' : 'pro',
+        ...(isPack ? { guideSlug } : {}),
         termsAcceptedAt: new Date().toISOString(),
         immediateAccessAccepted: 'true',
       };
@@ -190,11 +214,16 @@ export class BillingService {
             price_data: {
               currency: 'eur',
               unit_amount: unitAmount,
-              recurring: { interval: 'month' },
+              recurring: isPack
+                ? { interval: 'month', interval_count: 3 }
+                : { interval: 'month' },
               product_data: {
-                name: 'Radar VPO PRO (suscripción mensual)',
-                description:
-                  'Avisos por email y SMS, Mi espacio sin límite y acceso al curso inicial mientras la suscripción esté activa.',
+                name: isPack
+                  ? 'Radar VPO PRO (pack 3 meses + guía)'
+                  : 'Radar VPO PRO (suscripción mensual)',
+                description: isPack
+                  ? `Avisos PRO durante 3 meses e incluye la guía ${guideSlug}.`
+                  : 'Avisos por email y SMS y Mi espacio sin límite mientras la suscripción esté activa.',
               },
             },
           },
@@ -202,14 +231,16 @@ export class BillingService {
         metadata,
         subscription_data: { metadata },
         locale: 'es',
-        allow_promotion_codes: false,
+        allow_promotion_codes: commerce.allowPromotionCodes,
         custom_text: {
           submit: {
-            message: `Suscripción de ${priceLabel} al mes. Se renueva cada mes hasta que la canceles desde "Mi cuenta"; mantendrás el acceso hasta el final del periodo ya pagado.`,
+            message: isPack
+              ? `Pack de ${priceLabel} cada 3 meses. Incluye la guía inicial. Cancelas desde Mi cuenta.`
+              : `Suscripción de ${priceLabel} al mes. Se renueva cada mes hasta que la canceles desde "Mi cuenta"; mantendrás el acceso hasta el final del periodo ya pagado.`,
           },
         },
-        success_url: `${siteUrl}/account?checkout=success&product=pro`,
-        cancel_url: `${siteUrl}/checkout?product=pro&canceled=1`,
+        success_url: `${siteUrl}/account?checkout=success&product=${isPack ? 'pro_pack_3m' : 'pro'}`,
+        cancel_url: `${siteUrl}/checkout?product=${isPack ? 'pro_pack_3m' : 'pro'}&canceled=1`,
       });
 
       if (!session.url) {
@@ -299,7 +330,7 @@ export class BillingService {
       metadata,
       payment_intent_data: { metadata, description: course.title },
       locale: 'es',
-      allow_promotion_codes: false,
+      allow_promotion_codes: commerce.allowPromotionCodes,
       custom_text: {
         submit: {
           message: `Pago único de ${formatEuroAmount(unitAmount)}. Sin renovaciones. Acceso inmediato al curso tras confirmarse el pago.`,
@@ -398,12 +429,14 @@ export class BillingService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: meta.userId },
-      select: { id: true, stripeCustomerId: true },
+      select: { id: true, email: true, fullName: true, stripeCustomerId: true },
     });
     if (!user) {
       this.logger.warn(`Checkout ${session.id}: user ${meta.userId} not found`);
       return;
     }
+    const siteUrl = resolvePublicSiteUrl();
+    const displayName = user.fullName?.trim() || user.email;
 
     const customerId =
       typeof session.customer === 'string'
@@ -465,10 +498,35 @@ export class BillingService {
           notes: `Stripe checkout ${session.id}`,
         },
       });
+
+      const course = await this.prisma.course.findUnique({
+        where: { id: meta.courseId },
+        select: { title: true, slug: true },
+      });
+      void this.notifications
+        .sendTemplatedEmail({
+          templateKey: 'purchase.course',
+          toEmail: user.email,
+          toName: displayName,
+          vars: {
+            name: displayName,
+            email: user.email,
+            product: course?.title || 'tu compra',
+            url: `${siteUrl}/cursos/${course?.slug || meta.courseSlug || ''}`,
+            title: course?.title || '',
+            location: '',
+            date: '',
+            price: formatEuroAmount(session.amount_total ?? 0),
+            phone: '',
+          },
+          fallbackSubject: `Acceso listo: ${course?.title || 'tu compra'}`,
+          fallbackHtml: `<p>Hola ${displayName},</p><p>Tu compra se ha confirmado. Ya puedes acceder.</p>`,
+        })
+        .catch(() => undefined);
       return;
     }
 
-    if (meta.product === 'pro') {
+    if (meta.product === 'pro' || meta.product === 'pro_pack_3m') {
       const subscriptionId =
         typeof session.subscription === 'string'
           ? session.subscription
@@ -476,6 +534,67 @@ export class BillingService {
       if (!subscriptionId) return;
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
       await this.syncSubscription(subscription, user.id);
+
+      let guideTitle = 'guía inicial';
+      let guideUrl = `${siteUrl}/cursos`;
+      if (meta.product === 'pro_pack_3m') {
+        const guideSlug =
+          meta.guideSlug ||
+          (await this.promoRules.getProPack3m())?.guideSlug ||
+          'vpo-inicial';
+        const guide = await this.prisma.course.findUnique({
+          where: { slug: guideSlug },
+          select: { id: true, title: true, slug: true },
+        });
+        if (guide) {
+          guideTitle = guide.title;
+          guideUrl = `${siteUrl}/cursos/${guide.slug}`;
+          await this.prisma.userCourseAccess.upsert({
+            where: {
+              userId_courseId: { userId: user.id, courseId: guide.id },
+            },
+            update: {
+              isActive: true,
+              notes: `Pack PRO 3 meses (${session.id})`,
+            },
+            create: {
+              userId: user.id,
+              courseId: guide.id,
+              isActive: true,
+              activatedByAdmin: false,
+              notes: `Pack PRO 3 meses (${session.id})`,
+            },
+          });
+        }
+      }
+
+      void this.notifications
+        .sendTemplatedEmail({
+          templateKey:
+            meta.product === 'pro_pack_3m' ? 'purchase.pro_pack' : 'purchase.pro',
+          toEmail: user.email,
+          toName: displayName,
+          vars: {
+            name: displayName,
+            email: user.email,
+            product: guideTitle,
+            url:
+              meta.product === 'pro_pack_3m'
+                ? guideUrl
+                : `${siteUrl}/account`,
+            title: 'Radar VPO PRO',
+            location: '',
+            date: '',
+            price: formatEuroAmount(session.amount_total ?? 0),
+            phone: '',
+          },
+          fallbackSubject:
+            meta.product === 'pro_pack_3m'
+              ? 'Pack PRO 3 meses activado'
+              : 'Bienvenido a Radar VPO PRO',
+          fallbackHtml: `<p>Hola ${displayName},</p><p>Tu suscripción PRO ya está activa.</p>`,
+        })
+        .catch(() => undefined);
     }
   }
 

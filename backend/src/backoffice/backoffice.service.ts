@@ -27,9 +27,13 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { BillingService } from '../billing/billing.service';
 import { CommerceService } from '../commerce/commerce.service';
 import type { CommerceSettings } from '../commerce/commerce.types';
+import { MessageTemplatesService } from '../commerce/message-templates.service';
+import { PromoRulesService } from '../commerce/promo-rules.service';
 import { NewsCoverService } from '../news/news-cover.service';
 import { NewsAutomationService } from '../jobs/news-automation.service';
 import { UpdateCommerceSettingsDto } from './dto/update-commerce-settings.dto';
+import { UpdateMessageTemplateDto } from './dto/update-message-template.dto';
+import { UpdatePromoRuleDto } from './dto/update-promo-rule.dto';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
 import { CreateCourseContentBlockDto } from './dto/create-course-content-block.dto';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -68,6 +72,8 @@ export class BackofficeService {
     private readonly notificationsService: NotificationsService,
     private readonly billingService: BillingService,
     private readonly commerce: CommerceService,
+    private readonly messageTemplates: MessageTemplatesService,
+    private readonly promoRules: PromoRulesService,
     private readonly newsCover: NewsCoverService,
     private readonly newsAutomation: NewsAutomationService,
   ) {}
@@ -80,6 +86,26 @@ export class BackofficeService {
     dto: UpdateCommerceSettingsDto,
   ): Promise<CommerceSettings> {
     return this.commerce.updateSettings(dto);
+  }
+
+  listMessageTemplates() {
+    return this.messageTemplates.list();
+  }
+
+  updateMessageTemplate(key: string, dto: UpdateMessageTemplateDto) {
+    return this.messageTemplates.update(key, dto);
+  }
+
+  listPromoRules() {
+    return this.promoRules.list();
+  }
+
+  updatePromoRule(key: string, dto: UpdatePromoRuleDto) {
+    return this.promoRules.update(key, {
+      name: dto.name,
+      enabled: dto.enabled,
+      config: dto.config as Record<string, unknown> | undefined,
+    });
   }
 
   /** Genera las noticias del día (force=true ignora el candado diario) y rellena portadas. */
