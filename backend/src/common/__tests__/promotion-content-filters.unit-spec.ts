@@ -1,6 +1,8 @@
 import {
+  isAlertCancellationNotice,
   isAmendmentPublication,
   isOfficialProcedureStartAnnouncement,
+  isProperaAdjudicacioAlert,
 } from '../promotion-content-filters';
 
 describe('isAmendmentPublication', () => {
@@ -69,6 +71,54 @@ describe('isOfficialProcedureStartAnnouncement', () => {
     expect(
       isOfficialProcedureStartAnnouncement(
         'Convocatòria per a la adjudicació de habitatges',
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('isProperaAdjudicacioAlert', () => {
+  it('accepts only ALERTA: Propera adjudicació titles', () => {
+    expect(
+      isProperaAdjudicacioAlert(
+        "ALERTA: Propera adjudicació d'habitatges d'HPO a Arenys de Mar",
+      ),
+    ).toBe(true);
+    expect(
+      isProperaAdjudicacioAlert(
+        'alerta: propera adjudicacio habitatges Barcelona',
+      ),
+    ).toBe(true);
+  });
+
+  it('rejects AVÍS cancellations and unrelated titles', () => {
+    expect(
+      isProperaAdjudicacioAlert("AVÍS: Anul·lació de l'alerta"),
+    ).toBe(false);
+    expect(
+      isProperaAdjudicacioAlert(
+        "Anunci d'inici de procediment d'adjudicació",
+      ),
+    ).toBe(false);
+    expect(isProperaAdjudicacioAlert('Alerta genérica del registre')).toBe(
+      false,
+    );
+  });
+});
+
+describe('isAlertCancellationNotice', () => {
+  it('detects AVÍS de anulación de alerta', () => {
+    expect(
+      isAlertCancellationNotice("AVÍS: Anul·lació de l'alerta"),
+    ).toBe(true);
+    expect(
+      isAlertCancellationNotice("Avís: Anul·lació de l'alerta de Girona"),
+    ).toBe(true);
+  });
+
+  it('allows real launch alerts', () => {
+    expect(
+      isAlertCancellationNotice(
+        "ALERTA: Propera adjudicació d'habitatges d'HPO",
       ),
     ).toBe(false);
   });

@@ -31,3 +31,27 @@ export function isAmendmentPublication(
     .split(/[^a-z0-9]+/)
     .some((token) => AMENDMENT_TOKENS.has(token));
 }
+
+/** Keep in sync with backend/src/common/promotion-content-filters.ts */
+export function isProperaAdjudicacioAlert(
+  ...parts: Array<string | null | undefined>
+): boolean {
+  const firstLine = normalizeForMatch(parts.filter(Boolean).join('\n'))
+    .split('\n')
+    .map((line) => line.trim())
+    .find(Boolean);
+  if (!firstLine) return false;
+  return /^alerta:\s*propera\s+adjudicacio\b/.test(firstLine);
+}
+
+export function isAlertCancellationNotice(
+  ...parts: Array<string | null | undefined>
+): boolean {
+  const text = normalizeForMatch(parts.filter(Boolean).join('\n')).trim();
+  if (!text) return false;
+  return (
+    /\bavis:\s*anul/.test(text) ||
+    /\banul[\s·.-]*lacio\s+de\s+l['']?alerta\b/.test(text) ||
+    /\bcancel+aci[oó]n\s+de\s+(la\s+)?alerta\b/.test(text)
+  );
+}

@@ -3,8 +3,10 @@ import { PromotionType } from '@prisma/client';
 import * as cheerio from 'cheerio';
 import { PrismaService } from '../prisma/prisma.service';
 import {
+  isAlertCancellationNotice,
   isAmendmentPublication,
   isOfficialProcedureStartAnnouncement,
+  isProperaAdjudicacioAlert,
 } from '../common/promotion-content-filters';
 
 type NewsEntry = {
@@ -101,6 +103,22 @@ export class RegistreScraperService {
             data: {
               status: 'archived',
               statusMessage: 'Archivada automáticamente: publicación de esmena/corrección.',
+            },
+          });
+        }
+        continue;
+      }
+
+      if (isAlertCancellationNotice(entry.title, rawText)) {
+        skippedAmendments += 1;
+        this.logger.log(`Skipped alert cancellation notice: ${entry.title}`);
+        if (existing && existing.status !== 'archived') {
+          await this.prisma.promotion.update({
+            where: { id: existing.id },
+            data: {
+              status: 'archived',
+              statusMessage:
+                'Archivada automáticamente: AVÍS de anulación de alerta (no es un lanzamiento).',
             },
           });
         }
@@ -341,7 +359,7 @@ export class RegistreScraperService {
           title,
           detailUrl,
           publishedAt,
-          isAlertEntry: this.looksLikeAlertEntry(contextText),
+          isAlertEntry: isProperaAdjudicacioAlert(title),
           alertLeadDays: this.extractAlertLeadDays(contextText),
           isAnnouncement: this.looksLikeAnnouncement(contextText),
         });
@@ -384,7 +402,7 @@ export class RegistreScraperService {
         title,
         detailUrl,
         publishedAt,
-        isAlertEntry: this.looksLikeAlertEntry(`${title}\n${containerText}`),
+        isAlertEntry: isProperaAdjudicacioAlert(title, containerText),
         alertLeadDays: this.extractAlertLeadDays(`${title}\n${containerText}`),
         isAnnouncement: this.looksLikeAnnouncement(
           `${title}\n${containerText}`,
@@ -552,17 +570,6 @@ export class RegistreScraperService {
     } catch {
       return url;
     }
-  }
-
-  private looksLikeAlertEntry(text: string): boolean {
-    const normalized = text.toLowerCase();
-    return (
-      /\balerta\b/.test(normalized) ||
-      /en el termini de \d+\s*dies es publicar[àa] l['’]anunci/.test(
-        normalized,
-      ) ||
-      /60\s*d[ií]as|60\s*dies|seixanta\s*dies/.test(normalized)
-    );
   }
 
   private extractAlertLeadDays(text: string): number | undefined {

@@ -3,7 +3,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { withPromotionView } from '../common/promotion-view.util';
 import {
   AMENDMENT_TITLE_CONTAINS,
+  isAlertCancellationNotice,
   isAmendmentPublication,
+  isProperaAdjudicacioAlert,
   shortenAlertTitle,
 } from '../common/promotion-content-filters';
 
@@ -36,7 +38,12 @@ export class AlertsService {
     });
 
     return alerts
-      .filter((alert) => !isAmendmentPublication(alert.title))
+      .filter(
+        (alert) =>
+          isProperaAdjudicacioAlert(alert.title) &&
+          !isAmendmentPublication(alert.title) &&
+          !isAlertCancellationNotice(alert.title),
+      )
       .map((alert) =>
         withPromotionView({
           ...alert,

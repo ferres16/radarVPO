@@ -49,6 +49,35 @@ export function isOfficialProcedureStartAnnouncement(
   );
 }
 
+/**
+ * Solo cuentan como "próximo lanzamiento" los avisos del Registre cuyo título
+ * empieza por "ALERTA: Propera adjudicació…".
+ * "AVÍS: Anul·lació de l'alerta" y similares NO son alertas.
+ */
+export function isProperaAdjudicacioAlert(
+  ...parts: Array<string | null | undefined>
+): boolean {
+  const firstLine = normalizeForMatch(parts.filter(Boolean).join('\n'))
+    .split('\n')
+    .map((line) => line.trim())
+    .find(Boolean);
+  if (!firstLine) return false;
+  return /^alerta:\s*propera\s+adjudicacio\b/.test(firstLine);
+}
+
+/** Avisos de anulación/cancelación de una alerta previa (no son lanzamientos). */
+export function isAlertCancellationNotice(
+  ...parts: Array<string | null | undefined>
+): boolean {
+  const text = normalizeForMatch(parts.filter(Boolean).join('\n')).trim();
+  if (!text) return false;
+  return (
+    /\bavis:\s*anul/.test(text) ||
+    /\banul[\s·.-]*lacio\s+de\s+l['']?alerta\b/.test(text) ||
+    /\bcancel+aci[oó]n\s+de\s+(la\s+)?alerta\b/.test(text)
+  );
+}
+
 /** Prisma-friendly title exclusions for public lists (defense in depth). */
 export const AMENDMENT_TITLE_CONTAINS = [
   'esmena',
