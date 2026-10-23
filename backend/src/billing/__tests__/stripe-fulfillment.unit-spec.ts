@@ -3,7 +3,9 @@ import {
   amountToCents,
   centsToAmount,
   extractSubscriptionPeriod,
+  isMissingStripeCustomerError,
   isOneOffPurchasableAccessType,
+  isStripeTaxNotEnabledError,
   mapStripeSubscriptionStatus,
   parseCheckoutMetadata,
   shouldKeepProPlan,
@@ -123,6 +125,36 @@ describe('extractSubscriptionPeriod', () => {
       current_period_end: 1_702_592_000,
     });
     expect(period.cancelAt).toBeNull();
+  });
+});
+
+describe('Stripe checkout error mapping', () => {
+  it('detects a missing customer from a previous Stripe mode', () => {
+    expect(
+      isMissingStripeCustomerError({
+        code: 'resource_missing',
+        param: 'customer',
+        message: 'No such customer: cus_test',
+      }),
+    ).toBe(true);
+    expect(
+      isMissingStripeCustomerError({
+        code: 'card_declined',
+        message: 'Your card was declined.',
+      }),
+    ).toBe(false);
+  });
+
+  it('detects Stripe Tax not being configured', () => {
+    expect(
+      isStripeTaxNotEnabledError({
+        message:
+          'automatic_tax is not available because tax settings are incomplete.',
+      }),
+    ).toBe(true);
+    expect(
+      isStripeTaxNotEnabledError({ message: 'No such customer: cus_x' }),
+    ).toBe(false);
   });
 });
 

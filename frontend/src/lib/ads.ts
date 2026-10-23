@@ -51,9 +51,13 @@ function matchesExcludedPath(pathname: string, prefix: string) {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
 }
 
+export function isAdExcludedPath(pathname: string) {
+  return excludedPrefixes.some((prefix) => matchesExcludedPath(pathname, prefix));
+}
+
 export function shouldShowAds(pathname: string) {
   if (!adsConfig.enabled || !adsConfig.clientId) return false;
-  return !excludedPrefixes.some((prefix) => matchesExcludedPath(pathname, prefix));
+  return !isAdExcludedPath(pathname);
 }
 
 export function shouldRenderAdPlaceholder(pathname: string) {

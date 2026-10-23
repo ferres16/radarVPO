@@ -141,3 +141,38 @@ export function formatEuroAmount(cents: number) {
     currency: 'EUR',
   }).format(cents / 100);
 }
+
+type StripeLikeError = {
+  code?: string;
+  param?: string;
+  type?: string;
+  message?: string;
+};
+
+function readStripeError(error: unknown): StripeLikeError {
+  if (!error || typeof error !== 'object') return {};
+  const record = error as Record<string, unknown>;
+  return {
+    code: typeof record.code === 'string' ? record.code : undefined,
+    param: typeof record.param === 'string' ? record.param : undefined,
+    type: typeof record.type === 'string' ? record.type : undefined,
+    message: typeof record.message === 'string' ? record.message : undefined,
+  };
+}
+
+/** Customer ID de test/modo antiguo: Stripe no lo encuentra en live. */
+export function isMissingStripeCustomerError(error: unknown): boolean {
+  const err = readStripeError(error);
+  if (err.code === 'resource_missing' && err.param === 'customer') {
+    return true;
+  }
+  return /no such customer/i.test(err.message || '');
+}
+
+/** Stripe Tax no está activado en el Dashboard; automatic_tax rompe el checkout. */
+export function isStripeTaxNotEnabledError(error: unknown): boolean {
+  const message = readStripeError(error).message || '';
+  return /automatic[_\s-]?tax|tax settings|not set up to collect tax/i.test(
+    message,
+  );
+}

@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Analytics } from '@vercel/analytics/next';
-import { adsConfig } from '@/lib/ads';
+import { adsConfig, shouldShowAds } from '@/lib/ads';
 import { useConsent } from './consent-provider';
 
 const ADSENSE_SCRIPT_ID = 'radar-vpo-adsense';
@@ -12,8 +13,9 @@ export function ConsentedScripts({
 }: {
   vercelAnalytics?: boolean;
 }) {
+  const pathname = usePathname();
   const { preferences } = useConsent();
-  const adsAllowed = Boolean(preferences?.ads && adsConfig.enabled && adsConfig.clientId);
+  const adsAllowed = Boolean(preferences?.ads && shouldShowAds(pathname));
   const analyticsAllowed = Boolean(preferences?.analytics && vercelAnalytics);
 
   useEffect(() => {

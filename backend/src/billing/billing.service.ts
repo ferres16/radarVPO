@@ -32,7 +32,9 @@ import {
   DEFAULT_PRO_PRICE_CENTS,
   extractSubscriptionPeriod,
   formatEuroAmount,
+  isMissingStripeCustomerError,
   isOneOffPurchasableAccessType,
+  isStripeTaxNotEnabledError,
   mapStripeSubscriptionStatus,
   MIN_PUBLISHED_LESSONS_TO_SELL,
   parseCheckoutMetadata,
@@ -112,6 +114,69 @@ export class BillingService {
   private getProPriceCents(): number {
     const raw = Number(this.config.get<string>('STRIPE_PRO_PRICE_CENTS'));
     return Number.isInteger(raw) && raw > 0 ? raw : DEFAULT_PRO_PRICE_CENTS;
+  }
+
+  private withoutAutomaticTax(
+    params: Stripe.Checkout.SessionCreateParams,
+  ): Stripe.Checkout.SessionCreateParams {
+    const next: Stripe.Checkout.SessionCreateParams = { ...params };
+    delete next.automatic_tax;
+    delete next.tax_id_collection;
+    if (next.billing_address_collection === 'required') {
+      delete next.billing_address_collection;
+    }
+    next.line_items = (params.line_items || []).map((item) => {
+      if (!item.price_data) return item;
+      const priceData = { ...item.price_data };
+      delete priceData.tax_behavior;
+      return { ...item, price_data: priceData };
+    });
+    return next;
+  }
+
+  private async createStripeCheckoutSession(
+    stripe: Stripe,
+    params: Stripe.Checkout.SessionCreateParams,
+    user: { email: string; stripeCustomerId: string | null },
+  ): Promise<Stripe.Checkout.Session> {
+    try {
+      return await stripe.checkout.sessions.create(params);
+    } catch (error) {
+      if (user.stripeCustomerId && isMissingStripeCustomerError(error)) {
+        this.logger.warn(
+          `Stripe customer ${user.stripeCustomerId} missing; retrying checkout with email`,
+        );
+        const retry: Stripe.Checkout.SessionCreateParams = {
+          ...params,
+          customer_email: user.email,
+        };
+        delete retry.customer;
+        if (params.mode === 'payment') {
+          retry.customer_creation = 'always';
+        }
+        return this.createStripeCheckoutSession(stripe, retry, {
+          email: user.email,
+          stripeCustomerId: null,
+        });
+      }
+      if (params.automatic_tax?.enabled && isStripeTaxNotEnabledError(error)) {
+        this.logger.warn(
+          'Stripe Tax is not configured; retrying checkout without automatic_tax',
+        );
+        return this.createStripeCheckoutSession(
+          stripe,
+          this.withoutAutomaticTax(params),
+          user,
+        );
+      }
+      const stripeError = error as { code?: string; type?: string };
+      this.logger.error(
+        `Stripe checkout failed code=${stripeError.code || 'n/a'} type=${stripeError.type || 'n/a'}`,
+      );
+      throw new ServiceUnavailableException(
+        'No se pudo iniciar el pago. Inténtalo de nuevo.',
+      );
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -218,54 +283,60 @@ export class BillingService {
         termsAcceptedAt: new Date().toISOString(),
         immediateAccessAccepted: 'true',
       };
-      const session = await stripe.checkout.sessions.create({
-        mode: 'subscription',
-        client_reference_id: user.id,
-        ...customerParams,
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: 'eur',
-              unit_amount: unitAmount,
-              tax_behavior: commerce.stripeAutomaticTax
-                ? 'inclusive'
-                : undefined,
-              recurring: isPack
-                ? { interval: 'month', interval_count: 3 }
-                : { interval: 'month' },
-              product_data: {
-                name: isPack
-                  ? 'Radar VPO PRO (pack 3 meses + guía)'
-                  : 'Radar VPO PRO (suscripción mensual)',
-                description: isPack
-                  ? `Avisos PRO durante 3 meses e incluye la guía ${guideSlug}.`
-                  : 'Avisos por email y SMS y Mi espacio sin límite mientras la suscripción esté activa.',
+      const session = await this.createStripeCheckoutSession(
+        stripe,
+        {
+          mode: 'subscription',
+          client_reference_id: user.id,
+          ...customerParams,
+          line_items: [
+            {
+              quantity: 1,
+              price_data: {
+                currency: 'eur',
+                unit_amount: unitAmount,
+                ...(commerce.stripeAutomaticTax
+                  ? { tax_behavior: 'inclusive' as const }
+                  : {}),
+                recurring: isPack
+                  ? { interval: 'month', interval_count: 3 }
+                  : { interval: 'month' },
+                product_data: {
+                  name: isPack
+                    ? 'Radar VPO PRO (pack 3 meses + guía)'
+                    : 'Radar VPO PRO (suscripción mensual)',
+                  description: isPack
+                    ? `Avisos PRO durante 3 meses e incluye la guía ${guideSlug}.`
+                    : 'Avisos por email y SMS y Mi espacio sin límite mientras la suscripción esté activa.',
+                },
               },
             },
+          ],
+          metadata,
+          subscription_data: { metadata },
+          locale: 'es',
+          ...(commerce.allowPromotionCodes
+            ? { allow_promotion_codes: true }
+            : {}),
+          ...(commerce.stripeAutomaticTax
+            ? {
+                automatic_tax: { enabled: true },
+                billing_address_collection: 'required' as const,
+                tax_id_collection: { enabled: true },
+              }
+            : {}),
+          custom_text: {
+            submit: {
+              message: isPack
+                ? `Pack de ${priceLabel} cada 3 meses. Incluye la guía inicial. Cancelas desde Mi cuenta.`
+                : `Suscripción de ${priceLabel} al mes. Se renueva cada mes hasta que la canceles desde "Mi cuenta"; mantendrás el acceso hasta el final del periodo ya pagado.`,
+            },
           },
-        ],
-        metadata,
-        subscription_data: { metadata },
-        locale: 'es',
-        allow_promotion_codes: commerce.allowPromotionCodes,
-        ...(commerce.stripeAutomaticTax
-          ? {
-              automatic_tax: { enabled: true },
-              billing_address_collection: 'required' as const,
-              tax_id_collection: { enabled: true },
-            }
-          : {}),
-        custom_text: {
-          submit: {
-            message: isPack
-              ? `Pack de ${priceLabel} cada 3 meses. Incluye la guía inicial. Cancelas desde Mi cuenta.`
-              : `Suscripción de ${priceLabel} al mes. Se renueva cada mes hasta que la canceles desde "Mi cuenta"; mantendrás el acceso hasta el final del periodo ya pagado.`,
-          },
+          success_url: `${siteUrl}/account?checkout=success&product=${isPack ? 'pro_pack_3m' : 'pro'}`,
+          cancel_url: `${siteUrl}/checkout?product=${isPack ? 'pro_pack_3m' : 'pro'}&canceled=1`,
         },
-        success_url: `${siteUrl}/account?checkout=success&product=${isPack ? 'pro_pack_3m' : 'pro'}`,
-        cancel_url: `${siteUrl}/checkout?product=${isPack ? 'pro_pack_3m' : 'pro'}&canceled=1`,
-      });
+        user,
+      );
 
       if (!session.url) {
         throw new ServiceUnavailableException(
@@ -341,43 +412,51 @@ export class BillingService {
       termsAcceptedAt: new Date().toISOString(),
       immediateAccessAccepted: 'true',
     };
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',
-      client_reference_id: user.id,
-      ...customerParams,
-      ...(user.stripeCustomerId
-        ? {}
-        : { customer_creation: 'always' as const }),
-      line_items: [
-        {
-          quantity: 1,
-          price_data: {
-            currency: 'eur',
-            unit_amount: unitAmount,
-            tax_behavior: commerce.stripeAutomaticTax ? 'inclusive' : undefined,
-            product_data: { name: course.title },
+    const session = await this.createStripeCheckoutSession(
+      stripe,
+      {
+        mode: 'payment',
+        client_reference_id: user.id,
+        ...customerParams,
+        ...(user.stripeCustomerId
+          ? {}
+          : { customer_creation: 'always' as const }),
+        line_items: [
+          {
+            quantity: 1,
+            price_data: {
+              currency: 'eur',
+              unit_amount: unitAmount,
+              ...(commerce.stripeAutomaticTax
+                ? { tax_behavior: 'inclusive' as const }
+                : {}),
+              product_data: { name: course.title },
+            },
+          },
+        ],
+        metadata,
+        payment_intent_data: { metadata, description: course.title },
+        locale: 'es',
+        ...(commerce.allowPromotionCodes
+          ? { allow_promotion_codes: true }
+          : {}),
+        ...(commerce.stripeAutomaticTax
+          ? {
+              automatic_tax: { enabled: true },
+              billing_address_collection: 'required' as const,
+              tax_id_collection: { enabled: true },
+            }
+          : {}),
+        custom_text: {
+          submit: {
+            message: `Pago único de ${formatEuroAmount(unitAmount)}. Sin renovaciones. Acceso inmediato al curso tras confirmarse el pago.`,
           },
         },
-      ],
-      metadata,
-      payment_intent_data: { metadata, description: course.title },
-      locale: 'es',
-      allow_promotion_codes: commerce.allowPromotionCodes,
-      ...(commerce.stripeAutomaticTax
-        ? {
-            automatic_tax: { enabled: true },
-            billing_address_collection: 'required' as const,
-            tax_id_collection: { enabled: true },
-          }
-        : {}),
-      custom_text: {
-        submit: {
-          message: `Pago único de ${formatEuroAmount(unitAmount)}. Sin renovaciones. Acceso inmediato al curso tras confirmarse el pago.`,
-        },
+        success_url: `${siteUrl}/cursos/${course.slug}?checkout=success`,
+        cancel_url: `${siteUrl}/checkout?product=course&course=${encodeURIComponent(course.slug)}&canceled=1`,
       },
-      success_url: `${siteUrl}/cursos/${course.slug}?checkout=success`,
-      cancel_url: `${siteUrl}/checkout?product=course&course=${encodeURIComponent(course.slug)}&canceled=1`,
-    });
+      user,
+    );
 
     if (!session.url) {
       throw new ServiceUnavailableException(

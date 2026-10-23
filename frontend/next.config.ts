@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { ADSENSE_CONNECT_SRC, ADSENSE_FRAME_SRC, ADSENSE_SCRIPT_SRC } from "./src/lib/ads-csp";
 
 const isProduction = process.env.NODE_ENV === "production";
 const adsEnabled = process.env.NEXT_PUBLIC_ADSENSE_ENABLED === "true";
@@ -7,7 +8,7 @@ const scriptSrc = [
   "'self'",
   "'unsafe-inline'",
   isProduction ? "" : "'unsafe-eval'",
-  adsEnabled ? "https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net" : "",
+  adsEnabled ? ADSENSE_SCRIPT_SRC : "",
 ]
   .filter(Boolean)
   .join(" ");
@@ -16,7 +17,7 @@ const connectSrc = [
   "'self'",
   "https://vitals.vercel-insights.com",
   "https://va.vercel-scripts.com",
-  adsEnabled ? "https://pagead2.googlesyndication.com https://googleads.g.doubleclick.net" : "",
+  adsEnabled ? ADSENSE_CONNECT_SRC : "",
   isProduction ? "" : "http://localhost:*",
 ]
   .filter(Boolean)
@@ -26,7 +27,7 @@ const frameSrc = [
   "'self'",
   "https://www.youtube.com",
   "https://www.youtube-nocookie.com",
-  adsEnabled ? "https://googleads.g.doubleclick.net https://tpc.googlesyndication.com" : "",
+  adsEnabled ? ADSENSE_FRAME_SRC : "",
 ]
   .filter(Boolean)
   .join(" ");

@@ -26,10 +26,19 @@ async function proxy(request: NextRequest, context: RouteContext) {
     const body = await request.arrayBuffer();
     if (body.byteLength > 0) {
       init.body = body;
+      (init as RequestInit & { duplex: 'half' }).duplex = 'half';
     }
   }
 
-  const upstream = await fetch(target, init);
+  let upstream: Response;
+  try {
+    upstream = await fetch(target, init);
+  } catch {
+    return NextResponse.json(
+      { error: { message: 'No se pudo contactar con el servidor. Inténtalo de nuevo.' } },
+      { status: 502 },
+    );
+  }
   const responseHeaders = new Headers();
   const upstreamContentType = upstream.headers.get('content-type');
   if (upstreamContentType) {
