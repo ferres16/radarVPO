@@ -717,6 +717,40 @@ export class NotificationsService {
     `;
   }
 
+  async notifyUserOfProCancellation(input: {
+    email: string;
+    fullName: string | null;
+    accessUntil: string | null;
+  }): Promise<boolean> {
+    if (!this.apiKey) {
+      this.logger.warn('User cancellation email skipped: missing BREVO_API_KEY');
+      return false;
+    }
+    const displayName = input.fullName?.trim() || input.email;
+    const accountUrl = `${this.publicSiteUrl}/account`;
+    const untilNote = input.accessUntil
+      ? ` Conservarás el acceso hasta el ${input.accessUntil}.`
+      : ' Conservarás el acceso hasta el final del periodo ya pagado si aplica.';
+    return this.sendTemplatedEmail({
+      templateKey: 'cancel.pro_user',
+      toEmail: input.email,
+      toName: displayName,
+      vars: {
+        name: displayName,
+        email: input.email,
+        url: accountUrl,
+        title: '',
+        location: '',
+        date: input.accessUntil || '',
+        product: 'PRO',
+        price: '',
+        phone: '',
+      },
+      fallbackSubject: 'Confirmación de baja de Radar VPO PRO',
+      fallbackHtml: `<p>Hola ${this.escapeHtml(displayName)},</p><p>Hemos registrado la baja de tu suscripción PRO.${untilNote}</p><p><a href="${this.escapeHtml(accountUrl)}">Mi cuenta</a></p>`,
+    });
+  }
+
   async notifyAdminsOfProCancellation(input: {
     userId: string;
     email: string;

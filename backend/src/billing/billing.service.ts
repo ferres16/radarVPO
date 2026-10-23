@@ -890,6 +890,18 @@ export class BillingService {
         where: { id: userId },
         data: { proCancellationRequestedAt: requestedAt },
       });
+      const accessUntilLabel = scheduled.periodEnd
+        ? new Date(scheduled.periodEnd).toLocaleDateString('es-ES', {
+            timeZone: 'Europe/Madrid',
+          })
+        : null;
+      void this.notifications
+        .notifyUserOfProCancellation({
+          email: user.email,
+          fullName: user.fullName,
+          accessUntil: accessUntilLabel,
+        })
+        .catch(() => undefined);
       return { success: true, mode: 'stripe', accessUntil: scheduled.periodEnd };
     }
 
@@ -897,6 +909,14 @@ export class BillingService {
       where: { id: userId },
       data: { proCancellationRequestedAt: requestedAt },
     });
+
+    void this.notifications
+      .notifyUserOfProCancellation({
+        email: user.email,
+        fullName: user.fullName,
+        accessUntil: null,
+      })
+      .catch(() => undefined);
 
     try {
       const result = await this.notifications.notifyAdminsOfProCancellation({
