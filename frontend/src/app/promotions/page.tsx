@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
-import { Suspense } from 'react';
 import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { InlineAdCard } from '@/components/ads';
 import { AlertsProCtaBand } from '@/components/conversion/alerts-pro-cta-band';
 import { PromotionsExplorer } from '@/components/conversion/promotions-explorer';
+import { ProofStats } from '@/components/conversion/proof-stats';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
-import { publicPublishedPromotions } from '@/lib/public-promotions';
+import { buildProofItems } from '@/lib/catalog-stats';
+import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 
 export const revalidate = 30;
@@ -22,9 +23,16 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function PromotionsPage() {
-  const promotions = await api.getPromotions('?limit=100').catch(() => []);
+  const [promotions, stats] = await Promise.all([
+    api.getPromotions('?limit=100').catch(() => []),
+    api.getCatalogStats().catch(() => null),
+  ]);
   const listed = publicPublishedPromotions(promotions);
   const visiblePromotions = listed;
+  const proofItems = buildProofItems(stats, {
+    published: listed.length,
+    municipalities: uniqueMunicipalities(listed).length,
+  });
 
   return (
     <PublicPage>
@@ -41,6 +49,7 @@ export default async function PromotionsPage() {
         title="Promociones publicadas"
         titleAccent="con su documento oficial"
         description="Abre las bases y anexos oficiales de cada promoción sin salir de Radar VPO. Es gratis y no necesitas cuenta."
+        footer={<ProofStats items={proofItems} />}
       />
 
       {visiblePromotions.length === 0 ? (
@@ -68,9 +77,7 @@ export default async function PromotionsPage() {
               visiblePromotions.length === 1 ? 'promoción publicada' : 'promociones publicadas'
             } con documento consultable. El recuento de esta página y el de cabecera usan la misma lista.`}
           />
-          <Suspense fallback={<p className="mt-4 text-sm text-[var(--ink-soft)]">Cargando filtros…</p>}>
-            <PromotionsExplorer promotions={visiblePromotions} />
-          </Suspense>
+          <PromotionsExplorer promotions={visiblePromotions} />
           <p className="mt-6 text-sm text-[var(--ink-soft)]">
             ¿Aún no está publicada?{' '}
             <ButtonLink href="/alerts" variant="secondary">

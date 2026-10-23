@@ -94,8 +94,9 @@ function RegisterForm() {
 
             <form className="mt-5 space-y-4" onSubmit={onSubmit}>
               <p className="rounded-xl bg-[var(--bg-eco)] px-3 py-2 text-xs leading-5 text-[var(--ink)]">
-                Usamos tu nombre y correo para crear la cuenta y darte acceso. El móvil solo se pide si activas los
-                SMS de PRO. Más detalle en la{' '}
+                Recogemos tu nombre y correo para crear la cuenta (relación contractual). La contraseña se guarda
+                como hash, no como cifrado reversible. El móvil no hace falta ahora: lo pediremos si activas los SMS
+                de PRO. Más detalle en la{' '}
                 <Link href="/privacidad" className="font-semibold underline">
                   política de privacidad
                 </Link>

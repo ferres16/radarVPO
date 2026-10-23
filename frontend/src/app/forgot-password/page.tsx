@@ -41,8 +41,7 @@ export default function ForgotPasswordPage() {
         <section className="public-card mx-auto max-w-xl p-5 md:p-8">
           <h1 className="text-2xl font-bold text-[var(--ink)]">Recuperar contraseña</h1>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">
-            Te enviaremos un enlace para restablecer la contraseña. Por seguridad hay un breve intervalo entre
-            solicitudes; si no llega el correo, revisa spam o vuelve a intentarlo pasados unos minutos.
+            Te enviaremos un enlace para restablecer la contraseña. Solo puedes solicitarlo una vez cada 24 horas.
           </p>
 
           <form className="mt-5 space-y-4" onSubmit={onSubmit}>

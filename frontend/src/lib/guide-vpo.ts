@@ -18,16 +18,16 @@ const GUIDE_VPO_SLUG_SET = new Set<string>(GUIDE_VPO_SLUGS);
 export const GUIDE_VPO_TITLE = 'Guía para optar a una vivienda protegida en Catalunya';
 
 export const GUIDE_VPO_TAGLINE =
-  'Antes de solicitar una VPO, entiende los pasos y prepara tus números.';
+  'Entiende el proceso de la VPO y qué preparar antes de dar el siguiente paso.';
 
 export const GUIDE_VPO_VALUE =
-  'Una guía práctica para orientarte sobre requisitos, documentación, ayudas y dinero necesario, con explicaciones y ejemplos que puedas consultar a tu ritmo.';
+  'El valor está en ordenar información que hoy está dispersa y convertirla en acciones comprensibles: registro, requisitos, documentación, tipos de promoción y lo que viene después de que te seleccionen.';
 
 export const GUIDE_VPO_SHORT =
-  'Registro, papeles, cuentas y pasos hasta la firma. Lectura en pantalla · pago único · acceso mínimo 24 meses.';
+  'De la inscripción a la firma: registro, papeles, cuentas y pasos reales. Pago único.';
 
 export const GUIDE_VPO_SEO_DESCRIPTION =
-  'Guía práctica para entender el proceso de la VPO en Catalunya: requisitos, documentación, ayudas y dinero necesario. Lectura en pantalla, pago único e acceso mínimo de 24 meses.';
+  'Guía para entender el proceso de la VPO en Catalunya y preparar registro, documentación, financiación y los pasos hasta la firma. Pago único e acceso inmediato.';
 
 export type GuideVpoChapter = {
   title: string;
@@ -87,9 +87,9 @@ export const GUIDE_VPO_CHAPTERS: GuideVpoChapter[] = [
     hook: 'Lo que conviene conocer antes de firmar.',
   },
   {
-    title: 'Checklist de documentación',
+    title: 'Checklist imprimible',
     readerCare: 'Pasar de leer a organizarte.',
-    hook: 'Una lista para ordenar tu documentación (dentro de la guía).',
+    hook: 'Una lista para ordenar tu documentación.',
   },
   {
     title: 'Enlaces oficiales y glosario',
@@ -131,7 +131,7 @@ export const GUIDE_VPO_PAY_BULLETS = [
   'El proceso de la VPO, ordenado en acciones',
   'Qué preparar antes del siguiente paso',
   'Registro, papeles, precio y firma',
-  'Pago único · lectura en pantalla · acceso mínimo 24 meses',
+  'Pago único · lectura en pantalla',
 ];
 
 export function isGuideVpoSlug(slug?: string | null): boolean {

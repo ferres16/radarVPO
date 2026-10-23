@@ -81,12 +81,6 @@ export function proIncludedGuidesCopy(titles: string[]): {
   };
 }
 
-/** Solo listar inclusiones verificadas; si no hay guía asociada, no anunciar ninguna. */
-export function proOfferIncludes(guideTitles: string[]) {
-  const guides = proIncludedGuidesCopy(guideTitles);
-  return guides ? [...proIncludes, guides] : [...proIncludes];
-}
-
 /** Por qué pagar PRO cuando ya hay avisos y guías gratis. Solo hechos del producto. */
 export const proWhyPay = [
   {
@@ -127,7 +121,7 @@ export const proFaqs = [
   {
     question: '¿Qué recibo exactamente con PRO?',
     answer:
-      'Avisos por email (y por SMS si indicas tu móvil) cuando se publica una nueva promoción o detectamos un próximo lanzamiento, y Mi espacio sin límite de promociones guardadas. Una guía concreta solo forma parte de PRO si aparece listada en esta página con su nombre y enlace.',
+      'Avisos por email (y por SMS si indicas tu móvil) cuando se publica una nueva promoción o detectamos un próximo lanzamiento, y Mi espacio sin límite de promociones guardadas. Si una guía publicada está marcada como incluida, también puedes consultarla mientras la suscripción esté activa.',
   },
   {
     question: '¿Qué puedo hacer gratis?',
@@ -169,7 +163,7 @@ export const proComparisonRows = [
   {
     feature: 'Guías incluidas en PRO',
     free: 'No',
-    pro: 'Solo si aparecen listadas en la página PRO',
+    pro: 'Solo las que su ficha marque como incluidas',
   },
 ] as const;
 

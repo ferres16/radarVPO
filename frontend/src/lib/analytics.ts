@@ -22,7 +22,6 @@ export type AnalyticsEventName =
   | 'checkout_viewed'
   | 'checkout_started'
   | 'checkout_failed'
-  | 'interest_confirmed'
   | 'signup_completed'
   | 'favorite_saved'
   | 'favorite_removed'

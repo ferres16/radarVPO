@@ -8,7 +8,6 @@ import {
   isOfficialProcedureStartAnnouncement,
   isProperaAdjudicacioAlert,
 } from '../common/promotion-content-filters';
-import { canonicalizeMunicipality } from '../common/municipality';
 
 type NewsEntry = {
   title: string;
@@ -142,10 +141,9 @@ export class RegistreScraperService {
         alertLeadDays != null
           ? this.addDays(alertDate, alertLeadDays)
           : alertDate;
-      const municipalityOriginal = this.inferMunicipality(
+      const inferredMunicipality = this.inferMunicipality(
         `${entry.title}\n${rawText}`,
       );
-      const inferredMunicipality = canonicalizeMunicipality(municipalityOriginal);
       const inferredPromoter = this.inferPromoter(rawText);
       const inferredType = this.guessPromotionType(
         `${entry.title}\n${rawText}`,
@@ -159,7 +157,6 @@ export class RegistreScraperService {
             title: this.sanitizeTitle(entry.title),
             location: inferredMunicipality ?? undefined,
             municipality: inferredMunicipality ?? undefined,
-            municipalityOriginal: municipalityOriginal ?? undefined,
             promoter: inferredPromoter ?? undefined,
             sourceUrl: entry.detailUrl,
             rawText,
@@ -196,11 +193,6 @@ export class RegistreScraperService {
           data: {
             rawText: mergedRawText,
             municipality: inferredMunicipality ?? undefined,
-            municipalityOriginal:
-              municipalityOriginal ??
-              (existing as { municipalityOriginal?: string | null })
-                .municipalityOriginal ??
-              undefined,
             promoter: inferredPromoter ?? undefined,
             promotionType: inferredType,
             alertDetectedAt: alertDate,

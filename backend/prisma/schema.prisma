@@ -301,8 +301,6 @@ model Promotion {
   title                    String
   location                 String?
   municipality             String?
-  /** Valor original detectado/escrito antes de normalizar (trazabilidad). */
-  municipalityOriginal     String?             @map("municipality_original")
   province                 String?
   autonomousCommunity      String?             @map("autonomous_community")
   promotionType            PromotionType       @default(desconocido) @map("promotion_type")
@@ -500,30 +498,6 @@ model SystemSetting {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("system_settings")
-}
-
-/**
- * Lista de interés / prelanzamiento (guía, PRO u oferta general).
- * No es una cuenta ni una reserva de pago.
- */
-model InterestLead {
-  id              String   @id @default(cuid())
-  email           String
-  /** guide | pro | general */
-  product         String
-  source          String?
-  municipality    String?
-  /** buy | rent | both */
-  tenureInterest  String?  @map("tenure_interest")
-  searchPhase     String?  @map("search_phase")
-  marketingOptIn  Boolean  @default(false) @map("marketing_opt_in")
-  privacyVersion  String?  @map("privacy_version")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  @@unique([email, product])
-  @@index([product, createdAt])
-  @@map("interest_leads")
 }
 
 /** Plantillas de email/SMS editables desde el admin (Brevo sigue siendo el envío). */

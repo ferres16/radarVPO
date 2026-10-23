@@ -1,6 +1,5 @@
 import { canViewPromotionDocument } from '@/lib/promotion-access';
 import { isAmendmentPublication } from '@/lib/promotion-content-filters';
-import { canonicalizeMunicipality, municipalitiesMatch } from '@/lib/municipality';
 import type { Promotion } from '@/types';
 
 function publishedTime(promotion: Pick<Promotion, 'publishedAt' | 'createdAt'>): number {
@@ -29,18 +28,10 @@ export function publicPublishedPromotions(
 export function uniqueMunicipalities(promotions: readonly Promotion[]): string[] {
   const values = new Set<string>();
   for (const item of promotions) {
-    const name = canonicalizeMunicipality(item.municipality);
+    const name = item.municipality?.trim();
     if (name) values.add(name);
   }
   return [...values].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-}
-
-export function filterPromotionsByMunicipality(
-  promotions: readonly Promotion[],
-  municipality: string,
-): Promotion[] {
-  if (!municipality || municipality === 'all') return [...promotions];
-  return promotions.filter((item) => municipalitiesMatch(item.municipality, municipality));
 }
 
 /** Misma localización que usa el SMS/email de PRO (municipio, provincia). */
@@ -53,7 +44,7 @@ export function promotionNotifyLocation(
 export function promotionPlaceLabel(
   promotion: Pick<Promotion, 'municipality' | 'province'>,
 ): string {
-  const municipality = canonicalizeMunicipality(promotion.municipality) || promotion.municipality?.trim() || '';
+  const municipality = promotion.municipality?.trim() || '';
   const province = promotion.province?.trim() || '';
   if (municipality && province && municipality !== province) return `${municipality}, ${province}`;
   return municipality || province || 'Cataluña';

@@ -198,16 +198,13 @@ export class BillingService {
     const commerce = await this.commerce.getSettings();
     const pack = await this.promoRules.getProPack3m();
     const stripeReady = this.isCheckoutConfigured();
-    const salesOpen = commerce.salesMode === 'live' && stripeReady;
     return {
-      enabled: salesOpen,
-      salesMode: commerce.salesMode,
-      proEnabled: salesOpen && commerce.proEnabled,
-      coursesEnabled: salesOpen && commerce.coursesEnabled,
+      enabled: stripeReady,
+      proEnabled: stripeReady && commerce.proEnabled,
+      coursesEnabled: stripeReady && commerce.coursesEnabled,
       proPackEnabled:
-        salesOpen && commerce.proEnabled && Boolean(pack?.enabled),
+        stripeReady && commerce.proEnabled && Boolean(pack?.enabled),
       maintenanceMessage: commerce.maintenanceMessage,
-      guideListPriceCents: commerce.guideListPriceCents,
       proPackGuideSlug: pack?.guideSlug || commerce.proPackGuideSlug,
       allowPromotionCodes: commerce.allowPromotionCodes,
       proPriceCents: this.getProPriceCents(),
@@ -303,9 +300,6 @@ export class BillingService {
       );
     }
     const commerce = await this.commerce.getSettings();
-    if (commerce.salesMode !== 'live') {
-      throw new ServiceUnavailableException(commerce.maintenanceMessage);
-    }
     if (
       (dto.product === 'pro' || dto.product === 'pro_pack_3m') &&
       !commerce.proEnabled

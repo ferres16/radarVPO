@@ -6,22 +6,24 @@ import { TrackedButtonLink } from '@/components/tracked-link';
 import { HomeFaq } from '@/components/conversion/home-faq';
 import { NotifyPreview } from '@/components/conversion/notify-preview';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
+import { ProofStats } from '@/components/conversion/proof-stats';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { SpaceDemo } from '@/components/conversion/space-demo';
 import { ProGate, ProOnlyMessage } from '@/components/pro/pro-cta';
 import { ProComparison } from '@/components/pro-comparison';
 import { StructuredData } from '@/components/structured-data';
+import { buildProofItems } from '@/lib/catalog-stats';
 import { getCourseStatusSummary, isIncludedInPro } from '@/lib/offer';
 import { publicCatalogCourses } from '@/lib/public-courses';
-import { publicPublishedPromotions } from '@/lib/public-promotions';
+import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
 import { proFaqs, proForWhom, proIncludedGuidesCopy, proIncludes, proLimits, proPlan, proWhyPay } from '@/lib/pro';
 import { breadcrumbJsonLd, createMetadata, faqJsonLd } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Radar VPO PRO: avisos de vivienda protegida',
-  description: `Recibe avisos de vivienda protegida sin revisar las webs cada día. ${proPlan.priceShort} al mes, renovación automática, cancelación cuando quieras.`,
+  title: 'Radar VPO PRO: avisos por SMS y organización de tus solicitudes',
+  description: `Suscripción mensual (${proPlan.price}) con avisos por email y SMS y Mi espacio sin límite. Cancela cuando quieras.`,
   path: '/pro',
   keywords: ['alertas vivienda protegida', 'avisos VPO', 'suscripción VPO'],
 });
@@ -31,15 +33,20 @@ export default async function ProPage({
 }: {
   searchParams?: Promise<{ canceled?: string }>;
 }) {
-  const [courses, promotions] = await Promise.all([
+  const [courses, promotions, stats] = await Promise.all([
     api.listCourses().catch(() => []),
     api.getPromotions('?limit=100').catch(() => []),
+    api.getCatalogStats().catch(() => null),
   ]);
   const canceled = (await searchParams)?.canceled === '1';
   const includedCourses = publicCatalogCourses(courses).filter(isIncludedInPro);
   const includedGuides = proIncludedGuidesCopy(includedCourses.map((course) => course.title));
   const listed = publicPublishedPromotions(promotions);
   const sample = listed[0];
+  const proofItems = buildProofItems(stats, {
+    published: listed.length,
+    municipalities: uniqueMunicipalities(listed).length,
+  });
 
   return (
     <PublicPage>
@@ -57,9 +64,9 @@ export default async function ProPage({
       <PublicPageHero
         animated={false}
         badge="Suscripción"
-        title="Recibe avisos de vivienda protegida"
-        titleAccent="sin revisar las webs cada día"
-        description={`${proPlan.priceShort} al mes (precio final). Avisos por email y SMS de publicaciones detectadas, y Mi espacio sin límite. Renovación automática; cancelas desde Mi cuenta y mantienes el acceso hasta el fin del periodo pagado.`}
+        title="Radar VPO PRO"
+        titleAccent="SMS y espacio con cuenta"
+        description={`${proPlan.price} al mes, precio final. Consultar PDF es gratis. PRO avisa por SMS y organiza tus convocatorias. Pagas aquí mismo. Cancelas cuando quieras.`}
         actions={
           <>
             <ProGate>
@@ -70,7 +77,7 @@ export default async function ProPage({
                 event="pro_cta_clicked"
                 eventProperties={{ source: 'pro_hero' }}
               >
-                {`Ver oferta · ${proPlan.priceShort}/mes`}
+                {`Pagar ${proPlan.price}`}
               </TrackedButtonLink>
             </ProGate>
             <ProOnlyMessage>
@@ -84,6 +91,7 @@ export default async function ProPage({
             </ProOnlyMessage>
           </>
         }
+        footer={<ProofStats items={proofItems} />}
       />
 
       <ProGate>

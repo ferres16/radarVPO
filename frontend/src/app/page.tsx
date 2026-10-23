@@ -6,22 +6,24 @@ import { HomeFaq } from '@/components/conversion/home-faq';
 import { HomeFinalCtaBand, HomeHeroActions } from '@/components/conversion/home-pro-ctas';
 import { HomeOfferStrip } from '@/components/conversion/home-offer-strip';
 import { PdfViewerDemo } from '@/components/conversion/pdf-viewer-demo';
+import { ProofStats } from '@/components/conversion/proof-stats';
 import { SpaceDemo } from '@/components/conversion/space-demo';
 import { PromotionCard } from '@/components/promotion-card';
 import { StructuredData } from '@/components/structured-data';
+import { buildProofItems } from '@/lib/catalog-stats';
 import { homeFaqs } from '@/lib/conversion';
 import { formatEuro, getCoursePrice, isCourseSellable } from '@/lib/offer';
 import { getGuideReadHref, getOwnedCourseSlugs } from '@/lib/owned-courses';
 import { pickFeaturedPublicCourse } from '@/lib/public-courses';
-import { publicPublishedPromotions } from '@/lib/public-promotions';
+import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createMetadata({
-  title: 'La vivienda protegida en Cataluña, más fácil de entender y seguir',
+  title: 'Consulta promociones de vivienda protegida en Cataluña',
   description:
-    'Consulta promociones y documentos oficiales gratis. Aprende a preparar el proceso con nuestra guía y recibe avisos con Radar PRO.',
+    'Consulta promociones de vivienda protegida con su documento oficial, entiende el contexto con una guía y organiza tus oportunidades en un solo lugar.',
   path: '/',
   keywords: [
     'vivienda protegida Cataluña',
@@ -29,14 +31,15 @@ export const metadata: Metadata = createMetadata({
     'HPO Cataluña',
     'promociones VPO',
     'registro de solicitantes vivienda protegida',
-    'guía VPO',
+    'curso VPO',
   ],
 });
 
 export default async function Home() {
-  const [courses, promotions, ownedSlugs] = await Promise.all([
+  const [courses, promotions, stats, ownedSlugs] = await Promise.all([
     api.listCourses().catch(() => []),
     api.getPromotions('?limit=100').catch(() => []),
+    api.getCatalogStats().catch(() => null),
     getOwnedCourseSlugs(),
   ]);
   const featuredCourse = pickFeaturedPublicCourse(courses);
@@ -46,16 +49,22 @@ export default async function Home() {
   const featuredHref = featuredCourse
     ? featuredOwned
       ? getGuideReadHref(featuredCourse.slug)
-      : `/cursos/${featuredCourse.slug}`
-    : '/cursos/guiav1';
+      : featuredSellable
+        ? `/cursos/${featuredCourse.slug}#pagar`
+        : `/cursos/${featuredCourse.slug}`
+    : '/cursos';
   const featuredCta = featuredOwned
     ? 'Abrir la guía'
     : featuredSellable && featuredPrice !== null
-      ? `Descubrir la guía · ${formatEuro(featuredPrice)}`
-      : 'Descubrir la guía';
+      ? `Comprar guía · ${formatEuro(featuredPrice)}`
+      : 'Ver las guías';
   const listed = publicPublishedPromotions(promotions);
   const previewPromotions = listed.slice(0, 3);
   const samplePromotion = previewPromotions[0];
+  const proofItems = buildProofItems(stats, {
+    published: listed.length,
+    municipalities: uniqueMunicipalities(listed).length,
+  });
 
   return (
     <>
@@ -67,16 +76,20 @@ export default async function Home() {
           <div className="shell">
             <div className="lp-hero__split">
               <div className="lp-hero__inner">
-                <span className="lp-hero__badge">Radar VPO · Cataluña</span>
+                <span className="lp-hero__badge">Vivienda protegida · Cataluña</span>
                 <h1 id="hero-title" className="lp-hero__title">
-                  La vivienda protegida en Cataluña, más fácil de entender y seguir.
+                  Consulta la vivienda protegida en Cataluña
+                  <span className="lp-hero__title-accent"> con el PDF oficial, las guías y tus oportunidades.</span>
                 </h1>
                 <p className="lp-hero__subtitle">
                   {featuredOwned
-                    ? 'Ya tienes la guía en tu cuenta. Consultar promociones y documentos oficiales sigue siendo gratis.'
-                    : 'Consulta promociones y documentos oficiales gratis. Aprende a preparar el proceso con nuestra guía y recibe avisos con Radar PRO.'}
+                    ? 'Ya tienes la guía en tu cuenta. Consultar promociones sigue siendo gratis.'
+                    : featuredSellable && featuredPrice !== null
+                      ? `Guía ${formatEuro(featuredPrice)} pago único: entiende el proceso de la VPO y qué preparar. Consultar promociones es gratis.`
+                      : 'Empieza gratis en el móvil. Sin cuenta para consultar las bases. La guía ordena el proceso de la VPO; PRO avisa por SMS.'}
                 </p>
                 <HomeHeroActions guideHref={featuredHref} guideCta={featuredCta} />
+                <ProofStats items={proofItems} />
               </div>
               {samplePromotion ? <PdfViewerDemo promotion={samplePromotion} /> : null}
             </div>
@@ -88,7 +101,7 @@ export default async function Home() {
             <div className="lp-section__head">
               <p className="lp-eyebrow">Qué puedes hacer</p>
               <h2 id="offer-title" className="lp-title">
-                Gratis, guía o PRO: elige según lo que necesites
+                Gratis, curso o suscripción: una acción por camino
               </h2>
             </div>
             <HomeOfferStrip

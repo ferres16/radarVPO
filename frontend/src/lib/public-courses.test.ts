@@ -4,6 +4,9 @@ import type { Course } from '@/types';
 
 function course(partial: Partial<Course> & Pick<Course, 'title' | 'slug'>): Course {
   return {
+    id: partial.id ?? partial.slug,
+    title: partial.title,
+    slug: partial.slug,
     status: 'published',
     format: 'guide_pdf',
     accessType: 'purchase',
@@ -11,9 +14,6 @@ function course(partial: Partial<Course> & Pick<Course, 'title' | 'slug'>): Cour
     price: 29,
     order: 1,
     ...partial,
-    id: partial.id ?? partial.slug,
-    title: partial.title,
-    slug: partial.slug,
   } as Course;
 }
 

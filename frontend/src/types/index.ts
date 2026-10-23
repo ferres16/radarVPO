@@ -141,8 +141,6 @@ export type NewsItem = {
   title: string;
   sourceName: string;
   sourceUrl: string;
-  /** URL del artículo concreto cuando existe; preferir frente a sourceUrl (portada). */
-  itemUrl?: string | null;
   summary?: string | null;
   body?: string | null;
   practicalImpact?: string | null;
@@ -190,15 +188,10 @@ export type StripeCancellationResult = {
   skippedReason?: string;
 };
 
-export type SalesMode = 'validation' | 'live' | 'maintenance';
-
 export type CommerceSettings = {
-  salesMode: SalesMode;
   proEnabled: boolean;
   coursesEnabled: boolean;
   maintenanceMessage: string;
-  /** Precio previsto de la guía (céntimos); no es cobro. */
-  guideListPriceCents: number | null;
   proPackGuideSlug: string;
   allowPromotionCodes: boolean;
   stripeAutomaticTax: boolean;
@@ -206,12 +199,10 @@ export type CommerceSettings = {
 
 export type CheckoutStatus = {
   enabled: boolean;
-  salesMode: SalesMode;
   proEnabled: boolean;
   coursesEnabled: boolean;
   proPackEnabled?: boolean;
   maintenanceMessage: string;
-  guideListPriceCents?: number | null;
   proPackGuideSlug: string;
   allowPromotionCodes?: boolean;
   proPriceCents: number;

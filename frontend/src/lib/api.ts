@@ -249,20 +249,6 @@ export const api = {
       { method: 'PATCH', body: JSON.stringify(payload) },
     ),
   getCheckoutStatus: () => request<CheckoutStatus>('/billing/checkout-status'),
-  createInterestLead: (payload: {
-    email: string;
-    product: 'guide' | 'pro' | 'general';
-    source?: string;
-    municipality?: string;
-    tenureInterest?: 'buy' | 'rent' | 'both';
-    searchPhase?: string;
-    marketingOptIn?: boolean;
-    privacyVersion?: string;
-  }) =>
-    request<{ success: true; message: string; id: string; product: string }>('/leads/interest', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
   createCheckout: (payload: {
     product: 'pro' | 'pro_pack_3m' | 'course';
     courseSlug?: string;

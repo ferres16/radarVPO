@@ -11,7 +11,7 @@ describe('getCheckoutHref', () => {
 
 describe('getCoursePayBullets', () => {
   it('keeps the ads buy box short and concrete', () => {
-    const bullets = getCoursePayBullets({ format: 'guide_pdf', slug: 'otra-guia' });
+    const bullets = getCoursePayBullets({ format: 'guide_pdf' });
     expect(bullets).toEqual([
       'Pago único, sin renovaciones',
       'Acceso inmediato al confirmar',
