@@ -455,14 +455,25 @@ export class BillingService {
         where: { eventId: event.id },
         data: { status: 'processed', processedAt: new Date(), errorMessage: null },
       });
-      await this.prisma.auditLog.create({
-        data: {
-          action: 'stripe.webhook.processed',
-          entity: 'StripeEvent',
-          entityId: event.id,
-          metadata: { type: event.type } as Prisma.InputJsonValue,
-        },
-      });
+      try {
+        await this.prisma.auditLog.create({
+          data: {
+            action: 'stripe.webhook.processed',
+            entity: 'StripeEvent',
+            entityId: event.id,
+            metadata: { type: event.type } as Prisma.InputJsonValue,
+          },
+        });
+      } catch (error) {
+        // Índice único parcial en main (entity=StripeEvent): carrera benigna.
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          return { received: true, duplicate: true };
+        }
+        throw error;
+      }
       return { received: true };
     } catch (error) {
       const message =
