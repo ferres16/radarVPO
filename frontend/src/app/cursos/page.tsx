@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { CheckoutPanel } from '@/components/checkout/checkout-panel';
+import { GuideVpoChapters } from '@/components/conversion/guide-vpo-outline';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { CourseCoverImage } from '@/components/course-cover-image';
@@ -15,6 +16,13 @@ import {
   isCourseSellable,
   isGuidePdf,
 } from '@/lib/offer';
+import {
+  GUIDE_VPO_SEO_DESCRIPTION,
+  GUIDE_VPO_SHORT,
+  GUIDE_VPO_TITLE,
+  getPublicCourseTitle,
+  isGuideVpoSlug,
+} from '@/lib/guide-vpo';
 import { publicCatalogCourses } from '@/lib/public-courses';
 import { proPlan } from '@/lib/pro';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
@@ -23,49 +31,40 @@ import type { Course } from '@/types';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Entiende la VPO en Cataluña y empieza a planificar',
-  description:
-    'Guía general para entender la vivienda protegida en Cataluña: cómo funciona, qué ayudas consultar y cómo estimar hipoteca y ahorro. Pago único y acceso inmediato.',
+  title: GUIDE_VPO_TITLE,
+  description: GUIDE_VPO_SEO_DESCRIPTION,
   path: '/cursos',
   keywords: [
     'guía VPO Cataluña',
-    'vivienda protegida',
-    'ayudas vivienda',
-    'hipoteca VPO',
+    'registro solicitantes VPO',
+    'documentación VPO',
+    'vivienda protegida Catalunya',
     'Radar VPO',
   ],
 });
 
-const GENERAL_GUIDE_FALLBACK_TOPICS = [
-  'Introducción a la vivienda protegida en Cataluña',
-  'Conceptos básicos para entender cómo funciona',
-  'Ayudas y programas relacionados con la vivienda',
-  'Cómo estimar una cuota hipotecaria',
-  'Entrada, gastos y ahorro necesario',
-  'Qué conviene valorar antes de avanzar',
-];
-
 const VISION_ITEMS = [
   {
-    title: 'Entiende cómo funciona la VPO',
-    body: 'Familiarízate con los conceptos principales de la vivienda protegida en Cataluña y con lo que conviene saber antes de buscar una promoción.',
+    title: 'Saber por dónde empezar',
+    body: 'El primer paso no es mirar promociones: es entender el registro, los requisitos y qué papeles vas a necesitar.',
   },
   {
-    title: 'Conoce las ayudas y la financiación',
-    body: 'Descubre qué programas puedes consultar, qué condiciones revisar y cómo pueden influir en tu planificación.',
+    title: 'Preparar la carpeta a tiempo',
+    body: 'Cuando se abre una convocatoria, los plazos son cortos. La guía te dice qué documentación conviene tener lista.',
   },
   {
-    title: 'Pon números a tu futura vivienda',
-    body: 'Aprende a estimar la cuota de una hipoteca y a calcular el dinero necesario para la entrada y los gastos de la compra.',
+    title: 'Entender qué compras y qué viene después',
+    body: 'Pleno dominio o derecho de superficie, reserva, arras, visado y obligaciones. Antes de firmar, conviene saberlo.',
   },
 ] as const;
 
 function pickGeneralGuide(courses: Course[]): Course | null {
   const bySlug = [
+    'guiav1',
+    'guia-vpo',
     'guia-general-vpo',
     'vpo-desde-cero',
     'vpo-inicial',
-    'guia-vpo',
   ];
   for (const slug of bySlug) {
     const match = courses.find((course) => course.slug === slug);
@@ -90,9 +89,8 @@ export default async function CoursesPage() {
   const generalHref = generalGuide ? `/cursos/${generalGuide.slug}` : '#pagar';
   const generalPayHref = generalSellable ? '#pagar' : generalHref;
   const generalTopics =
-    (generalGuide && getGuideTopics(generalGuide).length > 0
-      ? getGuideTopics(generalGuide)
-      : GENERAL_GUIDE_FALLBACK_TOPICS);
+    generalGuide && !isGuideVpoSlug(generalGuide.slug) ? getGuideTopics(generalGuide) : [];
+  const generalPublicTitle = generalGuide ? getPublicCourseTitle(generalGuide) : GUIDE_VPO_TITLE;
   const priceLabel =
     generalPrice !== null ? formatEuro(generalPrice, { decimals: 2 }) : 'Consultar precio';
 
@@ -109,9 +107,9 @@ export default async function CoursesPage() {
       <PublicPageHero
         animated={false}
         badge="Guías"
-        title="Entiende la VPO en Cataluña"
-        titleAccent="y empieza a planificar tu vivienda"
-        description="Cómo funciona la VPO, qué ayudas consultar y cómo estimar hipoteca y ahorro. Precio final, pago único y acceso inmediato."
+        title="Guía para optar a una VPO:"
+        titleAccent="entiende el proceso y qué preparar"
+        description="Registro, documentación, financiación y pasos hasta la firma. Precio final, pago único y acceso inmediato."
         actions={
           <>
             <ButtonLink href={generalPayHref} size="lg" block>
@@ -126,7 +124,7 @@ export default async function CoursesPage() {
 
       <PublicSection id="pagar" muted className="scroll-mt-24" animated={false}>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
-          Guía general de VPO en Cataluña
+          Guía para optar a una vivienda protegida
         </p>
         <div className="mt-4 public-card overflow-hidden p-0">
           <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
@@ -136,32 +134,37 @@ export default async function CoursesPage() {
                   <CourseCoverImage
                     slug={generalGuide.slug}
                     src={generalGuide.coverImage}
-                    alt={`Portada de ${generalGuide.title}`}
+                    alt={`Portada de ${generalPublicTitle}`}
                     className="mx-auto h-auto max-h-80 w-full object-contain object-top"
-                    label={generalGuide.title}
+                    label={generalPublicTitle}
                   />
                 </div>
               ) : null}
               <h2 className="display-type text-2xl font-black text-[var(--ink)] md:text-3xl">
-                {generalGuide?.title || 'VPO desde cero: ayudas, hipoteca y presupuesto'}
+                {generalPublicTitle}
               </h2>
               <p className="mt-3 text-sm leading-7 text-[var(--ink-soft)] md:text-base">
-                {generalGuide?.shortDescription ||
-                  generalGuide?.longDescription ||
-                  'Para quienes están empezando y quieren comprender el contexto, valorar sus opciones y organizar su presupuesto.'}
+                {isGuideVpoSlug(generalGuide?.slug)
+                  ? GUIDE_VPO_SHORT
+                  : generalGuide?.shortDescription ||
+                    generalGuide?.longDescription ||
+                    'Para quienes están empezando y quieren comprender el contexto, valorar sus opciones y organizar su presupuesto.'}
               </p>
-
-              <p className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-[var(--green-700)]">
-                Qué encontrarás
-              </p>
-              <ul className="mt-3 space-y-2.5">
-                {generalTopics.map((topic) => (
-                  <li key={topic} className="flex gap-2.5 text-sm leading-6 text-[var(--ink-soft)]">
-                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" />
-                    <span>{topic}</span>
-                  </li>
-                ))}
-              </ul>
+              {!isGuideVpoSlug(generalGuide?.slug) && generalTopics.length > 0 ? (
+                <>
+                  <p className="mt-6 text-xs font-bold uppercase tracking-[0.16em] text-[var(--green-700)]">
+                    Qué encontrarás
+                  </p>
+                  <ul className="mt-3 space-y-2.5">
+                    {generalTopics.map((topic) => (
+                      <li key={topic} className="flex gap-2.5 text-sm leading-6 text-[var(--ink-soft)]">
+                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" />
+                        <span>{topic}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : null}
             </div>
 
             <aside className="border-t border-[var(--stroke)] bg-[var(--bg-eco)] lg:border-l lg:border-t-0">
@@ -171,7 +174,7 @@ export default async function CoursesPage() {
                   summary={{
                     product: 'course',
                     courseSlug: generalGuide.slug,
-                    title: generalGuide.title,
+                    title: generalPublicTitle,
                     priceLabel,
                     cadenceLabel: 'pago único',
                     recurrenceNote: 'Sin renovaciones. Acceso inmediato al confirmar el pago.',
@@ -199,6 +202,12 @@ export default async function CoursesPage() {
         </div>
       </PublicSection>
 
+      {isGuideVpoSlug(generalGuide?.slug) ? (
+        <PublicSection>
+          <GuideVpoChapters title="Doce temas para saber qué preparar" />
+        </PublicSection>
+      ) : null}
+
       <PublicSection>
         <SectionHeader
           eyebrow="Empieza aquí"
@@ -213,28 +222,6 @@ export default async function CoursesPage() {
             </article>
           ))}
         </div>
-      </PublicSection>
-
-      <PublicSection id="proximamente">
-        <SectionHeader
-          eyebrow="Después"
-          title="Prepara tu solicitud paso a paso"
-          description="Cuando ya entiendas el contexto, toca organizar trámites y papeles."
-        />
-        <article className="mt-6 public-card p-5 md:p-7">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[rgba(232,184,74,0.18)] px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-[#7a5600]">
-              Próximamente
-            </span>
-          </div>
-          <h3 className="display-type mt-4 text-xl font-black text-[var(--ink)] md:text-2xl">
-            Guía de preparación y documentación para solicitar una VPO
-          </h3>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[var(--ink-soft)] md:text-base">
-            Una guía específica para organizar los pasos de la solicitud, identificar la documentación
-            que debes tener preparada y revisar qué necesitas antes de participar en una convocatoria.
-          </p>
-        </article>
       </PublicSection>
 
       <PublicSection muted>
@@ -269,10 +256,10 @@ export default async function CoursesPage() {
               Ahora
             </p>
             <h3 className="mt-2 text-lg font-black text-[var(--ink)]">
-              Entender opciones y planificar presupuesto
+              Entender el proceso y preparar papeles
             </h3>
             <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
-              Empieza por la guía general: contexto, ayudas y números antes de mover ficha.
+              Registro, requisitos, carpeta de documentación y pasos hasta la firma. Antes de apuntarte a una promoción.
             </p>
             <div className="mt-4">
               <ButtonLink href={generalPayHref}>
@@ -281,16 +268,20 @@ export default async function CoursesPage() {
             </div>
           </article>
           <article className="public-card p-5 md:p-6">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#7a5600]">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--green-700)]">
               Después
             </p>
             <h3 className="mt-2 text-lg font-black text-[var(--ink)]">
-              Organizar trámites y documentos
+              Consultar promociones oficiales
             </h3>
             <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
-              Consulta la guía específica de solicitud cuando esté disponible.
+              Cuando ya sepas qué mirar, abre las bases en el visor. Eso es gratis, sin cuenta.
             </p>
-            <p className="mt-4 text-sm font-semibold text-[var(--ink-soft)]">Próximamente</p>
+            <div className="mt-4">
+              <ButtonLink href="/promotions" variant="secondary">
+                Ver promociones (gratis)
+              </ButtonLink>
+            </div>
           </article>
         </div>
       </PublicSection>

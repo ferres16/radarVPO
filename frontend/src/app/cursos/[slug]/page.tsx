@@ -12,6 +12,7 @@ import { CourseModuleIndex } from '@/components/course-module-index';
 import { CoursePublicIndex } from '@/components/course-public-index';
 import { CourseStickyBuyBar } from '@/components/course-sticky-buy-bar';
 import { GuidePdfViewer } from '@/components/guide-pdf-viewer';
+import { GuideVpoOutline } from '@/components/conversion/guide-vpo-outline';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
 import { PublicPage } from '@/components/conversion/public-shell';
 import { StructuredData } from '@/components/structured-data';
@@ -33,9 +34,16 @@ import {
   isIncludedInPro,
 } from '@/lib/offer';
 import { getCourseCoverSrc } from '@/lib/course-media-url';
+import {
+  GUIDE_VPO_FAQS,
+  GUIDE_VPO_SEO_DESCRIPTION,
+  getPublicCourseDescription,
+  getPublicCourseTitle,
+  isGuideVpoSlug,
+} from '@/lib/guide-vpo';
 import { isInternalCatalogCourse } from '@/lib/public-courses';
 import { proPlan } from '@/lib/pro';
-import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
+import { absoluteUrl, breadcrumbJsonLd, createMetadata, faqJsonLd } from '@/lib/seo';
 import type { Course } from '@/types';
 
 export const dynamic = 'force-dynamic';
@@ -86,18 +94,28 @@ export async function generateMetadata({ params }: CourseDetailParams): Promise<
   }
 
   const guide = course.format === 'guide_pdf';
+  const branded = isGuideVpoSlug(course.slug);
+  const publicTitle = getPublicCourseTitle(course);
   return createMetadata({
-    title: course.seoTitle || course.title,
+    title: course.seoTitle || publicTitle,
     description:
       course.seoDescription ||
-      course.shortDescription ||
-      course.longDescription ||
-      (guide
-        ? 'Guía Radar VPO sobre vivienda protegida en Cataluña.'
-        : 'Formación práctica de vivienda protegida en Cataluña.'),
+      (branded
+        ? GUIDE_VPO_SEO_DESCRIPTION
+        : course.shortDescription ||
+          course.longDescription ||
+          (guide
+            ? 'Guía Radar VPO sobre vivienda protegida en Cataluña.'
+            : 'Formación práctica de vivienda protegida en Cataluña.')),
     path: `/cursos/${course.slug}`,
     image: getCourseCoverSrc(course.slug, course.coverImage) || undefined,
-    keywords: [guide ? 'guía VPO' : 'curso vivienda protegida', course.title],
+    keywords: [
+      guide ? 'guía VPO' : 'curso vivienda protegida',
+      publicTitle,
+      ...(branded
+        ? ['registro solicitantes VPO', 'documentación VPO', 'derecho de superficie', 'Catalunya']
+        : []),
+    ],
   });
 }
 
@@ -119,6 +137,9 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
   const lessonCount = status.publishedLessons;
   const canAccess = Boolean(course.access?.canAccess);
   const guideMode = isGuidePdf(course);
+  const brandedGuide = isGuideVpoSlug(course.slug);
+  const publicTitle = getPublicCourseTitle(course);
+  const publicDescription = getPublicCourseDescription(course);
   const includedInPro = isIncludedInPro(course);
   const isFree = isCourseFree(course);
   const price = getCoursePrice(course);
@@ -144,8 +165,10 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
   const courseJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Course',
-    name: course.title,
-    description: course.shortDescription || course.longDescription || 'Curso práctico de vivienda protegida.',
+    name: publicTitle,
+    description: brandedGuide
+      ? GUIDE_VPO_SEO_DESCRIPTION
+      : course.shortDescription || course.longDescription || 'Curso práctico de vivienda protegida.',
     url: absoluteUrl(`/cursos/${course.slug}`),
     image: getCourseCoverSrc(course.slug, course.coverImage)
       ? absoluteUrl(getCourseCoverSrc(course.slug, course.coverImage) as string)
@@ -173,9 +196,10 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
           breadcrumbJsonLd([
             { name: 'Inicio', path: '/' },
             { name: 'Guías', path: '/cursos' },
-            { name: course.title, path: `/cursos/${course.slug}` },
+            { name: publicTitle, path: `/cursos/${course.slug}` },
           ]),
           courseJsonLd,
+          ...(brandedGuide ? [faqJsonLd([...GUIDE_VPO_FAQS])] : []),
         ]}
       />
       <CourseAccessProvider
@@ -216,9 +240,9 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                 <CourseCoverImage
                   slug={course.slug}
                   src={course.coverImage}
-                  alt={`Portada de ${course.title}`}
+                  alt={`Portada de ${publicTitle}`}
                   className="h-auto w-full object-contain"
-                  label={course.title}
+                  label={publicTitle}
                 />
               </div>
             ) : null}
@@ -229,16 +253,16 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                     Guía Radar VPO
                   </p>
                   <h1 className="display-type mt-1 text-2xl font-black text-[var(--ink)] sm:mt-2 sm:text-3xl md:text-4xl">
-                    {course.title}
+                    {publicTitle}
                   </h1>
                 </div>
               ) : null}
               <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
-                {course.longDescription ||
-                  course.shortDescription ||
-                  (guideMode
-                    ? 'Una guía clara para tomar mejores decisiones sobre vivienda protegida.'
-                    : 'Formación práctica sobre vivienda protegida en Cataluña.')}
+                {guideMode
+                  ? publicDescription
+                  : course.longDescription ||
+                    course.shortDescription ||
+                    'Formación práctica sobre vivienda protegida en Cataluña.'}
               </p>
               <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-soft)] md:mt-5">
                 <span className="rounded-full bg-[var(--bg-app)] px-3 py-1">{status.statusText}</span>
@@ -268,7 +292,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                     summary={{
                       product: 'course',
                       courseSlug: course.slug,
-                      title: course.title,
+                      title: publicTitle,
                       priceLabel,
                       cadenceLabel: 'pago único',
                       recurrenceNote: 'Sin renovaciones. Acceso inmediato al confirmar el pago.',
@@ -322,7 +346,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                     summary={{
                       product: 'course',
                       courseSlug: course.slug,
-                      title: course.title,
+                      title: publicTitle,
                       priceLabel,
                       cadenceLabel: 'pago único',
                       recurrenceNote: 'Sin renovaciones. Acceso inmediato al confirmar el pago.',
@@ -369,6 +393,9 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
 
         {guideMode ? (
           <section className="shell scroll-mt-24 space-y-6 py-6 md:py-8">
+            {brandedGuide ? (
+              <GuideVpoOutline />
+            ) : (
             <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
               <article className="public-card p-5 md:p-6">
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
@@ -413,6 +440,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                 )}
               </article>
             </div>
+            )}
 
             <article id="guia" className="public-card scroll-mt-24 p-4 md:p-6">
               <div className="mb-4">
@@ -425,7 +453,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
               </div>
               <GuidePdfViewer
                 slug={course.slug}
-                title={course.title}
+                title={publicTitle}
                 canAccess={canAccess || isFree}
               />
             </article>

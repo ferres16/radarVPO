@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { CourseCoverImage } from '@/components/course-cover-image';
+import { getPublicCourseTitle, GUIDE_VPO_SHORT, isGuideVpoSlug } from '@/lib/guide-vpo';
 import {
   formatEuro,
   getCoursePrice,
@@ -25,6 +26,7 @@ function priceText(course: Course, sellable: boolean) {
 export function CourseProductCard({ course, className = '', layout = 'grid' }: CourseProductCardProps) {
   const status = getCourseStatusSummary(course);
   const guide = isGuidePdf(course);
+  const publicTitle = getPublicCourseTitle(course);
   const shellClass =
     layout === 'rail' ? 'saas-card-rail h-full' : 'product-card public-card public-card--hover group';
 
@@ -42,7 +44,7 @@ export function CourseProductCard({ course, className = '', layout = 'grid' }: C
                 ? 'h-36 w-full object-cover object-top'
                 : 'h-44 w-full object-cover object-top transition duration-500 group-hover:scale-[1.03] md:h-48'
             }
-            label={course.title}
+            label={publicTitle}
           />
           {layout === 'grid' ? (
             <>
@@ -59,13 +61,15 @@ export function CourseProductCard({ course, className = '', layout = 'grid' }: C
             {status.statusText}
           </p>
           <h3 className="mt-2 line-clamp-2 text-base font-bold leading-snug text-[var(--ink)] transition group-hover:text-[var(--green-700)] md:text-lg">
-            {course.title}
+            {publicTitle}
           </h3>
           <p className="mt-1.5 line-clamp-2 text-sm leading-5 text-[var(--ink-soft)]">
-            {course.shortDescription ||
-              (guide
-                ? 'Guía clara para decidir con criterio.'
-                : 'Formación práctica sobre vivienda protegida.')}
+            {isGuideVpoSlug(course.slug)
+              ? GUIDE_VPO_SHORT
+              : course.shortDescription ||
+                (guide
+                  ? 'Guía clara para decidir con criterio.'
+                  : 'Formación práctica sobre vivienda protegida.')}
           </p>
           <div className="mt-3 flex items-end justify-between gap-2">
             <p className="text-lg font-black text-[var(--ink)]">{priceText(course, status.sellable)}</p>

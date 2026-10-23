@@ -1,12 +1,18 @@
 import Link from 'next/link';
 import { CourseCoverImage } from '@/components/course-cover-image';
 import { TrackedButtonLink } from '@/components/tracked-link';
+import { getPublicCourseTitle, GUIDE_VPO_SHORT, isGuideVpoSlug } from '@/lib/guide-vpo';
 import { formatEuro, getCoursePrice, getCourseStatusSummary } from '@/lib/offer';
 import type { Course } from '@/types';
 
 export function FeaturedCourseSpotlight({ course }: { course: Course }) {
   const status = getCourseStatusSummary(course);
   const price = getCoursePrice(course);
+  const publicTitle = getPublicCourseTitle(course);
+  const description = isGuideVpoSlug(course.slug)
+    ? GUIDE_VPO_SHORT
+    : course.shortDescription ||
+      'Guía para entender el contexto, las ayudas y el presupuesto de una vivienda protegida.';
 
   return (
     <article className="spotlight-course">
@@ -16,7 +22,7 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
           src={course.coverImage}
           alt=""
           className="h-full w-full object-cover object-top"
-          label={course.title}
+          label={publicTitle}
         />
       </Link>
       <div className="spotlight-course__body">
@@ -30,12 +36,9 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
           ) : null}
         </div>
         <h3 className="spotlight-course__title">
-          <Link href={`/cursos/${course.slug}`}>{course.title}</Link>
+          <Link href={`/cursos/${course.slug}`}>{publicTitle}</Link>
         </h3>
-        <p className="spotlight-course__desc">
-          {course.shortDescription ||
-            'Guía para entender el contexto, las ayudas y el presupuesto de una vivienda protegida.'}
-        </p>
+        <p className="spotlight-course__desc">{description}</p>
         {price !== null ? (
           <p className="spotlight-course__note">
             {status.sellable
@@ -51,7 +54,11 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
             event="course_cta_clicked"
             eventProperties={{ source: 'home_spotlight', course: course.slug }}
           >
-            {status.sellable && price !== null ? `Pagar ${formatEuro(price)}` : 'Ver el curso'}
+            {status.sellable && price !== null
+              ? `Pagar ${formatEuro(price)}`
+              : isGuideVpoSlug(course.slug)
+                ? 'Ver la guía'
+                : 'Ver el curso'}
           </TrackedButtonLink>
         </div>
       </div>

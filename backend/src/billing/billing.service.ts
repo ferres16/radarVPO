@@ -15,6 +15,11 @@ import {
   UserPlan,
 } from '@prisma/client';
 import type Stripe from 'stripe';
+import {
+  GUIDE_VPO_PUBLIC_DESCRIPTION,
+  isGuideVpoSlug,
+  publicCourseProductName,
+} from '../common/guide-vpo';
 import { isInternalCatalogCourse } from '../common/public-courses';
 import { resolvePublicSiteUrl } from '../common/public-site-url';
 import { CommerceService } from '../commerce/commerce.service';
@@ -527,16 +532,19 @@ export class BillingService {
                 ? { tax_behavior: 'inclusive' as const }
                 : {}),
               product_data: {
-                name: course.title,
-                ...(course.format === 'guide_pdf'
-                  ? { images: [`${siteUrl}/covers/guia-vpo.png`] }
+                name: publicCourseProductName(course),
+                ...(isGuideVpoSlug(course.slug)
+                  ? {
+                      images: [`${siteUrl}/covers/guia-vpo.png`],
+                      description: GUIDE_VPO_PUBLIC_DESCRIPTION,
+                    }
                   : {}),
               },
             },
           },
         ],
         metadata,
-        payment_intent_data: { metadata, description: course.title },
+        payment_intent_data: { metadata, description: publicCourseProductName(course) },
         locale: 'es',
         ...(commerce.allowPromotionCodes
           ? { allow_promotion_codes: true }
@@ -550,7 +558,7 @@ export class BillingService {
           : {}),
         custom_text: {
           submit: {
-            message: `Pago único de ${formatEuroAmount(unitAmount)}. Sin renovaciones. Acceso inmediato al curso tras confirmarse el pago.`,
+            message: `Pago único de ${formatEuroAmount(unitAmount)}. Sin renovaciones. Acceso inmediato al contenido tras confirmarse el pago.`,
           },
         },
         success_url: `${siteUrl}/cursos/${course.slug}?checkout=success`,

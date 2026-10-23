@@ -16,10 +16,10 @@ export const homeOfferLayers = [
   {
     id: 'learn',
     eyebrow: 'Guía · pago único',
-    title: 'Entiende contexto, ayudas e hipoteca',
+    title: 'Entiende el proceso y qué preparar',
     price: 'Precio final en la ficha',
     description:
-      'La primera guía trata el contexto de la VPO, las ayudas y el ahorro necesario. Pagas en la misma ficha, sin páginas intermedias.',
+      'Registro, papeles, tipos de promoción y pasos hasta la firma. Pagas en la misma ficha, sin páginas intermedias.',
     cta: 'Comprar la guía',
     href: '/cursos#pagar',
     event: 'course_cta_clicked' as const,
@@ -68,6 +68,11 @@ export const homeFaqs = [
       'No. Cada guía o curso es un pago único con el precio final visible antes de pagar; no hay renovaciones. Si cancelas PRO, conservas lo que hayas comprado.',
   },
   {
+    question: '¿Qué cubre la Guía VPO?',
+    answer:
+      'El proceso para optar a una vivienda protegida en Catalunya: por dónde empezar, el Registro de Solicitantes, requisitos, documentación, cuentas, tipos de promoción y lo que viene después de que te seleccionen. No incluye asesoramiento personalizado.',
+  },
+  {
     question: '¿Qué incluye PRO además de los avisos?',
     answer:
       'Mi espacio sin límite. Una guía concreta solo si su ficha publicada lo indica. No prometemos rutas o cursos que no estén a la venta.',
@@ -86,9 +91,9 @@ export const homeFaqs = [
 
 /** CTA tras el visor PDF de una promoción. */
 export const pdfNextStep = {
-  title: '¿Quieres contexto sobre ayudas y requisitos?',
+  title: '¿Quieres entender el proceso antes de presentar nada?',
   description:
-    'El visor te muestra el documento oficial. Las guías explican el contexto de la VPO, las ayudas y el ahorro necesario; el precio final aparece en cada ficha.',
-  cta: 'Ver las guías',
+    'El visor te muestra el documento oficial. La guía ordena registro, papeles y pasos hasta la firma. El precio final aparece en la ficha.',
+  cta: 'Ver la guía',
   href: '/cursos',
 } as const;

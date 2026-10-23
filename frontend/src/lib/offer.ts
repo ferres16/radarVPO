@@ -1,3 +1,4 @@
+import { GUIDE_VPO_PAY_BULLETS, isGuideVpoSlug } from '@/lib/guide-vpo';
 import type { Course } from '@/types';
 
 /**
@@ -153,7 +154,8 @@ export function getCheckoutHref(
 }
 
 /** Viñetas cortas del recuadro de pago (tráfico de anuncios: claro y rápido). */
-export function getCoursePayBullets(course: Pick<Course, 'format'>): string[] {
+export function getCoursePayBullets(course: Pick<Course, 'format' | 'slug'>): string[] {
+  if (isGuideVpoSlug(course.slug)) return [...GUIDE_VPO_PAY_BULLETS];
   return [
     'Pago único, sin renovaciones',
     'Acceso inmediato al confirmar',

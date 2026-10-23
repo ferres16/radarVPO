@@ -77,8 +77,8 @@ export default async function Home() {
                 </h1>
                 <p className="lp-hero__subtitle">
                   {featuredSellable && featuredPrice !== null
-                    ? `Guía ${formatEuro(featuredPrice)} pago único. Consultar promociones es gratis. PRO añade avisos por SMS.`
-                    : 'Empieza gratis en el móvil. Sin cuenta para consultar las bases. La primera guía trata contexto, ayudas e hipoteca; PRO avisa por SMS.'}
+                    ? `Guía ${formatEuro(featuredPrice)} pago único: entiende el proceso de la VPO y qué preparar. Consultar promociones es gratis.`
+                    : 'Empieza gratis en el móvil. Sin cuenta para consultar las bases. La guía ordena el proceso de la VPO; PRO avisa por SMS.'}
                 </p>
                 <HomeHeroActions guideHref={featuredHref} guideCta={featuredCta} />
                 <ProofStats items={proofItems} />
@@ -138,13 +138,13 @@ export default async function Home() {
           <section className="lp-section" aria-labelledby="courses-title">
             <div className="shell">
               <div className="lp-section__head">
-                <p className="lp-eyebrow">Curso</p>
+                <p className="lp-eyebrow">Guía</p>
                 <h2 id="courses-title" className="lp-title">
-                  Una guía para entender contexto, ayudas e hipoteca
+                  Una guía para entender el proceso y qué preparar
                 </h2>
                 <p className="lp-lead">
-                  Pago único, sin renovaciones. Ves el índice real y el precio final antes de comprar. La preparación
-                  de la solicitud corresponde a una guía posterior.
+                  Pago único. Registro, papeles, tipos de promoción y pasos hasta la firma. El precio final se ve
+                  antes de pagar.
                 </p>
               </div>
               <FeaturedCourseSpotlight course={featuredCourse} />

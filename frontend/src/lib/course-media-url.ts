@@ -1,3 +1,5 @@
+import { isGuideVpoSlug } from '@/lib/guide-vpo';
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.API_URL ||
@@ -6,17 +8,8 @@ const API_BASE_URL =
 /** Portada de la guía VPO: archivo estático del frontend, no un producto de Stripe. */
 export const BRANDED_GUIDE_COVER_SRC = '/covers/guia-vpo.png';
 
-const BRANDED_GUIDE_COVER_SLUGS = new Set([
-  'guiav1',
-  'guia-vpo',
-  'guia-general-vpo',
-  'vpo-desde-cero',
-  'vpo-inicial',
-]);
-
 export function getBrandedGuideCoverSrc(slug?: string | null) {
-  if (!slug) return null;
-  return BRANDED_GUIDE_COVER_SLUGS.has(slug) ? BRANDED_GUIDE_COVER_SRC : null;
+  return isGuideVpoSlug(slug) ? BRANDED_GUIDE_COVER_SRC : null;
 }
 
 function looksLikeStorageUrl(url: string) {

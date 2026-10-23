@@ -20,4 +20,10 @@ describe('getCoursePayBullets', () => {
     ]);
     expect(bullets.every((bullet) => bullet.length < 50)).toBe(true);
   });
+
+  it('describes the Guía VPO process, not a generic hipoteca teaser', () => {
+    const bullets = getCoursePayBullets({ format: 'guide_pdf', slug: 'guiav1' });
+    expect(bullets[0]).toMatch(/proceso/i);
+    expect(bullets.join(' ')).toMatch(/registro/i);
+  });
 });
