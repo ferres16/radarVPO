@@ -75,6 +75,21 @@ export function PersonalInfoSection({
     }
   }
 
+  async function savePreference(payload: {
+    smsAlertsEnabled?: boolean;
+    marketingOptIn?: boolean;
+  }) {
+    setError('');
+    setSuccess('');
+    try {
+      const updated = await api.updateMe(payload);
+      onProfileUpdate(updated);
+      setSuccess('Preferencia actualizada.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo guardar la preferencia.');
+    }
+  }
+
   return (
     <ProfileCard>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -164,6 +179,43 @@ export function PersonalInfoSection({
       {success ? (
         <p className="mt-4 text-sm font-semibold text-[var(--green-700)]">{success}</p>
       ) : null}
+
+      <div className="mt-6 space-y-3 border-t border-[var(--stroke)] pt-5">
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">
+          Preferencias de avisos
+        </p>
+        <p className="text-sm leading-6 text-[var(--ink-soft)]">
+          Cancelar PRO, desactivar SMS y darte de baja del marketing son acciones distintas.
+        </p>
+        <label className="flex items-start gap-3 text-sm text-[var(--ink)]">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4"
+            checked={Boolean(profile.smsAlertsEnabled)}
+            onChange={(e) => void savePreference({ smsAlertsEnabled: e.target.checked })}
+          />
+          <span>
+            <strong className="font-bold">SMS de avisos PRO</strong>
+            <span className="mt-1 block text-[var(--ink-soft)]">
+              Solo publicaciones oficiales por ahora. Tener teléfono guardado no activa los SMS.
+            </span>
+          </span>
+        </label>
+        <label className="flex items-start gap-3 text-sm text-[var(--ink)]">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4"
+            checked={Boolean(profile.marketingOptInAt)}
+            onChange={(e) => void savePreference({ marketingOptIn: e.target.checked })}
+          />
+          <span>
+            <strong className="font-bold">Novedades y contenidos educativos</strong>
+            <span className="mt-1 block text-[var(--ink-soft)]">
+              Marketing opcional. No afecta a avisos de servicio PRO ni a emails de cuenta.
+            </span>
+          </span>
+        </label>
+      </div>
     </ProfileCard>
   );
 }

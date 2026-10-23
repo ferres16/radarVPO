@@ -34,6 +34,7 @@ function RegisterForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
+  const [acceptedMarketing, setAcceptedMarketing] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -54,7 +55,14 @@ function RegisterForm() {
     setError('');
 
     try {
-      await api.register(email, password, fullName, undefined, acceptedPrivacy);
+      await api.register(
+        email,
+        password,
+        fullName,
+        undefined,
+        acceptedPrivacy,
+        acceptedMarketing,
+      );
       window.location.assign(safeNextPath(nextPath));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo crear la cuenta');
@@ -134,6 +142,19 @@ function RegisterForm() {
                     condiciones del servicio
                   </Link>
                   .
+                </span>
+              </label>
+              <label className="flex items-start gap-3 text-sm leading-6 text-[var(--ink)]">
+                <input
+                  type="checkbox"
+                  checked={acceptedMarketing}
+                  onChange={(event) => setAcceptedMarketing(event.target.checked)}
+                  className="mt-1 h-4 w-4 shrink-0"
+                />
+                <span>
+                  Quiero recibir novedades y contenidos educativos de Radar VPO por email
+                  (opcional). Puedes darte de baja cuando quieras. No es necesario para usar la
+                  cuenta ni para PRO.
                 </span>
               </label>
               {error ? (

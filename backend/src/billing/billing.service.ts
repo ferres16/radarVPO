@@ -23,6 +23,10 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import {
+  buildBillingSummary,
+  formatMadridDate,
+} from '../notifications/message-vars';
+import {
   amountToCents,
   centsToAmount,
   DEFAULT_PRO_PRICE_CENTS,
@@ -588,26 +592,40 @@ export class BillingService {
         where: { id: meta.courseId },
         select: { title: true, slug: true },
       });
-      void this.notifications
-        .sendTemplatedEmail({
-          templateKey: 'purchase.course',
-          toEmail: user.email,
-          toName: displayName,
-          vars: {
-            name: displayName,
-            email: user.email,
-            product: course?.title || 'tu compra',
-            url: `${siteUrl}/cursos/${course?.slug || meta.courseSlug || ''}`,
-            title: course?.title || '',
-            location: '',
-            date: '',
-            price: formatEuroAmount(session.amount_total ?? 0),
-            phone: '',
-          },
-          fallbackSubject: `Acceso listo: ${course?.title || 'tu compra'}`,
-          fallbackHtml: `<p>Hola ${displayName},</p><p>Tu compra se ha confirmado. Ya puedes acceder.</p>`,
-        })
-        .catch(() => undefined);
+      const courseTitle = course?.title || 'tu compra';
+      const courseUrl = `${siteUrl}/cursos/${course?.slug || meta.courseSlug || ''}`;
+      if (!course?.slug && !meta.courseSlug) {
+        this.logger.warn(
+          `purchase.course email skipped: missing course slug for ${session.id}`,
+        );
+      } else {
+        void this.notifications
+          .sendTemplatedEmail({
+            templateKey: 'purchase.course',
+            toEmail: user.email,
+            toName: displayName,
+            vars: {
+              name: displayName,
+              email: user.email,
+              product: courseTitle,
+              url: courseUrl,
+              title: courseTitle,
+              location: '',
+              date: '',
+              price: formatEuroAmount(session.amount_total ?? 0),
+              phone: '',
+              access_until: '',
+              billing_summary: buildBillingSummary({
+                kind: 'course',
+                amountCents: session.amount_total ?? 0,
+              }),
+            },
+            requiredVars: ['product', 'url', 'price'],
+            fallbackSubject: `Ya tienes acceso a ${courseTitle}`,
+            fallbackHtml: `<p>Hola,</p><p>Tu compra de ${courseTitle} se ha confirmado.</p><p><a href="${courseUrl}">Acceder</a></p>`,
+          })
+          .catch(() => undefined);
+      }
       await this.recordCheckoutConsent(user.id, session);
       return;
     }
@@ -654,31 +672,40 @@ export class BillingService {
         }
       }
 
+      const period = extractSubscriptionPeriod(subscription);
+      const accessUntil = formatMadridDate(period.end);
+      const isPack = meta.product === 'pro_pack_3m';
+      const renews = !subscription.cancel_at_period_end;
       void this.notifications
         .sendTemplatedEmail({
-          templateKey:
-            meta.product === 'pro_pack_3m'
-              ? 'purchase.pro_pack'
-              : 'purchase.pro',
+          templateKey: isPack ? 'purchase.pro_pack' : 'purchase.pro',
           toEmail: user.email,
           toName: displayName,
           vars: {
             name: displayName,
             email: user.email,
             product: guideTitle,
-            url:
-              meta.product === 'pro_pack_3m' ? guideUrl : `${siteUrl}/account`,
+            url: isPack ? guideUrl : `${siteUrl}/account`,
             title: 'Radar VPO PRO',
             location: '',
-            date: '',
+            date: accessUntil,
             price: formatEuroAmount(session.amount_total ?? 0),
             phone: '',
+            access_until: accessUntil,
+            billing_summary: buildBillingSummary({
+              kind: isPack ? 'pro_pack_3m' : 'pro_monthly',
+              amountCents: session.amount_total ?? 0,
+              accessUntil,
+              renews,
+            }),
           },
-          fallbackSubject:
-            meta.product === 'pro_pack_3m'
-              ? 'Pack PRO 3 meses activado'
-              : 'Bienvenido a Radar VPO PRO',
-          fallbackHtml: `<p>Hola ${displayName},</p><p>Tu suscripción PRO ya está activa.</p>`,
+          requiredVars: isPack
+            ? ['product', 'url', 'access_until', 'billing_summary']
+            : ['url', 'billing_summary'],
+          fallbackSubject: isPack
+            ? 'Tu pack PRO de tres meses está activo'
+            : 'Tu Radar VPO PRO ya está activo',
+          fallbackHtml: `<p>Hola,</p><p>Tu suscripción PRO ya está activa.</p><p><a href="${siteUrl}/account">Entrar en mi cuenta</a></p>`,
         })
         .catch(() => undefined);
       await this.recordCheckoutConsent(user.id, session);
@@ -911,6 +938,7 @@ export class BillingService {
           email: user.email,
           fullName: user.fullName,
           accessUntil: accessUntilLabel,
+          stage: 'confirmed',
         })
         .catch(() => undefined);
       return {
@@ -930,6 +958,7 @@ export class BillingService {
         email: user.email,
         fullName: user.fullName,
         accessUntil: null,
+        stage: 'request',
       })
       .catch(() => undefined);
 

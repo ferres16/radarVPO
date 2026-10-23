@@ -44,4 +44,12 @@ export class RegisterDto {
     message: 'Debes aceptar la política de privacidad para crear la cuenta.',
   })
   acceptedPrivacy!: boolean;
+
+  @ApiPropertyOptional({
+    description:
+      'Opt-in comercial voluntario (no premarcado). Independiente de verificar el email.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  acceptedMarketing?: boolean;
 }

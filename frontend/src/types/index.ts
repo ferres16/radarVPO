@@ -54,6 +54,8 @@ export type UserProfile = {
   role: string;
   plan: string;
   emailVerifiedAt?: string | null;
+  marketingOptInAt?: string | null;
+  smsAlertsEnabled?: boolean;
   createdAt?: string;
   lastLoginAt?: string | null;
   proAccess?: {
@@ -217,6 +219,8 @@ export type MessageTemplate = {
   emailBody: string | null;
   smsBody: string | null;
   active: boolean;
+  isCustomized?: boolean;
+  seedRevision?: number;
   updatedAt: string;
 };
 

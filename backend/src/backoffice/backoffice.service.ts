@@ -92,6 +92,10 @@ export class BackofficeService {
     return this.messageTemplates.list();
   }
 
+  resetMessageTemplate(key: string) {
+    return this.messageTemplates.resetToDefault(key);
+  }
+
   updateMessageTemplate(key: string, dto: UpdateMessageTemplateDto) {
     return this.messageTemplates.update(key, dto);
   }
@@ -379,6 +383,30 @@ export class BackofficeService {
         createdAt: true,
       },
     });
+
+    if (stripe.canceled > 0 || keepAccessUntilPeriodEnd) {
+      const accessUntilLabel = periodEnd
+        ? periodEnd.toLocaleDateString('es-ES', {
+            timeZone: 'Europe/Madrid',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          })
+        : new Date().toLocaleDateString('es-ES', {
+            timeZone: 'Europe/Madrid',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          });
+      void this.notificationsService
+        .notifyUserOfProCancellation({
+          email: user.email,
+          fullName: user.fullName,
+          accessUntil: accessUntilLabel,
+          stage: 'confirmed',
+        })
+        .catch(() => undefined);
+    }
 
     return { user, stripe };
   }

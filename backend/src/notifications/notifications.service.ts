@@ -15,10 +15,17 @@ import {
   PRO_NOTIFY_SOURCE_KIND,
   type ProNotifyKind,
 } from './pro-notify.util';
+import { buildProNotifyCopy } from './pro-notify-copy';
 import {
-  buildProNotifyCopy,
-  PUBLICATION_UNCERTAINTY_DISCLAIMER,
-} from './pro-notify-copy';
+  displayNameOrEmpty,
+  fitSmsContent,
+  formatLocation,
+  formatMadridDate,
+  hasIncompleteRender,
+} from './message-vars';
+
+/** SMS PRO: solo publicación oficial por defecto (aunque el usuario tenga SMS on). */
+const PRO_SMS_KINDS = new Set<ProNotifyKind>(['new_publication']);
 
 type ProAlertPromotion = Pick<
   Promotion,
@@ -552,6 +559,18 @@ export class NotificationsService {
     kind: ProNotifyKind,
     onlyUserId?: string,
   ) {
+    const isReminder = kind === 'reminder_7d' || kind === 'reminder_1d';
+    const favoriteUserIds = isReminder
+      ? new Set(
+          (
+            await this.prisma.promotionFavorite.findMany({
+              where: { promotionId: promotion.id },
+              select: { userId: true },
+            })
+          ).map((row) => row.userId),
+        )
+      : null;
+
     const users = await this.prisma.user.findMany({
       where: onlyUserId
         ? { id: onlyUserId, emailVerifiedAt: { not: null } }
@@ -574,31 +593,44 @@ export class NotificationsService {
               },
             ],
           },
-      select: { id: true, email: true, fullName: true, phone: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        phone: true,
+        smsAlertsEnabled: true,
+      },
     });
+
+    const recipients = favoriteUserIds
+      ? users.filter((user) => favoriteUserIds.has(user.id))
+      : users;
 
     const channels: string[] = [];
     let sent = 0;
     let emailsSent = 0;
     let smsSent = 0;
     const copy = await this.buildProCopy(promotion, kind);
+    if (!copy) {
+      return {
+        sent: 0,
+        channels: [],
+        proUsers: recipients.length,
+        emailsSent: 0,
+        smsSent: 0,
+      };
+    }
 
-    for (const user of users) {
-      const displayName = user.fullName || 'usuario PRO';
-      const html = this.buildEmailHtml({
-        displayName,
-        intro: copy.intro,
-        promotionTitle: copy.title,
-        location: copy.location,
-        estimatedDate: copy.estimatedDate,
-        ctaLabel: copy.ctaLabel,
+    for (const user of recipients) {
+      const displayName = displayNameOrEmpty(user.fullName);
+      const html = this.buildSlimProEmailHtml({
+        bodyHtml: copy.intro,
         pageUrl: copy.pageUrl,
-        disclaimer: copy.disclaimer,
       });
 
       const emailSent = await this.sendEmail({
         sender: this.parseEmailSender(),
-        to: [{ email: user.email, name: displayName }],
+        to: [{ email: user.email, name: displayName || undefined }],
         subject: copy.subject,
         htmlContent: html,
       });
@@ -608,8 +640,12 @@ export class NotificationsService {
         channels.push('email');
       }
 
-      const normalizedPhone = normalizePhoneForSms(user.phone);
-      if (normalizedPhone) {
+      const wantSms =
+        user.smsAlertsEnabled &&
+        PRO_SMS_KINDS.has(kind) &&
+        Boolean(copy.sms?.trim());
+      const normalizedPhone = wantSms ? normalizePhoneForSms(user.phone) : null;
+      if (normalizedPhone && copy.sms) {
         const smsSentForUser = await this.sendSms({
           sender: this.smsSender,
           recipient: normalizedPhone,
@@ -627,7 +663,7 @@ export class NotificationsService {
     return {
       sent,
       channels: [...new Set(channels)],
-      proUsers: users.length,
+      proUsers: recipients.length,
       emailsSent,
       smsSent,
     };
@@ -638,29 +674,28 @@ export class NotificationsService {
     kind: ProNotifyKind,
   ) {
     const title = shortenAlertTitle(promotion.title);
-    const location =
-      [promotion.municipality, promotion.province].filter(Boolean).join(', ') ||
-      'Cataluña';
-    const estimatedDate = promotion.estimatedPublicationDate
-      ? new Date(promotion.estimatedPublicationDate).toLocaleDateString(
-          'es-ES',
-          {
-            timeZone: 'Europe/Madrid',
-          },
-        )
-      : null;
+    const location = formatLocation({
+      municipality: promotion.municipality,
+      province: promotion.province,
+    });
+    if (!location) {
+      this.logger.warn(
+        `PRO ${kind} skipped for ${promotion.id}: missing location`,
+      );
+      return null;
+    }
+
+    const estimatedDate = formatMadridDate(promotion.estimatedPublicationDate);
+    if ((kind === 'reminder_7d' || kind === 'reminder_1d') && !estimatedDate) {
+      this.logger.warn(
+        `PRO ${kind} skipped for ${promotion.id}: missing estimated date`,
+      );
+      return null;
+    }
+
     const alertsUrl = `${this.publicSiteUrl}/alerts`;
     const promotionsUrl = `${this.publicSiteUrl}/promotions/${promotion.id}`;
     const pageUrl = kind === 'new_publication' ? promotionsUrl : alertsUrl;
-
-    const fallback = buildProNotifyCopy({
-      kind,
-      title,
-      location,
-      estimatedDate,
-      alertsUrl,
-      promotionsUrl,
-    });
 
     const templateKey =
       kind === 'new_publication'
@@ -671,7 +706,19 @@ export class NotificationsService {
             ? 'pro.reminder_1d'
             : 'pro.new_alert';
     const tpl = await this.templates.getByKey(templateKey);
-    if (!tpl || !tpl.active) return fallback;
+    if (tpl && !tpl.active) {
+      this.logger.log(`PRO ${kind} skipped: template ${templateKey} inactive`);
+      return null;
+    }
+
+    const fallback = buildProNotifyCopy({
+      kind,
+      title,
+      location,
+      estimatedDate: estimatedDate || null,
+      alertsUrl,
+      promotionsUrl,
+    });
 
     const vars = {
       name: '',
@@ -683,15 +730,42 @@ export class NotificationsService {
       product: title,
       price: '',
       phone: '',
+      access_until: '',
+      billing_summary: '',
     };
+
+    const subject =
+      tpl?.emailSubject != null
+        ? this.templates.render(tpl.emailSubject, vars)
+        : fallback.subject;
+    const intro =
+      tpl?.emailBody != null
+        ? this.templates.render(tpl.emailBody, vars)
+        : fallback.intro;
+    const smsRaw =
+      tpl?.smsBody != null
+        ? this.templates.render(tpl.smsBody, vars)
+        : fallback.sms;
+    const smsBodyOnly = smsRaw.replace(pageUrl, '').trim();
+    const sms = fitSmsContent(smsBodyOnly || smsRaw, pageUrl);
+
+    if (
+      hasIncompleteRender(subject, { location }) ||
+      hasIncompleteRender(intro, { location })
+    ) {
+      this.logger.warn(
+        `PRO ${kind} skipped for ${promotion.id}: incomplete template render`,
+      );
+      return null;
+    }
+
     return {
       ...fallback,
-      subject:
-        this.templates.render(tpl.emailSubject, vars) || fallback.subject,
-      intro: this.templates.render(tpl.emailBody, vars) || fallback.intro,
-      sms: this.templates.render(tpl.smsBody, vars) || fallback.sms,
-      disclaimer:
-        kind === 'new_publication' ? null : PUBLICATION_UNCERTAINTY_DISCLAIMER,
+      subject: subject.slice(0, 140),
+      intro,
+      sms,
+      pageUrl,
+      disclaimer: null,
     };
   }
 
@@ -703,71 +777,58 @@ export class NotificationsService {
     vars: Record<string, string>;
     fallbackSubject: string;
     fallbackHtml: string;
+    requiredVars?: string[];
   }): Promise<boolean> {
     if (!this.apiKey) return false;
+    const vars: Record<string, string> = {
+      ...input.vars,
+      name: displayNameOrEmpty(input.vars.name || input.toName),
+    };
+    for (const key of input.requiredVars ?? []) {
+      if (!vars[key]?.trim()) {
+        this.logger.warn(
+          `Email ${input.templateKey} skipped: missing required var ${key}`,
+        );
+        return false;
+      }
+    }
+
     const tpl = await this.templates.getByKey(input.templateKey);
     const subject =
       tpl?.active && tpl.emailSubject
-        ? this.templates.render(tpl.emailSubject, input.vars)
+        ? this.templates.render(tpl.emailSubject, vars)
         : input.fallbackSubject;
     const body =
       tpl?.active && tpl.emailBody
-        ? this.templates.render(tpl.emailBody, input.vars)
+        ? this.templates.render(tpl.emailBody, vars)
         : input.fallbackHtml;
+    if (hasIncompleteRender(subject, {}) || hasIncompleteRender(body, {})) {
+      this.logger.warn(
+        `Email ${input.templateKey} skipped: unresolved placeholders`,
+      );
+      return false;
+    }
     const html = body.includes('<')
-      ? body
+      ? `<div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">${body}</div>`
       : `<div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">${body}</div>`;
     return this.sendEmail({
       sender: this.parseEmailSender(),
-      to: [{ email: input.toEmail, name: input.toName || undefined }],
+      to: [{ email: input.toEmail, name: vars.name || undefined }],
       subject: subject.slice(0, 140),
       htmlContent: html,
     });
   }
 
-  private buildEmailHtml({
-    displayName,
-    intro,
-    promotionTitle,
-    location,
-    estimatedDate,
-    ctaLabel,
-    pageUrl,
-    disclaimer,
-  }: {
-    displayName: string;
-    intro: string;
-    promotionTitle: string;
-    location: string;
-    estimatedDate: string | null;
-    ctaLabel: string;
-    pageUrl: string;
-    disclaimer: string | null;
-  }) {
-    const estimatedHtml = estimatedDate
-      ? `<p style="margin:0 0 12px;color:#4b5563;">Fecha estimada (no confirmada): <strong>${this.escapeHtml(estimatedDate)}</strong></p>`
-      : '';
-    const disclaimerHtml = disclaimer
-      ? `<p style="margin:0 0 20px;font-size:13px;color:#6b7280;">${this.escapeHtml(disclaimer)}</p>`
-      : '';
-
+  /** Envoltura slim: el cuerpo de plantilla ya trae CTA y avisos (sin duplicar). */
+  private buildSlimProEmailHtml(input: { bodyHtml: string; pageUrl: string }) {
     return `
       <div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">
-        <p style="margin:0 0 16px;">Hola ${this.escapeHtml(displayName)},</p>
-        <p style="margin:0 0 16px;">${intro}</p>
-        <div style="margin:0 0 20px;padding:16px 18px;border:1px solid #e5e7eb;border-radius:16px;background:#f8faf9;">
-          <p style="margin:0 0 8px;font-size:18px;font-weight:700;">${this.escapeHtml(promotionTitle)}</p>
-          <p style="margin:0;color:#4b5563;">Zona: ${this.escapeHtml(location)}</p>
-        </div>
-        ${estimatedHtml}
-        ${disclaimerHtml}
-        <p style="margin:0 0 24px;">
-          <a href="${this.escapeHtml(pageUrl)}" style="display:inline-block;background:#167055;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 20px;border-radius:999px;">
-            ${this.escapeHtml(ctaLabel)}
-          </a>
+        ${input.bodyHtml}
+        <p style="margin:20px 0 0;font-size:12px;color:#6b7280;">
+          Recibes este aviso porque tienes Radar VPO PRO (servicio contratado, no publicidad).
+          Gestiona preferencias y suscripción en
+          <a href="${this.escapeHtml(this.publicSiteUrl)}/account">${this.escapeHtml(this.publicSiteUrl)}/account</a>.
         </p>
-        <p style="margin:0;font-size:13px;color:#6b7280;">Si el botón no funciona, copia este enlace: <a href="${this.escapeHtml(pageUrl)}">${this.escapeHtml(pageUrl)}</a></p>
-        <p style="margin:16px 0 0;font-size:12px;color:#6b7280;">Recibes este aviso porque tienes Radar VPO PRO. No es publicidad: forma parte del servicio contratado. Gestiona tu suscripción en <a href="${this.escapeHtml(this.publicSiteUrl)}/account">${this.escapeHtml(this.publicSiteUrl)}/account</a>.</p>
       </div>
     `;
   }
@@ -776,6 +837,8 @@ export class NotificationsService {
     email: string;
     fullName: string | null;
     accessUntil: string | null;
+    /** request = pendiente manual; confirmed = renovación ya cancelada */
+    stage: 'request' | 'confirmed';
   }): Promise<boolean> {
     if (!this.apiKey) {
       this.logger.warn(
@@ -783,11 +846,38 @@ export class NotificationsService {
       );
       return false;
     }
-    const displayName = input.fullName?.trim() || input.email;
+    const displayName = displayNameOrEmpty(input.fullName);
     const accountUrl = `${this.publicSiteUrl}/account`;
-    const untilNote = input.accessUntil
-      ? ` Conservarás el acceso hasta el ${input.accessUntil}.`
-      : ' Conservarás el acceso hasta el final del periodo ya pagado si aplica.';
+    if (input.stage === 'request') {
+      return this.sendTemplatedEmail({
+        templateKey: 'cancel.pro_user_requested',
+        toEmail: input.email,
+        toName: displayName,
+        vars: {
+          name: displayName,
+          email: input.email,
+          url: accountUrl,
+          title: '',
+          location: '',
+          date: '',
+          product: 'PRO',
+          price: '',
+          phone: '',
+          access_until: '',
+          billing_summary: '',
+        },
+        fallbackSubject: 'Hemos recibido tu solicitud de baja de PRO',
+        fallbackHtml: `<p>${displayName ? `Hola ${this.escapeHtml(displayName)},` : 'Hola,'}</p><p>Hemos recibido tu solicitud de baja. Te avisaremos cuando se tramites.</p><p><a href="${this.escapeHtml(accountUrl)}">Ir a mi cuenta</a></p>`,
+      });
+    }
+
+    if (!input.accessUntil?.trim()) {
+      this.logger.warn(
+        'cancel.pro_user confirmed skipped: missing access_until',
+      );
+      return false;
+    }
+
     return this.sendTemplatedEmail({
       templateKey: 'cancel.pro_user',
       toEmail: input.email,
@@ -798,13 +888,16 @@ export class NotificationsService {
         url: accountUrl,
         title: '',
         location: '',
-        date: input.accessUntil || '',
+        date: input.accessUntil,
         product: 'PRO',
         price: '',
         phone: '',
+        access_until: input.accessUntil,
+        billing_summary: '',
       },
-      fallbackSubject: 'Confirmación de baja de Radar VPO PRO',
-      fallbackHtml: `<p>Hola ${this.escapeHtml(displayName)},</p><p>Hemos registrado la baja de tu suscripción PRO.${untilNote}</p><p><a href="${this.escapeHtml(accountUrl)}">Mi cuenta</a></p>`,
+      requiredVars: ['access_until'],
+      fallbackSubject: 'Renovación de Radar VPO PRO cancelada',
+      fallbackHtml: `<p>${displayName ? `Hola ${this.escapeHtml(displayName)},` : 'Hola,'}</p><p>Hemos cancelado la renovación. Podrás usar PRO hasta <strong>${this.escapeHtml(input.accessUntil)}</strong>.</p><p><a href="${this.escapeHtml(accountUrl)}">Consultar mi suscripción</a></p>`,
     });
   }
 

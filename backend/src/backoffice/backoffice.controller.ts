@@ -195,6 +195,11 @@ export class BackofficeController {
     return this.backofficeService.updateMessageTemplate(key, dto);
   }
 
+  @Post('message-templates/:key/reset')
+  resetMessageTemplate(@Param('key') key: string) {
+    return this.backofficeService.resetMessageTemplate(key);
+  }
+
   @Get('promo-rules')
   listPromoRules() {
     return this.backofficeService.listPromoRules();

@@ -1,5 +1,11 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
 export class UpdateProfileDto {
   @ApiPropertyOptional()
@@ -16,4 +22,18 @@ export class UpdateProfileDto {
     message: 'El teléfono no tiene un formato válido.',
   })
   phone?: string;
+
+  @ApiPropertyOptional({
+    description: 'Activar SMS de avisos PRO (requiere teléfono).',
+  })
+  @IsOptional()
+  @IsBoolean()
+  smsAlertsEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Opt-in a comunicaciones comerciales (LSSI).',
+  })
+  @IsOptional()
+  @IsBoolean()
+  marketingOptIn?: boolean;
 }

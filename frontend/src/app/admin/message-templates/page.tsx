@@ -1,10 +1,29 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
 import { api } from '@/lib/api';
 import type { MessageTemplate, UserProfile } from '@/types';
+
+function previewHtml(body: string | null) {
+  if (!body) return '<p class="text-[var(--ink-soft)]">(sin cuerpo)</p>';
+  const sample: Record<string, string> = {
+    name: 'Ana',
+    email: 'ana@ejemplo.com',
+    title: 'ALERTA: Propera adjudicació…',
+    location: 'Santa Susanna, Barcelona',
+    date: '15 de noviembre de 2026',
+    url: 'https://www.radarvpo.com/alerts',
+    product: 'Guía VPO inicial',
+    price: '14,99 €',
+    phone: '',
+    access_until: '20 de enero de 2027',
+    billing_summary: 'Importe: 9,99 € al mes. Se renueva automáticamente cada mes hasta que canceles.',
+  };
+  return body
+    .replace(/Hola\s*\{\{\s*name\s*\}\}\s*,?/gi, 'Hola Ana,')
+    .replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key: string) => sample[key] ?? `«${key}»`);
+}
 
 export default function AdminMessageTemplatesPage() {
   const [me, setMe] = useState<UserProfile | null>(null);
@@ -47,6 +66,12 @@ export default function AdminMessageTemplatesPage() {
     };
   }, []);
 
+  const emailPreview = useMemo(() => previewHtml(draft?.emailBody ?? null), [draft?.emailBody]);
+  const subjectPreview = useMemo(
+    () => previewHtml(draft?.emailSubject ?? null).replace(/<[^>]+>/g, ''),
+    [draft?.emailSubject],
+  );
+
   function selectTemplate(key: string) {
     const row = templates.find((item) => item.key === key);
     setSelectedKey(key);
@@ -75,6 +100,23 @@ export default function AdminMessageTemplatesPage() {
       setMessage('Plantilla guardada. Los próximos envíos usarán este texto.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function resetToDefault() {
+    if (!draft) return;
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      const updated = await api.resetBackofficeMessageTemplate(draft.key);
+      setTemplates((prev) => prev.map((item) => (item.key === updated.key ? updated : item)));
+      setDraft(updated);
+      setMessage('Restaurada la plantilla por defecto del código (revisión de seeds).');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo restaurar.');
     } finally {
       setSaving(false);
     }
@@ -110,8 +152,9 @@ export default function AdminMessageTemplatesPage() {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Backoffice</p>
           <h1 className="display-type mt-1 text-3xl font-black text-[var(--ink)]">Emails / SMS</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
-            Textos que envía Brevo. Variables: {'{{name}}'}, {'{{email}}'}, {'{{title}}'},{' '}
-            {'{{location}}'}, {'{{date}}'}, {'{{url}}'}, {'{{product}}'}, {'{{price}}'}, {'{{phone}}'}.
+            Variables: {'{{name}}'}, {'{{location}}'}, {'{{date}}'}, {'{{url}}'}, {'{{product}}'},{' '}
+            {'{{price}}'}, {'{{access_until}}'}, {'{{billing_summary}}'}. Si no personalizas, al
+            desplegar se refrescan desde el código.
           </p>
         </header>
 
@@ -124,7 +167,7 @@ export default function AdminMessageTemplatesPage() {
           </p>
         ) : null}
 
-        <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+        <div className="grid gap-5 lg:grid-cols-[260px_1fr_320px]">
           <aside className="space-y-1 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-3">
             {templates.map((item) => (
               <button
@@ -141,6 +184,7 @@ export default function AdminMessageTemplatesPage() {
                 <span className="mt-0.5 block text-xs font-normal text-[var(--ink-soft)]">
                   {item.key}
                   {!item.active ? ' · pausada' : ''}
+                  {item.isCustomized ? ' · editada' : ''}
                 </span>
               </button>
             ))}
@@ -178,7 +222,7 @@ export default function AdminMessageTemplatesPage() {
               </label>
 
               <label className="block text-sm font-semibold text-[var(--ink)]">
-                SMS (máx. ~160 caracteres recomendado)
+                SMS
                 <textarea
                   className="ds-control mt-1 min-h-20 w-full font-mono text-xs"
                   value={draft.smsBody || ''}
@@ -186,14 +230,47 @@ export default function AdminMessageTemplatesPage() {
                 />
               </label>
 
-              <button
-                type="button"
-                className="btn btn--primary"
-                disabled={saving}
-                onClick={() => void save()}
-              >
-                {saving ? 'Guardando…' : 'Guardar plantilla'}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  disabled={saving}
+                  onClick={() => void save()}
+                >
+                  {saving ? 'Guardando…' : 'Guardar plantilla'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost"
+                  disabled={saving}
+                  onClick={() => void resetToDefault()}
+                >
+                  Restaurar default
+                </button>
+              </div>
+            </section>
+          ) : null}
+
+          {draft ? (
+            <section className="rounded-2xl border border-[var(--stroke)] bg-[#e8ebe9] p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ink-soft)]">
+                Vista móvil
+              </p>
+              <div className="mx-auto mt-3 w-full max-w-[280px] overflow-hidden rounded-[28px] border-[8px] border-[#1f2937] bg-white shadow-sm">
+                <div className="border-b border-[var(--stroke)] px-3 py-2">
+                  <p className="truncate text-[11px] font-semibold text-[var(--ink)]">{subjectPreview}</p>
+                  <p className="text-[10px] text-[var(--ink-soft)]">Radar VPO</p>
+                </div>
+                <div
+                  className="max-h-[420px] overflow-y-auto px-3 py-3 text-[12px] leading-5 text-[var(--ink)] [&_a]:font-bold [&_a]:text-[var(--green-700)]"
+                  dangerouslySetInnerHTML={{ __html: emailPreview }}
+                />
+              </div>
+              {draft.smsBody ? (
+                <p className="mt-3 rounded-xl bg-white px-3 py-2 text-[11px] leading-5 text-[var(--ink)]">
+                  SMS: {previewHtml(draft.smsBody).replace(/<[^>]+>/g, '')}
+                </p>
+              ) : null}
             </section>
           ) : null}
         </div>

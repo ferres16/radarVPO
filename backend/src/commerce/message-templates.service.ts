@@ -1,6 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { MESSAGE_TEMPLATE_SEEDS } from './message-templates.defaults';
+import {
+  MESSAGE_TEMPLATE_SEED_REVISION,
+  MESSAGE_TEMPLATE_SEEDS,
+} from './message-templates.defaults';
+import { renderTemplate } from '../notifications/message-vars';
 
 export type MessageTemplateDto = {
   id: string;
@@ -12,6 +16,8 @@ export type MessageTemplateDto = {
   emailBody: string | null;
   smsBody: string | null;
   active: boolean;
+  isCustomized: boolean;
+  seedRevision: number;
   updatedAt: string;
 };
 
@@ -31,20 +37,45 @@ export class MessageTemplatesService {
 
   async ensureDefaults(): Promise<void> {
     for (const seed of MESSAGE_TEMPLATE_SEEDS) {
-      await this.prisma.messageTemplate.upsert({
+      const existing = await this.prisma.messageTemplate.findUnique({
         where: { key: seed.key },
-        create: {
-          key: seed.key,
-          label: seed.label,
-          description: seed.description,
-          channel: seed.channel,
-          emailSubject: seed.emailSubject,
-          emailBody: seed.emailBody,
-          smsBody: seed.smsBody,
-          active: true,
-        },
-        update: {},
       });
+      if (!existing) {
+        await this.prisma.messageTemplate.create({
+          data: {
+            key: seed.key,
+            label: seed.label,
+            description: seed.description,
+            channel: seed.channel,
+            emailSubject: seed.emailSubject,
+            emailBody: seed.emailBody,
+            smsBody: seed.smsBody,
+            active: seed.active !== false,
+            isCustomized: false,
+            seedRevision: MESSAGE_TEMPLATE_SEED_REVISION,
+          },
+        });
+        continue;
+      }
+
+      if (
+        !existing.isCustomized &&
+        existing.seedRevision < MESSAGE_TEMPLATE_SEED_REVISION
+      ) {
+        await this.prisma.messageTemplate.update({
+          where: { key: seed.key },
+          data: {
+            label: seed.label,
+            description: seed.description,
+            channel: seed.channel,
+            emailSubject: seed.emailSubject,
+            emailBody: seed.emailBody,
+            smsBody: seed.smsBody,
+            active: seed.active !== false,
+            seedRevision: MESSAGE_TEMPLATE_SEED_REVISION,
+          },
+        });
+      }
     }
   }
 
@@ -75,6 +106,13 @@ export class MessageTemplatesService {
     if (!existing) {
       throw new NotFoundException(`Plantilla no encontrada: ${key}`);
     }
+    const contentTouched =
+      input.emailSubject !== undefined ||
+      input.emailBody !== undefined ||
+      input.smsBody !== undefined ||
+      input.label !== undefined ||
+      input.channel !== undefined;
+
     const updated = await this.prisma.messageTemplate.update({
       where: { key },
       data: {
@@ -93,23 +131,38 @@ export class MessageTemplatesService {
         smsBody: input.smsBody === undefined ? existing.smsBody : input.smsBody,
         active:
           typeof input.active === 'boolean' ? input.active : existing.active,
+        isCustomized: contentTouched ? true : existing.isCustomized,
       },
     });
     return this.toDto(updated);
   }
 
-  /** Sustituye {{var}} en plantillas. */
-  render(
-    template: string | null | undefined,
-    vars: Record<string, string>,
-  ): string {
-    if (!template) return '';
-    return template.replace(
-      /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,
-      (_, name: string) => {
-        return vars[name] ?? '';
+  /** Restaura una plantilla al seed actual (Admin). */
+  async resetToDefault(key: string): Promise<MessageTemplateDto> {
+    const seed = MESSAGE_TEMPLATE_SEEDS.find((item) => item.key === key);
+    if (!seed) {
+      throw new NotFoundException(`Seed no encontrado: ${key}`);
+    }
+    await this.ensureDefaults();
+    const updated = await this.prisma.messageTemplate.update({
+      where: { key },
+      data: {
+        label: seed.label,
+        description: seed.description,
+        channel: seed.channel,
+        emailSubject: seed.emailSubject,
+        emailBody: seed.emailBody,
+        smsBody: seed.smsBody,
+        active: seed.active !== false,
+        isCustomized: false,
+        seedRevision: MESSAGE_TEMPLATE_SEED_REVISION,
       },
-    );
+    });
+    return this.toDto(updated);
+  }
+
+  render(template: string | null | undefined, vars: Record<string, string>) {
+    return renderTemplate(template, vars);
   }
 
   private toDto(row: {
@@ -122,6 +175,8 @@ export class MessageTemplatesService {
     emailBody: string | null;
     smsBody: string | null;
     active: boolean;
+    isCustomized: boolean;
+    seedRevision: number;
     updatedAt: Date;
   }): MessageTemplateDto {
     return {
@@ -134,6 +189,8 @@ export class MessageTemplatesService {
       emailBody: row.emailBody,
       smsBody: row.smsBody,
       active: row.active,
+      isCustomized: row.isCustomized,
+      seedRevision: row.seedRevision,
       updatedAt: row.updatedAt.toISOString(),
     };
   }

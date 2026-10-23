@@ -60,6 +60,8 @@ export class UsersService {
         role: true,
         plan: true,
         emailVerifiedAt: true,
+        marketingOptInAt: true,
+        smsAlertsEnabled: true,
         createdAt: true,
         lastLoginAt: true,
       },
@@ -84,6 +86,8 @@ export class UsersService {
       role: user.role,
       plan: user.plan,
       emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
+      marketingOptInAt: user.marketingOptInAt?.toISOString() ?? null,
+      smsAlertsEnabled: user.smsAlertsEnabled,
       createdAt: user.createdAt.toISOString(),
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
       proAccess,
@@ -92,7 +96,12 @@ export class UsersService {
 
   async updateProfileWithProAccess(
     id: string,
-    data: { fullName?: string | null; phone?: string | null },
+    data: {
+      fullName?: string | null;
+      phone?: string | null;
+      smsAlertsEnabled?: boolean;
+      marketingOptIn?: boolean;
+    },
   ) {
     const updated = await this.updateProfile(id, data);
     const proAccess = await this.proAccess.resolveForUser(id);
@@ -105,6 +114,8 @@ export class UsersService {
       role: updated.role,
       plan: updated.plan,
       emailVerifiedAt: updated.emailVerifiedAt?.toISOString() ?? null,
+      marketingOptInAt: updated.marketingOptInAt?.toISOString() ?? null,
+      smsAlertsEnabled: updated.smsAlertsEnabled,
       createdAt: updated.createdAt.toISOString(),
       lastLoginAt: updated.lastLoginAt?.toISOString() ?? null,
       proAccess,
@@ -113,11 +124,21 @@ export class UsersService {
 
   async updateProfile(
     id: string,
-    data: { fullName?: string | null; phone?: string | null },
+    data: {
+      fullName?: string | null;
+      phone?: string | null;
+      smsAlertsEnabled?: boolean;
+      marketingOptIn?: boolean;
+    },
   ) {
     const current = await this.prisma.user.findUnique({
       where: { id },
-      select: { fullName: true, phone: true },
+      select: {
+        fullName: true,
+        phone: true,
+        smsAlertsEnabled: true,
+        marketingOptInAt: true,
+      },
     });
 
     if (!current) {
@@ -128,9 +149,28 @@ export class UsersService {
       data.fullName === undefined ? current.fullName : (data.fullName ?? '');
     const nextPhone =
       data.phone === undefined ? current.phone : (data.phone ?? '');
+    const nextSms =
+      typeof data.smsAlertsEnabled === 'boolean'
+        ? data.smsAlertsEnabled
+        : current.smsAlertsEnabled;
+    const nextMarketing =
+      typeof data.marketingOptIn === 'boolean'
+        ? data.marketingOptIn
+        : Boolean(current.marketingOptInAt);
 
-    if (nextFullName === current.fullName && nextPhone === current.phone) {
+    const unchanged =
+      nextFullName === current.fullName &&
+      nextPhone === current.phone &&
+      nextSms === current.smsAlertsEnabled &&
+      nextMarketing === Boolean(current.marketingOptInAt);
+    if (unchanged) {
       throw new BadRequestException('No hay cambios que guardar.');
+    }
+
+    if (nextSms && !nextPhone.trim()) {
+      throw new BadRequestException(
+        'Añade un teléfono antes de activar los SMS de avisos.',
+      );
     }
 
     return this.prisma.user.update({
@@ -138,6 +178,16 @@ export class UsersService {
       data: {
         fullName: data.fullName ?? undefined,
         phone: data.phone ?? undefined,
+        smsAlertsEnabled:
+          typeof data.smsAlertsEnabled === 'boolean'
+            ? data.smsAlertsEnabled
+            : undefined,
+        marketingOptInAt:
+          typeof data.marketingOptIn === 'boolean'
+            ? data.marketingOptIn
+              ? (current.marketingOptInAt ?? new Date())
+              : null
+            : undefined,
       },
       select: {
         id: true,
@@ -147,6 +197,8 @@ export class UsersService {
         role: true,
         plan: true,
         emailVerifiedAt: true,
+        marketingOptInAt: true,
+        smsAlertsEnabled: true,
         createdAt: true,
         lastLoginAt: true,
       },

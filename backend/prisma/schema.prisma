@@ -193,6 +193,15 @@ model User {
   plan                       UserPlan            @default(free)
   /** null = pendiente de verificar (cuentas nuevas). Cuentas legacy se rellenan en migración. */
   emailVerifiedAt            DateTime?           @map("email_verified_at")
+  /**
+   * Opt-in comercial (LSSI). null = no aceptó campañas.
+   * Independiente de verificación de email y de PRO.
+   */
+  marketingOptInAt           DateTime?           @map("marketing_opt_in_at")
+  /**
+   * Quiere SMS de avisos PRO. false por defecto: guardar teléfono ≠ activar SMS.
+   */
+  smsAlertsEnabled           Boolean             @default(false) @map("sms_alerts_enabled")
   stripeCustomerId           String?             @map("stripe_customer_id")
   proCancellationRequestedAt DateTime?           @map("pro_cancellation_requested_at")
   createdAt                  DateTime            @default(now()) @map("created_at")
@@ -504,6 +513,12 @@ model MessageTemplate {
   emailBody   String?  @map("email_body") @db.Text
   smsBody     String?  @map("sms_body")
   active      Boolean  @default(true)
+  /**
+   * Si false, ensureDefaults puede refrescar el texto desde seeds.
+   * Al editar en admin pasa a true.
+   */
+  isCustomized Boolean @default(false) @map("is_customized")
+  seedRevision Int     @default(1) @map("seed_revision")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

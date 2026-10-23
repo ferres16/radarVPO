@@ -378,6 +378,11 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
+  resetBackofficeMessageTemplate: (key: string) =>
+    request<MessageTemplate>(
+      `/backoffice/message-templates/${encodeURIComponent(key)}/reset`,
+      { method: 'POST' },
+    ),
   getBackofficePromoRules: () => request<CommercePromoRule[]>('/backoffice/promo-rules'),
   updateBackofficePromoRule: (
     key: string,
@@ -720,6 +725,7 @@ export const api = {
     fullName: string,
     phone?: string,
     acceptedPrivacy = false,
+    acceptedMarketing = false,
   ) => {
     return authRequest<{ user: { id: string; email: string } }>('/register', {
       method: 'POST',
@@ -729,6 +735,7 @@ export const api = {
         fullName,
         phone: phone?.trim() || undefined,
         acceptedPrivacy,
+        acceptedMarketing: acceptedMarketing || undefined,
       }),
     });
   },
@@ -751,7 +758,12 @@ export const api = {
     authRequest<{ success: true; message: string }>('/resend-verification', {
       method: 'POST',
     }),
-  updateMe: (payload: { fullName?: string; phone?: string }) =>
+  updateMe: (payload: {
+    fullName?: string;
+    phone?: string;
+    smsAlertsEnabled?: boolean;
+    marketingOptIn?: boolean;
+  }) =>
     request<UserProfile>('/users/me', {
       method: 'PATCH',
       body: JSON.stringify(payload),

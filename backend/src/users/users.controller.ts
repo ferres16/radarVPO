@@ -38,6 +38,8 @@ export class UsersController {
     return this.usersService.updateProfileWithProAccess(user.sub, {
       fullName: dto.fullName ?? null,
       phone: dto.phone ?? null,
+      smsAlertsEnabled: dto.smsAlertsEnabled,
+      marketingOptIn: dto.marketingOptIn,
     });
   }
 

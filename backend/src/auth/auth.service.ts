@@ -53,16 +53,19 @@ export class AuthService {
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
+    const marketingOptIn = dto.acceptedMarketing === true;
     const user = await this.prisma.user.create({
       data: {
         email: dto.email.toLowerCase(),
         fullName: dto.fullName,
-        // El móvil es opcional: solo se necesita para los SMS de PRO. '' = sin móvil.
+        // El móvil es opcional; no activa SMS por sí solo (smsAlertsEnabled=false).
         phone: dto.phone?.trim() ?? '',
         passwordHash,
         role: 'user',
         plan: 'free',
         emailVerifiedAt: null,
+        marketingOptInAt: marketingOptIn ? new Date() : null,
+        smsAlertsEnabled: false,
       },
     });
 
@@ -75,6 +78,7 @@ export class AuthService {
         metadata: {
           source: 'register',
           acceptedAt: new Date().toISOString(),
+          marketingOptIn,
         },
       },
     });
