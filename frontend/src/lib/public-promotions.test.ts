@@ -25,6 +25,16 @@ describe('publicPublishedPromotions', () => {
     expect(list.map((item) => item.id)).toEqual(['1']);
   });
 
+  it('orders published promotions by publication date, newest first', () => {
+    const list = publicPublishedPromotions([
+      promo({ id: 'old', title: 'Antigua', publishedAt: '2026-01-01T00:00:00.000Z' }),
+      promo({ id: 'new', title: 'Nueva', publishedAt: '2026-10-01T00:00:00.000Z' }),
+      promo({ id: 'mid', title: 'Intermedia', publishedAt: '2026-06-15T00:00:00.000Z' }),
+    ]);
+
+    expect(list.map((item) => item.id)).toEqual(['new', 'mid', 'old']);
+  });
+
   it('lists unique municipalities', () => {
     expect(
       uniqueMunicipalities([

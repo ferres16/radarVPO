@@ -13,6 +13,7 @@ import { StructuredData } from '@/components/structured-data';
 import { buildProofItems } from '@/lib/catalog-stats';
 import { homeFaqs } from '@/lib/conversion';
 import { formatEuro, getCoursePrice, isCourseSellable } from '@/lib/offer';
+import { getGuideReadHref, getOwnedCourseSlugs } from '@/lib/owned-courses';
 import { pickFeaturedPublicCourse } from '@/lib/public-courses';
 import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
@@ -35,21 +36,26 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function Home() {
-  const [courses, promotions, stats] = await Promise.all([
+  const [courses, promotions, stats, ownedSlugs] = await Promise.all([
     api.listCourses().catch(() => []),
     api.getPromotions('?limit=100').catch(() => []),
     api.getCatalogStats().catch(() => null),
+    getOwnedCourseSlugs(),
   ]);
   const featuredCourse = pickFeaturedPublicCourse(courses);
+  const featuredOwned = Boolean(featuredCourse && ownedSlugs.has(featuredCourse.slug));
   const featuredSellable = featuredCourse ? isCourseSellable(featuredCourse) : false;
   const featuredPrice = featuredCourse ? getCoursePrice(featuredCourse) : null;
   const featuredHref = featuredCourse
-    ? featuredSellable
-      ? `/cursos/${featuredCourse.slug}#pagar`
-      : `/cursos/${featuredCourse.slug}`
+    ? featuredOwned
+      ? getGuideReadHref(featuredCourse.slug)
+      : featuredSellable
+        ? `/cursos/${featuredCourse.slug}#pagar`
+        : `/cursos/${featuredCourse.slug}`
     : '/cursos';
-  const featuredCta =
-    featuredSellable && featuredPrice !== null
+  const featuredCta = featuredOwned
+    ? 'Abrir la guía'
+    : featuredSellable && featuredPrice !== null
       ? `Comprar guía · ${formatEuro(featuredPrice)}`
       : 'Ver las guías';
   const listed = publicPublishedPromotions(promotions);
@@ -76,9 +82,11 @@ export default async function Home() {
                   <span className="lp-hero__title-accent"> con el PDF oficial, las guías y tus oportunidades.</span>
                 </h1>
                 <p className="lp-hero__subtitle">
-                  {featuredSellable && featuredPrice !== null
-                    ? `Guía ${formatEuro(featuredPrice)} pago único: entiende el proceso de la VPO y qué preparar. Consultar promociones es gratis.`
-                    : 'Empieza gratis en el móvil. Sin cuenta para consultar las bases. La guía ordena el proceso de la VPO; PRO avisa por SMS.'}
+                  {featuredOwned
+                    ? 'Ya tienes la guía en tu cuenta. Consultar promociones sigue siendo gratis.'
+                    : featuredSellable && featuredPrice !== null
+                      ? `Guía ${formatEuro(featuredPrice)} pago único: entiende el proceso de la VPO y qué preparar. Consultar promociones es gratis.`
+                      : 'Empieza gratis en el móvil. Sin cuenta para consultar las bases. La guía ordena el proceso de la VPO; PRO avisa por SMS.'}
                 </p>
                 <HomeHeroActions guideHref={featuredHref} guideCta={featuredCta} />
                 <ProofStats items={proofItems} />
@@ -98,13 +106,19 @@ export default async function Home() {
             </div>
             <HomeOfferStrip
               guide={
-                featuredSellable && featuredPrice !== null
+                featuredOwned && featuredCourse
                   ? {
                       href: featuredHref,
-                      price: formatEuro(featuredPrice),
+                      price: 'Ya tuya',
                       cta: featuredCta,
                     }
-                  : undefined
+                  : featuredSellable && featuredPrice !== null
+                    ? {
+                        href: featuredHref,
+                        price: formatEuro(featuredPrice),
+                        cta: featuredCta,
+                      }
+                    : undefined
               }
             />
           </div>
@@ -143,11 +157,12 @@ export default async function Home() {
                   Una guía para entender el proceso y qué preparar
                 </h2>
                 <p className="lp-lead">
-                  Pago único. Registro, papeles, tipos de promoción y pasos hasta la firma. El precio final se ve
-                  antes de pagar.
+                  {featuredOwned
+                    ? 'Ya está en tu cuenta. Entra a leerla, sin volver a pagar.'
+                    : 'Pago único. Registro, papeles, tipos de promoción y pasos hasta la firma. El precio final se ve antes de pagar.'}
                 </p>
               </div>
-              <FeaturedCourseSpotlight course={featuredCourse} />
+              <FeaturedCourseSpotlight course={featuredCourse} owned={featuredOwned} />
             </div>
           </section>
         ) : null}

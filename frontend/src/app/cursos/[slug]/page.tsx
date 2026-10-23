@@ -5,7 +5,7 @@ import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { CheckoutPanel } from '@/components/checkout/checkout-panel';
 import { CourseCheckoutBanner } from '@/components/checkout/course-checkout-banner';
-import { CourseAccessLink, CourseAccessProvider } from '@/components/course-access';
+import { AccessSwitch, CourseAccessLink, CourseAccessProvider, LockedOnly } from '@/components/course-access';
 import { CourseCoverImage } from '@/components/course-cover-image';
 import { CourseHubSection } from '@/components/course-hub-section';
 import { CourseModuleIndex } from '@/components/course-module-index';
@@ -257,13 +257,25 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                   </h1>
                 </div>
               ) : null}
-              <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
-                {guideMode
-                  ? publicDescription
-                  : course.longDescription ||
+              {guideMode ? (
+                <AccessSwitch
+                  fallback={
+                    <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
+                      {publicDescription}
+                    </p>
+                  }
+                >
+                  <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
+                    Acceso activo. Entra a la lectura, sin volver a pagar.
+                  </p>
+                </AccessSwitch>
+              ) : (
+                <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
+                  {course.longDescription ||
                     course.shortDescription ||
                     'Formación práctica sobre vivienda protegida en Cataluña.'}
-              </p>
+                </p>
+              )}
               <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-soft)] md:mt-5">
                 <span className="rounded-full bg-[var(--bg-app)] px-3 py-1">{status.statusText}</span>
                 {canAccess ? (
@@ -272,8 +284,21 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                   <span className="rounded-full bg-[rgba(232,184,74,0.16)] px-3 py-1 text-[#7a5600]">En preparación</span>
                 ) : null}
               </div>
-              {canAccess && (hasLessons || guideMode) ? (
-                <div className="mt-5 lg:hidden">
+              {guideMode ? (
+                <AccessSwitch
+                  fallback={null}
+                >
+                  <div className="mt-5">
+                    <a
+                      href="#guia"
+                      className="inline-flex w-full items-center justify-center rounded-full bg-[var(--green-700)] px-5 py-3 text-sm font-bold text-white shadow-glow transition hover:bg-[var(--green-900)] sm:w-auto"
+                    >
+                      Abrir la guía
+                    </a>
+                  </div>
+                </AccessSwitch>
+              ) : canAccess && hasLessons ? (
+                <div className="mt-5">
                   <CourseAccessLink
                     hrefWhenAccess={courseEntryHref}
                     hrefWhenLocked={lockedAccessHref}
@@ -284,6 +309,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                 </div>
               ) : null}
             {guideMode && !canAccess ? (
+              <LockedOnly>
               <aside id="pagar" className="scroll-mt-24">
                 {status.sellable ? (
                   <CheckoutPanel
@@ -335,6 +361,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                   </div>
                 )}
               </aside>
+              </LockedOnly>
             ) : null}
             </div>
             {!guideMode && !canAccess ? (
@@ -393,54 +420,56 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
 
         {guideMode ? (
           <section className="shell scroll-mt-24 space-y-6 py-6 md:py-8">
-            {brandedGuide ? (
-              <GuideVpoOutline />
-            ) : (
-            <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
-              <article className="public-card p-5 md:p-6">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
-                  Por qué esta guía
-                </p>
-                <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
-                  Lo que necesitas saber, sin rodeos
-                </h2>
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--ink-soft)] md:text-base">
-                  {course.longDescription ||
-                    course.shortDescription ||
-                    'Contenido claro para orientarte con criterio en vivienda protegida.'}
-                </p>
-                <p className="mt-4 text-xs leading-5 text-[var(--ink-soft)]">
-                  Lectura en pantalla · no descargable
-                </p>
-              </article>
+            <LockedOnly>
+              {brandedGuide ? (
+                <GuideVpoOutline />
+              ) : (
+                <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
+                  <article className="public-card p-5 md:p-6">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
+                      Por qué esta guía
+                    </p>
+                    <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
+                      Lo que necesitas saber, sin rodeos
+                    </h2>
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-[var(--ink-soft)] md:text-base">
+                      {course.longDescription ||
+                        course.shortDescription ||
+                        'Contenido claro para orientarte con criterio en vivienda protegida.'}
+                    </p>
+                    <p className="mt-4 text-xs leading-5 text-[var(--ink-soft)]">
+                      Lectura en pantalla · no descargable
+                    </p>
+                  </article>
 
-              <article className="public-card p-5 md:p-6">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
-                  Dentro encontrarás
-                </p>
-                <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
-                  Temas clave
-                </h2>
-                {guideTopics.length > 0 ? (
-                  <ul className="mt-4 space-y-2.5">
-                    {guideTopics.map((topic) => (
-                      <li
-                        key={topic}
-                        className="flex gap-2 text-sm leading-6 text-[var(--ink-soft)]"
-                      >
-                        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" />
-                        <span>{topic}</span>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="mt-3 text-sm text-[var(--ink-soft)]">
-                    Los temas de esta guía aparecerán aquí.
-                  </p>
-                )}
-              </article>
-            </div>
-            )}
+                  <article className="public-card p-5 md:p-6">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
+                      Dentro encontrarás
+                    </p>
+                    <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
+                      Temas clave
+                    </h2>
+                    {guideTopics.length > 0 ? (
+                      <ul className="mt-4 space-y-2.5">
+                        {guideTopics.map((topic) => (
+                          <li
+                            key={topic}
+                            className="flex gap-2 text-sm leading-6 text-[var(--ink-soft)]"
+                          >
+                            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" />
+                            <span>{topic}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 text-sm text-[var(--ink-soft)]">
+                        Los temas de esta guía aparecerán aquí.
+                      </p>
+                    )}
+                  </article>
+                </div>
+              )}
+            </LockedOnly>
 
             <article id="guia" className="public-card scroll-mt-24 p-4 md:p-6">
               <div className="mb-4">
@@ -448,14 +477,18 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                   Lectura
                 </p>
                 <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
-                  Empieza ahora
+                  {canAccess || isFree ? 'Tu guía' : 'Empieza ahora'}
                 </h2>
               </div>
-              <GuidePdfViewer
-                slug={course.slug}
-                title={publicTitle}
-                canAccess={canAccess || isFree}
-              />
+              <AccessSwitch
+                fallback={
+                  <p className="text-sm leading-6 text-[var(--ink-soft)]">
+                    La guía se abre aquí en cuanto actives el acceso. No hace falta descargar nada.
+                  </p>
+                }
+              >
+                <GuidePdfViewer slug={course.slug} title={publicTitle} canAccess />
+              </AccessSwitch>
             </article>
 
             <div className="pb-2">

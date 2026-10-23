@@ -73,7 +73,10 @@ export class PromotionsService {
 
     const items = await this.prisma.promotion.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [
+        { publishedAt: { sort: 'desc', nulls: 'last' } },
+        { createdAt: 'desc' },
+      ],
       take: Math.min(limit * 3, 200),
       skip: offset,
       select: {
@@ -87,6 +90,7 @@ export class PromotionsService {
         publicDescription: true,
         totalHomes: true,
         publishedAt: true,
+        createdAt: true,
         deadlineDate: true,
         estimatedPublicationDate: true,
         alertDetectedAt: true,

@@ -23,14 +23,23 @@ function priceText(course: Course, sellable: boolean) {
   return sellable ? formatEuro(price) : `Previsto: ${formatEuro(price)}`;
 }
 
-export function CourseProductCard({ course, className = '', layout = 'grid' }: CourseProductCardProps) {
+export function CourseProductCard({
+  course,
+  className = '',
+  layout = 'grid',
+  owned = false,
+}: CourseProductCardProps & { owned?: boolean }) {
   const status = getCourseStatusSummary(course);
   const guide = isGuidePdf(course);
   const publicTitle = getPublicCourseTitle(course);
   const shellClass =
     layout === 'rail' ? 'saas-card-rail h-full' : 'product-card public-card public-card--hover group';
 
-  const href = status.sellable ? `/cursos/${course.slug}#pagar` : `/cursos/${course.slug}`;
+  const href = owned
+    ? `/cursos/${course.slug}${guide ? '#guia' : ''}`
+    : status.sellable
+      ? `/cursos/${course.slug}#pagar`
+      : `/cursos/${course.slug}`;
 
   return (
     <article className={`${shellClass} ${className}`}>
@@ -64,21 +73,29 @@ export function CourseProductCard({ course, className = '', layout = 'grid' }: C
             {publicTitle}
           </h3>
           <p className="mt-1.5 line-clamp-2 text-sm leading-5 text-[var(--ink-soft)]">
-            {isGuideVpoSlug(course.slug)
-              ? GUIDE_VPO_SHORT
-              : course.shortDescription ||
-                (guide
-                  ? 'Guía clara para decidir con criterio.'
-                  : 'Formación práctica sobre vivienda protegida.')}
+            {owned
+              ? 'Ya está en tu cuenta. Entra a leerla.'
+              : isGuideVpoSlug(course.slug)
+                ? GUIDE_VPO_SHORT
+                : course.shortDescription ||
+                  (guide
+                    ? 'Guía clara para decidir con criterio.'
+                    : 'Formación práctica sobre vivienda protegida.')}
           </p>
           <div className="mt-3 flex items-end justify-between gap-2">
-            <p className="text-lg font-black text-[var(--ink)]">{priceText(course, status.sellable)}</p>
+            <p className="text-lg font-black text-[var(--ink)]">
+              {owned ? 'Ya tuya' : priceText(course, status.sellable)}
+            </p>
             <span className="text-xs font-bold text-[var(--green-700)]">
-              {status.sellable
-                ? `Pagar ${priceText(course, status.sellable)} →`
-                : guide
-                  ? 'Ver guía →'
-                  : 'Ver programa →'}
+              {owned
+                ? guide
+                  ? 'Abrir la guía →'
+                  : 'Entrar al curso →'
+                : status.sellable
+                  ? `Pagar ${priceText(course, status.sellable)} →`
+                  : guide
+                    ? 'Ver guía →'
+                    : 'Ver programa →'}
             </span>
           </div>
         </div>

@@ -54,6 +54,33 @@ function buildService(options: FavoriteOptions = {}) {
   };
 }
 
+describe('PromotionsService list', () => {
+  it('orders published promotions by publication date', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const prisma = {
+      promotion: { findMany },
+    } as unknown as PrismaService;
+    const service = new PromotionsService(
+      prisma,
+      {} as FileStorageService,
+      {
+        getVisitorCount: jest.fn().mockResolvedValue(0),
+      } as unknown as MetricsService,
+    );
+
+    await service.list({ limit: 10 });
+
+    expect(findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: [
+          { publishedAt: { sort: 'desc', nulls: 'last' } },
+          { createdAt: 'desc' },
+        ],
+      }),
+    );
+  });
+});
+
 describe('PromotionsService favorites', () => {
   it('saves a promotion for a free user under the limit', async () => {
     const { service, favorite } = buildService({ saved: 2 });

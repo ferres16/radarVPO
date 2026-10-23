@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { collectPdfPageLinks, type PdfPageLink } from '@/lib/pdf-page-links';
 
 type Props = {
   slug: string;
@@ -8,21 +9,30 @@ type Props = {
   canAccess: boolean;
 };
 
+type PdfPage = {
+  getViewport: (opts: { scale: number }) => {
+    width: number;
+    height: number;
+    convertToViewportPoint: (x: number, y: number) => number[];
+  };
+  getAnnotations: (opts?: { intent?: string }) => Promise<unknown[]>;
+  render: (opts: {
+    canvasContext: CanvasRenderingContext2D;
+    viewport: { width: number; height: number };
+    canvas: HTMLCanvasElement;
+  }) => { promise: Promise<void> };
+};
+
 type PdfDoc = {
   numPages: number;
-  getPage: (n: number) => Promise<{
-    getViewport: (opts: { scale: number }) => { width: number; height: number };
-    render: (opts: {
-      canvasContext: CanvasRenderingContext2D;
-      viewport: { width: number; height: number };
-      canvas: HTMLCanvasElement;
-    }) => { promise: Promise<void> };
-  }>;
+  getPage: (n: number) => Promise<PdfPage>;
+  getDestination?: (name: string) => Promise<unknown>;
+  getPageIndex?: (ref: unknown) => Promise<number>;
 };
 
 /**
  * Visor página a página con barra de progreso.
- * Sin descarga ni enlace al original.
+ * Sin descarga ni enlace al original. Los enlaces del PDF sí son clicables.
  */
 export function GuidePdfViewer({ slug, title, canAccess }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -32,6 +42,8 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
   const [pageCount, setPageCount] = useState(0);
   const [page, setPage] = useState(1);
   const [rendering, setRendering] = useState(false);
+  const [links, setLinks] = useState<PdfPageLink[]>([]);
+  const [viewportSize, setViewportSize] = useState({ width: 1, height: 1 });
 
   const renderPage = useCallback(async (pageNum: number) => {
     const pdf = pdfRef.current;
@@ -51,6 +63,8 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
       const context = canvas.getContext('2d');
       if (!context) return;
       await pdfPage.render({ canvasContext: context, viewport, canvas }).promise;
+      setViewportSize({ width: viewport.width, height: viewport.height });
+      setLinks(await collectPdfPageLinks(pdf, pdfPage, scale));
     } finally {
       setRendering(false);
     }
@@ -158,12 +172,51 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
           </div>
 
           <div className="overflow-hidden rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-2 sm:p-3">
-            <canvas
-              ref={canvasRef}
-              className={`mx-auto max-w-full select-none bg-white shadow-sm ${rendering ? 'opacity-70' : ''}`}
-              draggable={false}
-              style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
-            />
+            <div className="relative mx-auto w-fit max-w-full">
+              <canvas
+                ref={canvasRef}
+                className={`block max-w-full select-none bg-white shadow-sm ${rendering ? 'opacity-70' : ''}`}
+                draggable={false}
+                style={{ WebkitUserSelect: 'none', userSelect: 'none', height: 'auto' }}
+              />
+              {links.length > 0 ? (
+                <div className="absolute inset-0">
+                  {links.map((link) => {
+                    const style = {
+                      left: `${(link.left / viewportSize.width) * 100}%`,
+                      top: `${(link.top / viewportSize.height) * 100}%`,
+                      width: `${(link.width / viewportSize.width) * 100}%`,
+                      height: `${(link.height / viewportSize.height) * 100}%`,
+                    };
+                    if (link.url) {
+                      return (
+                        <a
+                          key={link.id}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute rounded-sm hover:bg-[rgba(22,112,85,0.12)]"
+                          style={style}
+                          aria-label="Abrir enlace de la guía"
+                        />
+                      );
+                    }
+                    return (
+                      <button
+                        key={link.id}
+                        type="button"
+                        className="absolute rounded-sm hover:bg-[rgba(22,112,85,0.12)]"
+                        style={style}
+                        aria-label={`Ir a la página ${link.pageNumber}`}
+                        onClick={() => {
+                          if (link.pageNumber) setPage(link.pageNumber);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3">

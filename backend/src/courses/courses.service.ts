@@ -12,6 +12,7 @@ import {
   SubscriptionStatus,
 } from '@prisma/client';
 import { Prisma } from '@prisma/client';
+import { publicCourseProductName } from '../common/guide-vpo';
 import { isInternalCatalogCourse } from '../common/public-courses';
 import { PrismaService } from '../prisma/prisma.service';
 import { FileStorageService } from '../storage/file-storage.service';
@@ -1014,7 +1015,8 @@ export class CoursesService {
       return {
         id: course.id,
         slug: course.slug,
-        title: course.title,
+        title: publicCourseProductName(course),
+        format: course.format,
         shortDescription: course.shortDescription,
         coverImage: course.coverImage,
         progressPercent: progress?.progressPercent ?? 0,

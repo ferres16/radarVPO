@@ -73,6 +73,7 @@ export type UserCourseProgress = {
   id: string;
   slug: string;
   title: string;
+  format?: 'standard' | 'guide_pdf' | null;
   shortDescription?: string | null;
   coverImage?: string | null;
   progressPercent: number;

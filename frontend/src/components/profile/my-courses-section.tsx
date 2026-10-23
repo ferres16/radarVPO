@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ProfileCard } from '@/components/profile-card';
 import { StatusPill } from '@/components/status-pill';
 import { CourseCoverImage } from '@/components/course-cover-image';
+import { getPublicCourseTitle } from '@/lib/guide-vpo';
 import type { UserCourseProgress } from '@/types';
 
 type MyCoursesSectionProps = {
@@ -17,10 +18,10 @@ export function MyCoursesSection({ courses, error }: MyCoursesSectionProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">
-            Mis cursos
+            Tus guías
           </p>
           <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">
-            Tu formación activa
+            Acceso activo
           </h2>
         </div>
       </div>
@@ -31,9 +32,9 @@ export function MyCoursesSection({ courses, error }: MyCoursesSectionProps) {
 
       {courses.length === 0 ? (
         <div className="mt-4 rounded-2xl border border-dashed border-[var(--stroke)] bg-[var(--bg-app)] p-6 text-center">
-          <p className="font-semibold text-[var(--ink)]">Aún no tienes cursos activos.</p>
+          <p className="font-semibold text-[var(--ink)]">Aún no tienes ninguna guía activa.</p>
           <Link href="/cursos" className="btn btn--primary mt-4 inline-flex">
-            Descubrir cursos
+            Ver las guías
           </Link>
         </div>
       ) : (
@@ -48,9 +49,13 @@ export function MyCoursesSection({ courses, error }: MyCoursesSectionProps) {
 }
 
 function CourseProgressCard({ course }: { course: UserCourseProgress }) {
-  const continueHref = course.lastLesson
-    ? `/cursos/${course.slug}/${course.lastLesson.slug}`
-    : `/cursos/${course.slug}`;
+  const publicTitle = getPublicCourseTitle(course);
+  const isGuide = course.format === 'guide_pdf' || (!course.lastLesson && course.totalLessons === 0);
+  const continueHref = isGuide
+    ? `/cursos/${course.slug}#guia`
+    : course.lastLesson
+      ? `/cursos/${course.slug}/${course.lastLesson.slug}`
+      : `/cursos/${course.slug}`;
 
   return (
     <article className="overflow-hidden rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] transition hover:-translate-y-0.5 hover:bg-white">
@@ -58,41 +63,47 @@ function CourseProgressCard({ course }: { course: UserCourseProgress }) {
         <CourseCoverImage
           slug={course.slug}
           src={course.coverImage}
-          alt={course.title}
+          alt={publicTitle}
           className="h-36 w-full object-cover object-top"
           fallbackClassName="flex h-36 w-full items-center justify-center bg-[linear-gradient(135deg,#e8f7ef,#f4fbff)] text-sm font-semibold text-[var(--ink-soft)]"
-          label={course.title}
+          label={publicTitle}
         />
       </div>
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-[var(--ink)]">{course.title}</h3>
+          <h3 className="font-semibold text-[var(--ink)]">{publicTitle}</h3>
           {course.isCompleted ? (
             <StatusPill label="Completado" tone="active" />
-          ) : null}
+          ) : (
+            <StatusPill label="Activa" tone="active" />
+          )}
         </div>
         <p className="mt-1 line-clamp-2 text-sm text-[var(--ink-soft)]">
-          {course.shortDescription || 'Curso disponible en tu cuenta.'}
+          {isGuide
+            ? 'Entra a leerla. No hace falta volver a pagar.'
+            : course.shortDescription || 'Disponible en tu cuenta.'}
         </p>
-        <div className="mt-3">
-          <div className="flex items-center justify-between text-xs font-semibold text-[var(--ink-soft)]">
-            <span>Progreso</span>
-            <span>{course.progressPercent}%</span>
+        {!isGuide ? (
+          <div className="mt-3">
+            <div className="flex items-center justify-between text-xs font-semibold text-[var(--ink-soft)]">
+              <span>Progreso</span>
+              <span>{course.progressPercent}%</span>
+            </div>
+            <div className="mt-1 h-2 overflow-hidden rounded-full bg-white">
+              <div
+                className="h-full rounded-full bg-[var(--green-500)] transition-all"
+                style={{ width: `${course.progressPercent}%` }}
+              />
+            </div>
           </div>
-          <div className="mt-1 h-2 overflow-hidden rounded-full bg-white">
-            <div
-              className="h-full rounded-full bg-[var(--green-500)] transition-all"
-              style={{ width: `${course.progressPercent}%` }}
-            />
-          </div>
-        </div>
-        {course.lastLesson ? (
+        ) : null}
+        {course.lastLesson && !isGuide ? (
           <p className="mt-3 text-xs text-[var(--ink-soft)]">
             Última lección: <span className="font-semibold text-[var(--ink)]">{course.lastLesson.title}</span>
           </p>
         ) : null}
         <Link href={continueHref} className="btn btn--primary btn--block mt-4">
-          Continuar curso
+          {isGuide ? 'Abrir la guía' : 'Continuar curso'}
         </Link>
       </div>
     </article>

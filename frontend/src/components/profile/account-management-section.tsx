@@ -95,10 +95,10 @@ export function AccountManagementSection() {
       </div>
 
       <div className="mt-6 border-t border-[var(--stroke)] pt-4">
-        <h3 className="text-lg font-black text-[var(--ink)]">Tus datos</h3>
+        <h3 className="text-lg font-black text-[var(--ink)]">Descargar o eliminar la cuenta</h3>
         <p className="mt-2 text-sm text-[var(--ink-soft)]">
-          Puedes descargar una copia de tu cuenta o eliminarla. Los registros de compra se conservan el tiempo que
-          exija la facturación.
+          No es un trámite de vivienda. Es solo tu cuenta de Radar VPO: puedes bajarte una copia o
+          borrarla. Los registros de compra se conservan el tiempo que pide la facturación.
         </p>
         <div className="mt-4 flex flex-col gap-2 sm:flex-row">
           <button type="button" className="btn btn--secondary" onClick={() => void exportData()} disabled={exporting}>

@@ -2,17 +2,26 @@ import { canViewPromotionDocument } from '@/lib/promotion-access';
 import { isAmendmentPublication } from '@/lib/promotion-content-filters';
 import type { Promotion } from '@/types';
 
+function publishedTime(promotion: Pick<Promotion, 'publishedAt' | 'createdAt'>): number {
+  const raw = promotion.publishedAt || promotion.createdAt;
+  if (!raw) return 0;
+  const time = Date.parse(raw);
+  return Number.isFinite(time) ? time : 0;
+}
+
 /** Promociones publicadas que se pueden mostrar en listados públicos. */
 export function publicPublishedPromotions(
   promotions: readonly Promotion[],
   limit?: number,
 ): Promotion[] {
-  const visible = promotions.filter(
-    (item) =>
-      item.status !== 'archived' &&
-      canViewPromotionDocument(item) &&
-      !isAmendmentPublication(item.title, item.publicDescription),
-  );
+  const visible = promotions
+    .filter(
+      (item) =>
+        item.status !== 'archived' &&
+        canViewPromotionDocument(item) &&
+        !isAmendmentPublication(item.title, item.publicDescription),
+    )
+    .sort((a, b) => publishedTime(b) - publishedTime(a));
   return typeof limit === 'number' ? visible.slice(0, limit) : visible;
 }
 

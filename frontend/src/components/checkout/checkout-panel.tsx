@@ -50,6 +50,7 @@ export function CheckoutPanel({
   const isCourse = summary.product === 'course';
   const isProProduct = summary.product === 'pro' || summary.product === 'pro_pack_3m';
   const alreadyPro = isProProduct && Boolean(me?.proAccess?.hasAccess ?? me?.plan === 'pro');
+  const [alreadyOwned, setAlreadyOwned] = useState(false);
   const displayPriceLabel =
     isProProduct && apiProPriceLabel ? apiProPriceLabel : summary.priceLabel;
   const embedded = layout === 'embedded';
@@ -93,6 +94,26 @@ export function CheckoutPanel({
       document.getElementById('pagar')?.scrollIntoView({ block: 'start' });
     }
   }, [canceled]);
+
+  useEffect(() => {
+    if (!isCourse || !summary.courseSlug || loading) return;
+    if (!me) {
+      setAlreadyOwned(false);
+      return;
+    }
+    let active = true;
+    api
+      .getCourseForUser(summary.courseSlug)
+      .then((course) => {
+        if (active) setAlreadyOwned(Boolean(course.access?.canAccess));
+      })
+      .catch(() => {
+        if (active) setAlreadyOwned(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isCourse, loading, me, summary.courseSlug]);
 
   async function goToStripe() {
     const { url } = await api.createCheckout({
@@ -141,6 +162,7 @@ export function CheckoutPanel({
     !submitting &&
     paymentsEnabled === true &&
     !alreadyPro &&
+    !alreadyOwned &&
     !loading &&
     accountReady;
 
@@ -183,7 +205,16 @@ export function CheckoutPanel({
         </p>
       ) : null}
 
-      {!loading && alreadyPro ? (
+      {!loading && alreadyOwned && summary.courseSlug ? (
+        <div className="mt-4 space-y-3">
+          <p className="rounded-xl bg-[var(--bg-eco)] px-3 py-3 text-sm font-semibold text-[var(--green-700)]">
+            Ya tienes esta guía activa. Entra a leerla, no hace falta volver a pagar.
+          </p>
+          <Link href={`/cursos/${summary.courseSlug}#guia`} className="btn btn--primary btn--lg btn--block">
+            Abrir la guía
+          </Link>
+        </div>
+      ) : !loading && alreadyPro ? (
         <p className="mt-4 rounded-xl bg-[var(--bg-eco)] px-3 py-3 text-sm font-semibold text-[var(--green-700)]">
           Ya tienes Radar VPO PRO activo. Puedes gestionarlo en{' '}
           <Link href="/account" className="underline">

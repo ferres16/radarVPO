@@ -1,9 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { ProfileCard } from '@/components/profile-card';
-import { formatProfileDate, splitFullName } from '@/lib/pro-access';
+import { hasProAccess } from '@/lib/pro-access';
 import type { UserProfile } from '@/types';
 
 type PersonalInfoSectionProps = {
@@ -21,8 +22,8 @@ export function PersonalInfoSection({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const isPro = hasProAccess(profile);
 
-  const { firstName, lastName } = splitFullName(profile.fullName);
   const hasChanges = useMemo(() => {
     const trimmedName = fullName.trim();
     const trimmedPhone = phone.trim();
@@ -47,44 +48,33 @@ export function PersonalInfoSection({
   }
 
   async function saveProfile() {
-    const trimmedName = fullName.trim();
-    if (!trimmedName) {
-      setError('El nombre es obligatorio.');
-      return;
-    }
-
-    if (!hasChanges) {
-      return;
-    }
+    if (!hasChanges) return;
 
     setSaving(true);
     setError('');
     setSuccess('');
     try {
       const updated = await api.updateMe({
-        fullName: trimmedName,
+        fullName: fullName.trim(),
         phone: phone.trim(),
       });
       onProfileUpdate(updated);
       setEditing(false);
-      setSuccess('Perfil actualizado correctamente.');
+      setSuccess('Cuenta actualizada.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo guardar el perfil.');
+      setError(err instanceof Error ? err.message : 'No se pudo guardar.');
     } finally {
       setSaving(false);
     }
   }
 
-  async function savePreference(payload: {
-    smsAlertsEnabled?: boolean;
-    marketingOptIn?: boolean;
-  }) {
+  async function saveSmsPreference(enabled: boolean) {
     setError('');
     setSuccess('');
     try {
-      const updated = await api.updateMe(payload);
+      const updated = await api.updateMe({ smsAlertsEnabled: enabled });
       onProfileUpdate(updated);
-      setSuccess('Preferencia actualizada.');
+      setSuccess(enabled ? 'Avisos por SMS activados.' : 'Avisos por SMS desactivados.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar la preferencia.');
     }
@@ -95,15 +85,19 @@ export function PersonalInfoSection({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">
-            Información personal
+            Cuenta
           </p>
           <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">
-            Tus datos
+            Acceso y avisos
           </h2>
+          <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--ink-soft)]">
+            El email es el de tu cuenta. El nombre es opcional. El teléfono solo se usa si tienes
+            PRO y quieres un SMS cuando se publica una promoción. No enviamos SMS de marketing.
+          </p>
         </div>
         {!editing ? (
           <button type="button" onClick={startEditing} className="btn btn--secondary">
-            Editar perfil
+            Editar
           </button>
         ) : null}
       </div>
@@ -112,7 +106,7 @@ export function PersonalInfoSection({
         <div className="mt-4 space-y-3">
           <label className="block text-sm">
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">
-              Nombre completo
+              Nombre (opcional)
             </span>
             <input
               value={fullName}
@@ -123,19 +117,19 @@ export function PersonalInfoSection({
           </label>
           <label className="block text-sm">
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">
-              Teléfono
+              Teléfono para avisos PRO
             </span>
             <input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="ds-control mt-1 w-full"
               maxLength={30}
-              placeholder="Opcional"
+              placeholder="Opcional. Solo SMS de nuevas promociones."
             />
           </label>
           <label className="block text-sm">
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--ink-soft)]">
-              Email
+              Email de acceso
             </span>
             <input
               value={profile.email}
@@ -150,7 +144,7 @@ export function PersonalInfoSection({
               disabled={saving || !hasChanges}
               className="btn btn--primary"
             >
-              {saving ? 'Guardando...' : 'Guardar cambios'}
+              {saving ? 'Guardando...' : 'Guardar'}
             </button>
             <button
               type="button"
@@ -165,13 +159,11 @@ export function PersonalInfoSection({
         </div>
       ) : (
         <dl className="mt-4 grid gap-3 sm:grid-cols-2">
-          <InfoItem label="Nombre" value={firstName || '—'} />
-          {lastName ? <InfoItem label="Apellidos" value={lastName} /> : null}
-          <InfoItem label="Email" value={profile.email} />
-          <InfoItem label="Teléfono" value={profile.phone?.trim() || '—'} />
+          <InfoItem label="Email de acceso" value={profile.email} />
+          <InfoItem label="Nombre" value={profile.fullName?.trim() || 'No indicado'} />
           <InfoItem
-            label="Fecha de registro"
-            value={formatProfileDate(profile.createdAt)}
+            label="Teléfono"
+            value={profile.phone?.trim() || 'No indicado'}
           />
         </dl>
       )}
@@ -182,39 +174,38 @@ export function PersonalInfoSection({
 
       <div className="mt-6 space-y-3 border-t border-[var(--stroke)] pt-5">
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">
-          Preferencias de avisos
+          SMS de nuevas promociones
         </p>
-        <p className="text-sm leading-6 text-[var(--ink-soft)]">
-          Cancelar PRO, desactivar SMS y darte de baja del marketing son acciones distintas.
-        </p>
-        <label className="flex items-start gap-3 text-sm text-[var(--ink)]">
-          <input
-            type="checkbox"
-            className="mt-1 h-4 w-4"
-            checked={Boolean(profile.smsAlertsEnabled)}
-            onChange={(e) => void savePreference({ smsAlertsEnabled: e.target.checked })}
-          />
-          <span>
-            <strong className="font-bold">SMS de avisos PRO</strong>
-            <span className="mt-1 block text-[var(--ink-soft)]">
-              Solo publicaciones oficiales por ahora. Tener teléfono guardado no activa los SMS.
-            </span>
-          </span>
-        </label>
-        <label className="flex items-start gap-3 text-sm text-[var(--ink)]">
-          <input
-            type="checkbox"
-            className="mt-1 h-4 w-4"
-            checked={Boolean(profile.marketingOptInAt)}
-            onChange={(e) => void savePreference({ marketingOptIn: e.target.checked })}
-          />
-          <span>
-            <strong className="font-bold">Novedades y contenidos educativos</strong>
-            <span className="mt-1 block text-[var(--ink-soft)]">
-              Marketing opcional. No afecta a avisos de servicio PRO ni a emails de cuenta.
-            </span>
-          </span>
-        </label>
+        {isPro ? (
+          <>
+            <p className="text-sm leading-6 text-[var(--ink-soft)]">
+              Solo si pagas PRO. Te avisamos cuando se publica una convocatoria. Nunca de ofertas,
+              cursos ni publicidad.
+            </p>
+            <label className="flex items-start gap-3 text-sm text-[var(--ink)]">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4"
+                checked={Boolean(profile.smsAlertsEnabled)}
+                onChange={(e) => void saveSmsPreference(e.target.checked)}
+              />
+              <span>
+                <strong className="font-bold">Quiero el SMS de avisos PRO</strong>
+                <span className="mt-1 block text-[var(--ink-soft)]">
+                  Hace falta un móvil en tu cuenta. Tener teléfono no activa marketing.
+                </span>
+              </span>
+            </label>
+          </>
+        ) : (
+          <p className="text-sm leading-6 text-[var(--ink-soft)]">
+            Los SMS de nuevas promociones van solo con{' '}
+            <Link href="/pro#pagar" className="font-bold text-[var(--green-700)] underline">
+              Radar VPO PRO
+            </Link>
+            . No hay SMS de marketing, ni para cuentas gratis ni de pago.
+          </p>
+        )}
       </div>
     </ProfileCard>
   );

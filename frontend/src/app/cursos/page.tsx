@@ -23,6 +23,7 @@ import {
   getPublicCourseTitle,
   isGuideVpoSlug,
 } from '@/lib/guide-vpo';
+import { getGuideReadHref, getOwnedCourseSlugs } from '@/lib/owned-courses';
 import { publicCatalogCourses } from '@/lib/public-courses';
 import { proPlan } from '@/lib/pro';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
@@ -79,15 +80,24 @@ function pickGeneralGuide(courses: Course[]): Course | null {
 }
 
 export default async function CoursesPage() {
-  const courses = await api.listCourses().catch(() => []);
+  const [courses, ownedSlugs] = await Promise.all([
+    api.listCourses().catch(() => []),
+    getOwnedCourseSlugs(),
+  ]);
   const visibleCourses = publicCatalogCourses(courses).sort(
     (a, b) => a.order - b.order || a.title.localeCompare(b.title),
   );
   const generalGuide = pickGeneralGuide(visibleCourses);
   const generalPrice = generalGuide ? getCoursePrice(generalGuide) : null;
   const generalSellable = generalGuide ? isCourseSellable(generalGuide) : false;
+  const generalOwned = Boolean(generalGuide && ownedSlugs.has(generalGuide.slug));
   const generalHref = generalGuide ? `/cursos/${generalGuide.slug}` : '#pagar';
-  const generalPayHref = generalSellable ? '#pagar' : generalHref;
+  const generalReadHref = generalGuide ? getGuideReadHref(generalGuide.slug) : '/cursos';
+  const generalPayHref = generalOwned
+    ? generalReadHref
+    : generalSellable
+      ? '#pagar'
+      : generalHref;
   const generalTopics =
     generalGuide && !isGuideVpoSlug(generalGuide.slug) ? getGuideTopics(generalGuide) : [];
   const generalPublicTitle = generalGuide ? getPublicCourseTitle(generalGuide) : GUIDE_VPO_TITLE;
@@ -113,10 +123,16 @@ export default async function CoursesPage() {
         actions={
           <>
             <ButtonLink href={generalPayHref} size="lg" block>
-              {generalSellable ? `Pagar ${priceLabel} · pago único` : 'Ver la guía general'}
+              {generalOwned
+                ? 'Abrir la guía'
+                : generalSellable
+                  ? `Pagar ${priceLabel} · pago único`
+                  : 'Ver la guía general'}
             </ButtonLink>
             <p className="w-full text-sm text-[var(--ink-soft)]">
-              Precio, condiciones y pago en la misma ficha. Acceso inmediato al confirmar.
+              {generalOwned
+                ? 'Ya está en tu cuenta. Entra a leerla, sin volver a pagar.'
+                : 'Precio, condiciones y pago en la misma ficha. Acceso inmediato al confirmar.'}
             </p>
           </>
         }
@@ -168,7 +184,22 @@ export default async function CoursesPage() {
             </div>
 
             <aside className="border-t border-[var(--stroke)] bg-[var(--bg-eco)] lg:border-l lg:border-t-0">
-              {generalSellable && generalGuide ? (
+              {generalOwned && generalGuide ? (
+                <div className="flex h-full flex-col justify-between gap-5 p-5 md:p-7">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--green-700)]">
+                      Acceso activo
+                    </p>
+                    <p className="display-type mt-2 text-3xl font-black text-[var(--ink)]">Ya tuya</p>
+                    <p className="mt-2 text-sm text-[var(--ink-soft)]">
+                      Entra a la guía. No aparece el pago porque ya la tienes.
+                    </p>
+                  </div>
+                  <ButtonLink href={generalReadHref} size="lg" block>
+                    Abrir la guía →
+                  </ButtonLink>
+                </div>
+              ) : generalSellable && generalGuide ? (
                 <CheckoutPanel
                   layout="embedded"
                   summary={{
@@ -202,7 +233,7 @@ export default async function CoursesPage() {
         </div>
       </PublicSection>
 
-      {isGuideVpoSlug(generalGuide?.slug) ? (
+      {isGuideVpoSlug(generalGuide?.slug) && !generalOwned ? (
         <PublicSection>
           <GuideVpoChapters title="Doce temas para saber qué preparar" />
         </PublicSection>
@@ -263,7 +294,11 @@ export default async function CoursesPage() {
             </p>
             <div className="mt-4">
               <ButtonLink href={generalPayHref}>
-                {generalSellable ? `Pagar la guía · ${priceLabel}` : 'Ir a la guía general'}
+                {generalOwned
+                  ? 'Abrir la guía'
+                  : generalSellable
+                    ? `Pagar la guía · ${priceLabel}`
+                    : 'Ir a la guía general'}
               </ButtonLink>
             </div>
           </article>
@@ -295,7 +330,11 @@ export default async function CoursesPage() {
           />
           <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {visibleCourses.map((course) => (
-              <CourseProductCard key={course.id} course={course} />
+              <CourseProductCard
+                key={course.id}
+                course={course}
+                owned={ownedSlugs.has(course.slug)}
+              />
             ))}
           </div>
         </PublicSection>

@@ -38,6 +38,7 @@ export function CourseAccessProvider({
 
   useEffect(() => {
     let active = true;
+    let timer: number | undefined;
 
     if (initialCanAccess || isFree) {
       setCanAccess(true);
@@ -47,21 +48,50 @@ export function CourseAccessProvider({
       };
     }
 
-    (async () => {
+    const justPaid =
+      typeof window !== 'undefined' &&
+      new URLSearchParams(window.location.search).get('checkout') === 'success';
+
+    async function checkAccess() {
       try {
         const course = await api.getCourseForUser(slug);
-        if (!active) return;
-        setCanAccess(Boolean(course.access?.canAccess));
+        if (!active) return false;
+        const ok = Boolean(course.access?.canAccess);
+        setCanAccess(ok);
+        return ok;
       } catch {
-        if (!active) return;
+        if (!active) return false;
         setCanAccess(false);
-      } finally {
+        return false;
+      }
+    }
+
+    if (!justPaid) {
+      void checkAccess().finally(() => {
+        if (active) setResolved(true);
+      });
+      return () => {
+        active = false;
+      };
+    }
+
+    let attempts = 0;
+    const poll = async () => {
+      const ok = await checkAccess();
+      attempts += 1;
+      if (ok || attempts >= 8) {
+        if (timer) window.clearInterval(timer);
         if (active) setResolved(true);
       }
-    })();
+    };
+    void poll();
+    timer = window.setInterval(() => {
+      void poll();
+    }, 2500);
 
     return () => {
       active = false;
+      if (timer) window.clearInterval(timer);
     };
   }, [accessType, initialCanAccess, isFree, pricingType, slug]);
 
@@ -75,6 +105,25 @@ export function CourseAccessProvider({
 
 export function useCourseAccess() {
   return useContext(CourseAccessContext);
+}
+
+export function useHasCourseAccess() {
+  const { canAccess, resolved, initialCanAccess } = useCourseAccess();
+  return resolved ? canAccess : initialCanAccess;
+}
+
+export function AccessSwitch({
+  fallback,
+  children,
+}: {
+  fallback: ReactNode;
+  children: ReactNode;
+}) {
+  return useHasCourseAccess() ? children : fallback;
+}
+
+export function LockedOnly({ children }: { children: ReactNode }) {
+  return useHasCourseAccess() ? null : children;
 }
 
 function pickHref(canAccess: boolean, hrefWhenAccess: string, hrefWhenLocked: string) {
