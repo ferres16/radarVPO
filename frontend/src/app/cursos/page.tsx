@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
+import { CheckoutPanel } from '@/components/checkout/checkout-panel';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { CourseProductCard } from '@/components/course-product-card';
@@ -7,11 +8,11 @@ import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
 import {
   formatEuro,
+  getCoursePayBullets,
   getCoursePrice,
   getGuideTopics,
   isCourseSellable,
   isGuidePdf,
-  isIncludedInPro,
 } from '@/lib/offer';
 import { publicCatalogCourses } from '@/lib/public-courses';
 import { proPlan } from '@/lib/pro';
@@ -85,7 +86,8 @@ export default async function CoursesPage() {
   const generalGuide = pickGeneralGuide(visibleCourses);
   const generalPrice = generalGuide ? getCoursePrice(generalGuide) : null;
   const generalSellable = generalGuide ? isCourseSellable(generalGuide) : false;
-  const generalHref = generalGuide ? `/cursos/${generalGuide.slug}` : '/cursos#guia-general';
+  const generalHref = generalGuide ? `/cursos/${generalGuide.slug}` : '#pagar';
+  const generalPayHref = generalSellable ? '#pagar' : generalHref;
   const generalTopics =
     (generalGuide && getGuideTopics(generalGuide).length > 0
       ? getGuideTopics(generalGuide)
@@ -104,41 +106,24 @@ export default async function CoursesPage() {
       />
 
       <PublicPageHero
+        animated={false}
         badge="Guías"
         title="Entiende la VPO en Cataluña"
         titleAccent="y empieza a planificar tu vivienda"
-        description="Conoce cómo funciona la vivienda protegida, qué ayudas puedes consultar y cómo estimar la hipoteca y el dinero que necesitarías tener ahorrado. Una guía general para entender tus opciones antes de dar el siguiente paso."
+        description="Cómo funciona la VPO, qué ayudas consultar y cómo estimar hipoteca y ahorro. Precio final, pago único y acceso inmediato."
         actions={
           <>
-            <ButtonLink href={generalHref} size="lg" block>
-              {generalSellable
-                ? `Ver la guía general · ${priceLabel}`
-                : 'Ver la guía general'}
+            <ButtonLink href={generalPayHref} size="lg" block>
+              {generalSellable ? `Pagar ${priceLabel} · pago único` : 'Ver la guía general'}
             </ButtonLink>
             <p className="w-full text-sm text-[var(--ink-soft)]">
-              Pago único · Formato PDF · Acceso inmediato tras confirmar el pago
+              Precio, condiciones y pago en la misma ficha. Acceso inmediato al confirmar.
             </p>
           </>
         }
       />
 
-      <PublicSection>
-        <SectionHeader
-          eyebrow="Empieza aquí"
-          title="Empieza con una visión clara"
-          description="Tres pilares para situarte antes de buscar promoción o presentar nada."
-        />
-        <div className="lp-why-grid mt-6">
-          {VISION_ITEMS.map((item) => (
-            <article key={item.title} className="lp-why-card">
-              <h2 className="lp-why-card__title">{item.title}</h2>
-              <p className="lp-why-card__text">{item.body}</p>
-            </article>
-          ))}
-        </div>
-      </PublicSection>
-
-      <PublicSection id="guia-general" muted>
+      <PublicSection id="pagar" muted className="scroll-mt-24" animated={false}>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--green-700)]">
           Guía general de VPO en Cataluña
         </p>
@@ -167,37 +152,54 @@ export default async function CoursesPage() {
               </ul>
             </div>
 
-            <aside className="flex flex-col justify-between gap-5 border-t border-[var(--stroke)] bg-[var(--bg-eco)] p-5 md:p-7 lg:border-l lg:border-t-0">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--green-700)]">
-                  Acceso
-                </p>
-                <p className="display-type mt-2 text-3xl font-black text-[var(--ink)]">
-                  {priceLabel}
-                </p>
-                <p className="mt-2 text-sm text-[var(--ink-soft)]">
-                  Guía PDF · pago único
-                  {generalGuide && isIncludedInPro(generalGuide)
-                    ? ` · incluida en ${proPlan.name} mientras esté activa`
-                    : ''}
-                </p>
-              </div>
-              <div className="space-y-3">
-                <ButtonLink href={generalHref} size="lg" block>
-                  Ver el índice y los detalles →
-                </ButtonLink>
-                {generalSellable ? (
-                  <p className="text-center text-xs text-[var(--ink-soft)]">
-                    Entras al contenido en cuanto se confirma el pago
-                  </p>
-                ) : (
-                  <p className="text-center text-xs text-[var(--ink-soft)]">
-                    Consulta la ficha para ver el estado de publicación
-                  </p>
-                )}
-              </div>
+            <aside className="border-t border-[var(--stroke)] bg-[var(--bg-eco)] lg:border-l lg:border-t-0">
+              {generalSellable && generalGuide ? (
+                <CheckoutPanel
+                  layout="embedded"
+                  summary={{
+                    product: 'course',
+                    courseSlug: generalGuide.slug,
+                    title: generalGuide.title,
+                    priceLabel,
+                    cadenceLabel: 'pago único',
+                    recurrenceNote: 'Sin renovaciones. Acceso inmediato al confirmar el pago.',
+                    bullets: getCoursePayBullets(generalGuide),
+                    backHref: generalHref,
+                    backLabel: 'Ver la ficha completa',
+                  }}
+                />
+              ) : (
+                <div className="flex h-full flex-col justify-between gap-5 p-5 md:p-7">
+                  <div>
+                    <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--green-700)]">
+                      Acceso
+                    </p>
+                    <p className="display-type mt-2 text-3xl font-black text-[var(--ink)]">{priceLabel}</p>
+                    <p className="mt-2 text-sm text-[var(--ink-soft)]">Guía PDF · pago único</p>
+                  </div>
+                  <ButtonLink href={generalHref} size="lg" block>
+                    Ver el índice y los detalles →
+                  </ButtonLink>
+                </div>
+              )}
             </aside>
           </div>
+        </div>
+      </PublicSection>
+
+      <PublicSection>
+        <SectionHeader
+          eyebrow="Empieza aquí"
+          title="Empieza con una visión clara"
+          description="Tres pilares para situarte antes de buscar promoción o presentar nada."
+        />
+        <div className="lp-why-grid mt-6">
+          {VISION_ITEMS.map((item) => (
+            <article key={item.title} className="lp-why-card">
+              <h2 className="lp-why-card__title">{item.title}</h2>
+              <p className="lp-why-card__text">{item.body}</p>
+            </article>
+          ))}
         </div>
       </PublicSection>
 
@@ -237,7 +239,7 @@ export default async function CoursesPage() {
               esté publicada. Renovación mensual · {proPlan.price}.
             </p>
           </div>
-          <ButtonLink href={proPlan.landingHref} variant="secondary" size="lg">
+          <ButtonLink href={proPlan.checkoutHref} variant="secondary" size="lg">
             Consultar qué incluye PRO →
           </ButtonLink>
         </div>
@@ -261,7 +263,9 @@ export default async function CoursesPage() {
               Empieza por la guía general: contexto, ayudas y números antes de mover ficha.
             </p>
             <div className="mt-4">
-              <ButtonLink href={generalHref}>Ir a la guía general</ButtonLink>
+              <ButtonLink href={generalPayHref}>
+                {generalSellable ? `Pagar la guía · ${priceLabel}` : 'Ir a la guía general'}
+              </ButtonLink>
             </div>
           </article>
           <article className="public-card p-5 md:p-6">

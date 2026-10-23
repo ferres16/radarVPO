@@ -1,7 +1,6 @@
 import * as https from 'node:https';
 import {
   BadRequestException,
-  ForbiddenException,
   Injectable,
   Logger,
   ServiceUnavailableException,
@@ -329,7 +328,6 @@ export class BillingService {
       select: {
         id: true,
         email: true,
-        emailVerifiedAt: true,
         plan: true,
         stripeCustomerId: true,
         subscriptions: {
@@ -344,11 +342,6 @@ export class BillingService {
     });
     if (!user) {
       throw new BadRequestException('Usuario no encontrado.');
-    }
-    if (!user.emailVerifiedAt) {
-      throw new ForbiddenException(
-        'Debes verificar tu email antes de comprar. Revisa tu bandeja o solicita un nuevo enlace desde Mi cuenta.',
-      );
     }
 
     const stripe = await this.getStripe();
@@ -436,7 +429,7 @@ export class BillingService {
             },
           },
           success_url: `${siteUrl}/account?checkout=success&product=${isPack ? 'pro_pack_3m' : 'pro'}`,
-          cancel_url: `${siteUrl}/checkout?product=${isPack ? 'pro_pack_3m' : 'pro'}&canceled=1`,
+          cancel_url: `${siteUrl}/pro?canceled=1`,
         },
         user,
       );
@@ -556,7 +549,7 @@ export class BillingService {
           },
         },
         success_url: `${siteUrl}/cursos/${course.slug}?checkout=success`,
-        cancel_url: `${siteUrl}/checkout?product=course&course=${encodeURIComponent(course.slug)}&canceled=1`,
+        cancel_url: `${siteUrl}/cursos/${course.slug}?canceled=1`,
       },
       user,
     );

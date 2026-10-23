@@ -19,9 +19,9 @@ export const homeOfferLayers = [
     title: 'Entiende contexto, ayudas e hipoteca',
     price: 'Precio final en la ficha',
     description:
-      'La primera guía trata el contexto de la VPO, las ayudas y el ahorro necesario. La preparación de la solicitud corresponde a una guía posterior.',
-    cta: 'Ver las guías',
-    href: '/cursos',
+      'La primera guía trata el contexto de la VPO, las ayudas y el ahorro necesario. Pagas en la misma ficha, sin páginas intermedias.',
+    cta: 'Comprar la guía',
+    href: '/cursos#pagar',
     event: 'course_cta_clicked' as const,
   },
   {
@@ -30,9 +30,9 @@ export const homeOfferLayers = [
     title: 'Avisos por SMS y organización',
     price: proPriceLabel,
     description:
-      'Email y SMS cuando se publica una promoción, y Mi espacio sin límite. Las guías incluidas, si las hay, aparecen en su ficha.',
-    cta: 'Ver Radar VPO PRO',
-    href: '/pro',
+      'Email y SMS cuando se publica una promoción, y Mi espacio sin límite. El precio y el pago están en la misma página.',
+    cta: `Hazte PRO · ${proPriceLabel}`,
+    href: '/pro#pagar',
     event: 'pro_cta_clicked' as const,
   },
 ] as const;

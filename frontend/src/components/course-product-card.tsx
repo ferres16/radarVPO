@@ -28,9 +28,11 @@ export function CourseProductCard({ course, className = '', layout = 'grid' }: C
   const shellClass =
     layout === 'rail' ? 'saas-card-rail h-full' : 'product-card public-card public-card--hover group';
 
+  const href = status.sellable ? `/cursos/${course.slug}#pagar` : `/cursos/${course.slug}`;
+
   return (
     <article className={`${shellClass} ${className}`}>
-      <Link href={`/cursos/${course.slug}`} className="block">
+      <Link href={href} className="block">
         <div className={layout === 'rail' ? 'relative overflow-hidden rounded-xl' : 'product-card__media'}>
           <CourseCoverImage
             slug={course.slug}
@@ -68,7 +70,11 @@ export function CourseProductCard({ course, className = '', layout = 'grid' }: C
           <div className="mt-3 flex items-end justify-between gap-2">
             <p className="text-lg font-black text-[var(--ink)]">{priceText(course, status.sellable)}</p>
             <span className="text-xs font-bold text-[var(--green-700)]">
-              {guide ? 'Ver guía →' : 'Ver programa →'}
+              {status.sellable
+                ? `Pagar ${priceText(course, status.sellable)} →`
+                : guide
+                  ? 'Ver guía →'
+                  : 'Ver programa →'}
             </span>
           </div>
         </div>

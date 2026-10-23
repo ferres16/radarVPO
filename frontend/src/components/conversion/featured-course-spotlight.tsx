@@ -39,19 +39,19 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
         {price !== null ? (
           <p className="spotlight-course__note">
             {status.sellable
-              ? `${formatEuro(price)} · pago único, sin renovaciones`
+              ? `${formatEuro(price)} · pago único, sin renovaciones. Pagas en esta ficha.`
               : `Precio previsto al lanzarlo: ${formatEuro(price)} (pago único)`}
           </p>
         ) : null}
         <div className="spotlight-course__actions">
           <TrackedButtonLink
-            href={`/cursos/${course.slug}`}
+            href={status.sellable ? `/cursos/${course.slug}#pagar` : `/cursos/${course.slug}`}
             size="lg"
             block
             event="course_cta_clicked"
             eventProperties={{ source: 'home_spotlight', course: course.slug }}
           >
-            Ver el curso
+            {status.sellable && price !== null ? `Pagar ${formatEuro(price)}` : 'Ver el curso'}
           </TrackedButtonLink>
         </div>
       </div>

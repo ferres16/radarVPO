@@ -12,6 +12,7 @@ import { PromotionCard } from '@/components/promotion-card';
 import { StructuredData } from '@/components/structured-data';
 import { buildProofItems } from '@/lib/catalog-stats';
 import { homeFaqs } from '@/lib/conversion';
+import { formatEuro, getCoursePrice, isCourseSellable } from '@/lib/offer';
 import { pickFeaturedPublicCourse } from '@/lib/public-courses';
 import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
@@ -40,6 +41,17 @@ export default async function Home() {
     api.getCatalogStats().catch(() => null),
   ]);
   const featuredCourse = pickFeaturedPublicCourse(courses);
+  const featuredSellable = featuredCourse ? isCourseSellable(featuredCourse) : false;
+  const featuredPrice = featuredCourse ? getCoursePrice(featuredCourse) : null;
+  const featuredHref = featuredCourse
+    ? featuredSellable
+      ? `/cursos/${featuredCourse.slug}#pagar`
+      : `/cursos/${featuredCourse.slug}`
+    : '/cursos';
+  const featuredCta =
+    featuredSellable && featuredPrice !== null
+      ? `Comprar guía · ${formatEuro(featuredPrice)}`
+      : 'Ver las guías';
   const listed = publicPublishedPromotions(promotions);
   const previewPromotions = listed.slice(0, 3);
   const samplePromotion = previewPromotions[0];
@@ -64,10 +76,11 @@ export default async function Home() {
                   <span className="lp-hero__title-accent"> con el PDF oficial, las guías y tus oportunidades.</span>
                 </h1>
                 <p className="lp-hero__subtitle">
-                  Empieza gratis en el móvil. Sin cuenta para consultar las bases. La primera guía trata contexto,
-                  ayudas e hipoteca; PRO avisa por SMS.
+                  {featuredSellable && featuredPrice !== null
+                    ? `Guía ${formatEuro(featuredPrice)} pago único. Consultar promociones es gratis. PRO añade avisos por SMS.`
+                    : 'Empieza gratis en el móvil. Sin cuenta para consultar las bases. La primera guía trata contexto, ayudas e hipoteca; PRO avisa por SMS.'}
                 </p>
-                <HomeHeroActions />
+                <HomeHeroActions guideHref={featuredHref} guideCta={featuredCta} />
                 <ProofStats items={proofItems} />
               </div>
               {samplePromotion ? <PdfViewerDemo promotion={samplePromotion} /> : null}
@@ -83,7 +96,17 @@ export default async function Home() {
                 Gratis, curso o suscripción: una acción por camino
               </h2>
             </div>
-            <HomeOfferStrip />
+            <HomeOfferStrip
+              guide={
+                featuredSellable && featuredPrice !== null
+                  ? {
+                      href: featuredHref,
+                      price: formatEuro(featuredPrice),
+                      cta: featuredCta,
+                    }
+                  : undefined
+              }
+            />
           </div>
         </section>
 
@@ -142,7 +165,7 @@ export default async function Home() {
                 SMS.
               </p>
               <div className="mt-6">
-                <ButtonLink href="/pro" variant="secondary" className="w-full sm:w-auto">
+                <ButtonLink href="/pro#pagar" variant="secondary" className="w-full sm:w-auto">
                   Ver qué incluye PRO
                 </ButtonLink>
               </div>

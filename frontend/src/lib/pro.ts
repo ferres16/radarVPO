@@ -14,14 +14,14 @@ export const proPlan = {
   interval: 'month' as const,
   ctaLabel: 'Hazte PRO',
   landingHref: '/pro',
-  checkoutHref: '/checkout?product=pro',
+  checkoutHref: '/pro#pagar',
 };
 
 export const proHref = proPlan.landingHref;
 
-/** Los CTA de PRO llevan siempre a la página que explica la oferta y su precio. */
-export function getProHref(isAuthenticated: boolean): string {
-  return isAuthenticated ? proPlan.checkoutHref : proPlan.landingHref;
+/** Los CTA de PRO van a la ficha con el recuadro de pago, sin página intermedia. */
+export function getProHref(): string {
+  return proPlan.checkoutHref;
 }
 
 export const proActiveMessages = [

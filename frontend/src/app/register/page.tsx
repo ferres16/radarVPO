@@ -27,7 +27,7 @@ export default function RegisterPage() {
 function RegisterForm() {
   const searchParams = useSearchParams();
   const nextPath = useMemo(() => {
-    const legacyIntent = searchParams.get('intent') === 'pro' ? '/checkout?product=pro' : '';
+      const legacyIntent = searchParams.get('intent') === 'pro' ? '/pro#pagar' : '';
     return safeNextPath(searchParams.get('next'), legacyIntent);
   }, [searchParams]);
   const [fullName, setFullName] = useState('');
@@ -72,7 +72,10 @@ function RegisterForm() {
   }
 
   const loginHref = nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : '/login';
-  const buying = nextPath.startsWith('/checkout');
+  const buying =
+    nextPath.startsWith('/checkout') ||
+    nextPath.startsWith('/pro') ||
+    nextPath.startsWith('/cursos/');
 
   return (
     <main className="lp lp--inner lp--app auth-shell">
@@ -85,7 +88,7 @@ function RegisterForm() {
             </h1>
             <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
               {buying
-                ? 'Necesitamos una cuenta para activar tu compra. Al terminar volverás al resumen del pedido.'
+                ? 'Necesitamos una cuenta para activar tu compra. Al terminar vuelves a pagar en la ficha.'
                 : 'La cuenta es gratis. Con ella guardas promociones y accedes a la lección de muestra del curso.'}
             </p>
 

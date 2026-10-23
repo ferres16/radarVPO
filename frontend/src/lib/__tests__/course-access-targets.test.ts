@@ -64,13 +64,13 @@ describe('getCourseEntryHref', () => {
 describe('buildCourseAccessTargets', () => {
   it('points locked free courses to the course page instead of login', () => {
     const targets = buildCourseAccessTargets(baseCourse);
-    expect(targets.lockedHref).toBe('/cursos/curso-test#precio');
+    expect(targets.lockedHref).toBe('/cursos/curso-test#pagar');
     expect(targets.accessHref).toBe('/cursos/curso-test/leccion-1');
   });
 
-  it('sends sellable paid courses to the integrated checkout with the final price', () => {
+  it('sends sellable paid courses to the product pay box with the final price', () => {
     const targets = buildCourseAccessTargets(paidCourse(3));
-    expect(targets.lockedHref).toBe('/checkout?product=course&course=curso-test');
+    expect(targets.lockedHref).toBe('/cursos/curso-test#pagar');
     expect(targets.lockedLabel.replace(/\u00a0/g, ' ')).toBe('Comprar curso · 29 €');
   });
 
@@ -84,6 +84,6 @@ describe('buildCourseAccessTargets', () => {
     const targets = buildCourseAccessTargets(
       paidCourse(3, { stripePaymentLink: 'https://buy.stripe.com/test' }),
     );
-    expect(targets.lockedHref).toBe('/checkout?product=course&course=curso-test');
+    expect(targets.lockedHref).toBe('/cursos/curso-test#pagar');
   });
 });

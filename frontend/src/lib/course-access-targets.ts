@@ -1,4 +1,5 @@
 import {
+  COURSE_PURCHASE_ANCHOR,
   formatEuro,
   getCheckoutHref,
   getCoursePrice,
@@ -32,7 +33,7 @@ export type CourseAccessTargets = {
   hasLessons: boolean;
 };
 
-export const COURSE_PURCHASE_ANCHOR = '#precio';
+export { COURSE_PURCHASE_ANCHOR };
 
 /**
  * Destinos de los botones de un curso.

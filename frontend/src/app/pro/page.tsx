@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { CheckoutPanel } from '@/components/checkout/checkout-panel';
 import { TrackedButtonLink } from '@/components/tracked-link';
 import { HomeFaq } from '@/components/conversion/home-faq';
 import { NotifyPreview } from '@/components/conversion/notify-preview';
@@ -27,12 +28,17 @@ export const metadata: Metadata = createMetadata({
   keywords: ['alertas vivienda protegida', 'avisos VPO', 'suscripción VPO'],
 });
 
-export default async function ProPage() {
+export default async function ProPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ canceled?: string }>;
+}) {
   const [courses, promotions, stats] = await Promise.all([
     api.listCourses().catch(() => []),
     api.getPromotions('?limit=100').catch(() => []),
     api.getCatalogStats().catch(() => null),
   ]);
+  const canceled = (await searchParams)?.canceled === '1';
   const includedCourses = publicCatalogCourses(courses).filter(isIncludedInPro);
   const includedGuides = proIncludedGuidesCopy(includedCourses.map((course) => course.title));
   const listed = publicPublishedPromotions(promotions);
@@ -56,21 +62,22 @@ export default async function ProPage() {
       />
 
       <PublicPageHero
+        animated={false}
         badge="Suscripción"
         title="Radar VPO PRO"
         titleAccent="SMS y espacio con cuenta"
-        description={`${proPlan.price}, con renovación mensual. Ese es el importe final. Consultar PDF es gratis. PRO es para quien quiere el aviso en el móvil y seguir varias convocatorias en su cuenta. Cancelas cuando quieras.`}
+        description={`${proPlan.price} al mes, precio final. Consultar PDF es gratis. PRO avisa por SMS y organiza tus convocatorias. Pagas aquí mismo. Cancelas cuando quieras.`}
         actions={
           <>
             <ProGate>
               <TrackedButtonLink
-                href={proPlan.checkoutHref}
+                href="#pagar"
                 size="lg"
                 block
                 event="pro_cta_clicked"
                 eventProperties={{ source: 'pro_hero' }}
               >
-                {`${proPlan.ctaLabel} · ${proPlan.price}`}
+                {`Pagar ${proPlan.price}`}
               </TrackedButtonLink>
             </ProGate>
             <ProOnlyMessage>
@@ -86,6 +93,33 @@ export default async function ProPage() {
         }
         footer={<ProofStats items={proofItems} />}
       />
+
+      <ProGate>
+        <PublicSection animated={false}>
+          <div id="pagar" className="mx-auto max-w-lg scroll-mt-24">
+            <CheckoutPanel
+              layout="embedded"
+              canceled={canceled}
+              summary={{
+                product: 'pro',
+                title: proPlan.name,
+                priceLabel: proPlan.priceShort,
+                cadenceLabel: 'al mes',
+                recurrenceNote:
+                  'Renovación mensual. Cancelas desde Mi cuenta y conservas el acceso hasta el final del periodo pagado.',
+                bullets: [
+                  'Avisos por email y SMS',
+                  'Mi espacio sin límite',
+                  'Precio final: sin recargos extra',
+                  'Cancelas cuando quieras desde Mi cuenta',
+                ],
+                backHref: '/',
+                backLabel: 'Volver al inicio',
+              }}
+            />
+          </div>
+        </PublicSection>
+      </ProGate>
 
       <PublicSection>
         <div className="lp-section__head">

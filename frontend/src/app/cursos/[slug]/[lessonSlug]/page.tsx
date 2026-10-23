@@ -210,10 +210,10 @@ export default function LessonPage() {
                   {LOCKED_MESSAGE}
                 </p>
                 <Link
-                  href={`/cursos/${payload.course.slug}#precio`}
+                  href={`/cursos/${payload.course.slug}#pagar`}
                   className="mt-4 inline-flex rounded-full bg-[var(--green-700)] px-5 py-2.5 text-sm font-semibold text-white"
                 >
-                  Ver precio y programa
+                  Pagar y desbloquear
                 </Link>
               </article>
             ) : (
@@ -221,7 +221,7 @@ export default function LessonPage() {
                 {isPreview ? (
                   <p className="mb-4 rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm text-[var(--ink-soft)]">
                     Esta es la lección de muestra gratuita.{' '}
-                    <Link href={`/cursos/${payload.course.slug}#precio`} className="font-bold text-[var(--green-700)]">
+                    <Link href={`/cursos/${payload.course.slug}#pagar`} className="font-bold text-[var(--green-700)]">
                       Ver el curso completo
                     </Link>
                   </p>

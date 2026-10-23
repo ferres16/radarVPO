@@ -25,7 +25,7 @@ export function ProCta({
   label,
 }: ProCtaProps) {
   const context = useOptionalProAccess();
-  const href = getProHref(Boolean(context?.me));
+  const href = getProHref();
   const content = children ?? label ?? proPlan.ctaLabel;
 
   if (context?.hasPro) {
@@ -57,7 +57,7 @@ export function ProCtaLink({
   label?: string;
 }) {
   const context = useOptionalProAccess();
-  const href = getProHref(Boolean(context?.me));
+  const href = getProHref();
   const content = children ?? label ?? proPlan.ctaLabel;
 
   if (context?.hasPro) {

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
+import { CheckoutPanel } from '@/components/checkout/checkout-panel';
 import { CourseCheckoutBanner } from '@/components/checkout/course-checkout-banner';
 import { CourseAccessLink, CourseAccessProvider } from '@/components/course-access';
 import { CourseCoverImage } from '@/components/course-cover-image';
@@ -18,8 +19,8 @@ import { buildCourseAccessTargets } from '@/lib/course-access-targets';
 import {
   COURSE_ACCESS_DURATION_TEXT,
   GUIDE_FORMAT_TEXT,
-  PRICE_FINAL_NOTE,
   courseEditorial,
+  getCoursePayBullets,
   describeCourseFormat,
   formatEuro,
   getCourseAuthor,
@@ -45,6 +46,7 @@ const API_BASE_URL =
 
 type CourseDetailParams = {
   params: Promise<{ slug: string }>;
+  searchParams?: Promise<{ canceled?: string }>;
 };
 
 async function getPublicCourse(slug: string) {
@@ -97,8 +99,9 @@ export async function generateMetadata({ params }: CourseDetailParams): Promise<
   });
 }
 
-export default async function CourseDetailPage({ params }: CourseDetailParams) {
+export default async function CourseDetailPage({ params, searchParams }: CourseDetailParams) {
   const { slug } = await params;
+  const canceled = (await searchParams)?.canceled === '1';
   const [publicCourse, courseWithAccess] = await Promise.all([
     getPublicCourse(slug),
     getCourseWithAccess(slug),
@@ -224,54 +227,56 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
               ) : null}
             </div>
             {!canAccess ? (
-              <aside id="precio" className="course-progress-card flex scroll-mt-24 flex-col gap-4 p-5 md:p-6">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/60">
-                    {status.sellable || isFree ? 'Precio' : 'Precio previsto'}
-                  </p>
-                  <p className="display-type mt-2 text-3xl font-black text-white">{priceLabel}</p>
-                  {!isFree && price !== null ? (
-                    <p className="mt-1 text-xs text-white/70">Pago único · sin renovaciones · {PRICE_FINAL_NOTE}</p>
-                  ) : null}
-                </div>
-
-                {status.sellable || isFree ? (
-                  <CourseAccessLink
-                    hrefWhenAccess={courseEntryHref}
-                    hrefWhenLocked={lockedAccessHref}
-                    lockedLabel={lockedAccessLabel}
-                    accessLabel={courseAccessLabel}
-                    className="flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
+              <aside id="pagar" className="scroll-mt-24">
+                {status.sellable ? (
+                  <CheckoutPanel
+                    layout="embedded"
+                    canceled={canceled}
+                    summary={{
+                      product: 'course',
+                      courseSlug: course.slug,
+                      title: course.title,
+                      priceLabel,
+                      cadenceLabel: 'pago único',
+                      recurrenceNote: 'Sin renovaciones. Acceso inmediato al confirmar el pago.',
+                      bullets: getCoursePayBullets(course),
+                      backHref: '/cursos',
+                      backLabel: 'Ver todas las guías',
+                    }}
                   />
                 ) : (
-                  <p className="rounded-xl bg-white/10 px-3 py-2 text-sm leading-6 text-white/90">
-                    {guideMode
-                      ? `Esta guía todavía se está preparando (${status.statusText}). Sube el PDF para ponerla a la venta.`
-                      : `Este curso todavía se está preparando (${status.statusText}). No se puede comprar hasta que tenga contenido publicado suficiente.`}
-                  </p>
+                  <div className="course-progress-card flex flex-col gap-4 p-5 md:p-6">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/60">
+                        {isFree ? 'Precio' : 'Precio previsto'}
+                      </p>
+                      <p className="display-type mt-2 text-3xl font-black text-white">{priceLabel}</p>
+                    </div>
+                    {isFree ? (
+                      <CourseAccessLink
+                        hrefWhenAccess={courseEntryHref}
+                        hrefWhenLocked={lockedAccessHref}
+                        lockedLabel={lockedAccessLabel}
+                        accessLabel={courseAccessLabel}
+                        className="flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
+                      />
+                    ) : (
+                      <p className="rounded-xl bg-white/10 px-3 py-2 text-sm leading-6 text-white/90">
+                        {guideMode
+                          ? `Esta guía todavía se está preparando (${status.statusText}). Sube el PDF para ponerla a la venta.`
+                          : `Este curso todavía se está preparando (${status.statusText}). No se puede comprar hasta que tenga contenido publicado suficiente.`}
+                      </p>
+                    )}
+                    {includedInPro ? (
+                      <p className="text-xs leading-5 text-white/75">
+                        Incluido con {proPlan.name} activo ({proPlan.price}).{' '}
+                        <Link href="/pro#pagar" className="font-bold underline">
+                          Ver PRO
+                        </Link>
+                      </p>
+                    ) : null}
+                  </div>
                 )}
-
-                <ul className="space-y-1.5 text-xs leading-5 text-white/75">
-                  <li>{COURSE_ACCESS_DURATION_TEXT}</li>
-                  {guideMode ? <li>{GUIDE_FORMAT_TEXT}</li> : null}
-                  {includedInPro ? (
-                    <li>
-                      Incluido con {proPlan.name} activo ({proPlan.price}).{' '}
-                      <Link href="/pro" className="font-bold underline">
-                        Ver PRO
-                      </Link>
-                    </li>
-                  ) : null}
-                </ul>
-
-                {!guideMode && previewLessonSlug ? (
-                  <Link
-                    href={`/cursos/${course.slug}/${previewLessonSlug}`}
-                    className="text-sm font-bold text-white underline"
-                  >
-                    Ver una lección de muestra gratis
-                  </Link>
-                ) : null}
               </aside>
             ) : null}
           </div>
@@ -461,8 +466,8 @@ export default async function CourseDetailPage({ params }: CourseDetailParams) {
         {!canAccess && (status.sellable || isFree) ? (
           <CourseStickyBuyBar
             priceLabel={priceLabel}
-            lockedHref={lockedAccessHref}
-            lockedLabel={lockedAccessLabel}
+            lockedHref="#pagar"
+            lockedLabel={status.sellable ? `Pagar ${priceLabel}` : lockedAccessLabel}
             hint={includedInPro ? `Incluido con ${proPlan.name} activo` : undefined}
           />
         ) : null}

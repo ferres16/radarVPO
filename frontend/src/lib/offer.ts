@@ -8,8 +8,8 @@ import type { Course } from '@/types';
  *   vive en docs/estrategia-lanzamiento.md y no se anuncia en la web.
  * - Los precios de los cursos NO están aquí: salen siempre del curso (campo
  *   `price`), que es lo mismo que cobra Stripe. Así web y cobro no pueden divergir.
- * - El precio de PRO debe coincidir con `STRIPE_PRO_PRICE_CENTS` del backend
- *   (por defecto 999 céntimos). En `/checkout`, el panel usa `proPriceCents`
+ *   - El precio de PRO debe coincidir con `STRIPE_PRO_PRICE_CENTS` del backend
+ *   (por defecto 999 céntimos). El recuadro de pago usa `proPriceCents`
  *   de `GET /billing/checkout-status` cuando está disponible.
  */
 
@@ -141,12 +141,25 @@ export function getGuideTopics(course: Pick<Course, 'seoMetadata'>): string[] {
   return [];
 }
 
+/** Ancla del recuadro de pago en la ficha (curso o PRO). */
+export const COURSE_PURCHASE_ANCHOR = '#pagar';
+
 export function getCheckoutHref(
   product: 'pro' | 'course',
   courseSlug?: string,
 ): string {
-  if (product === 'pro') return '/checkout?product=pro';
-  return `/checkout?product=course&course=${encodeURIComponent(courseSlug ?? '')}`;
+  if (product === 'pro') return `/pro${COURSE_PURCHASE_ANCHOR}`;
+  return `/cursos/${courseSlug ?? ''}${COURSE_PURCHASE_ANCHOR}`;
+}
+
+/** Viñetas cortas del recuadro de pago (tráfico de anuncios: claro y rápido). */
+export function getCoursePayBullets(course: Pick<Course, 'format'>): string[] {
+  return [
+    'Pago único, sin renovaciones',
+    'Acceso inmediato al confirmar',
+    ...(isGuidePdf(course) ? ['Lectura en pantalla, no descargable'] : []),
+    'Precio final: sin recargos extra',
+  ];
 }
 
 const LESSON_TYPE_LABELS: Record<string, [string, string]> = {
