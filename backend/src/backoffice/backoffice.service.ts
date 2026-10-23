@@ -83,6 +83,10 @@ export class BackofficeService {
     return this.commerce.getSettings();
   }
 
+  getStripeStatus() {
+    return this.billingService.getStripeStatus();
+  }
+
   updateCommerceSettings(
     dto: UpdateCommerceSettingsDto,
   ): Promise<CommerceSettings> {

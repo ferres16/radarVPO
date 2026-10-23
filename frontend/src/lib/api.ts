@@ -26,6 +26,7 @@ import {
   PromotionDetail,
   PromotionUnit,
   SavedPromotion,
+  StripeAccountStatus,
   UserAccessSummary,
   UserProfile,
 } from '@/types';
@@ -368,6 +369,7 @@ export const api = {
       method: 'POST',
     }),
   getBackofficeCommerce: () => request<CommerceSettings>('/backoffice/commerce'),
+  getBackofficeStripeStatus: () => request<StripeAccountStatus>('/backoffice/stripe-status'),
   updateBackofficeCommerce: (payload: Partial<CommerceSettings>) =>
     request<CommerceSettings>('/backoffice/commerce', {
       method: 'PATCH',

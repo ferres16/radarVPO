@@ -177,6 +177,11 @@ export class BackofficeController {
     return this.backofficeService.getCommerceSettings();
   }
 
+  @Get('stripe-status')
+  getStripeStatus() {
+    return this.backofficeService.getStripeStatus();
+  }
+
   @Patch('commerce')
   updateCommerceSettings(@Body() dto: UpdateCommerceSettingsDto) {
     return this.backofficeService.updateCommerceSettings(dto);

@@ -4,7 +4,12 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
 import { api } from '@/lib/api';
-import type { CommercePromoRule, CommerceSettings, UserProfile } from '@/types';
+import type {
+  CommercePromoRule,
+  CommerceSettings,
+  StripeAccountStatus,
+  UserProfile,
+} from '@/types';
 
 const emptySettings: CommerceSettings = {
   proEnabled: true,
@@ -18,6 +23,19 @@ const emptySettings: CommerceSettings = {
 
 const PACK_KEY = 'pro_pack_3m_grants_guide';
 
+const KEY_MODE_LABEL: Record<StripeAccountStatus['keyMode'], string> = {
+  live: 'Live (sk_live_)',
+  test: 'Test (sk_test_) — no cobra de verdad',
+  restricted: 'Restringida (rk_) — revisa permisos de Checkout',
+  unknown: 'Formato no reconocido',
+  missing: 'No configurada',
+};
+
+function yesNo(value: boolean | null) {
+  if (value === null) return '—';
+  return value ? 'Sí' : 'No';
+}
+
 export default function AdminCommercePage() {
   const [me, setMe] = useState<UserProfile | null>(null);
   const [draft, setDraft] = useState<CommerceSettings>(emptySettings);
@@ -26,6 +44,8 @@ export default function AdminCommercePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [stripeStatus, setStripeStatus] = useState<StripeAccountStatus | null>(null);
+  const [stripeLoading, setStripeLoading] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -38,13 +58,15 @@ export default function AdminCommercePage() {
           setError('No tienes permisos de administrador.');
           return;
         }
-        const [settings, rules] = await Promise.all([
+        const [settings, rules, stripe] = await Promise.all([
           api.getBackofficeCommerce(),
           api.getBackofficePromoRules(),
+          api.getBackofficeStripeStatus().catch(() => null),
         ]);
         if (!active) return;
         setDraft({ ...emptySettings, ...settings });
         setPackRule(rules.find((rule) => rule.key === PACK_KEY) || null);
+        setStripeStatus(stripe);
       } catch (err) {
         if (active) {
           setError(err instanceof Error ? err.message : 'No se pudo cargar el comercio.');
@@ -137,6 +159,95 @@ export default function AdminCommercePage() {
             {message}
           </p>
         ) : null}
+
+        <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-sm font-bold text-[var(--ink)]">Estado de Stripe</h2>
+            <button
+              type="button"
+              className="btn btn--secondary"
+              disabled={stripeLoading}
+              onClick={() => {
+                setStripeLoading(true);
+                api
+                  .getBackofficeStripeStatus()
+                  .then(setStripeStatus)
+                  .catch((err) =>
+                    setError(err instanceof Error ? err.message : 'No se pudo consultar Stripe.'),
+                  )
+                  .finally(() => setStripeLoading(false));
+              }}
+            >
+              {stripeLoading ? 'Consultando…' : 'Probar conexión'}
+            </button>
+          </div>
+          {stripeStatus ? (
+            <dl className="grid gap-2 text-sm text-[var(--ink)] sm:grid-cols-2">
+              <div>
+                <dt className="text-[var(--ink-soft)]">Clave en Railway</dt>
+                <dd className="font-semibold">{KEY_MODE_LABEL[stripeStatus.keyMode]}</dd>
+              </div>
+              <div>
+                <dt className="text-[var(--ink-soft)]">Conexión a api.stripe.com</dt>
+                <dd className="font-semibold">{stripeStatus.reachable ? 'OK' : 'Fallo'}</dd>
+              </div>
+              <div>
+                <dt className="text-[var(--ink-soft)]">Webhook configurado</dt>
+                <dd className="font-semibold">{yesNo(stripeStatus.webhookConfigured)}</dd>
+              </div>
+              <div>
+                <dt className="text-[var(--ink-soft)]">Datos enviados (details_submitted)</dt>
+                <dd className="font-semibold">{yesNo(stripeStatus.detailsSubmitted)}</dd>
+              </div>
+              <div>
+                <dt className="text-[var(--ink-soft)]">Cobros live (charges_enabled)</dt>
+                <dd className="font-semibold">{yesNo(stripeStatus.chargesEnabled)}</dd>
+              </div>
+              <div>
+                <dt className="text-[var(--ink-soft)]">Ingresos (payouts_enabled)</dt>
+                <dd className="font-semibold">{yesNo(stripeStatus.payoutsEnabled)}</dd>
+              </div>
+            </dl>
+          ) : (
+            <p className="text-sm text-[var(--ink-soft)]">Sin datos todavía.</p>
+          )}
+          {stripeStatus?.disabledReason ? (
+            <p className="text-sm text-red-800">
+              Stripe tiene la cuenta restringida: {stripeStatus.disabledReason}
+            </p>
+          ) : null}
+          {stripeStatus?.error ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              {stripeStatus.error}
+            </p>
+          ) : null}
+          {stripeStatus?.currentlyDue?.length ? (
+            <p className="text-sm text-[var(--ink-soft)]">
+              Pendiente en Stripe: {stripeStatus.currentlyDue.join(', ')}
+            </p>
+          ) : null}
+          {stripeStatus?.pastDue?.length ? (
+            <p className="text-sm text-red-800">
+              Caducado en Stripe: {stripeStatus.pastDue.join(', ')}
+            </p>
+          ) : null}
+          {stripeStatus?.reachable &&
+          !stripeStatus.currentlyDue?.length &&
+          !stripeStatus.pastDue?.length &&
+          stripeStatus.chargesEnabled ? (
+            <p className="text-sm text-emerald-800">
+              Stripe no tiene requisitos pendientes para cobrar. Si el checkout falla, el problema
+              está en la conexión o en la clave de Railway, no en un formulario del Dashboard.
+            </p>
+          ) : null}
+          <p className="text-xs leading-5 text-[var(--ink-soft)]">
+            En el Dashboard (modo Live): Inicio (banner de activación), Settings → Account details →
+            Requirements, Settings → Payment methods (Cards), y Desarrolladores → Claves (“Utilizada
+            por última vez”). La clave restringida de la captura no vale: su política es “Ninguna”.
+            Usa <code>sk_live_</code> o crea una restringida con permisos de Checkout Sessions,
+            Customers y Webhooks.
+          </p>
+        </section>
 
         <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-5 space-y-5">
           <h2 className="text-sm font-bold text-[var(--ink)]">Interruptores</h2>

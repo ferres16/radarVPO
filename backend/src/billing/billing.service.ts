@@ -1,3 +1,4 @@
+import * as https from 'node:https';
 import {
   BadRequestException,
   ForbiddenException,
@@ -35,12 +36,14 @@ import {
   isMissingStripeCustomerError,
   isOneOffPurchasableAccessType,
   isStripeTaxNotEnabledError,
+  operatorStripeCheckoutMessage,
   publicStripeCheckoutMessage,
   mapStripeSubscriptionStatus,
   MIN_PUBLISHED_LESSONS_TO_SELL,
   parseCheckoutMetadata,
   PRO_PLAN_KEY,
   shouldKeepProPlan,
+  stripeKeyMode,
 } from './stripe-fulfillment';
 
 function getSubscriptionPeriodEnd(subscription: {
@@ -61,6 +64,7 @@ const ACTIVE_SUBSCRIPTION_STATUSES: SubscriptionStatus[] = [
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
+  private stripeClient: Stripe | null | undefined;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -74,11 +78,104 @@ export class BillingService {
   // Stripe client / configuración
   // ---------------------------------------------------------------------------
 
+  private stripeSecretKey(): string | null {
+    const raw = this.config.get<string>('STRIPE_SECRET_KEY')?.trim();
+    if (!raw) return null;
+    return raw.replace(/^['"]|['"]$/g, '').trim() || null;
+  }
+
   private async getStripe(): Promise<Stripe | null> {
-    const secretKey = this.config.get<string>('STRIPE_SECRET_KEY');
-    if (!secretKey) return null;
+    if (this.stripeClient !== undefined) {
+      return this.stripeClient;
+    }
+    const secretKey = this.stripeSecretKey();
+    if (!secretKey) {
+      this.stripeClient = null;
+      return null;
+    }
     const StripeCtor = (await import('stripe')).default;
-    return new StripeCtor(secretKey);
+    // IPv4: en Railway el agente HTTPS por defecto (happy eyeballs / IPv6)
+    // acaba en StripeConnectionError tras 2 reintentos, y la clave live
+    // nunca aparece como “utilizada” en el Dashboard.
+    this.stripeClient = new StripeCtor(secretKey, {
+      timeout: 20_000,
+      maxNetworkRetries: 2,
+      telemetry: false,
+      httpAgent: new https.Agent({ keepAlive: true, family: 4 }),
+    });
+    return this.stripeClient;
+  }
+
+  async getStripeStatus(): Promise<{
+    configured: boolean;
+    webhookConfigured: boolean;
+    keyMode: ReturnType<typeof stripeKeyMode>;
+    reachable: boolean;
+    error: string | null;
+    chargesEnabled: boolean | null;
+    payoutsEnabled: boolean | null;
+    detailsSubmitted: boolean | null;
+    currentlyDue: string[];
+    pastDue: string[];
+    disabledReason: string | null;
+  }> {
+    const secretKey = this.stripeSecretKey();
+    const webhookConfigured = Boolean(
+      this.config.get<string>('STRIPE_WEBHOOK_SECRET')?.trim(),
+    );
+    const keyMode = stripeKeyMode(secretKey);
+
+    if (!secretKey) {
+      return {
+        configured: false,
+        webhookConfigured,
+        keyMode,
+        reachable: false,
+        error: 'Falta STRIPE_SECRET_KEY en Railway.',
+        chargesEnabled: null,
+        payoutsEnabled: null,
+        detailsSubmitted: null,
+        currentlyDue: [],
+        pastDue: [],
+        disabledReason: null,
+      };
+    }
+
+    try {
+      const stripe = await this.getStripe();
+      if (!stripe) {
+        throw new Error('Stripe client missing');
+      }
+      const account = await stripe.accounts.retrieve();
+      const requirements = account.requirements;
+      return {
+        configured: true,
+        webhookConfigured,
+        keyMode,
+        reachable: true,
+        error: null,
+        chargesEnabled: Boolean(account.charges_enabled),
+        payoutsEnabled: Boolean(account.payouts_enabled),
+        detailsSubmitted: Boolean(account.details_submitted),
+        currentlyDue: requirements?.currently_due ?? [],
+        pastDue: requirements?.past_due ?? [],
+        disabledReason: requirements?.disabled_reason ?? null,
+      };
+    } catch (error) {
+      return {
+        configured: true,
+        webhookConfigured,
+        keyMode,
+        reachable: false,
+        error: operatorStripeCheckoutMessage(error),
+        chargesEnabled: null,
+        payoutsEnabled: null,
+        detailsSubmitted: null,
+        currentlyDue: [],
+        pastDue: [],
+        disabledReason: null,
+      };
+    }
   }
 
   /**
@@ -88,8 +185,8 @@ export class BillingService {
    */
   isCheckoutConfigured(): boolean {
     return Boolean(
-      this.config.get<string>('STRIPE_SECRET_KEY') &&
-      this.config.get<string>('STRIPE_WEBHOOK_SECRET'),
+      this.stripeSecretKey() &&
+      this.config.get<string>('STRIPE_WEBHOOK_SECRET')?.trim(),
     );
   }
 

@@ -209,6 +209,20 @@ export type CheckoutStatus = {
   currency: string;
 };
 
+export type StripeAccountStatus = {
+  configured: boolean;
+  webhookConfigured: boolean;
+  keyMode: 'live' | 'test' | 'restricted' | 'unknown' | 'missing';
+  reachable: boolean;
+  error: string | null;
+  chargesEnabled: boolean | null;
+  payoutsEnabled: boolean | null;
+  detailsSubmitted: boolean | null;
+  currentlyDue: string[];
+  pastDue: string[];
+  disabledReason: string | null;
+};
+
 export type MessageTemplate = {
   id: string;
   key: string;

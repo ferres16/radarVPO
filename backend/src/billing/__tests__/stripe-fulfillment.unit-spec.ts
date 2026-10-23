@@ -5,11 +5,14 @@ import {
   extractSubscriptionPeriod,
   isMissingStripeCustomerError,
   isOneOffPurchasableAccessType,
+  isStripeConnectionError,
   isStripeTaxNotEnabledError,
+  operatorStripeCheckoutMessage,
   publicStripeCheckoutMessage,
   mapStripeSubscriptionStatus,
   parseCheckoutMetadata,
   shouldKeepProPlan,
+  stripeKeyMode,
 } from '../stripe-fulfillment';
 
 describe('parseCheckoutMetadata', () => {
@@ -156,6 +159,29 @@ describe('Stripe checkout error mapping', () => {
     expect(
       isStripeTaxNotEnabledError({ message: 'No such customer: cus_x' }),
     ).toBe(false);
+  });
+
+  it('explains a failed TCP/HTTPS connection to Stripe', () => {
+    const connectionError = {
+      type: 'StripeConnectionError',
+      message:
+        'An error occurred with our connection to Stripe. Request was retried 2 times.',
+    };
+    expect(isStripeConnectionError(connectionError)).toBe(true);
+    expect(publicStripeCheckoutMessage(connectionError)).toMatch(
+      /sistema de pago/i,
+    );
+    expect(operatorStripeCheckoutMessage(connectionError)).toMatch(
+      /api\.stripe\.com/i,
+    );
+  });
+
+  it('classifies Stripe secret key prefixes without exposing the secret', () => {
+    expect(stripeKeyMode(null)).toBe('missing');
+    expect(stripeKeyMode('sk_live_abc')).toBe('live');
+    expect(stripeKeyMode('sk_test_abc')).toBe('test');
+    expect(stripeKeyMode('rk_live_abc')).toBe('restricted');
+    expect(stripeKeyMode('not-a-key')).toBe('unknown');
   });
 
   it('tells the operator to finish Stripe live activation', () => {

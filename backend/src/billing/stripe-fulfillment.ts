@@ -181,12 +181,50 @@ export function isStripeTaxNotEnabledError(error: unknown): boolean {
  * Mensaje que se puede mostrar al comprador/admin. No incluye secretos.
  * Si Stripe pide activar la cuenta o las tarjetas, lo dice en claro.
  */
+export function isStripeConnectionError(error: unknown): boolean {
+  const err = readStripeError(error);
+  return (
+    err.type === 'StripeConnectionError' ||
+    /connection to Stripe|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|fetch failed/i.test(
+      err.message || '',
+    )
+  );
+}
+
+export type StripeKeyMode =
+  'live' | 'test' | 'restricted' | 'unknown' | 'missing';
+
+/** Prefijo de STRIPE_SECRET_KEY, sin revelar el secreto. */
+export function stripeKeyMode(
+  secretKey: string | null | undefined,
+): StripeKeyMode {
+  if (!secretKey) return 'missing';
+  if (secretKey.startsWith('sk_live_')) return 'live';
+  if (secretKey.startsWith('sk_test_')) return 'test';
+  if (secretKey.startsWith('rk_')) return 'restricted';
+  return 'unknown';
+}
+
+/** Texto para el comprador. Sin secretos ni instrucciones de Railway. */
 export function publicStripeCheckoutMessage(error: unknown): string {
+  if (isStripeConnectionError(error)) {
+    return 'No se pudo conectar con el sistema de pago. Inténtalo de nuevo en unos minutos.';
+  }
+  return operatorStripeCheckoutMessage(error);
+}
+
+/**
+ * Diagnóstico para admin: dónde mirar en Stripe y qué clave usar en Railway.
+ */
+export function operatorStripeCheckoutMessage(error: unknown): string {
   const err = readStripeError(error);
   const message = err.message || '';
   const code = err.code || '';
   const type = err.type || '';
 
+  if (isStripeConnectionError(error)) {
+    return 'El servidor no pudo conectar con Stripe (api.stripe.com). No es un trámite pendiente del Dashboard: Railway debe poder salir por HTTPS y STRIPE_SECRET_KEY tiene que ser live (sk_live_ o rk_live_ con permisos de Checkout). En Stripe → Desarrolladores → Claves, “Utilizada por última vez” debe cambiar al intentar un pago.';
+  }
   if (
     /live charges|cannot currently make live|not fully activated|activate your account|account is not activated/i.test(
       message,
@@ -199,7 +237,7 @@ export function publicStripeCheckoutMessage(error: unknown): string {
     /invalid api[- ]key|expired api key/i.test(message) ||
     code === 'api_key_expired'
   ) {
-    return 'La clave de Stripe no es válida. En Railway, STRIPE_SECRET_KEY debe ser la de modo Live (sk_live_…) y coincidir con el webhook live.';
+    return 'La clave de Stripe no es válida. En Railway, STRIPE_SECRET_KEY debe ser live (sk_live_ o rk_live_ con permisos) y coincidir con el webhook live.';
   }
   if (
     /payment method type|no valid payment method|must enable at least one payment method/i.test(
@@ -209,7 +247,7 @@ export function publicStripeCheckoutMessage(error: unknown): string {
     return 'En Stripe Dashboard → Settings → Payment methods, activa “Cards” para EUR.';
   }
   if (/test mode.*live|live mode.*test/i.test(message)) {
-    return 'Estás mezclando claves de test y live. Usa sk_live_ y el webhook de live para cobrar de verdad.';
+    return 'Estás mezclando claves de test y live. Usa una clave live y el webhook de live para cobrar de verdad.';
   }
   if (
     message &&
