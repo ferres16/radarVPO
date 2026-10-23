@@ -83,3 +83,12 @@ export const homeFaqs = [
       'No. Esa oferta se retiró. Las direcciones antiguas llevan al catálogo de guías.',
   },
 ];
+
+/** CTA tras el visor PDF de una promoción. */
+export const pdfNextStep = {
+  title: '¿Quieres contexto sobre ayudas y requisitos?',
+  description:
+    'El visor te muestra el documento oficial. Las guías explican el contexto de la VPO, las ayudas y el ahorro necesario; el precio final aparece en cada ficha.',
+  cta: 'Ver las guías',
+  href: '/cursos',
+} as const;
