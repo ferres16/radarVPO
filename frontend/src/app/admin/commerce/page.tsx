@@ -12,10 +12,12 @@ import type {
 } from '@/types';
 
 const emptySettings: CommerceSettings = {
-  proEnabled: true,
-  coursesEnabled: true,
+  salesMode: 'validation',
+  proEnabled: false,
+  coursesEnabled: false,
   maintenanceMessage:
-    'El pago online está temporalmente en mantenimiento. Vuelve a intentarlo más adelante.',
+    'Todavía no hemos abierto el cobro online. Déjanos tu email y te avisamos cuando esté disponible.',
+  guideListPriceCents: 1499,
   proPackGuideSlug: 'vpo-inicial',
   allowPromotionCodes: false,
   stripeAutomaticTax: false,
@@ -250,7 +252,51 @@ export default function AdminCommercePage() {
         </section>
 
         <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-5 space-y-5">
-          <h2 className="text-sm font-bold text-[var(--ink)]">Interruptores</h2>
+          <h2 className="text-sm font-bold text-[var(--ink)]">Modo comercial</h2>
+          <label className="block text-sm font-semibold text-[var(--ink)]">
+            Estado de venta
+            <select
+              className="ds-control mt-1 w-full"
+              value={draft.salesMode}
+              onChange={(e) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  salesMode: e.target.value as CommerceSettings['salesMode'],
+                }))
+              }
+            >
+              <option value="validation">Validación / prelanzamiento (sin cobro)</option>
+              <option value="live">Venta disponible (cobro activo)</option>
+              <option value="maintenance">Mantenimiento temporal (sin cobro)</option>
+            </select>
+          </label>
+          <p className="text-xs leading-5 text-[var(--ink-soft)]">
+            En validación o mantenimiento la web muestra muestra + lista de interés. Los interruptores
+            de producto solo cobran si el modo es «Venta disponible» y Stripe está configurado.
+          </p>
+          <label className="block text-sm font-semibold text-[var(--ink)]">
+            Precio previsto guía (céntimos)
+            <input
+              type="number"
+              min={0}
+              step={1}
+              className="ds-control mt-1 w-full"
+              value={draft.guideListPriceCents ?? ''}
+              onChange={(e) =>
+                setDraft((prev) => ({
+                  ...prev,
+                  guideListPriceCents: e.target.value === '' ? null : Number(e.target.value),
+                }))
+              }
+            />
+            <span className="mt-1 block text-xs font-normal text-[var(--ink-soft)]">
+              Solo informativo en prelanzamiento (p. ej. 1499 = 14,99 €). No cambia el precio de Stripe.
+            </span>
+          </label>
+        </section>
+
+        <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-5 space-y-5">
+          <h2 className="text-sm font-bold text-[var(--ink)]">Interruptores (solo en venta disponible)</h2>
           <label className="flex items-start gap-3 text-sm text-[var(--ink)]">
             <input
               type="checkbox"

@@ -31,6 +31,7 @@ import { MessageTemplatesService } from '../commerce/message-templates.service';
 import { PromoRulesService } from '../commerce/promo-rules.service';
 import { NewsCoverService } from '../news/news-cover.service';
 import { NewsAutomationService } from '../jobs/news-automation.service';
+import { canonicalizeMunicipality } from '../common/municipality';
 import { UpdateCommerceSettingsDto } from './dto/update-commerce-settings.dto';
 import { UpdateMessageTemplateDto } from './dto/update-message-template.dto';
 import { UpdatePromoRuleDto } from './dto/update-promo-rule.dto';
@@ -1476,7 +1477,8 @@ export class BackofficeService {
           process.env.FRONTEND_URL ||
           'https://radar-vpo.local/manual-promotion',
         location: this.nullableText(dto.location),
-        municipality: this.nullableText(dto.municipality),
+        municipality: canonicalizeMunicipality(dto.municipality),
+        municipalityOriginal: this.nullableText(dto.municipality),
         province: this.nullableText(dto.province),
         promotionType: dto.promotionType || 'desconocido',
         status,
@@ -1554,7 +1556,10 @@ export class BackofficeService {
     const data: Prisma.PromotionUpdateInput = {};
     if (dto.title !== undefined) data.title = dto.title;
     if (dto.location !== undefined) data.location = dto.location;
-    if (dto.municipality !== undefined) data.municipality = dto.municipality;
+    if (dto.municipality !== undefined) {
+      data.municipality = canonicalizeMunicipality(dto.municipality);
+      data.municipalityOriginal = this.nullableText(dto.municipality);
+    }
     if (dto.province !== undefined) data.province = dto.province;
     if (dto.promotionType !== undefined) data.promotionType = dto.promotionType;
     if (dto.promoter !== undefined) data.promoter = dto.promoter;

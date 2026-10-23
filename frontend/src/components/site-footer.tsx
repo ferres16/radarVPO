@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { primaryNavLinks } from '@/lib/navigation';
+import { primaryNavLinks, secondaryNavLinks } from '@/lib/navigation';
 import { supportEmail } from '@/lib/legal';
 import { useOptionalConsent } from '@/components/consent/consent-provider';
 import { useProAccess } from '@/components/pro-access-provider';
@@ -37,6 +37,11 @@ export function SiteFooter() {
           {primaryNavLinks.map((link) => (
             <Link key={link.href} href={link.href}>
               {link.mobileLabel ?? link.label}
+            </Link>
+          ))}
+          {secondaryNavLinks.map((link) => (
+            <Link key={link.href} href={link.href}>
+              {link.label}
             </Link>
           ))}
           {!loading && me ? (

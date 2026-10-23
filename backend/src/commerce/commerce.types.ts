@@ -1,12 +1,23 @@
 export const COMMERCE_SETTINGS_KEY = 'commerce.settings';
 
+/** Cómo se presenta la oferta pública. */
+export type SalesMode = 'validation' | 'live' | 'maintenance';
+
 export type CommerceSettings = {
-  /** Checkout de suscripción PRO (mensual). */
+  /**
+   * validation: no cobra; muestra muestra + “avísame”.
+   * live: cobro activo según proEnabled/coursesEnabled.
+   * maintenance: no cobra; mensaje + lista de interés.
+   */
+  salesMode: SalesMode;
+  /** Checkout de suscripción PRO (mensual). Solo aplica en mode=live. */
   proEnabled: boolean;
-  /** Checkout de cursos y guías de pago. */
+  /** Checkout de cursos y guías de pago. Solo aplica en mode=live. */
   coursesEnabled: boolean;
-  /** Mensaje público cuando algo está en mantenimiento. */
+  /** Mensaje público cuando no hay cobro (validación o mantenimiento). */
   maintenanceMessage: string;
+  /** Precio previsto de la guía (céntimos) para validación; no es el cobro. */
+  guideListPriceCents: number | null;
   /** Slug de la guía que incluye el pack PRO 3 meses. */
   proPackGuideSlug: string;
   /** Permitir códigos de promoción de Stripe en Checkout. */
@@ -20,11 +31,28 @@ export type CommerceSettings = {
 };
 
 export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
-  proEnabled: true,
-  coursesEnabled: true,
+  // Validación por defecto en código; producción con ventas activas debe
+  // fijar salesMode=live en SystemSetting (admin Comercio).
+  salesMode: 'validation',
+  proEnabled: false,
+  coursesEnabled: false,
   maintenanceMessage:
-    'El pago online está temporalmente en mantenimiento. Vuelve a intentarlo más adelante.',
+    'Todavía no hemos abierto el cobro online. Déjanos tu email y te avisamos cuando esté disponible.',
+  guideListPriceCents: 1499,
   proPackGuideSlug: 'vpo-inicial',
   allowPromotionCodes: false,
   stripeAutomaticTax: false,
 };
+
+export function isSalesMode(value: unknown): value is SalesMode {
+  return value === 'validation' || value === 'live' || value === 'maintenance';
+}
+
+/** ¿Puede cobrarse este producto ahora? Exige mode=live + interruptor del producto. */
+export function isProductSaleOpen(
+  settings: CommerceSettings,
+  product: 'pro' | 'course',
+): boolean {
+  if (settings.salesMode !== 'live') return false;
+  return product === 'pro' ? settings.proEnabled : settings.coursesEnabled;
+}

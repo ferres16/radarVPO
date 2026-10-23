@@ -17,6 +17,7 @@ import { HealthModule } from './health/health.module';
 import { ProAccessModule } from './common/pro-access/pro-access.module';
 import { BillingModule } from './billing/billing.module';
 import { MetricsModule } from './metrics/metrics.module';
+import { LeadsModule } from './leads/leads.module';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { RequestLoggingInterceptor } from './common/interceptors/request-logging.interceptor';
 
@@ -46,6 +47,7 @@ import { RequestLoggingInterceptor } from './common/interceptors/request-logging
     ProAccessModule,
     BillingModule,
     MetricsModule,
+    LeadsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
