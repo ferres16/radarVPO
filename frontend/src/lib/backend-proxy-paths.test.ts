@@ -12,5 +12,7 @@ describe('isBlockedBackendProxyPath', () => {
     expect(isBlockedBackendProxyPath(['users', 'me'])).toBe(false);
     expect(isBlockedBackendProxyPath(['backoffice', 'overview'])).toBe(false);
     expect(isBlockedBackendProxyPath(['promotions'])).toBe(false);
+    expect(isBlockedBackendProxyPath(['metrics', 'visit'])).toBe(false);
+    expect(isBlockedBackendProxyPath(['courses'])).toBe(false);
   });
 });

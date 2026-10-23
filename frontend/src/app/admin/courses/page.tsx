@@ -17,7 +17,7 @@ const emptyCourse: Partial<Course> = {
   currency: 'EUR',
   status: 'draft',
   accessType: 'free',
-  format: 'standard',
+  format: 'guide_pdf',
   order: 0,
 };
 
@@ -85,6 +85,7 @@ export default function AdminCoursesPage() {
                 coverImage: course.coverImage || '',
                 status: course.status,
                 accessType: course.accessType,
+                pricingType: course.pricingType || 'free',
                 order: course.order,
                 price: course.price || '',
                 currency: course.currency || 'EUR',
@@ -150,10 +151,11 @@ export default function AdminCoursesPage() {
         coverImage: newCourse.coverImage || undefined,
         status: (newCourse.status as CourseStatus) || 'draft',
         accessType: (newCourse.accessType as CourseAccessType) || 'free',
-        format: (newCourse.format as CourseFormat) || 'standard',
+        format: (newCourse.format as CourseFormat) || 'guide_pdf',
         order: newCourse.order ?? 0,
         price: newCourse.price ? String(newCourse.price) : undefined,
         currency: newCourse.currency || undefined,
+        pricingType: newCourse.price ? 'premium' : 'free',
       });
       setCourses((prev) => [created, ...prev]);
       setDrafts((prev) => ({
@@ -166,6 +168,7 @@ export default function AdminCoursesPage() {
           coverImage: created.coverImage || '',
           status: created.status,
           accessType: created.accessType,
+          pricingType: created.pricingType || 'free',
           order: created.order,
           price: created.price || '',
           currency: created.currency || 'EUR',
@@ -307,6 +310,10 @@ export default function AdminCoursesPage() {
 
       <section className="rounded-2xl border border-[var(--stroke)] bg-white p-4 shadow-card">
         <h2 className="text-lg font-semibold text-[var(--ink)]">Nuevo curso / guía</h2>
+        <p className="mt-1 text-sm text-[var(--ink-soft)]">
+          Solo las fichas en estado <strong>published</strong> salen en /cursos. Las de borrador
+          quedan en este backoffice. Sube el PDF (guía) o publica lecciones (curso) antes de vender.
+        </p>
         <div className="mt-3 grid gap-3 md:grid-cols-4">
           <input
             value={newCourse.title || ''}
@@ -353,7 +360,7 @@ export default function AdminCoursesPage() {
         </div>
         <div className="mt-3 grid gap-3 md:grid-cols-4">
           <select
-            value={newCourse.format || 'standard'}
+            value={newCourse.format || 'guide_pdf'}
             onChange={(e) => setNewCourse((prev) => ({ ...prev, format: e.target.value as CourseFormat }))}
             className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
           >
@@ -416,9 +423,20 @@ export default function AdminCoursesPage() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold text-[var(--ink)]">{course.title}</p>
-                  <p className="text-xs text-[var(--ink-soft)]">{course.slug}</p>
+                  <p className="text-xs text-[var(--ink-soft)]">
+                    {course.slug} · {course.status}
+                    {course.status !== 'published' ? ' (no sale en /cursos)' : ''}
+                  </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
+                  {course.status === 'published' ? (
+                    <Link
+                      href={`/cursos/${course.slug}`}
+                      className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)]"
+                    >
+                      Ver ficha
+                    </Link>
+                  ) : null}
                   <Link
                     href={`/admin/courses/${course.id}`}
                     className="rounded-xl border border-[var(--stroke)] bg-white px-3 py-2 text-sm font-semibold text-[var(--ink)]"

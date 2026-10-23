@@ -36,6 +36,13 @@ async function proxy(request: NextRequest, context: RouteContext) {
     responseHeaders.set('content-type', upstreamContentType);
   }
 
+  if (upstream.status === 204 || upstream.status === 205 || upstream.status === 304) {
+    return new NextResponse(null, {
+      status: upstream.status,
+      headers: responseHeaders,
+    });
+  }
+
   return new NextResponse(await upstream.arrayBuffer(), {
     status: upstream.status,
     headers: responseHeaders,

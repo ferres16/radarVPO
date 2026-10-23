@@ -166,7 +166,9 @@ async function requestPublic<T>(path: string, revalidateSeconds = 45): Promise<T
     headers: {
       'Content-Type': 'application/json',
     },
-    next: { revalidate: revalidateSeconds },
+    ...(revalidateSeconds <= 0
+      ? { cache: 'no-store' as const }
+      : { next: { revalidate: revalidateSeconds } }),
   });
 
   if (!res.ok) {
@@ -510,9 +512,9 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify(payload),
     }),
-  listCourses: () => requestPublic<Course[]>('/courses'),
+  listCourses: () => requestPublic<Course[]>('/courses', 0),
   listCoursesForUser: () => request<Array<Course & { access: { canAccess: boolean; reason: string } }>>('/courses/access'),
-  getCourse: (slug: string) => requestPublic<Course>(`/courses/${slug}`, 60),
+  getCourse: (slug: string) => requestPublic<Course>(`/courses/${slug}`, 0),
   getCourseForUser: (slug: string) => request<Course & { access: { canAccess: boolean; reason: string } }>(`/courses/${slug}/access`),
   getCourseLesson: (slug: string, lessonSlug: string) =>
     request<{ course: Course; lesson: CourseLesson; access: { canAccess: boolean; reason: string } }>(

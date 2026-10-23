@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { api } from '@/lib/api';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
+import { CourseProductCard } from '@/components/course-product-card';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
 import {
@@ -16,6 +17,8 @@ import { publicCatalogCourses } from '@/lib/public-courses';
 import { proPlan } from '@/lib/pro';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 import type { Course } from '@/types';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createMetadata({
   title: 'Entiende la VPO en Cataluña y empieza a planificar',
@@ -87,9 +90,6 @@ export default async function CoursesPage() {
     (generalGuide && getGuideTopics(generalGuide).length > 0
       ? getGuideTopics(generalGuide)
       : GENERAL_GUIDE_FALLBACK_TOPICS);
-  const otherGuides = generalGuide
-    ? visibleCourses.filter((course) => course.id !== generalGuide.id)
-    : visibleCourses;
   const priceLabel =
     generalPrice !== null ? formatEuro(generalPrice, { decimals: 2 }) : 'Consultar precio';
 
@@ -279,37 +279,17 @@ export default async function CoursesPage() {
         </div>
       </PublicSection>
 
-      {otherGuides.length > 0 ? (
+      {visibleCourses.length > 0 ? (
         <PublicSection id="catalogo" border>
           <SectionHeader
-            eyebrow="Más contenido"
-            title="Otras guías publicadas"
-            description="Si ya hay más fichas a la venta, las verás aquí."
+            eyebrow="Catálogo"
+            title="Guías publicadas"
+            description="Cada ficha publicada en el backoffice aparece aquí, con su precio y formato reales."
           />
           <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {otherGuides.map((course) => {
-              const price = getCoursePrice(course);
-              return (
-                <article key={course.id} className="public-card flex flex-col p-5">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--ink-soft)]">
-                    {isGuidePdf(course) ? 'Guía PDF' : 'Programa'}
-                    {isIncludedInPro(course) ? ' · Pack PRO' : ''}
-                  </p>
-                  <h3 className="mt-2 text-lg font-black text-[var(--ink)]">{course.title}</h3>
-                  <p className="mt-2 flex-1 text-sm leading-6 text-[var(--ink-soft)]">
-                    {course.shortDescription || 'Contenido publicado en Radar VPO.'}
-                  </p>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <p className="text-base font-black text-[var(--ink)]">
-                      {price !== null ? formatEuro(price) : 'Consultar'}
-                    </p>
-                    <ButtonLink href={`/cursos/${course.slug}`} variant="secondary">
-                      Ver
-                    </ButtonLink>
-                  </div>
-                </article>
-              );
-            })}
+            {visibleCourses.map((course) => (
+              <CourseProductCard key={course.id} course={course} />
+            ))}
           </div>
         </PublicSection>
       ) : null}

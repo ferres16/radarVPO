@@ -16,6 +16,8 @@ import { pickFeaturedPublicCourse } from '@/lib/public-courses';
 import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = createMetadata({
   title: 'Consulta promociones de vivienda protegida en Cataluña',
   description:

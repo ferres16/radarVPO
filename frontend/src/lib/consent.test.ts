@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   ACCEPTED_CONSENT,
+  CONSENT_COOKIE,
   DENIED_CONSENT,
   parseConsent,
+  readConsentCookie,
   serializeConsent,
+  writeConsentCookie,
 } from './consent';
 
 describe('cookie consent', () => {
@@ -26,5 +29,15 @@ describe('cookie consent', () => {
       analytics: false,
       ads: false,
     });
+  });
+
+  it('caches the same preference object so React can subscribe without looping', () => {
+    document.cookie = `${CONSENT_COOKIE}=; Max-Age=0; Path=/`;
+    window.localStorage.removeItem(CONSENT_COOKIE);
+    writeConsentCookie(ACCEPTED_CONSENT);
+    const first = readConsentCookie();
+    const second = readConsentCookie();
+    expect(first).toEqual(ACCEPTED_CONSENT);
+    expect(second).toBe(first);
   });
 });

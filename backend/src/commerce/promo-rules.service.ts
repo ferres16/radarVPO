@@ -39,7 +39,7 @@ export class PromoRulesService {
         key: PRO_PACK_3M_RULE_KEY,
         name: 'Pack PRO 3 meses → guía inicial gratis',
         ruleType: PRO_PACK_3M_RULE_TYPE,
-        enabled: false,
+        enabled: true,
         config: {
           ...DEFAULT_PACK_CONFIG,
           guideSlug,

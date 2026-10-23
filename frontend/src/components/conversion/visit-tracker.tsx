@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { useOptionalConsent } from '@/components/consent/consent-provider';
-import { getBrowserApiBaseUrl } from '@/lib/backend-url';
 
 const COOKIE = 'rv_visit_day';
 
@@ -23,12 +22,12 @@ export function VisitTracker() {
       const match = document.cookie.match(new RegExp(`(?:^|; )${COOKIE}=([^;]*)`));
       if (match?.[1] === today) return;
 
-      document.cookie = `${COOKIE}=${today}; path=/; max-age=172800; SameSite=Lax`;
-      void fetch(`${getBrowserApiBaseUrl()}/metrics/visit`, {
+      const secure =
+        typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : '';
+      document.cookie = `${COOKIE}=${today}; Path=/; Max-Age=172800; SameSite=Lax${secure}`;
+      void fetch('/api/metrics/visit', {
         method: 'POST',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
       }).catch(() => undefined);
     } catch {
       // No bloqueamos la página si falla la métrica.

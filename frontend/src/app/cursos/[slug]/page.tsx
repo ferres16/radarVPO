@@ -36,6 +36,8 @@ import { proPlan } from '@/lib/pro';
 import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
 import type { Course } from '@/types';
 
+export const dynamic = 'force-dynamic';
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   process.env.API_URL ||

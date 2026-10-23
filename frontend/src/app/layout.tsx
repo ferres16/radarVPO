@@ -83,7 +83,7 @@ export default function RootLayout({
             <SiteFooter />
             <CookieBanner />
           </ProAccessProvider>
-          <ConsentedScripts />
+          <ConsentedScripts vercelAnalytics={process.env.VERCEL === '1'} />
         </ConsentProvider>
       </body>
     </html>

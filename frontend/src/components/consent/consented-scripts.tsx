@@ -7,10 +7,14 @@ import { useConsent } from './consent-provider';
 
 const ADSENSE_SCRIPT_ID = 'radar-vpo-adsense';
 
-export function ConsentedScripts() {
+export function ConsentedScripts({
+  vercelAnalytics = false,
+}: {
+  vercelAnalytics?: boolean;
+}) {
   const { preferences } = useConsent();
   const adsAllowed = Boolean(preferences?.ads && adsConfig.enabled && adsConfig.clientId);
-  const analyticsAllowed = Boolean(preferences?.analytics);
+  const analyticsAllowed = Boolean(preferences?.analytics && vercelAnalytics);
 
   useEffect(() => {
     if (!adsAllowed || !adsConfig.clientId) return;

@@ -18,6 +18,8 @@ import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-pr
 import { proFaqs, proForWhom, proIncludedGuidesCopy, proIncludes, proLimits, proPlan, proWhyPay } from '@/lib/pro';
 import { breadcrumbJsonLd, createMetadata, faqJsonLd } from '@/lib/seo';
 
+export const dynamic = 'force-dynamic';
+
 export const metadata: Metadata = createMetadata({
   title: 'Radar VPO PRO: avisos por SMS y organización de tus solicitudes',
   description: `Suscripción mensual (${proPlan.price}) con avisos por email y SMS y Mi espacio sin límite. Cancela cuando quieras.`,

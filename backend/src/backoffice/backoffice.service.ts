@@ -36,6 +36,7 @@ import { UpdateMessageTemplateDto } from './dto/update-message-template.dto';
 import { UpdatePromoRuleDto } from './dto/update-promo-rule.dto';
 import { CreateCourseAccessRuleDto } from './dto/create-course-access-rule.dto';
 import { CreateCourseContentBlockDto } from './dto/create-course-content-block.dto';
+import { inferCourseCommercialFields } from './course-commercial-fields';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { CreateCourseLessonDto } from './dto/create-course-lesson.dto';
 import { CreateCourseModuleDto } from './dto/create-course-module.dto';
@@ -563,6 +564,11 @@ export class BackofficeService {
   }
 
   async createCourse(dto: CreateCourseDto) {
+    const commercial = inferCourseCommercialFields({
+      pricingType: dto.pricingType,
+      accessType: dto.accessType,
+      price: dto.price,
+    });
     return this.prisma.course.create({
       data: {
         slug: dto.slug,
@@ -570,13 +576,13 @@ export class BackofficeService {
         shortDescription: this.nullableText(dto.shortDescription),
         longDescription: this.nullableText(dto.longDescription),
         coverImage: this.nullableText(dto.coverImage),
-        pricingType: dto.pricingType,
+        pricingType: commercial.pricingType,
         price: this.nullableDecimal(dto.price),
         salePrice: this.nullableDecimal(dto.salePrice),
         currency: this.nullableText(dto.currency),
         stripePaymentLink: this.nullableText(dto.stripePaymentLink),
         status: dto.status,
-        accessType: dto.accessType,
+        accessType: commercial.accessType ?? dto.accessType,
         format: dto.format ?? CourseFormat.standard,
         order: dto.order ?? 0,
         seoTitle: this.nullableText(dto.seoTitle),
@@ -592,6 +598,11 @@ export class BackofficeService {
   }
 
   async updateCourse(courseId: string, dto: UpdateCourseDto) {
+    const commercial = inferCourseCommercialFields({
+      pricingType: dto.pricingType,
+      accessType: dto.accessType,
+      price: dto.price,
+    });
     return this.prisma.course.update({
       where: { id: courseId },
       data: {
@@ -600,13 +611,13 @@ export class BackofficeService {
         shortDescription: this.nullableText(dto.shortDescription),
         longDescription: this.nullableText(dto.longDescription),
         coverImage: this.nullableText(dto.coverImage),
-        pricingType: dto.pricingType,
+        pricingType: commercial.pricingType,
+        accessType: commercial.accessType,
         price: this.nullableDecimal(dto.price),
         salePrice: this.nullableDecimal(dto.salePrice),
         currency: this.nullableText(dto.currency),
         stripePaymentLink: this.nullableText(dto.stripePaymentLink),
         status: dto.status,
-        accessType: dto.accessType,
         format: dto.format,
         order: dto.order,
         seoTitle: this.nullableText(dto.seoTitle),
