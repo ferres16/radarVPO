@@ -8,9 +8,9 @@ function looksLikeStorageUrl(url: string) {
 }
 
 export function getCourseCoverSrc(slug: string, coverImage?: string | null) {
-  if (!slug) return null;
+  if (!slug || !coverImage) return null;
 
-  if (coverImage && !looksLikeStorageUrl(coverImage) && !coverImage.includes('/cover')) {
+  if (!looksLikeStorageUrl(coverImage) && !coverImage.includes('/cover')) {
     return coverImage;
   }
 

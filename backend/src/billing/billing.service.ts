@@ -35,6 +35,7 @@ import {
   isMissingStripeCustomerError,
   isOneOffPurchasableAccessType,
   isStripeTaxNotEnabledError,
+  publicStripeCheckoutMessage,
   mapStripeSubscriptionStatus,
   MIN_PUBLISHED_LESSONS_TO_SELL,
   parseCheckoutMetadata,
@@ -140,7 +141,10 @@ export class BillingService {
     user: { email: string; stripeCustomerId: string | null },
   ): Promise<Stripe.Checkout.Session> {
     try {
-      return await stripe.checkout.sessions.create(params);
+      return await stripe.checkout.sessions.create({
+        ...params,
+        payment_method_types: params.payment_method_types ?? ['card'],
+      });
     } catch (error) {
       if (user.stripeCustomerId && isMissingStripeCustomerError(error)) {
         this.logger.warn(
@@ -169,13 +173,15 @@ export class BillingService {
           user,
         );
       }
-      const stripeError = error as { code?: string; type?: string };
+      const stripeError = error as {
+        code?: string;
+        type?: string;
+        message?: string;
+      };
       this.logger.error(
-        `Stripe checkout failed code=${stripeError.code || 'n/a'} type=${stripeError.type || 'n/a'}`,
+        `Stripe checkout failed code=${stripeError.code || 'n/a'} type=${stripeError.type || 'n/a'} message=${(stripeError.message || '').slice(0, 300)}`,
       );
-      throw new ServiceUnavailableException(
-        'No se pudo iniciar el pago. Inténtalo de nuevo.',
-      );
+      throw new ServiceUnavailableException(publicStripeCheckoutMessage(error));
     }
   }
 

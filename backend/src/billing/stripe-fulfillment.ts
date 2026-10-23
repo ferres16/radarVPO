@@ -176,3 +176,47 @@ export function isStripeTaxNotEnabledError(error: unknown): boolean {
     message,
   );
 }
+
+/**
+ * Mensaje que se puede mostrar al comprador/admin. No incluye secretos.
+ * Si Stripe pide activar la cuenta o las tarjetas, lo dice en claro.
+ */
+export function publicStripeCheckoutMessage(error: unknown): string {
+  const err = readStripeError(error);
+  const message = err.message || '';
+  const code = err.code || '';
+  const type = err.type || '';
+
+  if (
+    /live charges|cannot currently make live|not fully activated|activate your account|account is not activated/i.test(
+      message,
+    )
+  ) {
+    return 'Stripe aún no admite cobros en vivo. En el Dashboard (modo Live) completa la activación de la cuenta: datos del negocio y cuenta bancaria para ingresos.';
+  }
+  if (
+    type === 'StripeAuthenticationError' ||
+    /invalid api[- ]key|expired api key/i.test(message) ||
+    code === 'api_key_expired'
+  ) {
+    return 'La clave de Stripe no es válida. En Railway, STRIPE_SECRET_KEY debe ser la de modo Live (sk_live_…) y coincidir con el webhook live.';
+  }
+  if (
+    /payment method type|no valid payment method|must enable at least one payment method/i.test(
+      message,
+    )
+  ) {
+    return 'En Stripe Dashboard → Settings → Payment methods, activa “Cards” para EUR.';
+  }
+  if (/test mode.*live|live mode.*test/i.test(message)) {
+    return 'Estás mezclando claves de test y live. Usa sk_live_ y el webhook de live para cobrar de verdad.';
+  }
+  if (
+    message &&
+    message.length <= 280 &&
+    !/sk_live|sk_test|rk_|whsec_/i.test(message)
+  ) {
+    return `Stripe rechazó el pago: ${message}`;
+  }
+  return 'No se pudo iniciar el pago. Inténtalo de nuevo.';
+}

@@ -6,6 +6,7 @@ import {
   isMissingStripeCustomerError,
   isOneOffPurchasableAccessType,
   isStripeTaxNotEnabledError,
+  publicStripeCheckoutMessage,
   mapStripeSubscriptionStatus,
   parseCheckoutMetadata,
   shouldKeepProPlan,
@@ -155,6 +156,25 @@ describe('Stripe checkout error mapping', () => {
     expect(
       isStripeTaxNotEnabledError({ message: 'No such customer: cus_x' }),
     ).toBe(false);
+  });
+
+  it('tells the operator to finish Stripe live activation', () => {
+    expect(
+      publicStripeCheckoutMessage({
+        message: 'Your account cannot currently make live charges.',
+      }),
+    ).toMatch(/activación de la cuenta/i);
+    expect(
+      publicStripeCheckoutMessage({
+        type: 'StripeAuthenticationError',
+        message: 'Invalid API Key provided: sk_live_***',
+      }),
+    ).toMatch(/sk_live_/);
+    expect(
+      publicStripeCheckoutMessage({
+        message: 'No valid payment method types for this Checkout Session.',
+      }),
+    ).toMatch(/Payment methods/i);
   });
 });
 
