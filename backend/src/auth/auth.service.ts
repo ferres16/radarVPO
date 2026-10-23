@@ -215,7 +215,9 @@ export class AuthService {
     const tokenHash = hashEmailVerificationToken(dto.token.trim());
     const row = await this.prisma.emailVerificationToken.findUnique({
       where: { tokenHash },
-      include: { user: { select: { id: true, email: true, emailVerifiedAt: true } } },
+      include: {
+        user: { select: { id: true, email: true, emailVerifiedAt: true } },
+      },
     });
 
     if (!row || row.usedAt || row.expiresAt < new Date()) {

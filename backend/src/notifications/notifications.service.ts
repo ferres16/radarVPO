@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AudienceType, Prisma, Promotion, SubscriptionStatus } from '@prisma/client';
+import { AudienceType, Promotion, SubscriptionStatus } from '@prisma/client';
 import { MessageTemplatesService } from '../commerce/message-templates.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizePhoneForSms } from './phone-normalize';
@@ -15,11 +15,19 @@ import {
   PRO_NOTIFY_SOURCE_KIND,
   type ProNotifyKind,
 } from './pro-notify.util';
-import { buildProNotifyCopy, PUBLICATION_UNCERTAINTY_DISCLAIMER } from './pro-notify-copy';
+import {
+  buildProNotifyCopy,
+  PUBLICATION_UNCERTAINTY_DISCLAIMER,
+} from './pro-notify-copy';
 
 type ProAlertPromotion = Pick<
   Promotion,
-  'id' | 'title' | 'municipality' | 'province' | 'estimatedPublicationDate' | 'status'
+  | 'id'
+  | 'title'
+  | 'municipality'
+  | 'province'
+  | 'estimatedPublicationDate'
+  | 'status'
 >;
 
 type BrevoEmailPayload = {
@@ -73,8 +81,10 @@ export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
   private readonly apiKey = process.env.BREVO_API_KEY;
   private readonly smsSender = process.env.BREVO_SMS_SENDER || 'RadarVPO';
-  private readonly emailSender = process.env.BREVO_EMAIL_SENDER || 'Radar VPO <info@radarvpo.com>';
-  private readonly proAlertsEnabled = process.env.BREVO_PRO_ALERTS_ENABLED === 'true';
+  private readonly emailSender =
+    process.env.BREVO_EMAIL_SENDER || 'Radar VPO <info@radarvpo.com>';
+  private readonly proAlertsEnabled =
+    process.env.BREVO_PRO_ALERTS_ENABLED === 'true';
   private readonly publicSiteUrl = resolvePublicSiteUrl();
 
   constructor(
@@ -87,53 +97,66 @@ export class NotificationsService {
   }
 
   async getProAlertsDiagnostics() {
-    const [pendingAlerts, proUsers, proUserRows, recentFailures] = await Promise.all([
-      this.prisma.promotion.count({ where: { status: 'pending_review' } }),
-      this.prisma.user.count({
-        where: {
-          OR: [
-            { plan: 'pro' },
-            {
-              subscriptions: {
-                some: {
-                  planKey: 'pro',
-                  status: { in: [SubscriptionStatus.active, SubscriptionStatus.trialing] },
+    const [pendingAlerts, proUsers, proUserRows, recentFailures] =
+      await Promise.all([
+        this.prisma.promotion.count({ where: { status: 'pending_review' } }),
+        this.prisma.user.count({
+          where: {
+            OR: [
+              { plan: 'pro' },
+              {
+                subscriptions: {
+                  some: {
+                    planKey: 'pro',
+                    status: {
+                      in: [
+                        SubscriptionStatus.active,
+                        SubscriptionStatus.trialing,
+                      ],
+                    },
+                  },
                 },
               },
-            },
-          ],
-        },
-      }),
-      this.prisma.user.findMany({
-        where: {
-          OR: [
-            { plan: 'pro' },
-            {
-              subscriptions: {
-                some: {
-                  planKey: 'pro',
-                  status: { in: [SubscriptionStatus.active, SubscriptionStatus.trialing] },
+            ],
+          },
+        }),
+        this.prisma.user.findMany({
+          where: {
+            OR: [
+              { plan: 'pro' },
+              {
+                subscriptions: {
+                  some: {
+                    planKey: 'pro',
+                    status: {
+                      in: [
+                        SubscriptionStatus.active,
+                        SubscriptionStatus.trialing,
+                      ],
+                    },
+                  },
                 },
               },
-            },
-          ],
-        },
-        select: { phone: true },
-      }),
-      this.prisma.deliveryFailure.findMany({
-        where: { sourceRef: 'radar_vpo_pro' },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-        select: {
-          channel: true,
-          target: true,
-          errorCode: true,
-          createdAt: true,
-        },
-      }),
-    ]);
+            ],
+          },
+          select: { phone: true },
+        }),
+        this.prisma.deliveryFailure.findMany({
+          where: { sourceRef: 'radar_vpo_pro' },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          select: {
+            channel: true,
+            target: true,
+            errorCode: true,
+            createdAt: true,
+          },
+        }),
+      ]);
 
-    const proUsersWithPhone = proUserRows.filter((user) => normalizePhoneForSms(user.phone)).length;
+    const proUsersWithPhone = proUserRows.filter((user) =>
+      normalizePhoneForSms(user.phone),
+    ).length;
 
     return {
       configured: this.isProAlertsConfigured(),
@@ -157,7 +180,9 @@ export class NotificationsService {
     const diagnostics = await this.getProAlertsDiagnostics();
 
     if (!this.isProAlertsConfigured()) {
-      this.logger.log('Brevo Pro alerts skipped: missing BREVO_API_KEY or BREVO_PRO_ALERTS_ENABLED=true');
+      this.logger.log(
+        'Brevo Pro alerts skipped: missing BREVO_API_KEY or BREVO_PRO_ALERTS_ENABLED=true',
+      );
       return {
         ...diagnostics,
         skipped: true,
@@ -194,7 +219,10 @@ export class NotificationsService {
     let sent = 0;
 
     for (const promotion of promotions) {
-      const result = await this.notifyProUsersForPromotion(promotion.id, options);
+      const result = await this.notifyProUsersForPromotion(
+        promotion.id,
+        options,
+      );
       promotionResults.push({ ...result, title: promotion.title });
       if (!result.skipped) {
         sent += result.sent;
@@ -202,7 +230,9 @@ export class NotificationsService {
     }
 
     const skippedResults = promotionResults.filter((result) => result.skipped);
-    const failedResults = promotionResults.filter((result) => !result.skipped && result.sent === 0);
+    const failedResults = promotionResults.filter(
+      (result) => !result.skipped && result.sent === 0,
+    );
 
     let reason: string | undefined;
     if (sent === 0) {
@@ -284,7 +314,10 @@ export class NotificationsService {
     };
   }
 
-  async notifyDueReminders(): Promise<{ sent: number; results: NotifyResult[] }> {
+  async notifyDueReminders(): Promise<{
+    sent: number;
+    results: NotifyResult[];
+  }> {
     if (!this.isProAlertsConfigured()) {
       return { sent: 0, results: [] };
     }
@@ -396,7 +429,13 @@ export class NotificationsService {
         promotion.status !== 'published_unreviewed' &&
         promotion.status !== 'published_reviewed'
       ) {
-        return { skipped: true, reason: 'not_published', sent: 0, promotionId, kind };
+        return {
+          skipped: true,
+          reason: 'not_published',
+          sent: 0,
+          promotionId,
+          kind,
+        };
       }
 
       if (
@@ -438,7 +477,11 @@ export class NotificationsService {
       };
     }
 
-    const result = await this.sendProBroadcast(promotion, kind, options.onlyUserId);
+    const result = await this.sendProBroadcast(
+      promotion,
+      kind,
+      options.onlyUserId,
+    );
     if (result.sent > 0 && !options.simulate) {
       if (existing && options.force) {
         await this.prisma.publishedPost.update({
@@ -450,7 +493,7 @@ export class NotificationsService {
               sent: result.sent,
               channels: result.channels,
               forced: true,
-            } as Prisma.InputJsonValue,
+            },
             sentAt: new Date(),
           },
         });
@@ -466,7 +509,7 @@ export class NotificationsService {
               title: promotion.title,
               sent: result.sent,
               channels: result.channels,
-            } as Prisma.InputJsonValue,
+            },
             status: 'sent',
             sentAt: new Date(),
           },
@@ -476,7 +519,9 @@ export class NotificationsService {
         `PRO ${kind} sent for ${promotion.id}: ${result.sent} deliveries (${result.channels.join(', ')})`,
       );
     } else if (result.sent === 0) {
-      this.logger.warn(`PRO ${kind} produced zero deliveries for ${promotion.id}`);
+      this.logger.warn(
+        `PRO ${kind} produced zero deliveries for ${promotion.id}`,
+      );
     } else {
       this.logger.log(
         `PRO ${kind} simulated for ${promotion.id}: ${result.sent} deliveries (${result.channels.join(', ')})`,
@@ -519,7 +564,10 @@ export class NotificationsService {
                   some: {
                     planKey: 'pro',
                     status: {
-                      in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+                      in: [
+                        SubscriptionStatus.active,
+                        SubscriptionStatus.trialing,
+                      ],
                     },
                   },
                 },
@@ -585,15 +633,21 @@ export class NotificationsService {
     };
   }
 
-  private async buildProCopy(promotion: ProAlertPromotion, kind: ProNotifyKind) {
+  private async buildProCopy(
+    promotion: ProAlertPromotion,
+    kind: ProNotifyKind,
+  ) {
     const title = shortenAlertTitle(promotion.title);
     const location =
       [promotion.municipality, promotion.province].filter(Boolean).join(', ') ||
       'Cataluña';
     const estimatedDate = promotion.estimatedPublicationDate
-      ? new Date(promotion.estimatedPublicationDate).toLocaleDateString('es-ES', {
-          timeZone: 'Europe/Madrid',
-        })
+      ? new Date(promotion.estimatedPublicationDate).toLocaleDateString(
+          'es-ES',
+          {
+            timeZone: 'Europe/Madrid',
+          },
+        )
       : null;
     const alertsUrl = `${this.publicSiteUrl}/alerts`;
     const promotionsUrl = `${this.publicSiteUrl}/promotions/${promotion.id}`;
@@ -632,7 +686,8 @@ export class NotificationsService {
     };
     return {
       ...fallback,
-      subject: this.templates.render(tpl.emailSubject, vars) || fallback.subject,
+      subject:
+        this.templates.render(tpl.emailSubject, vars) || fallback.subject,
       intro: this.templates.render(tpl.emailBody, vars) || fallback.intro,
       sms: this.templates.render(tpl.smsBody, vars) || fallback.sms,
       disclaimer:
@@ -723,7 +778,9 @@ export class NotificationsService {
     accessUntil: string | null;
   }): Promise<boolean> {
     if (!this.apiKey) {
-      this.logger.warn('User cancellation email skipped: missing BREVO_API_KEY');
+      this.logger.warn(
+        'User cancellation email skipped: missing BREVO_API_KEY',
+      );
       return false;
     }
     const displayName = input.fullName?.trim() || input.email;
@@ -850,14 +907,29 @@ export class NotificationsService {
   }
 
   private async sendEmail(payload: BrevoEmailPayload) {
-    return this.postBrevo('https://api.brevo.com/v3/smtp/email', payload, 'email', payload.to[0]?.email);
+    return this.postBrevo(
+      'https://api.brevo.com/v3/smtp/email',
+      payload,
+      'email',
+      payload.to[0]?.email,
+    );
   }
 
   private async sendSms(payload: BrevoSmsPayload) {
-    return this.postBrevo('https://api.brevo.com/v3/transactionalSMS/sms', payload, 'sms', payload.recipient);
+    return this.postBrevo(
+      'https://api.brevo.com/v3/transactionalSMS/sms',
+      payload,
+      'sms',
+      payload.recipient,
+    );
   }
 
-  private async postBrevo(url: string, payload: BrevoEmailPayload | BrevoSmsPayload, channel: string, target?: string) {
+  private async postBrevo(
+    url: string,
+    payload: BrevoEmailPayload | BrevoSmsPayload,
+    channel: string,
+    target?: string,
+  ) {
     if (!this.apiKey) return false;
 
     try {
@@ -872,7 +944,12 @@ export class NotificationsService {
       });
 
       if (!response.ok) {
-        await this.recordFailure(channel, target || 'unknown', `BREVO_${response.status}`, await response.text());
+        await this.recordFailure(
+          channel,
+          target || 'unknown',
+          `BREVO_${response.status}`,
+          await response.text(),
+        );
         return false;
       }
 
@@ -888,7 +965,12 @@ export class NotificationsService {
     }
   }
 
-  private async recordFailure(channel: string, target: string, errorCode: string, detail: string) {
+  private async recordFailure(
+    channel: string,
+    target: string,
+    errorCode: string,
+    detail: string,
+  ) {
     await this.prisma.deliveryFailure.create({
       data: {
         channel,

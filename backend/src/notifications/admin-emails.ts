@@ -13,7 +13,9 @@ export function collectAdminEmails(
     ...new Set([
       DEFAULT_CANCELLATION_ADMIN_EMAIL,
       ...fromEnv,
-      ...adminUserEmails.map((email) => email.trim().toLowerCase()).filter(Boolean),
+      ...adminUserEmails
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean),
     ]),
   ];
 }

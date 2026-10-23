@@ -343,7 +343,8 @@ export class CoursesService {
 
     const resources = await Promise.all(
       lesson.resources.map(async (resource) => {
-        const { fileAsset, ...publicResource } = resource;
+        const { fileAsset: _omit, ...publicResource } = resource;
+        void _omit;
         if (!resource.fileAssetId) {
           return publicResource;
         }
@@ -410,7 +411,8 @@ export class CoursesService {
       fileAsset?: unknown;
     },
   >(asset: T) {
-    const { fileAsset, ...publicAsset } = asset;
+    const { fileAsset: _omit, ...publicAsset } = asset;
+    void _omit;
     if (!asset.fileAssetId) {
       return publicAsset;
     }

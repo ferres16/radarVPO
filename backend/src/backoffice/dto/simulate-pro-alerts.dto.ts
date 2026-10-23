@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsIn, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export const PRO_ALERT_SIMULATION_KINDS = [
   'new_alert',
@@ -8,7 +14,8 @@ export const PRO_ALERT_SIMULATION_KINDS = [
   'new_publication',
 ] as const;
 
-export type ProAlertSimulationKind = (typeof PRO_ALERT_SIMULATION_KINDS)[number];
+export type ProAlertSimulationKind =
+  (typeof PRO_ALERT_SIMULATION_KINDS)[number];
 
 export class SimulateProAlertsDto {
   @ApiProperty()

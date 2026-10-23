@@ -1,6 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PromotionStatus, PromotionType } from '@prisma/client';
-import { IsEnum, IsInt, IsOptional, IsString, IsUrl, MaxLength, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreatePromotionDto {
   @ApiProperty()

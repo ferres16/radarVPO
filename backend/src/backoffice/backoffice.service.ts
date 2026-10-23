@@ -182,7 +182,9 @@ export class BackofficeService {
   }
 
   async dispatchPendingProAlertNotifications(force = false) {
-    return this.notificationsService.notifyProUsersForPendingAlerts(20, { force });
+    return this.notificationsService.notifyProUsersForPendingAlerts(20, {
+      force,
+    });
   }
 
   async simulateProAlertNotifications(
@@ -207,7 +209,8 @@ export class BackofficeService {
         entityType: this.validFileEntityType(query.entityType),
         entityId: query.entityId || undefined,
         status: this.validFileStatus(query.status),
-        isPublic: query.isPublic === undefined ? undefined : query.isPublic === 'true',
+        isPublic:
+          query.isPublic === undefined ? undefined : query.isPublic === 'true',
         mimeType: query.mimeType
           ? { contains: query.mimeType, mode: 'insensitive' }
           : undefined,
@@ -937,9 +940,7 @@ export class BackofficeService {
     });
 
     if (blocks.length !== blockIds.length) {
-      throw new BadRequestException(
-        'Some blocks do not belong to this lesson',
-      );
+      throw new BadRequestException('Some blocks do not belong to this lesson');
     }
 
     await this.prisma.$transaction(
@@ -1121,7 +1122,9 @@ export class BackofficeService {
       block.lesson.course.pricingType === 'free' &&
       block.lesson.course.accessType === 'free';
     const isPublic =
-      dto.isPublic === 'true' && dto.kind === CourseAssetKind.image && isFreeCourse;
+      dto.isPublic === 'true' &&
+      dto.kind === CourseAssetKind.image &&
+      isFreeCourse;
 
     const asset = await this.fileStorage.uploadFile({
       entityType: 'lesson',
@@ -1166,7 +1169,10 @@ export class BackofficeService {
     uploadedByUserId?: string,
   ) {
     await this.ensureCourse(courseId);
-    await this.deleteCourseAssetFiles({ courseId, kind: CourseAssetKind.cover });
+    await this.deleteCourseAssetFiles({
+      courseId,
+      kind: CourseAssetKind.cover,
+    });
     await this.fileStorage.deleteAssetsForEntity('course', courseId);
 
     const asset = await this.fileStorage.uploadFile({
@@ -1293,7 +1299,9 @@ export class BackofficeService {
     });
 
     await this.newsCover.attachGeneratedCover(created.id).catch(() => false);
-    return this.prisma.newsItem.findUniqueOrThrow({ where: { id: created.id } });
+    return this.prisma.newsItem.findUniqueOrThrow({
+      where: { id: created.id },
+    });
   }
 
   /** Sube el PDF de una guía (solo lectura en el producto; privado en S3). */
@@ -1407,7 +1415,9 @@ export class BackofficeService {
     });
 
     return Promise.all(
-      promotions.map((promotion) => this.withSignedPromotionDocuments(promotion)),
+      promotions.map((promotion) =>
+        this.withSignedPromotionDocuments(promotion),
+      ),
     );
   }
 
@@ -1439,7 +1449,9 @@ export class BackofficeService {
     });
 
     if (status === 'pending_review') {
-      void this.notificationsService.notifyProUsersForPromotion(promotion.id).catch(() => undefined);
+      void this.notificationsService
+        .notifyProUsersForPromotion(promotion.id)
+        .catch(() => undefined);
     } else if (
       status === 'published_unreviewed' ||
       status === 'published_reviewed'
@@ -1504,8 +1516,10 @@ export class BackofficeService {
     if (dto.promotionType !== undefined) data.promotionType = dto.promotionType;
     if (dto.promoter !== undefined) data.promoter = dto.promoter;
     if (dto.totalHomes !== undefined) data.totalHomes = dto.totalHomes;
-    if (dto.publicDescription !== undefined) data.publicDescription = dto.publicDescription;
-    if (dto.availableUnitsText !== undefined) data.availableUnitsText = dto.availableUnitsText;
+    if (dto.publicDescription !== undefined)
+      data.publicDescription = dto.publicDescription;
+    if (dto.availableUnitsText !== undefined)
+      data.availableUnitsText = dto.availableUnitsText;
     if (dto.statusMessage !== undefined) data.statusMessage = dto.statusMessage;
 
     const importantDates = this.parseJsonField(dto.importantDatesJson);
@@ -1514,8 +1528,11 @@ export class BackofficeService {
     if (requirements !== undefined) data.requirements = requirements;
     const economicInfo = this.parseJsonField(dto.economicInfoJson);
     if (economicInfo !== undefined) data.economicInfo = economicInfo;
-    const feesAndReservations = this.parseJsonField(dto.feesAndReservationsJson);
-    if (feesAndReservations !== undefined) data.feesAndReservations = feesAndReservations;
+    const feesAndReservations = this.parseJsonField(
+      dto.feesAndReservationsJson,
+    );
+    if (feesAndReservations !== undefined)
+      data.feesAndReservations = feesAndReservations;
     const contactInfo = this.parseJsonField(dto.contactInfoJson);
     if (contactInfo !== undefined) data.contactInfo = contactInfo;
 
@@ -1560,18 +1577,25 @@ export class BackofficeService {
       where: { id: promotionId },
       data: {
         status: dto.status,
-        ...(dto.status === 'pending_review' && current.status !== 'pending_review'
+        ...(dto.status === 'pending_review' &&
+        current.status !== 'pending_review'
           ? { alertDetectedAt: new Date() }
           : {}),
       },
     });
 
-    if (dto.status === 'pending_review' && current.status !== 'pending_review') {
-      void this.notificationsService.notifyProUsersForPromotion(promotionId).catch(() => undefined);
+    if (
+      dto.status === 'pending_review' &&
+      current.status !== 'pending_review'
+    ) {
+      void this.notificationsService
+        .notifyProUsersForPromotion(promotionId)
+        .catch(() => undefined);
     }
 
     if (
-      (dto.status === 'published_unreviewed' || dto.status === 'published_reviewed') &&
+      (dto.status === 'published_unreviewed' ||
+        dto.status === 'published_reviewed') &&
       current.status !== 'published_unreviewed' &&
       current.status !== 'published_reviewed'
     ) {
@@ -1915,7 +1939,9 @@ export class BackofficeService {
         'video/mp4',
         'video/quicktime',
       ],
-      maxSizeBytes: Number(process.env.PROMOTION_ASSET_MAX_SIZE_BYTES || 25 * 1024 * 1024),
+      maxSizeBytes: Number(
+        process.env.PROMOTION_ASSET_MAX_SIZE_BYTES || 25 * 1024 * 1024,
+      ),
     });
 
     return this.prisma.promotionDocument.create({
@@ -2003,7 +2029,9 @@ export class BackofficeService {
   }
 
   private async withSignedPromotionDocuments<
-    T extends { documents: Array<{ fileAssetId: string | null; publicUrl: string }> },
+    T extends {
+      documents: Array<{ fileAssetId: string | null; publicUrl: string }>;
+    },
   >(promotion: T): Promise<T> {
     const documents = await Promise.all(
       promotion.documents.map(async (document) => {
@@ -2030,7 +2058,11 @@ export class BackofficeService {
   private async withSignedCourseAssetsForBackoffice<
     T extends {
       coverImage?: string | null;
-      assets?: Array<{ fileAssetId: string | null; url: string | null; kind?: CourseAssetKind }>;
+      assets?: Array<{
+        fileAssetId: string | null;
+        url: string | null;
+        kind?: CourseAssetKind;
+      }>;
       modules?: Array<{
         lessons?: Array<{
           assets?: Array<{ fileAssetId: string | null; url: string | null }>;
@@ -2042,7 +2074,9 @@ export class BackofficeService {
       }>;
     },
   >(course: T): Promise<T> {
-    const signAsset = async <A extends { fileAssetId: string | null; url: string | null }>(
+    const signAsset = async <
+      A extends { fileAssetId: string | null; url: string | null },
+    >(
       asset: A,
     ): Promise<A> => {
       if (!asset.fileAssetId) return asset;
@@ -2052,13 +2086,15 @@ export class BackofficeService {
           true,
           { preferSigned: true },
         );
-        return { ...asset, url: access.url || asset.url } as A;
+        return { ...asset, url: access.url || asset.url };
       } catch {
         return asset;
       }
     };
 
-    const signResource = async <R extends { fileAssetId: string | null; publicUrl: string }>(
+    const signResource = async <
+      R extends { fileAssetId: string | null; publicUrl: string },
+    >(
       resource: R,
     ): Promise<R> => {
       if (!resource.fileAssetId) return resource;
@@ -2068,7 +2104,10 @@ export class BackofficeService {
           true,
           { preferSigned: true },
         );
-        return { ...resource, publicUrl: access.url || resource.publicUrl } as R;
+        return {
+          ...resource,
+          publicUrl: access.url || resource.publicUrl,
+        };
       } catch {
         return resource;
       }
@@ -2081,7 +2120,9 @@ export class BackofficeService {
           (module.lessons || []).map(async (lesson) => ({
             ...lesson,
             assets: await Promise.all((lesson.assets || []).map(signAsset)),
-            resources: await Promise.all((lesson.resources || []).map(signResource)),
+            resources: await Promise.all(
+              (lesson.resources || []).map(signResource),
+            ),
             blocks: await Promise.all(
               (lesson.blocks || []).map(async (block) => ({
                 ...block,
@@ -2100,10 +2141,12 @@ export class BackofficeService {
       coverImage: cover?.url || course.coverImage,
       assets,
       modules,
-    } as T;
+    };
   }
 
-  private async deleteCourseResourceAssets(where: Prisma.CourseResourceWhereInput) {
+  private async deleteCourseResourceAssets(
+    where: Prisma.CourseResourceWhereInput,
+  ) {
     const resources = await this.prisma.courseResource.findMany({
       where,
       select: { fileAssetId: true, storagePath: true },
@@ -2125,7 +2168,10 @@ export class BackofficeService {
     }
   }
 
-  private async deleteLinkedAsset(fileAssetId?: string | null, storagePath?: string | null) {
+  private async deleteLinkedAsset(
+    fileAssetId?: string | null,
+    storagePath?: string | null,
+  ) {
     if (fileAssetId) {
       await this.fileStorage.deleteAsset(fileAssetId);
       return;

@@ -113,7 +113,9 @@ export class BackofficeController {
 
   @Post('notifications/pro-alerts/dispatch')
   dispatchProAlertNotifications(@Query('force') force?: string) {
-    return this.backofficeService.dispatchPendingProAlertNotifications(force === 'true');
+    return this.backofficeService.dispatchPendingProAlertNotifications(
+      force === 'true',
+    );
   }
 
   @Post('notifications/pro-alerts/simulate')
@@ -304,7 +306,11 @@ export class BackofficeController {
     if (!file) {
       throw new BadRequestException('Falta el archivo PDF de la guía.');
     }
-    return this.backofficeService.uploadCourseGuidePdf(courseId, file, admin.sub);
+    return this.backofficeService.uploadCourseGuidePdf(
+      courseId,
+      file,
+      admin.sub,
+    );
   }
 
   @Post('courses/:id/modules')
@@ -408,7 +414,12 @@ export class BackofficeController {
     @Body() dto: UploadCourseBlockAssetDto,
     @CurrentUser() admin: CurrentUserPayload,
   ) {
-    return this.backofficeService.uploadCourseBlockAsset(blockId, dto, file, admin.sub);
+    return this.backofficeService.uploadCourseBlockAsset(
+      blockId,
+      dto,
+      file,
+      admin.sub,
+    );
   }
 
   @Post('courses/lessons/:lessonId/resources/upload')
@@ -425,7 +436,12 @@ export class BackofficeController {
     @Body() dto: UploadCourseAssetDto,
     @CurrentUser() admin: CurrentUserPayload,
   ) {
-    return this.backofficeService.uploadCourseResource(lessonId, dto, file, admin.sub);
+    return this.backofficeService.uploadCourseResource(
+      lessonId,
+      dto,
+      file,
+      admin.sub,
+    );
   }
 
   @Delete('courses/resources/:resourceId')
@@ -593,7 +609,12 @@ export class BackofficeController {
     @Body() dto: UploadDocumentDto,
     @CurrentUser() admin: CurrentUserPayload,
   ) {
-    return this.backofficeService.uploadDocument(promotionId, dto, file, admin.sub);
+    return this.backofficeService.uploadDocument(
+      promotionId,
+      dto,
+      file,
+      admin.sub,
+    );
   }
 
   @Delete('promotions/:id/documents/:documentId')

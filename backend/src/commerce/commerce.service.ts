@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   COMMERCE_SETTINGS_KEY,
@@ -25,7 +24,10 @@ export class CommerceService {
     });
     const raw = (row?.value ?? {}) as Record<string, unknown>;
     return {
-      proEnabled: asBoolean(raw.proEnabled, DEFAULT_COMMERCE_SETTINGS.proEnabled),
+      proEnabled: asBoolean(
+        raw.proEnabled,
+        DEFAULT_COMMERCE_SETTINGS.proEnabled,
+      ),
       coursesEnabled: asBoolean(
         raw.coursesEnabled,
         DEFAULT_COMMERCE_SETTINGS.coursesEnabled,
@@ -55,18 +57,22 @@ export class CommerceService {
     const current = await this.getSettings();
     const next: CommerceSettings = {
       proEnabled:
-        typeof patch.proEnabled === 'boolean' ? patch.proEnabled : current.proEnabled,
+        typeof patch.proEnabled === 'boolean'
+          ? patch.proEnabled
+          : current.proEnabled,
       coursesEnabled:
         typeof patch.coursesEnabled === 'boolean'
           ? patch.coursesEnabled
           : current.coursesEnabled,
       maintenanceMessage:
         typeof patch.maintenanceMessage === 'string'
-          ? patch.maintenanceMessage.trim() || DEFAULT_COMMERCE_SETTINGS.maintenanceMessage
+          ? patch.maintenanceMessage.trim() ||
+            DEFAULT_COMMERCE_SETTINGS.maintenanceMessage
           : current.maintenanceMessage,
       proPackGuideSlug:
         typeof patch.proPackGuideSlug === 'string'
-          ? patch.proPackGuideSlug.trim() || DEFAULT_COMMERCE_SETTINGS.proPackGuideSlug
+          ? patch.proPackGuideSlug.trim() ||
+            DEFAULT_COMMERCE_SETTINGS.proPackGuideSlug
           : current.proPackGuideSlug,
       allowPromotionCodes:
         typeof patch.allowPromotionCodes === 'boolean'
@@ -82,10 +88,10 @@ export class CommerceService {
       where: { key: COMMERCE_SETTINGS_KEY },
       create: {
         key: COMMERCE_SETTINGS_KEY,
-        value: next as unknown as Prisma.InputJsonValue,
+        value: next,
       },
       update: {
-        value: next as unknown as Prisma.InputJsonValue,
+        value: next,
       },
     });
 

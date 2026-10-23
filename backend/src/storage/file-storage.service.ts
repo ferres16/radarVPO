@@ -9,10 +9,6 @@ import {
 import { FileAsset, FileEntityType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3StorageService } from './s3-storage.service';
-import {
-  ALLOWED_COURSE_ASSET_MIME_TYPES,
-  getCourseAssetMaxSizeBytes,
-} from './upload-limits';
 
 const DEFAULT_MAX_FILE_SIZE = 25 * 1024 * 1024;
 const DEFAULT_ALLOWED_MIME_TYPES = [
@@ -167,7 +163,9 @@ export class FileStorageService {
       throw new ForbiddenException('Access denied');
     }
 
-    const expiresInSeconds = Number(process.env.S3_SIGNED_URL_TTL_SECONDS || 900);
+    const expiresInSeconds = Number(
+      process.env.S3_SIGNED_URL_TTL_SECONDS || 900,
+    );
     const url = await this.s3.getSignedReadUrl(asset.s3Key, expiresInSeconds);
     return {
       url,
@@ -239,7 +237,9 @@ export class FileStorageService {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Unknown S3 deletion error';
-      this.logger.error(`Could not delete S3 object ${asset.s3Key}: ${message}`);
+      this.logger.error(
+        `Could not delete S3 object ${asset.s3Key}: ${message}`,
+      );
       await this.prisma.fileAsset.update({
         where: { id: asset.id },
         data: {
@@ -270,10 +270,9 @@ export class FileStorageService {
       throw new BadRequestException('File is required');
     }
 
-    const allowedMimeTypes =
-      options.allowedMimeTypes?.length
-        ? options.allowedMimeTypes
-        : this.allowedMimeTypesFromEnv();
+    const allowedMimeTypes = options.allowedMimeTypes?.length
+      ? options.allowedMimeTypes
+      : this.allowedMimeTypesFromEnv();
     if (!allowedMimeTypes.includes(file.mimetype)) {
       throw new BadRequestException('Unsupported file type');
     }

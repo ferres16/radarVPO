@@ -58,7 +58,11 @@ async function bootstrap() {
       origin: string | undefined,
       callback: (err: Error | null, allow?: boolean) => void,
     ) => {
-      if (!origin || allowedOriginSet.has(origin) || allowedOriginSet.has(resolveOrigin(origin) || '')) {
+      if (
+        !origin ||
+        allowedOriginSet.has(origin) ||
+        allowedOriginSet.has(resolveOrigin(origin) || '')
+      ) {
         return callback(null, true);
       }
       return callback(null, false);
@@ -93,7 +97,9 @@ async function bootstrap() {
     const normalizedOrigin =
       resolveOrigin(origin) ||
       resolveOrigin(referer) ||
-      resolveOrigin(typeof clientOrigin === 'string' ? clientOrigin : undefined) ||
+      resolveOrigin(
+        typeof clientOrigin === 'string' ? clientOrigin : undefined,
+      ) ||
       resolveOrigin(forwardedOrigin);
 
     if (!normalizedOrigin || !allowedOriginSet.has(normalizedOrigin)) {

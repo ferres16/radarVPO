@@ -1,9 +1,5 @@
 export type ProSubscriptionDisplayStatus =
-  | 'active'
-  | 'inactive'
-  | 'cancel_pending'
-  | 'canceled'
-  | 'expired';
+  'active' | 'inactive' | 'cancel_pending' | 'canceled' | 'expired';
 
 export type ProAccessSnapshot = {
   hasAccess: boolean;

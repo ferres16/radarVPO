@@ -1,6 +1,13 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBooleanString, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsBooleanString,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class BackofficeListDto {
   @ApiPropertyOptional()

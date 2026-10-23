@@ -1,8 +1,5 @@
 export type ProNotifyKind =
-  | 'new_alert'
-  | 'new_publication'
-  | 'reminder_7d'
-  | 'reminder_1d';
+  'new_alert' | 'new_publication' | 'reminder_7d' | 'reminder_1d';
 
 export const PRO_NOTIFY_SOURCE_KIND: Record<ProNotifyKind, string> = {
   new_alert: 'promotion_alert',

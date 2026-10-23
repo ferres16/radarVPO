@@ -88,9 +88,7 @@ export class CoursesController {
   }
 
   @Get(':slug')
-  getCourse(
-    @Param('slug') slug: string,
-  ) {
+  getCourse(@Param('slug') slug: string) {
     return this.coursesService.getCourseBySlug(slug);
   }
 

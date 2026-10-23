@@ -82,7 +82,7 @@ export class BillingService {
   isCheckoutConfigured(): boolean {
     return Boolean(
       this.config.get<string>('STRIPE_SECRET_KEY') &&
-        this.config.get<string>('STRIPE_WEBHOOK_SECRET'),
+      this.config.get<string>('STRIPE_WEBHOOK_SECRET'),
     );
   }
 
@@ -94,7 +94,8 @@ export class BillingService {
       enabled: stripeReady,
       proEnabled: stripeReady && commerce.proEnabled,
       coursesEnabled: stripeReady && commerce.coursesEnabled,
-      proPackEnabled: stripeReady && commerce.proEnabled && Boolean(pack?.enabled),
+      proPackEnabled:
+        stripeReady && commerce.proEnabled && Boolean(pack?.enabled),
       maintenanceMessage: commerce.maintenanceMessage,
       proPackGuideSlug: pack?.guideSlug || commerce.proPackGuideSlug,
       allowPromotionCodes: commerce.allowPromotionCodes,
@@ -223,7 +224,9 @@ export class BillingService {
             price_data: {
               currency: 'eur',
               unit_amount: unitAmount,
-              tax_behavior: commerce.stripeAutomaticTax ? 'inclusive' : undefined,
+              tax_behavior: commerce.stripeAutomaticTax
+                ? 'inclusive'
+                : undefined,
               recurring: isPack
                 ? { interval: 'month', interval_count: 3 }
                 : { interval: 'month' },
@@ -338,7 +341,9 @@ export class BillingService {
       mode: 'payment',
       client_reference_id: user.id,
       ...customerParams,
-      ...(user.stripeCustomerId ? {} : { customer_creation: 'always' as const }),
+      ...(user.stripeCustomerId
+        ? {}
+        : { customer_creation: 'always' as const }),
       line_items: [
         {
           quantity: 1,
@@ -382,7 +387,10 @@ export class BillingService {
   // Webhook de Stripe
   // ---------------------------------------------------------------------------
 
-  async handleWebhook(rawBody: Buffer | undefined, signature: string | undefined) {
+  async handleWebhook(
+    rawBody: Buffer | undefined,
+    signature: string | undefined,
+  ) {
     const webhookSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
     const stripe = await this.getStripe();
     if (!stripe || !webhookSecret) {
@@ -434,18 +442,15 @@ export class BillingService {
       switch (event.type) {
         case 'checkout.session.completed':
         case 'checkout.session.async_payment_succeeded':
-          await this.fulfillCheckoutSession(
-            stripe,
-            event.data.object as Stripe.Checkout.Session,
-          );
+          await this.fulfillCheckoutSession(stripe, event.data.object);
           break;
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted':
-          await this.syncSubscription(event.data.object as Stripe.Subscription);
+          await this.syncSubscription(event.data.object);
           break;
         case 'charge.refunded':
-          await this.handleChargeRefunded(event.data.object as Stripe.Charge);
+          await this.handleChargeRefunded(event.data.object);
           break;
         default:
           break;
@@ -453,7 +458,11 @@ export class BillingService {
 
       await this.prisma.stripeProcessedEvent.update({
         where: { eventId: event.id },
-        data: { status: 'processed', processedAt: new Date(), errorMessage: null },
+        data: {
+          status: 'processed',
+          processedAt: new Date(),
+          errorMessage: null,
+        },
       });
       try {
         await this.prisma.auditLog.create({
@@ -461,7 +470,7 @@ export class BillingService {
             action: 'stripe.webhook.processed',
             entity: 'StripeEvent',
             entityId: event.id,
-            metadata: { type: event.type } as Prisma.InputJsonValue,
+            metadata: { type: event.type },
           },
         });
       } catch (error) {
@@ -648,7 +657,9 @@ export class BillingService {
       void this.notifications
         .sendTemplatedEmail({
           templateKey:
-            meta.product === 'pro_pack_3m' ? 'purchase.pro_pack' : 'purchase.pro',
+            meta.product === 'pro_pack_3m'
+              ? 'purchase.pro_pack'
+              : 'purchase.pro',
           toEmail: user.email,
           toName: displayName,
           vars: {
@@ -656,9 +667,7 @@ export class BillingService {
             email: user.email,
             product: guideTitle,
             url:
-              meta.product === 'pro_pack_3m'
-                ? guideUrl
-                : `${siteUrl}/account`,
+              meta.product === 'pro_pack_3m' ? guideUrl : `${siteUrl}/account`,
             title: 'Radar VPO PRO',
             location: '',
             date: '',
@@ -693,7 +702,7 @@ export class BillingService {
           termsAcceptedAt,
           immediateAccessAccepted:
             session.metadata?.immediateAccessAccepted ?? null,
-        } as Prisma.InputJsonValue,
+        },
       },
     });
   }
@@ -847,9 +856,11 @@ export class BillingService {
    * del periodo ya pagado (el acceso se mantiene hasta entonces). Si no, se registra la
    * solicitud y la procesa el equipo (flujo heredado de altas manuales).
    */
-  async requestCancellation(
-    userId: string,
-  ): Promise<{ success: true; mode: 'stripe' | 'manual'; accessUntil: string | null }> {
+  async requestCancellation(userId: string): Promise<{
+    success: true;
+    mode: 'stripe' | 'manual';
+    accessUntil: string | null;
+  }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -902,7 +913,11 @@ export class BillingService {
           accessUntil: accessUntilLabel,
         })
         .catch(() => undefined);
-      return { success: true, mode: 'stripe', accessUntil: scheduled.periodEnd };
+      return {
+        success: true,
+        mode: 'stripe',
+        accessUntil: scheduled.periodEnd,
+      };
     }
 
     await this.prisma.user.update({
@@ -1071,7 +1086,9 @@ export class BillingService {
     });
 
     const cancelable = subscriptions.data.filter((subscription) =>
-      ['active', 'trialing', 'past_due', 'unpaid'].includes(subscription.status),
+      ['active', 'trialing', 'past_due', 'unpaid'].includes(
+        subscription.status,
+      ),
     );
 
     if (cancelable.length === 0) {

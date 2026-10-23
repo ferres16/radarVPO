@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -187,12 +191,18 @@ export class S3StorageService {
     if (endpoint) {
       return `${endpoint.replace(/\/$/, '')}/${this.bucket}/${key}`;
     }
-    const region = process.env.AWS_REGION || process.env.S3_REGION || 'us-east-1';
+    const region =
+      process.env.AWS_REGION || process.env.S3_REGION || 'us-east-1';
     return `https://${this.bucket}.s3.${region}.amazonaws.com/${key}`;
   }
 
   private logS3Error(operation: string, key: string, error: unknown) {
-    const err = error as { name?: string; Code?: string; message?: string; $metadata?: { httpStatusCode?: number; requestId?: string } };
+    const err = error as {
+      name?: string;
+      Code?: string;
+      message?: string;
+      $metadata?: { httpStatusCode?: number; requestId?: string };
+    };
     this.logger.error(
       JSON.stringify({
         operation,

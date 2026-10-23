@@ -112,11 +112,12 @@ function unixToDate(value?: number | null): Date | null {
 
 export function extractSubscriptionPeriod(sub: StripeSubscriptionLike) {
   const item = sub.items?.data?.[0];
-  const start = unixToDate(sub.current_period_start ?? item?.current_period_start);
+  const start = unixToDate(
+    sub.current_period_start ?? item?.current_period_start,
+  );
   const end = unixToDate(sub.current_period_end ?? item?.current_period_end);
   const scheduledCancel =
-    unixToDate(sub.cancel_at) ??
-    (sub.cancel_at_period_end ? end : null);
+    unixToDate(sub.cancel_at) ?? (sub.cancel_at_period_end ? end : null);
   return { start, end, cancelAt: scheduledCancel };
 }
 
@@ -126,7 +127,9 @@ export function centsToAmount(cents?: number | null): number | null {
   return Math.round(cents) / 100;
 }
 
-export function amountToCents(amount: string | number | { toString(): string }) {
+export function amountToCents(
+  amount: string | number | { toString(): string },
+) {
   const value = Number(amount.toString());
   if (!Number.isFinite(value) || value <= 0) return null;
   return Math.round(value * 100);

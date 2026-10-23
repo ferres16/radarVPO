@@ -91,13 +91,11 @@ describe('isProperaAdjudicacioAlert', () => {
   });
 
   it('rejects AVÍS cancellations and unrelated titles', () => {
+    expect(isProperaAdjudicacioAlert("AVÍS: Anul·lació de l'alerta")).toBe(
+      false,
+    );
     expect(
-      isProperaAdjudicacioAlert("AVÍS: Anul·lació de l'alerta"),
-    ).toBe(false);
-    expect(
-      isProperaAdjudicacioAlert(
-        "Anunci d'inici de procediment d'adjudicació",
-      ),
+      isProperaAdjudicacioAlert("Anunci d'inici de procediment d'adjudicació"),
     ).toBe(false);
     expect(isProperaAdjudicacioAlert('Alerta genérica del registre')).toBe(
       false,
@@ -107,9 +105,9 @@ describe('isProperaAdjudicacioAlert', () => {
 
 describe('isAlertCancellationNotice', () => {
   it('detects AVÍS de anulación de alerta', () => {
-    expect(
-      isAlertCancellationNotice("AVÍS: Anul·lació de l'alerta"),
-    ).toBe(true);
+    expect(isAlertCancellationNotice("AVÍS: Anul·lació de l'alerta")).toBe(
+      true,
+    );
     expect(
       isAlertCancellationNotice("Avís: Anul·lació de l'alerta de Girona"),
     ).toBe(true);

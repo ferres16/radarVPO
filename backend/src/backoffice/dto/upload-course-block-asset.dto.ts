@@ -1,6 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { CourseAssetKind } from '@prisma/client';
-import { IsBooleanString, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBooleanString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 
 export class UploadCourseBlockAssetDto {
   @ApiProperty({ enum: CourseAssetKind })

@@ -43,7 +43,7 @@ export class PromoRulesService {
         config: {
           ...DEFAULT_PACK_CONFIG,
           guideSlug,
-        } as unknown as Prisma.InputJsonValue,
+        },
       },
       update: {},
     });
@@ -66,7 +66,9 @@ export class PromoRulesService {
     },
   ): Promise<CommercePromoRuleDto> {
     await this.ensureDefaults();
-    const existing = await this.prisma.commercePromoRule.findUnique({ where: { key } });
+    const existing = await this.prisma.commercePromoRule.findUnique({
+      where: { key },
+    });
     if (!existing) {
       throw new NotFoundException(`Regla no encontrada: ${key}`);
     }
@@ -78,14 +80,17 @@ export class PromoRulesService {
       where: { key },
       data: {
         name: input.name ?? existing.name,
-        enabled: typeof input.enabled === 'boolean' ? input.enabled : existing.enabled,
+        enabled:
+          typeof input.enabled === 'boolean' ? input.enabled : existing.enabled,
         config: nextConfig as Prisma.InputJsonValue,
       },
     });
     return this.toDto(updated);
   }
 
-  async getProPack3m(): Promise<(ProPack3mConfig & { enabled: boolean }) | null> {
+  async getProPack3m(): Promise<
+    (ProPack3mConfig & { enabled: boolean }) | null
+  > {
     await this.ensureDefaults();
     const row = await this.prisma.commercePromoRule.findUnique({
       where: { key: PRO_PACK_3M_RULE_KEY },

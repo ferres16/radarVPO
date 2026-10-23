@@ -58,13 +58,20 @@ export class MessageTemplatesService {
 
   async getByKey(key: string): Promise<MessageTemplateDto | null> {
     await this.ensureDefaults();
-    const row = await this.prisma.messageTemplate.findUnique({ where: { key } });
+    const row = await this.prisma.messageTemplate.findUnique({
+      where: { key },
+    });
     return row ? this.toDto(row) : null;
   }
 
-  async update(key: string, input: UpdateMessageTemplateInput): Promise<MessageTemplateDto> {
+  async update(
+    key: string,
+    input: UpdateMessageTemplateInput,
+  ): Promise<MessageTemplateDto> {
     await this.ensureDefaults();
-    const existing = await this.prisma.messageTemplate.findUnique({ where: { key } });
+    const existing = await this.prisma.messageTemplate.findUnique({
+      where: { key },
+    });
     if (!existing) {
       throw new NotFoundException(`Plantilla no encontrada: ${key}`);
     }
@@ -73,24 +80,36 @@ export class MessageTemplatesService {
       data: {
         label: input.label ?? existing.label,
         description:
-          input.description === undefined ? existing.description : input.description,
+          input.description === undefined
+            ? existing.description
+            : input.description,
         channel: input.channel ?? existing.channel,
         emailSubject:
-          input.emailSubject === undefined ? existing.emailSubject : input.emailSubject,
-        emailBody: input.emailBody === undefined ? existing.emailBody : input.emailBody,
+          input.emailSubject === undefined
+            ? existing.emailSubject
+            : input.emailSubject,
+        emailBody:
+          input.emailBody === undefined ? existing.emailBody : input.emailBody,
         smsBody: input.smsBody === undefined ? existing.smsBody : input.smsBody,
-        active: typeof input.active === 'boolean' ? input.active : existing.active,
+        active:
+          typeof input.active === 'boolean' ? input.active : existing.active,
       },
     });
     return this.toDto(updated);
   }
 
   /** Sustituye {{var}} en plantillas. */
-  render(template: string | null | undefined, vars: Record<string, string>): string {
+  render(
+    template: string | null | undefined,
+    vars: Record<string, string>,
+  ): string {
     if (!template) return '';
-    return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, name: string) => {
-      return vars[name] ?? '';
-    });
+    return template.replace(
+      /\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,
+      (_, name: string) => {
+        return vars[name] ?? '';
+      },
+    );
   }
 
   private toDto(row: {

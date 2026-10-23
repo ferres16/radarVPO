@@ -42,7 +42,9 @@ export class NewsCoverService {
 
   /** Genera portada con IA (o fallback), la sube a S3 y actualiza la noticia. */
   async attachGeneratedCover(newsId: string): Promise<boolean> {
-    const news = await this.prisma.newsItem.findUnique({ where: { id: newsId } });
+    const news = await this.prisma.newsItem.findUnique({
+      where: { id: newsId },
+    });
     if (!news) return false;
     if (news.coverImageUrl) return true;
 
@@ -61,10 +63,7 @@ export class NewsCoverService {
       buffer = generated.buffer;
       contentType = generated.contentType;
     } else {
-      const fallback = await this.downloadFallbackCover(
-        news.category,
-        news.id,
-      );
+      const fallback = await this.downloadFallbackCover(news.category, news.id);
       if (!fallback) {
         this.logger.warn(`No cover available for news ${newsId}`);
         return false;
@@ -75,9 +74,10 @@ export class NewsCoverService {
     }
 
     try {
-      const ext = contentType.includes('jpeg') || contentType.includes('jpg')
-        ? 'jpg'
-        : 'png';
+      const ext =
+        contentType.includes('jpeg') || contentType.includes('jpg')
+          ? 'jpg'
+          : 'png';
       const asset = await this.fileStorage.uploadBuffer({
         entityType: 'news',
         entityId: newsId,
@@ -142,9 +142,8 @@ export class NewsCoverService {
     const key = (category || 'general').toLowerCase();
     const pool = FALLBACK_COVERS[key] || FALLBACK_COVERS.general;
     const index =
-      Math.abs(
-        [...seed].reduce((acc, ch) => acc + ch.charCodeAt(0), 0),
-      ) % pool.length;
+      Math.abs([...seed].reduce((acc, ch) => acc + ch.charCodeAt(0), 0)) %
+      pool.length;
     const url = pool[index];
 
     try {
@@ -153,8 +152,7 @@ export class NewsCoverService {
       });
       if (!response.ok) return null;
       const arrayBuffer = await response.arrayBuffer();
-      const contentType =
-        response.headers.get('content-type') || 'image/jpeg';
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
       return { buffer: Buffer.from(arrayBuffer), contentType };
     } catch (error) {
       this.logger.warn(

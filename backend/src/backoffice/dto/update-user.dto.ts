@@ -1,5 +1,12 @@
 import { UserPlan, UserRole } from '@prisma/client';
-import { IsEnum, IsOptional, IsString, Matches, MaxLength, ValidateIf } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  ValidateIf,
+} from 'class-validator';
 
 export class UpdateUserDto {
   @IsOptional()

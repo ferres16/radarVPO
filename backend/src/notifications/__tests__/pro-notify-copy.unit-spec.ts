@@ -10,7 +10,12 @@ const promotionsUrl = 'https://www.radarvpo.com/promotions/abc';
 describe('PRO notify copy', () => {
   it('keeps SMS at or under 160 characters even with a long location', () => {
     const location = 'Vilafranca del Penedès, Barcelona';
-    for (const kind of ['new_alert', 'reminder_7d', 'reminder_1d', 'new_publication'] as const) {
+    for (const kind of [
+      'new_alert',
+      'reminder_7d',
+      'reminder_1d',
+      'new_publication',
+    ] as const) {
       const copy = buildProNotifyCopy({
         kind,
         title: 'Promoción de prueba',

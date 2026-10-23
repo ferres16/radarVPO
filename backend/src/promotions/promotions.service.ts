@@ -35,7 +35,7 @@ export class PromotionsService {
     const limit = Math.min(filters.limit ?? 10, 100);
     const offset = filters.offset ?? 0;
     const statusFilter = filters.status
-      ? PUBLIC_PROMOTION_STATUSES.includes(filters.status as PromotionStatus)
+      ? PUBLIC_PROMOTION_STATUSES.includes(filters.status)
         ? (filters.status as PromotionStatus)
         : null
       : { in: PUBLIC_PROMOTION_STATUSES };
@@ -118,7 +118,9 @@ export class PromotionsService {
     const item = await this.prisma.promotion.findFirst({
       where: {
         id,
-        status: { in: ['pending_review', 'published_unreviewed', 'published_reviewed'] },
+        status: {
+          in: ['pending_review', 'published_unreviewed', 'published_reviewed'],
+        },
       },
       select: {
         id: true,
@@ -243,7 +245,9 @@ export class PromotionsService {
     const isPro = user?.plan === 'pro' || (user?.subscriptions.length ?? 0) > 0;
     if (isPro) return;
 
-    const saved = await this.prisma.promotionFavorite.count({ where: { userId } });
+    const saved = await this.prisma.promotionFavorite.count({
+      where: { userId },
+    });
     if (saved >= FREE_SAVED_PROMOTIONS_LIMIT) {
       throw new ForbiddenException(
         `Con la cuenta gratuita puedes guardar hasta ${FREE_SAVED_PROMOTIONS_LIMIT} promociones. Quita alguna o pasa a Radar VPO PRO para guardar sin límite.`,
@@ -268,9 +272,7 @@ export class PromotionsService {
       where: { id: existing.id },
       data: {
         ...(dto.stage ? { stage: dto.stage } : {}),
-        ...(dto.notes !== undefined
-          ? { notes: dto.notes.trim() || null }
-          : {}),
+        ...(dto.notes !== undefined ? { notes: dto.notes.trim() || null } : {}),
         ...(dto.checklistDone
           ? { checklistDone: normalizeChecklist(dto.checklistDone) }
           : {}),
@@ -304,7 +306,9 @@ export class PromotionsService {
   }
 
   private async withSignedPromotionDocuments<
-    T extends { documents: Array<{ fileAssetId: string | null; publicUrl: string }> },
+    T extends {
+      documents: Array<{ fileAssetId: string | null; publicUrl: string }>;
+    },
   >(promotion: T): Promise<T> {
     const documents = await Promise.all(
       promotion.documents.map(async (document) => {
@@ -339,38 +343,47 @@ export class PromotionsService {
       ],
     };
 
-    const [publishedPromotions, groupedMunicipalities, accounts, proSubscriptions, visitors] =
-      await Promise.all([
-        this.prisma.promotion.count({ where: publishedWhere }),
-        this.prisma.promotion.groupBy({
-          by: ['municipality'],
-          where: { ...publishedWhere, municipality: { not: null } },
-        }),
-        this.prisma.user.count(),
-        this.prisma.user.count({
-          where: {
-            OR: [
-              { plan: 'pro' },
-              {
-                subscriptions: {
-                  some: {
-                    planKey: 'pro',
-                    status: {
-                      in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
-                    },
+    const [
+      publishedPromotions,
+      groupedMunicipalities,
+      accounts,
+      proSubscriptions,
+      visitors,
+    ] = await Promise.all([
+      this.prisma.promotion.count({ where: publishedWhere }),
+      this.prisma.promotion.groupBy({
+        by: ['municipality'],
+        where: { ...publishedWhere, municipality: { not: null } },
+      }),
+      this.prisma.user.count(),
+      this.prisma.user.count({
+        where: {
+          OR: [
+            { plan: 'pro' },
+            {
+              subscriptions: {
+                some: {
+                  planKey: 'pro',
+                  status: {
+                    in: [
+                      SubscriptionStatus.active,
+                      SubscriptionStatus.trialing,
+                    ],
                   },
                 },
               },
-            ],
-          },
-        }),
-        this.metrics.getVisitorCount(),
-      ]);
+            },
+          ],
+        },
+      }),
+      this.metrics.getVisitorCount(),
+    ]);
 
     return {
       publishedPromotions,
-      municipalities: groupedMunicipalities.filter((row) => row.municipality?.trim())
-        .length,
+      municipalities: groupedMunicipalities.filter((row) =>
+        row.municipality?.trim(),
+      ).length,
       accounts,
       proSubscriptions,
       visitors,

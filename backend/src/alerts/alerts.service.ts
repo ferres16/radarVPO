@@ -23,7 +23,10 @@ export class AlertsService {
           NOT: { title: { contains: term, mode: 'insensitive' as const } },
         })),
       },
-      orderBy: [{ estimatedPublicationDate: 'asc' }, { alertDetectedAt: 'desc' }],
+      orderBy: [
+        { estimatedPublicationDate: 'asc' },
+        { alertDetectedAt: 'desc' },
+      ],
       take: ALERTS_TAKE,
       select: {
         id: true,

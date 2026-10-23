@@ -21,8 +21,8 @@ type CourseHubSectionProps = {
 
 function findLessonById(course: Course, lessonId?: string | null) {
   if (!lessonId) return null;
-  for (const module of course.modules || []) {
-    const lesson = (module.lessons || []).find((item) => item.id === lessonId);
+  for (const courseModule of course.modules || []) {
+    const lesson = (courseModule.lessons || []).find((item) => item.id === lessonId);
     if (lesson) return lesson;
   }
   return null;
@@ -79,8 +79,8 @@ export function CourseHubSection({ course, lessonCount }: CourseHubSectionProps)
         .map((entry) => entry.lessonId),
     );
 
-    for (const module of course.modules || []) {
-      for (const lesson of module.lessons || []) {
+    for (const courseModule of course.modules || []) {
+      for (const lesson of courseModule.lessons || []) {
         if (!completedIds.has(lesson.id)) {
           return lesson;
         }

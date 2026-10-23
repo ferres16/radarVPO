@@ -4,14 +4,16 @@
  */
 
 function normalizeForMatch(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    // Straight + curly/typographic apostrophes → '
-    .replace(/[\u0027\u2018\u2019\u201A\u2032\u0060\u00B4]/g, "'")
-    // Catalan geminate L separator (l·l) and bullets
-    .replace(/[\u00B7\u2022]/g, '');
+  return (
+    text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      // Straight + curly/typographic apostrophes → '
+      .replace(/[\u0027\u2018\u2019\u201A\u2032\u0060\u00B4]/g, "'")
+      // Catalan geminate L separator (l·l) and bullets
+      .replace(/[\u00B7\u2022]/g, '')
+  );
 }
 
 const AMENDMENT_TOKENS = new Set([
@@ -30,9 +32,7 @@ export function isAmendmentPublication(
 ): boolean {
   const text = normalizeForMatch(parts.filter(Boolean).join('\n'));
   if (!text) return false;
-  return text
-    .split(/[^a-z0-9]+/)
-    .some((token) => AMENDMENT_TOKENS.has(token));
+  return text.split(/[^a-z0-9]+/).some((token) => AMENDMENT_TOKENS.has(token));
 }
 
 /**

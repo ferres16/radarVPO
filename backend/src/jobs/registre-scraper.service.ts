@@ -102,7 +102,8 @@ export class RegistreScraperService {
             where: { id: existing.id },
             data: {
               status: 'archived',
-              statusMessage: 'Archivada automáticamente: publicación de esmena/corrección.',
+              statusMessage:
+                'Archivada automáticamente: publicación de esmena/corrección.',
             },
           });
         }
@@ -181,9 +182,7 @@ export class RegistreScraperService {
         promotionsCreated += 1;
         if (isAlertEntry) {
           createdAlertIds.push(promotion.id);
-        } else if (
-          isOfficialProcedureStartAnnouncement(entry.title, rawText)
-        ) {
+        } else if (isOfficialProcedureStartAnnouncement(entry.title, rawText)) {
           // Only "Anunci inici procediment"-style posts count as new publications for PRO notify.
           createdPublicationIds.push(promotion.id);
         }
@@ -284,10 +283,13 @@ export class RegistreScraperService {
         where: { id: row.id },
         data: {
           status: 'archived',
-          statusMessage: 'Archivada automáticamente: publicación de esmena/corrección.',
+          statusMessage:
+            'Archivada automáticamente: publicación de esmena/corrección.',
         },
       });
-      this.logger.log(`Archived existing amendment promotion ${row.id}: ${row.title}`);
+      this.logger.log(
+        `Archived existing amendment promotion ${row.id}: ${row.title}`,
+      );
     }
   }
 
@@ -456,7 +458,9 @@ export class RegistreScraperService {
       }
     });
 
-    return [...links.values()].filter((link) => this.isAllowedOfficialPdfUrl(link));
+    return [...links.values()].filter((link) =>
+      this.isAllowedOfficialPdfUrl(link),
+    );
   }
 
   /** Solo guarda enlaces PDF de dominios oficiales (mitiga SSRF/importación arbitraria). */
@@ -474,7 +478,9 @@ export class RegistreScraperService {
         'diba.cat',
         'amb.cat',
       ];
-      return suffixes.some((suffix) => host === suffix || host.endsWith(`.${suffix}`));
+      return suffixes.some(
+        (suffix) => host === suffix || host.endsWith(`.${suffix}`),
+      );
     } catch {
       return false;
     }

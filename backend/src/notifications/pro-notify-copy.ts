@@ -17,11 +17,17 @@ export type ProNotifyCopy = {
 
 const SMS_MAX_LENGTH = 160;
 
-export function buildSmsWithUrl(body: string, url: string, max = SMS_MAX_LENGTH) {
+export function buildSmsWithUrl(
+  body: string,
+  url: string,
+  max = SMS_MAX_LENGTH,
+) {
   const reserved = url.length + 1;
   const budget = Math.max(0, max - reserved);
   const trimmed =
-    body.length > budget ? `${body.slice(0, Math.max(0, budget - 3)).trimEnd()}...` : body;
+    body.length > budget
+      ? `${body.slice(0, Math.max(0, budget - 3)).trimEnd()}...`
+      : body;
   return `${trimmed} ${url}`.slice(0, max);
 }
 
@@ -33,7 +39,8 @@ export function buildProNotifyCopy(input: {
   alertsUrl: string;
   promotionsUrl: string;
 }): ProNotifyCopy {
-  const { kind, title, location, estimatedDate, alertsUrl, promotionsUrl } = input;
+  const { kind, title, location, estimatedDate, alertsUrl, promotionsUrl } =
+    input;
 
   if (kind === 'new_publication') {
     return {

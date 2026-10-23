@@ -206,7 +206,7 @@ export class NewsAutomationService {
           publishedAt: item.publishedAt,
           category,
           relevanceScore: score,
-          matchedKeywords: matchedKeywords as Prisma.InputJsonValue,
+          matchedKeywords: matchedKeywords,
         },
         update: {
           sourceName: item.sourceName,
@@ -217,7 +217,7 @@ export class NewsAutomationService {
           publishedAt: item.publishedAt,
           category,
           relevanceScore: score,
-          matchedKeywords: matchedKeywords as Prisma.InputJsonValue,
+          matchedKeywords: matchedKeywords,
         },
       });
 
@@ -660,7 +660,7 @@ export class NewsAutomationService {
           municipality: source.municipality,
           contentHash,
           publishedAt: source.publishedAt,
-        } as Prisma.NewsItemCreateInput,
+        },
       });
 
       await this.newsCover.attachGeneratedCover(created.id).catch(() => false);

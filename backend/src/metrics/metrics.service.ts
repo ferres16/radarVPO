@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 const VISITORS_KEY = 'metrics.unique_visitors';
@@ -27,7 +26,8 @@ export class MetricsService {
     const existing = await this.prisma.systemSetting.findUnique({
       where: { key: VISITORS_KEY },
     });
-    const current = Number((existing?.value as VisitorsValue | null)?.count) || 0;
+    const current =
+      Number((existing?.value as VisitorsValue | null)?.count) || 0;
     const next = current + 1;
     const payload: VisitorsValue = {
       count: next,
@@ -38,10 +38,10 @@ export class MetricsService {
       where: { key: VISITORS_KEY },
       create: {
         key: VISITORS_KEY,
-        value: payload as unknown as Prisma.InputJsonValue,
+        value: payload,
       },
       update: {
-        value: payload as unknown as Prisma.InputJsonValue,
+        value: payload,
       },
     });
 

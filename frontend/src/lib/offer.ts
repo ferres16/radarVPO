@@ -159,8 +159,8 @@ const LESSON_TYPE_LABELS: Record<string, [string, string]> = {
 /** Formato del contenido calculado a partir de las lecciones reales. */
 export function describeCourseFormat(course: Pick<Course, 'modules'>): string[] {
   const counts = new Map<string, number>();
-  for (const module of course.modules ?? []) {
-    for (const lesson of module.lessons ?? []) {
+  for (const courseModule of course.modules ?? []) {
+    for (const lesson of courseModule.lessons ?? []) {
       counts.set(lesson.type, (counts.get(lesson.type) ?? 0) + 1);
     }
   }

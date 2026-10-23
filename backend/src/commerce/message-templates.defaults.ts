@@ -18,17 +18,19 @@ export const MESSAGE_TEMPLATE_SEEDS: MessageTemplateSeed[] = [
     emailSubject: 'Nueva alerta VPO (fecha estimada): {{title}}',
     emailBody:
       'Hemos publicado una <strong>nueva alerta de próximo lanzamiento</strong> en Radar VPO PRO. La fecha es <strong>estimada</strong>: no siempre se publica a los 60 días y a veces no llega a publicarse.',
-    smsBody: 'Radar VPO PRO: nueva alerta en {{location}}. Fecha estimada, puede no publicarse. {{url}}',
+    smsBody:
+      'Radar VPO PRO: nueva alerta en {{location}}. Fecha estimada, puede no publicarse. {{url}}',
   },
   {
     key: 'pro.new_publication',
     label: 'PRO · Nueva promoción publicada',
-    description: 'Cuando se publica un Anunci d\'inici de procediment…',
+    description: "Cuando se publica un Anunci d'inici de procediment…",
     channel: 'both',
     emailSubject: 'Nueva promoción VPO publicada: {{title}}',
     emailBody:
       'Hay una <strong>nueva promoción publicada</strong> en Radar VPO. Puedes consultar el documento oficial de la promoción aquí:',
-    smsBody: 'Radar VPO PRO: nueva promoción publicada en {{location}}. {{url}}',
+    smsBody:
+      'Radar VPO PRO: nueva promoción publicada en {{location}}. {{url}}',
   },
   {
     key: 'pro.reminder_7d',

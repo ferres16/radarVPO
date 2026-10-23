@@ -21,11 +21,13 @@ export class JobsService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     // Always remove amendment publications from public catalogs on boot.
-    await this.registreScraperService.archiveExistingAmendments().catch((error) => {
-      this.logger.warn(
-        `Amendment archive on boot failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    });
+    await this.registreScraperService
+      .archiveExistingAmendments()
+      .catch((error) => {
+        this.logger.warn(
+          `Amendment archive on boot failed: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      });
 
     // Avoid scrape + Brevo work on every deploy/restart unless explicitly enabled.
     if (process.env.RUN_JOBS_ON_BOOTSTRAP !== 'true') {
@@ -116,7 +118,9 @@ export class JobsService implements OnApplicationBootstrap {
           registre.createdAlertIds.length === 0 &&
           registre.createdPublicationIds.length === 0
         ) {
-          this.logger.log('PRO new-item alerts skipped: no newly created items');
+          this.logger.log(
+            'PRO new-item alerts skipped: no newly created items',
+          );
         }
       }
 

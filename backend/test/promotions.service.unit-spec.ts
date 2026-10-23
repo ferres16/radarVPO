@@ -25,14 +25,19 @@ function buildService(options: FavoriteOptions = {}) {
     promotion: {
       findUnique: jest
         .fn()
-        .mockResolvedValue(options.promotionExists === false ? null : { id: 'p1' }),
+        .mockResolvedValue(
+          options.promotionExists === false ? null : { id: 'p1' },
+        ),
     },
     user: {
       findUnique: jest.fn().mockResolvedValue({
         plan: options.plan ?? 'free',
-        subscriptions: Array.from({ length: options.proSubscriptions ?? 0 }, () => ({
-          id: 's',
-        })),
+        subscriptions: Array.from(
+          { length: options.proSubscriptions ?? 0 },
+          () => ({
+            id: 's',
+          }),
+        ),
       }),
     },
   } as unknown as PrismaService;
@@ -42,7 +47,9 @@ function buildService(options: FavoriteOptions = {}) {
     service: new PromotionsService(
       prisma,
       {} as FileStorageService,
-      { getVisitorCount: jest.fn().mockResolvedValue(0) } as unknown as MetricsService,
+      {
+        getVisitorCount: jest.fn().mockResolvedValue(0),
+      } as unknown as MetricsService,
     ),
   };
 }
@@ -78,7 +85,10 @@ describe('PromotionsService favorites', () => {
   });
 
   it('removes an existing favorite without checking limits', async () => {
-    const { service, favorite } = buildService({ existing: { id: 'f1' }, saved: 99 });
+    const { service, favorite } = buildService({
+      existing: { id: 'f1' },
+      saved: 99,
+    });
     const result = await service.toggleFavorite('u1', 'p1');
     expect(result.favorite).toBe(false);
     expect(favorite.delete).toHaveBeenCalledWith({ where: { id: 'f1' } });
@@ -86,9 +96,9 @@ describe('PromotionsService favorites', () => {
 
   it('rejects saving a promotion that does not exist', async () => {
     const { service } = buildService({ promotionExists: false });
-    await expect(service.toggleFavorite('u1', 'missing')).rejects.toBeInstanceOf(
-      NotFoundException,
-    );
+    await expect(
+      service.toggleFavorite('u1', 'missing'),
+    ).rejects.toBeInstanceOf(NotFoundException);
   });
 
   it('only edits favorites the user already saved', async () => {
