@@ -15,7 +15,7 @@ export function FeaturedCourseSpotlight({ course }: { course: Course }) {
           slug={course.slug}
           src={course.coverImage}
           alt=""
-          className="h-full w-full object-cover"
+          className="h-full w-full object-cover object-top"
           label={course.title}
         />
       </Link>

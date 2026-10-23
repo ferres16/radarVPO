@@ -3,18 +3,37 @@ const API_BASE_URL =
   process.env.API_URL ||
   'http://localhost:3000/api/v1';
 
+/** Portada de la guía VPO: archivo estático del frontend, no un producto de Stripe. */
+export const BRANDED_GUIDE_COVER_SRC = '/covers/guia-vpo.png';
+
+const BRANDED_GUIDE_COVER_SLUGS = new Set([
+  'guiav1',
+  'guia-vpo',
+  'guia-general-vpo',
+  'vpo-desde-cero',
+  'vpo-inicial',
+]);
+
+export function getBrandedGuideCoverSrc(slug?: string | null) {
+  if (!slug) return null;
+  return BRANDED_GUIDE_COVER_SLUGS.has(slug) ? BRANDED_GUIDE_COVER_SRC : null;
+}
+
 function looksLikeStorageUrl(url: string) {
   return /amazonaws\.com|\.s3[.-]|cloudfront\.net/i.test(url);
 }
 
 export function getCourseCoverSrc(slug: string, coverImage?: string | null) {
-  if (!slug || !coverImage) return null;
+  if (!slug) return null;
 
-  if (!looksLikeStorageUrl(coverImage) && !coverImage.includes('/cover')) {
-    return coverImage;
+  if (coverImage) {
+    if (!looksLikeStorageUrl(coverImage) && !coverImage.includes('/cover')) {
+      return coverImage;
+    }
+    return `/api/course-covers/${encodeURIComponent(slug)}`;
   }
 
-  return `/api/course-covers/${encodeURIComponent(slug)}`;
+  return getBrandedGuideCoverSrc(slug);
 }
 
 export function getCourseMediaSrc(fileAssetId?: string | null, fallbackSrc?: string | null) {

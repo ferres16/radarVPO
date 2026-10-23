@@ -59,7 +59,7 @@ function CourseProgressCard({ course }: { course: UserCourseProgress }) {
           slug={course.slug}
           src={course.coverImage}
           alt={course.title}
-          className="h-36 w-full object-cover"
+          className="h-36 w-full object-cover object-top"
           fallbackClassName="flex h-36 w-full items-center justify-center bg-[linear-gradient(135deg,#e8f7ef,#f4fbff)] text-sm font-semibold text-[var(--ink-soft)]"
           label={course.title}
         />

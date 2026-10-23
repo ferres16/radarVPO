@@ -526,7 +526,12 @@ export class BillingService {
               ...(commerce.stripeAutomaticTax
                 ? { tax_behavior: 'inclusive' as const }
                 : {}),
-              product_data: { name: course.title },
+              product_data: {
+                name: course.title,
+                ...(course.format === 'guide_pdf'
+                  ? { images: [`${siteUrl}/covers/guia-vpo.png`] }
+                  : {}),
+              },
             },
           },
         ],

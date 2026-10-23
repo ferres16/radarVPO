@@ -32,6 +32,7 @@ import {
   isGuidePdf,
   isIncludedInPro,
 } from '@/lib/offer';
+import { getCourseCoverSrc } from '@/lib/course-media-url';
 import { isInternalCatalogCourse } from '@/lib/public-courses';
 import { proPlan } from '@/lib/pro';
 import { absoluteUrl, breadcrumbJsonLd, createMetadata } from '@/lib/seo';
@@ -95,6 +96,7 @@ export async function generateMetadata({ params }: CourseDetailParams): Promise<
         ? 'Guía Radar VPO sobre vivienda protegida en Cataluña.'
         : 'Formación práctica de vivienda protegida en Cataluña.'),
     path: `/cursos/${course.slug}`,
+    image: getCourseCoverSrc(course.slug, course.coverImage) || undefined,
     keywords: [guide ? 'guía VPO' : 'curso vivienda protegida', course.title],
   });
 }
@@ -145,6 +147,9 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
     name: course.title,
     description: course.shortDescription || course.longDescription || 'Curso práctico de vivienda protegida.',
     url: absoluteUrl(`/cursos/${course.slug}`),
+    image: getCourseCoverSrc(course.slug, course.coverImage)
+      ? absoluteUrl(getCourseCoverSrc(course.slug, course.coverImage) as string)
+      : undefined,
     provider: {
       '@type': 'Organization',
       name: 'Radar VPO',
@@ -181,24 +186,53 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
       >
         <CourseCheckoutBanner slug={course.slug} />
         <header className="lp-page-hero lp-page-hero--flush">
+          {guideMode ? null : (
           <div className="relative h-40 sm:h-48 md:h-56">
             <CourseCoverImage
               slug={course.slug}
               src={course.coverImage}
               alt={course.title}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-cover object-top"
               label={course.title}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[rgba(11,18,32,0.85)] via-[rgba(11,18,32,0.35)] to-transparent" />
             <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8">
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-white/70 md:text-[11px]">
-                {guideMode ? 'Guía Radar VPO' : 'Curso Radar VPO'}
+                Curso Radar VPO
               </p>
               <h1 className="display-type mt-1 text-2xl font-black text-white sm:mt-2 sm:text-3xl md:text-5xl">{course.title}</h1>
             </div>
           </div>
-          <div className={`shell py-4 md:py-5 ${canAccess ? '' : 'md:grid md:grid-cols-[1.15fr_0.85fr] md:items-start md:gap-8'}`}>
-            <div className="min-w-0">
+          )}
+          <div className={`shell py-4 md:py-5 ${
+            guideMode
+              ? 'md:grid md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] md:items-start md:gap-8'
+              : canAccess
+                ? ''
+                : 'md:grid md:grid-cols-[1.15fr_0.85fr] md:items-start md:gap-8'
+          }`}>
+            {guideMode ? (
+              <div className="overflow-hidden rounded-[1.5rem] border border-[var(--stroke)] bg-[#f4efe6] shadow-sm">
+                <CourseCoverImage
+                  slug={course.slug}
+                  src={course.coverImage}
+                  alt={`Portada de ${course.title}`}
+                  className="h-auto w-full object-contain"
+                  label={course.title}
+                />
+              </div>
+            ) : null}
+            <div className={`min-w-0 ${guideMode && !canAccess ? 'grid gap-5' : ''}`}>
+              {guideMode ? (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--green-700)] md:text-[11px]">
+                    Guía Radar VPO
+                  </p>
+                  <h1 className="display-type mt-1 text-2xl font-black text-[var(--ink)] sm:mt-2 sm:text-3xl md:text-4xl">
+                    {course.title}
+                  </h1>
+                </div>
+              ) : null}
               <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
                 {course.longDescription ||
                   course.shortDescription ||
@@ -225,8 +259,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                   />
                 </div>
               ) : null}
-            </div>
-            {!canAccess ? (
+            {guideMode && !canAccess ? (
               <aside id="pagar" className="scroll-mt-24">
                 {status.sellable ? (
                   <CheckoutPanel
@@ -265,6 +298,58 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                         {guideMode
                           ? `Esta guía todavía se está preparando (${status.statusText}). Sube el PDF para ponerla a la venta.`
                           : `Este curso todavía se está preparando (${status.statusText}). No se puede comprar hasta que tenga contenido publicado suficiente.`}
+                      </p>
+                    )}
+                    {includedInPro ? (
+                      <p className="text-xs leading-5 text-white/75">
+                        Incluido con {proPlan.name} activo ({proPlan.price}).{' '}
+                        <Link href="/pro#pagar" className="font-bold underline">
+                          Ver PRO
+                        </Link>
+                      </p>
+                    ) : null}
+                  </div>
+                )}
+              </aside>
+            ) : null}
+            </div>
+            {!guideMode && !canAccess ? (
+              <aside id="pagar" className="scroll-mt-24">
+                {status.sellable ? (
+                  <CheckoutPanel
+                    layout="embedded"
+                    canceled={canceled}
+                    summary={{
+                      product: 'course',
+                      courseSlug: course.slug,
+                      title: course.title,
+                      priceLabel,
+                      cadenceLabel: 'pago único',
+                      recurrenceNote: 'Sin renovaciones. Acceso inmediato al confirmar el pago.',
+                      bullets: getCoursePayBullets(course),
+                      backHref: '/cursos',
+                      backLabel: 'Ver todas las guías',
+                    }}
+                  />
+                ) : (
+                  <div className="course-progress-card flex flex-col gap-4 p-5 md:p-6">
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/60">
+                        {isFree ? 'Precio' : 'Precio previsto'}
+                      </p>
+                      <p className="display-type mt-2 text-3xl font-black text-white">{priceLabel}</p>
+                    </div>
+                    {isFree ? (
+                      <CourseAccessLink
+                        hrefWhenAccess={courseEntryHref}
+                        hrefWhenLocked={lockedAccessHref}
+                        lockedLabel={lockedAccessLabel}
+                        accessLabel={courseAccessLabel}
+                        className="flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
+                      />
+                    ) : (
+                      <p className="rounded-xl bg-white/10 px-3 py-2 text-sm leading-6 text-white/90">
+                        Este curso todavía se está preparando ({status.statusText}). No se puede comprar hasta que tenga contenido publicado suficiente.
                       </p>
                     )}
                     {includedInPro ? (

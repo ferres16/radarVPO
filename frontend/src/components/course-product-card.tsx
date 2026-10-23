@@ -39,8 +39,8 @@ export function CourseProductCard({ course, className = '', layout = 'grid' }: C
             src={course.coverImage}
             className={
               layout === 'rail'
-                ? 'h-36 w-full object-cover'
-                : 'h-44 w-full object-cover transition duration-500 group-hover:scale-[1.03] md:h-48'
+                ? 'h-36 w-full object-cover object-top'
+                : 'h-44 w-full object-cover object-top transition duration-500 group-hover:scale-[1.03] md:h-48'
             }
             label={course.title}
           />

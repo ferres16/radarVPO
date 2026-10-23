@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { getCourseCoverSrc } from './course-media-url';
+import { BRANDED_GUIDE_COVER_SRC, getCourseCoverSrc } from './course-media-url';
 
 describe('getCourseCoverSrc', () => {
-  it('does not hit the cover proxy when the course has no image', () => {
-    expect(getCourseCoverSrc('guiav1', null)).toBeNull();
-    expect(getCourseCoverSrc('guiav1', '')).toBeNull();
+  it('uses the branded poster when the guide has no uploaded cover', () => {
+    expect(getCourseCoverSrc('guiav1', null)).toBe(BRANDED_GUIDE_COVER_SRC);
+    expect(getCourseCoverSrc('guiav1', '')).toBe(BRANDED_GUIDE_COVER_SRC);
+    expect(getCourseCoverSrc('otro-curso', null)).toBeNull();
   });
 
   it('keeps public https covers and proxies storage or /cover paths', () => {

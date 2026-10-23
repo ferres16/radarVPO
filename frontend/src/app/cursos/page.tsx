@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 import { CheckoutPanel } from '@/components/checkout/checkout-panel';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
+import { CourseCoverImage } from '@/components/course-cover-image';
 import { CourseProductCard } from '@/components/course-product-card';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
 import { StructuredData } from '@/components/structured-data';
@@ -130,6 +131,17 @@ export default async function CoursesPage() {
         <div className="mt-4 public-card overflow-hidden p-0">
           <div className="grid lg:grid-cols-[1.15fr_0.85fr]">
             <div className="p-5 md:p-7">
+              {generalGuide ? (
+                <div className="mb-5 overflow-hidden rounded-2xl border border-[var(--stroke)] bg-[#f4efe6]">
+                  <CourseCoverImage
+                    slug={generalGuide.slug}
+                    src={generalGuide.coverImage}
+                    alt={`Portada de ${generalGuide.title}`}
+                    className="mx-auto h-auto max-h-80 w-full object-contain object-top"
+                    label={generalGuide.title}
+                  />
+                </div>
+              ) : null}
               <h2 className="display-type text-2xl font-black text-[var(--ink)] md:text-3xl">
                 {generalGuide?.title || 'VPO desde cero: ayudas, hipoteca y presupuesto'}
               </h2>
