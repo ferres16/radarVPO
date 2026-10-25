@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       badge="Privacidad"
       title="Política de privacidad"
       description="Qué datos tratamos, para qué, con quién los compartimos y cómo ejercer tus derechos."
-      updatedAt="20 de octubre de 2026"
+      updatedAt="25 de octubre de 2026"
     >
       <LegalSection title="1. Responsable del tratamiento">
         <OwnerIdentity />
@@ -60,8 +60,15 @@ export default function PrivacyPage() {
             los almacena. Base jurídica: contrato y obligación legal de facturación.
           </li>
           <li>
-            <strong className="text-[var(--ink)]">Avisos contratados:</strong> correo y, si lo has indicado, móvil.
-            Son comunicaciones del servicio PRO, no marketing publicitario. Base jurídica: ejecución del contrato.
+            <strong className="text-[var(--ink)]">Avisos contratados (PRO):</strong> correo y, si lo has indicado,
+            móvil. Son comunicaciones del servicio (nuevas promociones detectadas), no marketing publicitario. No
+            hay SMS de marketing para cuentas gratis ni de pago. Base jurídica: ejecución del contrato.
+          </li>
+          <li>
+            <strong className="text-[var(--ink)]">Novedades por email (opcional):</strong> solo si marcas el
+            consentimiento en el registro o lo activas en Mi cuenta. Son contenidos educativos o novedades del
+            producto, distintos de los avisos PRO. Puedes retirarlo en cualquier momento. Base jurídica:
+            consentimiento.
           </li>
           <li>
             <strong className="text-[var(--ink)]">Medición y publicidad:</strong> Vercel Analytics, el contador
@@ -115,7 +122,8 @@ export default function PrivacyPage() {
           <Link href="/account" className="font-semibold text-[var(--green-700)]">
             Mi cuenta
           </Link>{' '}
-          puedes descargar una copia de tus datos o solicitar la eliminación. También puedes escribir a{' '}
+          puedes editar tus datos, gestionar el consentimiento de novedades por email, descargar una copia o
+          solicitar la eliminación. También puedes escribir a{' '}
           <a href={`mailto:${supportEmail}`} className="font-semibold text-[var(--green-700)] underline">
             {supportEmail}
           </a>{' '}

@@ -307,6 +307,8 @@ export class UsersService {
         fullName: profile.fullName,
         phone: profile.phone,
         plan: profile.plan,
+        marketingOptInAt: profile.marketingOptInAt?.toISOString() ?? null,
+        smsAlertsEnabled: profile.smsAlertsEnabled,
         createdAt: profile.createdAt.toISOString(),
         lastLoginAt: profile.lastLoginAt?.toISOString() ?? null,
       },
@@ -381,6 +383,8 @@ export class UsersService {
           plan: UserPlan.free,
           stripeCustomerId: null,
           proCancellationRequestedAt: null,
+          marketingOptInAt: null,
+          smsAlertsEnabled: false,
         },
       }),
       this.prisma.auditLog.create({
