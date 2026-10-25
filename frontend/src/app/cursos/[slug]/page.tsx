@@ -12,6 +12,7 @@ import { CourseModuleIndex } from '@/components/course-module-index';
 import { CoursePublicIndex } from '@/components/course-public-index';
 import { CourseStickyBuyBar } from '@/components/course-sticky-buy-bar';
 import { GuidePdfViewer } from '@/components/guide-pdf-viewer';
+import { GuideSample } from '@/components/conversion/guide-sample';
 import { GuideVpoOutline } from '@/components/conversion/guide-vpo-outline';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
 import { PublicPage } from '@/components/conversion/public-shell';
@@ -321,7 +322,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                       title: publicTitle,
                       priceLabel,
                       cadenceLabel: 'pago único',
-                      recurrenceNote: 'Sin renovaciones. Acceso inmediato al confirmar el pago.',
+                      recurrenceNote: `${GUIDE_FORMAT_TEXT} ${COURSE_ACCESS_DURATION_TEXT}`,
                       bullets: getCoursePayBullets(course),
                       backHref: '/cursos',
                       backLabel: 'Ver todas las guías',
@@ -334,6 +335,9 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                         {isFree ? 'Precio' : 'Precio previsto'}
                       </p>
                       <p className="display-type mt-2 text-3xl font-black text-white">{priceLabel}</p>
+                      <p className="mt-2 text-sm text-white/80">
+                        Lectura en pantalla · acceso mínimo 24 meses
+                      </p>
                     </div>
                     {isFree ? (
                       <CourseAccessLink
@@ -346,8 +350,8 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                     ) : (
                       <p className="rounded-xl bg-white/10 px-3 py-2 text-sm leading-6 text-white/90">
                         {guideMode
-                          ? `Esta guía todavía se está preparando (${status.statusText}). Sube el PDF para ponerla a la venta.`
-                          : `Este curso todavía se está preparando (${status.statusText}). No se puede comprar hasta que tenga contenido publicado suficiente.`}
+                          ? 'Esta guía todavía se está preparando. Cuando esté lista, podrás comprarla y leerla aquí.'
+                          : 'Este curso todavía se está preparando. No se puede comprar hasta que tenga contenido publicado suficiente.'}
                       </p>
                     )}
                     {includedInPro ? (
@@ -422,7 +426,15 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
           <section className="shell scroll-mt-24 space-y-6 py-6 md:py-8">
             <LockedOnly>
               {brandedGuide ? (
-                <GuideVpoOutline />
+                <>
+                  <GuideSample
+                    slug={course.slug}
+                    coverSrc={course.coverImage}
+                    title={publicTitle}
+                    payHref="#pagar"
+                  />
+                  <GuideVpoOutline />
+                </>
               ) : (
                 <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
                   <article className="public-card p-5 md:p-6">
@@ -438,7 +450,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                         'Contenido claro para orientarte con criterio en vivienda protegida.'}
                     </p>
                     <p className="mt-4 text-xs leading-5 text-[var(--ink-soft)]">
-                      Lectura en pantalla · no descargable
+                      {GUIDE_FORMAT_TEXT} · {COURSE_ACCESS_DURATION_TEXT}
                     </p>
                   </article>
 
@@ -477,13 +489,16 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                   Lectura
                 </p>
                 <h2 className="display-type mt-2 text-xl font-black text-[var(--ink)] md:text-2xl">
-                  {canAccess || isFree ? 'Tu guía' : 'Empieza ahora'}
+                  {canAccess || isFree ? 'Tu guía' : 'Se abre aquí tras el acceso'}
                 </h2>
+                <p className="mt-2 text-sm text-[var(--ink-soft)]">
+                  {GUIDE_FORMAT_TEXT}
+                </p>
               </div>
               <AccessSwitch
                 fallback={
                   <p className="text-sm leading-6 text-[var(--ink-soft)]">
-                    La guía se abre aquí en cuanto actives el acceso. No hace falta descargar nada.
+                    Tras el pago, la guía se abre en esta misma página. No hay descarga de archivo.
                   </p>
                 }
               >
@@ -493,7 +508,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
 
             <div className="pb-2">
               <Link href="/cursos" className="text-sm font-bold text-[var(--green-700)]">
-                Ver todas las guías
+                Volver a guías
               </Link>
             </div>
           </section>

@@ -26,8 +26,8 @@ describe('Guía VPO public copy', () => {
 
   it('sells process and preparation, not a personal story or 1:1 help', () => {
     const description = getPublicCourseDescription({ slug: 'guiav1' });
-    expect(description).toMatch(/proceso/i);
-    expect(description).toMatch(/preparar/i);
+    expect(description).toMatch(/pasos|proceso|números/i);
+    expect(description).toMatch(/entiende|preparar/i);
     expect(publicCopy).not.toMatch(/Carlos|Horta|Cómo conseguir una vivienda/i);
     expect(GUIDE_VPO_NOT_INCLUDED.join(' ')).toMatch(/acompañamiento 1:1/);
   });
@@ -45,7 +45,7 @@ describe('Guía VPO public copy', () => {
       'Precios, garaje y trastero',
       'Reserva, arras y visado',
       'Obligaciones posteriores',
-      'Checklist imprimible',
+      'Checklist de documentación',
       'Enlaces oficiales y glosario',
     ]);
     expect(GUIDE_VPO_CHAPTERS.every((chapter) => chapter.hook.length > 12)).toBe(true);

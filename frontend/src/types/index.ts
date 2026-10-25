@@ -141,6 +141,8 @@ export type NewsItem = {
   title: string;
   sourceName: string;
   sourceUrl: string;
+  /** URL del artículo concreto; preferir frente a sourceUrl (a menudo portada). */
+  itemUrl?: string | null;
   summary?: string | null;
   body?: string | null;
   practicalImpact?: string | null;

@@ -2,11 +2,11 @@
 
 import { TrackedButtonLink } from '@/components/tracked-link';
 import { ProGate } from '@/components/pro/pro-cta';
-import { proPlan } from '@/lib/pro';
+import { proHomePitch, proPlan } from '@/lib/pro';
 
 export function HomeHeroActions({
-  guideHref = '/cursos',
-  guideCta = 'Ver las guías',
+  guideHref = '/cursos/guiav1',
+  guideCta = 'Descubrir la guía',
 }: {
   guideHref?: string;
   guideCta?: string;
@@ -14,7 +14,17 @@ export function HomeHeroActions({
   return (
     <div className="lp-hero__actions lp-hero__actions--stack">
       <TrackedButtonLink
+        href="/promotions"
+        size="lg"
+        block
+        event="promotion_list_cta_clicked"
+        eventProperties={{ source: 'home_hero' }}
+      >
+        Ver promociones gratis
+      </TrackedButtonLink>
+      <TrackedButtonLink
         href={guideHref}
+        variant="secondary"
         size="lg"
         block
         event="course_cta_clicked"
@@ -22,40 +32,27 @@ export function HomeHeroActions({
       >
         {guideCta}
       </TrackedButtonLink>
-      <TrackedButtonLink
-        href="/promotions"
-        variant="secondary"
-        size="lg"
-        block
-        event="promotion_list_cta_clicked"
-        eventProperties={{ source: 'home_hero' }}
-      >
-        Ver promociones (gratis)
-      </TrackedButtonLink>
     </div>
   );
 }
 
-export function HomeFinalCtaBand() {
+export function HomeFinalCtaBand({ includedGuideTitles = [] }: { includedGuideTitles?: string[] }) {
   return (
     <ProGate>
       <div className="public-cta-band">
         <div>
-          <h2 className="lp-title lp-title--sm">Avisos por SMS y espacio sin límite</h2>
-          <p className="lp-lead">
-            Consultar PDF es gratis. {proPlan.name} añade el aviso en el móvil, organización en tu cuenta y el curso
-            inicial mientras esté activa. {proPlan.price}. Cancelas desde Mi cuenta.
-          </p>
+          <h2 className="lp-title lp-title--sm">Avisos sin revisar las webs cada día</h2>
+          <p className="lp-lead">{proHomePitch(includedGuideTitles)}</p>
         </div>
         <div className="public-cta-band__actions">
           <TrackedButtonLink
-            href={proPlan.checkoutHref}
+            href={proPlan.landingHref}
             size="lg"
             block
             event="pro_cta_clicked"
             eventProperties={{ source: 'home_final' }}
           >
-            {`${proPlan.ctaLabel} · ${proPlan.price}`}
+            {`Descubrir ${proPlan.name}`}
           </TrackedButtonLink>
         </div>
       </div>

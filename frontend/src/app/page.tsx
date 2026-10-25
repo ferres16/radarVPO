@@ -6,16 +6,14 @@ import { HomeFaq } from '@/components/conversion/home-faq';
 import { HomeFinalCtaBand, HomeHeroActions } from '@/components/conversion/home-pro-ctas';
 import { HomeOfferStrip } from '@/components/conversion/home-offer-strip';
 import { PdfViewerDemo } from '@/components/conversion/pdf-viewer-demo';
-import { ProofStats } from '@/components/conversion/proof-stats';
 import { SpaceDemo } from '@/components/conversion/space-demo';
 import { PromotionCard } from '@/components/promotion-card';
 import { StructuredData } from '@/components/structured-data';
-import { buildProofItems } from '@/lib/catalog-stats';
 import { homeFaqs } from '@/lib/conversion';
-import { formatEuro, getCoursePrice, isCourseSellable } from '@/lib/offer';
+import { formatEuro, getCoursePrice, isCourseSellable, isIncludedInPro } from '@/lib/offer';
 import { getGuideReadHref, getOwnedCourseSlugs } from '@/lib/owned-courses';
-import { pickFeaturedPublicCourse } from '@/lib/public-courses';
-import { publicPublishedPromotions, uniqueMunicipalities } from '@/lib/public-promotions';
+import { pickFeaturedPublicCourse, publicCatalogCourses } from '@/lib/public-courses';
+import { publicPublishedPromotions } from '@/lib/public-promotions';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -36,10 +34,9 @@ export const metadata: Metadata = createMetadata({
 });
 
 export default async function Home() {
-  const [courses, promotions, stats, ownedSlugs] = await Promise.all([
+  const [courses, promotions, ownedSlugs] = await Promise.all([
     api.listCourses().catch(() => []),
     api.getPromotions('?limit=100').catch(() => []),
-    api.getCatalogStats().catch(() => null),
     getOwnedCourseSlugs(),
   ]);
   const featuredCourse = pickFeaturedPublicCourse(courses);
@@ -49,22 +46,19 @@ export default async function Home() {
   const featuredHref = featuredCourse
     ? featuredOwned
       ? getGuideReadHref(featuredCourse.slug)
-      : featuredSellable
-        ? `/cursos/${featuredCourse.slug}#pagar`
-        : `/cursos/${featuredCourse.slug}`
-    : '/cursos';
+      : `/cursos/${featuredCourse.slug}`
+    : '/cursos/guiav1';
   const featuredCta = featuredOwned
     ? 'Abrir la guía'
     : featuredSellable && featuredPrice !== null
-      ? `Comprar guía · ${formatEuro(featuredPrice)}`
-      : 'Ver las guías';
+      ? `Descubrir la guía · ${formatEuro(featuredPrice)}`
+      : 'Descubrir la guía';
   const listed = publicPublishedPromotions(promotions);
   const previewPromotions = listed.slice(0, 3);
   const samplePromotion = previewPromotions[0];
-  const proofItems = buildProofItems(stats, {
-    published: listed.length,
-    municipalities: uniqueMunicipalities(listed).length,
-  });
+  const includedProGuideTitles = publicCatalogCourses(courses)
+    .filter(isIncludedInPro)
+    .map((course) => course.title);
 
   return (
     <>
@@ -76,20 +70,16 @@ export default async function Home() {
           <div className="shell">
             <div className="lp-hero__split">
               <div className="lp-hero__inner">
-                <span className="lp-hero__badge">Vivienda protegida · Cataluña</span>
+                <span className="lp-hero__badge">Radar VPO · Cataluña</span>
                 <h1 id="hero-title" className="lp-hero__title">
-                  Consulta la vivienda protegida en Cataluña
-                  <span className="lp-hero__title-accent"> con el PDF oficial, las guías y tus oportunidades.</span>
+                  La vivienda protegida en Cataluña, más fácil de entender y seguir.
                 </h1>
                 <p className="lp-hero__subtitle">
                   {featuredOwned
-                    ? 'Ya tienes la guía en tu cuenta. Consultar promociones sigue siendo gratis.'
-                    : featuredSellable && featuredPrice !== null
-                      ? `Guía ${formatEuro(featuredPrice)} pago único: entiende el proceso de la VPO y qué preparar. Consultar promociones es gratis.`
-                      : 'Empieza gratis en el móvil. Sin cuenta para consultar las bases. La guía ordena el proceso de la VPO; PRO avisa por SMS.'}
+                    ? 'Ya tienes la guía en tu cuenta. Consultar promociones y documentos oficiales sigue siendo gratis.'
+                    : 'Consulta promociones y documentos oficiales gratis. Aprende a preparar el proceso con nuestra guía y recibe avisos con Radar PRO.'}
                 </p>
                 <HomeHeroActions guideHref={featuredHref} guideCta={featuredCta} />
-                <ProofStats items={proofItems} />
               </div>
               {samplePromotion ? <PdfViewerDemo promotion={samplePromotion} /> : null}
             </div>
@@ -101,7 +91,7 @@ export default async function Home() {
             <div className="lp-section__head">
               <p className="lp-eyebrow">Qué puedes hacer</p>
               <h2 id="offer-title" className="lp-title">
-                Gratis, curso o suscripción: una acción por camino
+                Gratis, guía o PRO: elige según lo que necesites
               </h2>
             </div>
             <HomeOfferStrip
@@ -159,7 +149,7 @@ export default async function Home() {
                 <p className="lp-lead">
                   {featuredOwned
                     ? 'Ya está en tu cuenta. Entra a leerla, sin volver a pagar.'
-                    : 'Pago único. Registro, papeles, tipos de promoción y pasos hasta la firma. El precio final se ve antes de pagar.'}
+                    : 'Lectura en pantalla, pago único y acceso mínimo de 24 meses. Registro, papeles y pasos hasta la firma.'}
                 </p>
               </div>
               <FeaturedCourseSpotlight course={featuredCourse} owned={featuredOwned} />
@@ -197,7 +187,7 @@ export default async function Home() {
 
         <section className="lp-section lp-section--muted">
           <div className="shell">
-            <HomeFinalCtaBand />
+            <HomeFinalCtaBand includedGuideTitles={includedProGuideTitles} />
           </div>
         </section>
       </main>

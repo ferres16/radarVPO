@@ -62,7 +62,7 @@ export function CourseProductCard({
             </>
           ) : null}
           <span className="product-card__badge bg-white/95 text-[var(--ink)]">
-            {status.sellable ? (guide ? 'Guía PDF' : 'Guía') : 'En preparación'}
+            {status.sellable ? (guide ? 'Lectura en pantalla' : 'Guía') : 'En preparación'}
           </span>
         </div>
         <div className={layout === 'rail' ? 'mt-3' : 'product-card__body'}>

@@ -1,8 +1,11 @@
 import Link from 'next/link';
 import { NewsItem } from '@/types';
+import { getNewsArticleUrl } from '@/lib/news-source';
 import { MotionCard } from './motion-primitives';
 
 export function NewsCard({ item }: { item: NewsItem }) {
+  const articleUrl = getNewsArticleUrl(item);
+
   return (
     <MotionCard className="ds-card h-full overflow-hidden">
       {item.coverImageUrl ? (
@@ -40,9 +43,9 @@ export function NewsCard({ item }: { item: NewsItem }) {
           >
             Leer
           </Link>
-          {item.sourceUrl?.startsWith('http') ? (
+          {articleUrl ? (
             <a
-              href={item.sourceUrl}
+              href={articleUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm font-semibold text-[var(--green-700)] underline"
