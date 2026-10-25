@@ -544,7 +544,10 @@ export class BillingService {
           },
         ],
         metadata,
-        payment_intent_data: { metadata, description: publicCourseProductName(course) },
+        payment_intent_data: {
+          metadata,
+          description: publicCourseProductName(course),
+        },
         locale: 'es',
         ...(commerce.allowPromotionCodes
           ? { allow_promotion_codes: true }
