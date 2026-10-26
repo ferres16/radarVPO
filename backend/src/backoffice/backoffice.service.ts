@@ -11,6 +11,7 @@ import {
   FileEntityType,
   Prisma,
   PromotionStatus,
+  PurchaseStatus,
   SubscriptionStatus,
   UserPlan,
   UserRole,
@@ -131,6 +132,30 @@ export class BackofficeService {
   }
 
   async overview() {
+    const activeProWhere: Prisma.UserWhereInput = {
+      OR: [
+        { plan: UserPlan.pro },
+        {
+          subscriptions: {
+            some: {
+              planKey: 'pro',
+              status: {
+                in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+              },
+            },
+          },
+        },
+      ],
+    };
+
+    const paidCoursePurchaseWhere: Prisma.PurchaseWhereInput = {
+      status: PurchaseStatus.paid,
+      OR: [
+        { courseId: { not: null } },
+        { productKey: { startsWith: 'course:' } },
+      ],
+    };
+
     const [
       users,
       promotions,
@@ -141,6 +166,11 @@ export class BackofficeService {
       news,
       jobsFailed,
       pendingCancellations,
+      activeProUsers,
+      courseSalesPaid,
+      courseBuyersUnique,
+      activeProPeople,
+      recentCourseSales,
     ] = await Promise.all([
       this.prisma.user.count(),
       this.prisma.promotion.count(),
@@ -155,6 +185,68 @@ export class BackofficeService {
       this.prisma.user.count({
         where: { proCancellationRequestedAt: { not: null }, plan: 'pro' },
       }),
+      this.prisma.user.count({ where: activeProWhere }),
+      this.prisma.purchase.count({ where: paidCoursePurchaseWhere }),
+      this.prisma.purchase
+        .findMany({
+          where: paidCoursePurchaseWhere,
+          select: { userId: true },
+          distinct: ['userId'],
+        })
+        .then((rows) => rows.length),
+      this.prisma.user.findMany({
+        where: activeProWhere,
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          phone: true,
+          plan: true,
+          createdAt: true,
+          stripeCustomerId: true,
+          proCancellationRequestedAt: true,
+          subscriptions: {
+            where: { planKey: 'pro' },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              status: true,
+              currentPeriodEnd: true,
+              cancelAt: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+      }),
+      this.prisma.purchase.findMany({
+        where: paidCoursePurchaseWhere,
+        select: {
+          id: true,
+          productKey: true,
+          amount: true,
+          currency: true,
+          purchasedAt: true,
+          createdAt: true,
+          user: {
+            select: {
+              id: true,
+              email: true,
+              fullName: true,
+              phone: true,
+            },
+          },
+          course: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+            },
+          },
+        },
+        orderBy: [{ purchasedAt: 'desc' }, { createdAt: 'desc' }],
+        take: 50,
+      }),
     ]);
 
     return {
@@ -167,6 +259,36 @@ export class BackofficeService {
       news,
       jobsFailed,
       pendingCancellations,
+      activeProUsers,
+      courseSalesPaid,
+      courseBuyersUnique,
+      activeProPeople: activeProPeople.map((person) => {
+        const subscription = person.subscriptions[0] ?? null;
+        return {
+          id: person.id,
+          email: person.email,
+          fullName: person.fullName,
+          phone: person.phone,
+          plan: person.plan,
+          createdAt: person.createdAt.toISOString(),
+          stripeCustomerId: person.stripeCustomerId,
+          proCancellationRequestedAt:
+            person.proCancellationRequestedAt?.toISOString() ?? null,
+          subscriptionStatus: subscription?.status ?? null,
+          currentPeriodEnd:
+            subscription?.currentPeriodEnd?.toISOString() ?? null,
+          cancelAt: subscription?.cancelAt?.toISOString() ?? null,
+        };
+      }),
+      recentCourseSales: recentCourseSales.map((sale) => ({
+        id: sale.id,
+        productKey: sale.productKey,
+        amount: sale.amount != null ? Number(sale.amount) : null,
+        currency: sale.currency,
+        purchasedAt: (sale.purchasedAt ?? sale.createdAt).toISOString(),
+        user: sale.user,
+        course: sale.course,
+      })),
     };
   }
 
@@ -489,7 +611,12 @@ export class BackofficeService {
 
     const existing = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true, email: true },
+      select: {
+        id: true,
+        role: true,
+        email: true,
+        stripeCustomerId: true,
+      },
     });
 
     if (!existing) {
@@ -503,6 +630,17 @@ export class BackofficeService {
       if (admins <= 1) {
         throw new BadRequestException('Cannot delete the only admin user');
       }
+    }
+
+    // Cancela suscripciones Stripe si las hay; el borrado local sigue igual.
+    try {
+      await this.billingService.cancelStripeSubscriptionsForUser({
+        userId: existing.id,
+        email: existing.email,
+        stripeCustomerId: existing.stripeCustomerId,
+      });
+    } catch {
+      // El admin pide borrado completo local aunque Stripe falle.
     }
 
     await this.prisma.user.delete({ where: { id: userId } });

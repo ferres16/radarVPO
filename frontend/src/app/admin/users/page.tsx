@@ -34,7 +34,10 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [confirmDeleteEmail, setConfirmDeleteEmail] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -105,6 +108,9 @@ export default function AdminUsersPage() {
     setSelectedUserId(user.id);
     setDraft(toDraft(user));
     setError('');
+    setSuccess('');
+    setShowDeleteConfirm(false);
+    setConfirmDeleteEmail('');
   }
 
   async function saveUser() {
@@ -131,18 +137,22 @@ export default function AdminUsersPage() {
 
   async function deleteUser() {
     if (!selectedUser) return;
-    const accepted = window.confirm(
-      `¿Eliminar permanentemente a ${selectedUser.email}? Esta acción no se puede deshacer.`,
-    );
-    if (!accepted) return;
+    if (confirmDeleteEmail.trim().toLowerCase() !== selectedUser.email.toLowerCase()) {
+      setError('Escribe el email exacto del usuario para confirmar el borrado completo.');
+      return;
+    }
 
     setDeleting(true);
     setError('');
+    setSuccess('');
     try {
       await api.deleteBackofficeUser(selectedUser.id);
       setUsers((prev) => prev.filter((item) => item.id !== selectedUser.id));
       setSelectedUserId('');
       setDraft(null);
+      setShowDeleteConfirm(false);
+      setConfirmDeleteEmail('');
+      setSuccess(`Usuario ${selectedUser.email} eliminado por completo.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo eliminar el usuario');
     } finally {
@@ -190,8 +200,8 @@ export default function AdminUsersPage() {
               Administrar usuarios
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
-              Busca por email, nombre, teléfono o Customer ID. Al activar PRO pega el Stripe Customer
-              ID (`cus_...`) del cobro.
+              Busca por email, nombre, teléfono o Customer ID. Puedes editar rol/plan o eliminar la
+              cuenta por completo (borra el usuario y sus datos relacionados).
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
@@ -212,6 +222,11 @@ export default function AdminUsersPage() {
           {error ? (
             <div className="rounded-2xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
               {error}
+            </div>
+          ) : null}
+          {success ? (
+            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+              {success}
             </div>
           ) : null}
 
@@ -370,11 +385,19 @@ export default function AdminUsersPage() {
                   <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-between">
                     <button
                       type="button"
-                      onClick={() => void deleteUser()}
+                      onClick={() => {
+                        setShowDeleteConfirm((open) => !open);
+                        setConfirmDeleteEmail('');
+                        setError('');
+                      }}
                       disabled={deleting || selectedUser.id === me?.id}
                       className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700 disabled:opacity-60"
                     >
-                      {deleting ? 'Eliminando...' : 'Eliminar usuario'}
+                      {selectedUser.id === me?.id
+                        ? 'No puedes eliminarte a ti'
+                        : showDeleteConfirm
+                          ? 'Cancelar borrado'
+                          : 'Eliminar por completo'}
                     </button>
                     <button
                       type="button"
@@ -385,6 +408,36 @@ export default function AdminUsersPage() {
                       {saving ? 'Guardando...' : 'Guardar cambios'}
                     </button>
                   </div>
+
+                  {showDeleteConfirm ? (
+                    <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
+                      <p className="font-semibold">Borrado completo e irreversible</p>
+                      <p className="mt-2 leading-6">
+                        Se elimina la cuenta, sesiones, favoritos, accesos y compras asociadas. Si
+                        hay suscripción Stripe, se intenta cancelar antes. Escribe el email del
+                        usuario para confirmar:
+                      </p>
+                      <input
+                        value={confirmDeleteEmail}
+                        onChange={(event) => setConfirmDeleteEmail(event.target.value)}
+                        placeholder={selectedUser.email}
+                        className="mt-3 min-h-11 w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-[var(--ink)]"
+                        autoComplete="off"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => void deleteUser()}
+                        disabled={
+                          deleting ||
+                          confirmDeleteEmail.trim().toLowerCase() !==
+                            selectedUser.email.toLowerCase()
+                        }
+                        className="mt-3 rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                      >
+                        {deleting ? 'Eliminando…' : 'Confirmar eliminación completa'}
+                      </button>
+                    </div>
+                  ) : null}
                 </article>
               )}
             </section>
