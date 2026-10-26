@@ -154,6 +154,39 @@ export type NewsItem = {
   coverImageUrl?: string | null;
 };
 
+export type BackofficeOverviewProPerson = {
+  id: string;
+  email: string;
+  fullName?: string | null;
+  phone?: string | null;
+  plan: 'free' | 'pro';
+  createdAt: string;
+  stripeCustomerId?: string | null;
+  proCancellationRequestedAt?: string | null;
+  subscriptionStatus?: string | null;
+  currentPeriodEnd?: string | null;
+  cancelAt?: string | null;
+};
+
+export type BackofficeOverviewCourseSale = {
+  id: string;
+  productKey: string;
+  amount: number | null;
+  currency: string | null;
+  purchasedAt: string;
+  user: {
+    id: string;
+    email: string;
+    fullName?: string | null;
+    phone?: string | null;
+  };
+  course: {
+    id: string;
+    title: string;
+    slug: string;
+  } | null;
+};
+
 export type BackofficeOverview = {
   users: number;
   promotions: number;
@@ -164,6 +197,11 @@ export type BackofficeOverview = {
   news: number;
   jobsFailed: number;
   pendingCancellations: number;
+  activeProUsers: number;
+  courseSalesPaid: number;
+  courseBuyersUnique: number;
+  activeProPeople: BackofficeOverviewProPerson[];
+  recentCourseSales: BackofficeOverviewCourseSale[];
 };
 
 export type BackofficeUser = {
