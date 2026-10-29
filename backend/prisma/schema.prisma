@@ -339,6 +339,11 @@ model Promotion {
   rawText                  String?             @map("raw_text")
   alertDetectedAt          DateTime            @default(now()) @map("alert_detected_at")
   statusMessage            String              @default("Estamos analizando esta promocion y actualizando la informacion") @map("status_message")
+  /**
+   * Si el admin elimina la pieza, se archiva con esta marca para que el scraper
+   * no la vuelva a crear ni reactivar en el siguiente chequeo.
+   */
+  manuallyRemovedAt        DateTime?           @map("manually_removed_at")
   promoter                 String?
   totalHomes               Int?                @map("total_homes")
   generalInfo              Json?               @map("general_info")

@@ -8,6 +8,7 @@ import {
   isAmendmentPublication,
   isOfficialProcedureStartAnnouncement,
   isProperaAdjudicacioAlert,
+  shortenAlertTitle,
 } from '../common/promotion-content-filters';
 
 type NewsEntry = {
@@ -87,10 +88,26 @@ export class RegistreScraperService {
         continue;
       }
 
+      const canonicalUrl = this.canonicalizeDetailUrl(entry.detailUrl);
       const existing = await this.prisma.promotion.findFirst({
-        where: { sourceUrl: entry.detailUrl },
-        select: { id: true, rawText: true, status: true },
+        where: {
+          OR: [{ sourceUrl: entry.detailUrl }, { sourceUrl: canonicalUrl }],
+        },
+        select: {
+          id: true,
+          rawText: true,
+          status: true,
+          manuallyRemovedAt: true,
+        },
       });
+
+      // Eliminación manual o archivo: no recrear ni reactivar en el siguiente chequeo.
+      if (existing?.manuallyRemovedAt || existing?.status === 'archived') {
+        this.logger.log(
+          `Skipped removed/archived source: ${canonicalUrl} (${existing.id})`,
+        );
+        continue;
+      }
 
       const detailHtml = await this.fetchHtml(entry.detailUrl);
       const rawText = this.extractText(detailHtml);
@@ -98,7 +115,7 @@ export class RegistreScraperService {
       if (isAmendmentPublication(entry.title, rawText)) {
         skippedAmendments += 1;
         this.logger.log(`Skipped amendment by body: ${entry.title}`);
-        if (existing && existing.status !== 'archived') {
+        if (existing) {
           await this.prisma.promotion.update({
             where: { id: existing.id },
             data: {
@@ -114,7 +131,7 @@ export class RegistreScraperService {
       if (isAlertCancellationNotice(entry.title, rawText)) {
         skippedAmendments += 1;
         this.logger.log(`Skipped alert cancellation notice: ${entry.title}`);
-        if (existing && existing.status !== 'archived') {
+        if (existing) {
           await this.prisma.promotion.update({
             where: { id: existing.id },
             data: {
@@ -163,7 +180,7 @@ export class RegistreScraperService {
             municipalityId: municipalityNorm.canonicalId ?? undefined,
             municipalityNeedsReview: municipalityNorm.needsReview,
             promoter: inferredPromoter ?? undefined,
-            sourceUrl: entry.detailUrl,
+            sourceUrl: canonicalUrl,
             rawText,
             status: nextStatus,
             promotionType: inferredType,
@@ -574,20 +591,8 @@ export class RegistreScraperService {
   }
 
   private sanitizeTitle(title: string): string {
-    return title
-      .replace(
-        /\s*En el termini de\s+\d+\s*dies\s+es\s+publicar[àa]\s+l['’]anunci\s+amb\s+els\s+detalls\s+i\s+on\s+es\s+recollir[àa]\s+el\s+procediment\s+d['’]adjudicaci[oó]\.?/gi,
-        '',
-      )
-      .replace(
-        /\s*En el plazo de\s+\d+\s*d[ií]as\s+se\s+publicar[áa]\s+el\s+anuncio\s+con\s+los\s+detalles\s+y\s+donde\s+se\s+recoger[áa]\s+el\s+procedimiento\s+de\s+adjudicaci[oó]n\.?/gi,
-        '',
-      )
-      .replace(/\s+/g, ' ')
-      .replace(/^[-:;,.\s]+/, '')
-      .replace(/\s*\.\s*$/, '.')
-      .trim()
-      .slice(0, 220);
+    // Primero quitar coletilla (también truncada); luego limitar longitud.
+    return shortenAlertTitle(title).slice(0, 220);
   }
 
   private canonicalizeDetailUrl(url: string): string {

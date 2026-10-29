@@ -94,17 +94,22 @@ export const AMENDMENT_TITLE_CONTAINS = [
   'amendment',
 ] as const;
 
+/**
+ * Quita la coletilla fija del registro (también si llegó truncada al guardar).
+ * Ej.: "En el termini de 60 dies es publicarà l'anunci…"
+ */
 export function shortenAlertTitle(title: string): string {
   return title
     .replace(
-      /\s*En el termini de\s+\d+\s*dies\s+es\s+publicar[àa]\s+l['’]anunci\s+amb\s+els\s+detalls\s+i\s+on\s+es\s+recollir[àa]\s+el\s+procediment\s+d['’]adjudicaci[oó]\.?/gi,
+      /\s*En el termini de\s+\d+\s*dies\s+es\s+publicar[\s\S]*$/i,
       '',
     )
     .replace(
-      /\s*En el plazo de\s+\d+\s*d[ií]as\s+se\s+publicar[áa]\s+el\s+anuncio\s+con\s+los\s+detalles\s+y\s+donde\s+se\s+recoger[áa]\s+el\s+procedimiento\s+de\s+adjudicaci[oó]n\.?/gi,
+      /\s*En el plazo de\s+\d+\s*d[ií]as\s+se\s+publicar[\s\S]*$/i,
       '',
     )
     .replace(/\s+/g, ' ')
-    .replace(/\s*\.\s*$/, '.')
+    .replace(/^[-:;,.\s]+/, '')
+    .replace(/\s*[.]*\s*$/, '')
     .trim();
 }

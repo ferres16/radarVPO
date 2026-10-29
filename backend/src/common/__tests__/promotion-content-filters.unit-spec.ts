@@ -3,7 +3,18 @@ import {
   isAmendmentPublication,
   isOfficialProcedureStartAnnouncement,
   isProperaAdjudicacioAlert,
+  shortenAlertTitle,
 } from '../promotion-content-filters';
+
+describe('shortenAlertTitle', () => {
+  it('removes truncated announcement boilerplate', () => {
+    const title =
+      "ALERTA: Propera adjudicació d'habitatge d'HPO a Vilafranca del Penedès. En el termini de 60 dies es publicarà l'anunci amb els detalls i on es recollirà el procediment d'adjud";
+    expect(shortenAlertTitle(title)).toBe(
+      "ALERTA: Propera adjudicació d'habitatge d'HPO a Vilafranca del Penedès",
+    );
+  });
+});
 
 describe('isAmendmentPublication', () => {
   it('detects Catalan esmena titles', () => {

@@ -32,6 +32,8 @@ export class AlertsService {
         id: true,
         title: true,
         municipality: true,
+        municipalityId: true,
+        municipalityRaw: true,
         province: true,
         promotionType: true,
         estimatedPublicationDate: true,

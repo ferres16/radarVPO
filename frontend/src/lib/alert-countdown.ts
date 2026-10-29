@@ -32,9 +32,9 @@ export function formatEstimatedDate(value?: string | null) {
  * "retraso": si la fecha ya pasó, se dice que no hay publicación oficial confirmada.
  */
 export function describeEstimate(daysRemaining: number | null): string {
-  if (daysRemaining === null) return 'Sin fecha estimada disponible';
-  if (daysRemaining > 1) return `Quedan unos ${daysRemaining} días hasta la fecha estimada`;
-  if (daysRemaining === 1) return 'Queda aproximadamente 1 día hasta la fecha estimada';
-  if (daysRemaining === 0) return 'Hoy es la fecha estimada';
-  return 'La fecha estimada ya pasó y todavía no consta la publicación oficial';
+  if (daysRemaining === null) return 'Sin días estimados disponibles';
+  if (daysRemaining > 1) return `${daysRemaining} días estimados restantes`;
+  if (daysRemaining === 1) return '1 día estimado restante';
+  if (daysRemaining === 0) return 'Hoy es el día estimado';
+  return 'La estimación ya pasó y todavía no consta la publicación oficial';
 }

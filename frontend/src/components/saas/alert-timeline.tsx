@@ -3,7 +3,18 @@
 import { AlertCountdownBadge } from '@/components/alert-countdown-badge';
 import { getDaysRemaining } from '@/lib/alert-countdown';
 import { shortenAlertTitle } from '@/lib/alert-title';
+import { resolveMunicipalityLabel } from '@/lib/municipalities';
 import type { Promotion } from '@/types';
+
+function alertMunicipalityLabel(alert: Promotion): string | null {
+  const label = resolveMunicipalityLabel(alert.municipality, alert.municipalityId).trim();
+  if (!label) return null;
+  // Residuos frecuentes del scraper / OCR que no son municipio.
+  if (/^(vigor|termini|dies|anunci|plazo|días|catalunya|cataluña)$/i.test(label)) {
+    return null;
+  }
+  return label;
+}
 
 export function AlertTimeline({ alerts }: { alerts: Promotion[] }) {
   return (
@@ -11,6 +22,7 @@ export function AlertTimeline({ alerts }: { alerts: Promotion[] }) {
       {alerts.map((alert, index) => {
         const daysRemaining = getDaysRemaining(alert.estimatedPublicationDate);
         const isLast = index === alerts.length - 1;
+        const municipality = alertMunicipalityLabel(alert);
         return (
           <article key={alert.id} className="alert-timeline__item">
             <div className="alert-timeline__rail" aria-hidden="true">
@@ -26,7 +38,9 @@ export function AlertTimeline({ alerts }: { alerts: Promotion[] }) {
               <h3 className="mt-3 text-base font-bold leading-snug text-[var(--ink)]">
                 {shortenAlertTitle(alert.title)}
               </h3>
-              <p className="mt-1 text-sm text-[var(--ink-soft)]">{alert.municipality || 'Cataluña'}</p>
+              {municipality ? (
+                <p className="mt-1 text-sm text-[var(--ink-soft)]">{municipality}</p>
+              ) : null}
             </div>
           </article>
         );

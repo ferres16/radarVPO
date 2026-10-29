@@ -166,7 +166,13 @@ export default function AdminAlertsPage() {
   }
 
   async function deleteAlert(id: string) {
-    if (!window.confirm('Vas a eliminar definitivamente este aviso. ¿Quieres continuar?')) return;
+    if (
+      !window.confirm(
+        'Vas a retirar este aviso. Quedará archivado y el scraper no lo volverá a publicar en el siguiente chequeo. ¿Continuar?',
+      )
+    ) {
+      return;
+    }
     setSavingId(id);
     setError('');
     try {
@@ -291,7 +297,7 @@ export default function AdminAlertsPage() {
                     onClick={() => void deleteAlert(alert.id)}
                     className="rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700 disabled:opacity-60 sm:col-span-3"
                   >
-                    Eliminar definitivamente
+                    Retirar (no reaparecerá)
                   </button>
                 </div>
               </article>

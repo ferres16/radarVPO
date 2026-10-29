@@ -141,11 +141,14 @@ const LOOKUP = (() => {
   return map;
 })();
 
-/** Detecta calles/direcciones que no deben clasificarse como municipio. */
+/** Detecta calles/direcciones o residuos que no deben clasificarse como municipio. */
 export function looksLikeStreetOrNoise(value: string): boolean {
-  const text = value.toLowerCase();
+  const text = value.toLowerCase().trim();
   return (
     /\b(carrer|calle|avinguda|avda|plaza|plaça|passeig|camino|camí|número|num\.|c\/|s\/n)\b/.test(
+      text,
+    ) ||
+    /^(vigor|termini|dies|días|anunci|plazo|detalls|procediment|adjudicacio|adjudicación)$/i.test(
       text,
     ) ||
     /\d{2,}/.test(text) ||

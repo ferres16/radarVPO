@@ -10,7 +10,7 @@ export function DeletePromotionButton({ promotionId }: { promotionId: string }) 
 
   async function handleDelete() {
     const accepted = window.confirm(
-      'Se eliminará la promoción y todos sus archivos asociados en S3. ¿Continuar?',
+      'Se retirará la promoción (archivos asociados incluidos). Quedará archivada y el scraper no la volverá a publicar. ¿Continuar?',
     );
     if (!accepted) return;
 

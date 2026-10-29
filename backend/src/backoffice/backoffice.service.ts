@@ -1736,8 +1736,12 @@ export class BackofficeService {
     });
   }
 
+  /**
+   * Soft-delete: archiva y marca eliminación manual para que el scraper
+   * no vuelva a publicar la misma fuente en el siguiente chequeo.
+   */
   async deletePromotion(promotionId: string) {
-    await this.ensurePromotion(promotionId);
+    const promotion = await this.ensurePromotion(promotionId);
     const documents = await this.prisma.promotionDocument.findMany({
       where: { promotionId },
       select: { fileAssetId: true, storagePath: true },
@@ -1747,8 +1751,16 @@ export class BackofficeService {
       await this.deleteLinkedAsset(document.fileAssetId, document.storagePath);
     }
 
-    await this.prisma.promotion.delete({ where: { id: promotionId } });
-    return { deleted: true };
+    await this.prisma.promotionDocument.deleteMany({ where: { promotionId } });
+    await this.prisma.promotion.update({
+      where: { id: promotionId },
+      data: {
+        status: 'archived',
+        manuallyRemovedAt: new Date(),
+        statusMessage: `Eliminada manualmente. No se volverá a importar desde ${promotion.sourceUrl}.`,
+      },
+    });
+    return { deleted: true, softDeleted: true };
   }
 
   async updatePromotionStatus(
@@ -2505,7 +2517,7 @@ export class BackofficeService {
   private async ensurePromotion(promotionId: string) {
     const promotion = await this.prisma.promotion.findUnique({
       where: { id: promotionId },
-      select: { id: true },
+      select: { id: true, sourceUrl: true },
     });
 
     if (!promotion) {

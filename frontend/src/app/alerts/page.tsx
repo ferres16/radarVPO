@@ -62,8 +62,8 @@ export default async function AlertsPage() {
       <PublicPageHero
         badge={copy.upcomingLaunches}
         title="Próximos lanzamientos"
-        titleAccent="con fecha estimada"
-        description="Promociones que podrían publicarse próximamente en Cataluña. Las fechas son estimaciones: pueden no cumplirse o no llegar a publicarse. Con Radar VPO PRO te avisamos por SMS y email."
+        titleAccent="con días estimados"
+        description="Promociones que podrían publicarse próximamente en Cataluña. Los días restantes son una estimación: pueden no cumplirse o no llegar a publicarse. Con Radar VPO PRO te avisamos por SMS y email."
         actions={
           <div className="lp-hero__actions lp-hero__actions--stack">
             <ButtonLink href="/promotions" size="lg" block>
@@ -77,7 +77,7 @@ export default async function AlertsPage() {
       <PublicSection id="lanzamientos" animated={false}>
         <SectionHeader
           title="Lanzamientos previstos"
-          description="Fecha estimada y ubicación. La única fecha oficial es la de publicación de la promoción."
+          description="Días estimados restantes y municipio. La única fecha oficial es la de publicación de la promoción."
         />
 
         {alerts.length === 0 ? (
