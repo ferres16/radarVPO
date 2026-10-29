@@ -37,7 +37,36 @@ En el proyecto frontend de producción:
    - `https://www.radarvpo.com/ads.txt` → una línea `google.com, pub-…, DIRECT, f08c47fec0942fa0`
    - View-source de `/` → meta `google-adsense-account` y script `adsbygoogle.js?client=ca-pub-…`
 7. En AdSense: Sites → Request review / Wait for crawl (puede tardar días tras corregir ads.txt).
-8. Dominio canónico: la cuenta debe tener `www.radarvpo.com` (o el host exacto del Site). `ads.txt` debe responder igual en apex y www (ahora ambos pasan por la app).
+8. Dominio canónico: la cuenta AdSense tiene **`radarvpo.com`** (apex). Google mira `https://radarvpo.com/ads.txt`.
+
+## Por qué AdSense dice ads.txt “Not found” (oct 2026)
+
+Evidencia:
+
+- En AdSense → Sites: `radarvpo.com` · Getting ready · **Ads.txt status: Not found** · Last updated **Jul 9, 2026**.
+- `https://www.radarvpo.com/ads.txt` → **200** con la línea correcta.
+- `https://radarvpo.com/ads.txt` → **308** de Vercel a `www` con cuerpo `Redirecting...` (redirect a nivel de dominio; la app ni siquiera corre).
+
+Google rastrea el apex del sitio registrado. Un 308 + “Redirecting…” se cuenta como **Not found**. Además no ha vuelto a crawlear desde julio.
+
+### Qué hacer en Vercel (imprescindible)
+
+1. Vercel → proyecto frontend → **Settings → Domains**.
+2. En `radarvpo.com`, **quita** “Redirect to www.radarvpo.com” (el dominio apex debe apuntar al deployment, no redirigir).
+3. Deja `www.radarvpo.com` como dominio de producción / canónico para usuarios.
+4. El middleware de la app:
+   - sirve `/ads.txt` en **apex y www** con 200;
+   - redirige el resto de rutas del apex → `www`.
+5. Comprueba sin seguir redirects:
+   ```bash
+   curl -sI https://radarvpo.com/ads.txt
+   # debe ser HTTP 200 (no 308)
+   curl -s https://radarvpo.com/ads.txt
+   # google.com, pub-9530052824706142, DIRECT, f08c47fec0942fa0
+   ```
+6. Opcional en AdSense: **+ New site** → `www.radarvpo.com` (además del apex). No sustituye el ads.txt del apex.
+
+No hace falta borrar el sitio ni pedir otra review: la de julio sigue en cola; cuando el ads.txt del apex pase a 200, el crawler actualizará el estado (puede tardar días).
 
 ## Lo que no arregla solo el código
 
