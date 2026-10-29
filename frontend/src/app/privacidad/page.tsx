@@ -72,9 +72,12 @@ export default function PrivacyPage() {
           </li>
           <li>
             <strong className="text-[var(--ink)]">Medición y publicidad:</strong> Vercel Analytics, el contador
-            propio de visitas y, si en el futuro se activa, Google AdSense. Solo si aceptas esas cookies. Base
-            jurídica: consentimiento. Hoy la publicidad está desactivada en el lanzamiento
-            {adsConfig.enabled ? ', salvo que se reactive de forma expresa.' : '.'} Detalle en la{' '}
+            propio de visitas
+            {adsConfig.enabled
+              ? ' y Google AdSense (anuncios en páginas públicas)'
+              : ' y, si se activa, Google AdSense'}
+            . Solo si aceptas esas cookies. Base jurídica: consentimiento.
+            {!adsConfig.enabled ? ' Hoy la publicidad no está activa en el sitio.' : ''} Detalle en la{' '}
             <Link href="/cookies" className="font-semibold text-[var(--green-700)]">
               política de cookies
             </Link>

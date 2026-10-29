@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
 import { PublicAdFrame } from "@/components/ads";
+import { AdsenseSiteVerification } from "@/components/ads/adsense-site-verification";
 import { ConsentProvider } from "@/components/consent/consent-provider";
 import { ConsentedScripts } from "@/components/consent/consented-scripts";
 import { CookieBanner } from "@/components/consent/cookie-banner";
@@ -72,6 +73,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}>
+      <head>
+        <AdsenseSiteVerification />
+      </head>
       <body className="min-h-full flex flex-col pt-[4.25rem] md:pt-20">
         <ConsentProvider>
           <ProAccessProvider>

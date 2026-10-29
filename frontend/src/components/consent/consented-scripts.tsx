@@ -20,7 +20,9 @@ export function ConsentedScripts({
 
   useEffect(() => {
     if (!adsAllowed || !adsConfig.clientId) return;
+    // Ya puede estar en <head> vía AdsenseSiteVerification (detección sin cookie).
     if (document.getElementById(ADSENSE_SCRIPT_ID)) return;
+    if (document.querySelector('script[src*="adsbygoogle.js"]')) return;
     const script = document.createElement('script');
     script.id = ADSENSE_SCRIPT_ID;
     script.async = true;
