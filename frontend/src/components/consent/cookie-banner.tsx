@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { adsConfig } from '@/lib/ads';
+import { needsMarketingConsentCategory } from '@/lib/marketing';
 import { useConsent } from './consent-provider';
 
 export function CookieBanner() {
@@ -20,6 +21,7 @@ export function CookieBanner() {
   const pathname = usePathname();
   const [analytics, setAnalytics] = useState(preferences?.analytics ?? false);
   const [ads, setAds] = useState(preferences?.ads ?? false);
+  const showMarketingCategory = needsMarketingConsentCategory(adsConfig.enabled);
 
   const showBanner = (!decided || configuring) && !pathname.startsWith('/admin');
   if (!showBanner) return null;
@@ -32,9 +34,9 @@ export function CookieBanner() {
         </h2>
         <p className="cookie-banner__text">
           Usamos cookies técnicas para la sesión. La analítica solo se carga si la aceptas
-          {adsConfig.enabled
-            ? ' y la publicidad, si la consientes.'
-            : '. Durante el lanzamiento no hay anuncios.'}{' '}
+          {showMarketingCategory
+            ? ' y la publicidad / medición de campañas, si la consientes.'
+            : '.'}{' '}
           Puedes cambiar la elección cuando quieras.{' '}
           <Link href="/cookies" className="font-semibold underline">
             Política de cookies
@@ -58,16 +60,15 @@ export function CookieBanner() {
                 onChange={(event) => setAnalytics(event.target.checked)}
               />
               <span>
-                <strong>Analítica</strong> — medición de uso de la web (Vercel Analytics y contador de
-                visitas).
+                <strong>Analítica</strong> — Google Analytics, Vercel Analytics y contador de visitas.
               </span>
             </label>
-            {adsConfig.enabled ? (
+            {showMarketingCategory ? (
               <label className="cookie-banner__choice">
                 <input type="checkbox" checked={ads} onChange={(event) => setAds(event.target.checked)} />
                 <span>
-                  <strong>Publicidad</strong> — anuncios de Google AdSense, que pueden usar cookies de
-                  terceros.
+                  <strong>Publicidad</strong> — Meta Pixel (Facebook/Instagram Ads)
+                  {adsConfig.enabled ? ' y Google AdSense' : ''}, que pueden usar cookies de terceros.
                 </span>
               </label>
             ) : null}

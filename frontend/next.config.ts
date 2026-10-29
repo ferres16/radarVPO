@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { ADSENSE_CONNECT_SRC, ADSENSE_FRAME_SRC, ADSENSE_SCRIPT_SRC } from "./src/lib/ads-csp";
+import { MARKETING_CONNECT_SRC, MARKETING_SCRIPT_SRC } from "./src/lib/marketing-csp";
 
 const isProduction = process.env.NODE_ENV === "production";
 const adsEnabled = process.env.NEXT_PUBLIC_ADSENSE_ENABLED === "true";
@@ -9,6 +10,7 @@ const scriptSrc = [
   "'unsafe-inline'",
   isProduction ? "" : "'unsafe-eval'",
   adsEnabled ? ADSENSE_SCRIPT_SRC : "",
+  MARKETING_SCRIPT_SRC,
 ]
   .filter(Boolean)
   .join(" ");
@@ -18,6 +20,7 @@ const connectSrc = [
   "https://vitals.vercel-insights.com",
   "https://va.vercel-scripts.com",
   adsEnabled ? ADSENSE_CONNECT_SRC : "",
+  MARKETING_CONNECT_SRC,
   isProduction ? "" : "http://localhost:*",
 ]
   .filter(Boolean)

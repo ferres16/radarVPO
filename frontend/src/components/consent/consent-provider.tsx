@@ -19,6 +19,9 @@ import {
   writeConsentCookie,
   type ConsentPreferences,
 } from '@/lib/consent';
+import { needsMarketingConsentCategory } from '@/lib/marketing';
+
+const marketingConsentAvailable = needsMarketingConsentCategory(adsConfig.enabled);
 
 type ConsentContextValue = {
   preferences: ConsentPreferences | null;
@@ -50,14 +53,14 @@ export function ConsentProvider({ children }: { children: ReactNode }) {
       acceptAll: () =>
         persist({
           ...ACCEPTED_CONSENT,
-          ads: adsConfig.enabled,
+          ads: marketingConsentAvailable,
         }),
       rejectNonEssential: () => persist(DENIED_CONSENT),
       save: (prefs) =>
         persist({
           v: CONSENT_VERSION,
           analytics: prefs.analytics,
-          ads: adsConfig.enabled && prefs.ads,
+          ads: marketingConsentAvailable && prefs.ads,
         }),
       openSettings: () => setConfiguring(true),
       closeSettings: () => setConfiguring(false),

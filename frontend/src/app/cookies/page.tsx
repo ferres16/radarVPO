@@ -18,7 +18,7 @@ export default function CookiesPage() {
       badge="Cookies"
       title="Política de cookies"
       description="Qué tecnologías usamos, cuáles son necesarias y cómo puedes decidir sobre analítica y publicidad."
-      updatedAt="20 de octubre de 2026"
+      updatedAt="29 de octubre de 2026"
     >
       <LegalSection title="1. Responsable">
         <OwnerIdentity />
@@ -53,26 +53,32 @@ export default function CookiesPage() {
 
       <LegalSection title="4. Analítica (solo con consentimiento)">
         <p>
-          Si aceptas, se carga Vercel Analytics y, una vez al día, una cookie de primera parte{' '}
-          <code>rv_visit_day</code> (48 horas) para un contador aproximado de visitas. No se envían nombres, correos
-          ni teléfonos en esos eventos. Sin consentimiento no se instalan ni se envía la visita.
+          Si aceptas, se cargan Google Analytics 4 (gtag, propiedad <code>G-EQPBRQLPQ6</code>), Vercel Analytics y,
+          una vez al día, una cookie de primera parte <code>rv_visit_day</code> (48 horas) para un contador aproximado
+          de visitas. No enviamos nombres, correos ni teléfonos en esos eventos. Sin consentimiento no se instalan ni
+          se envía la visita.
         </p>
       </LegalSection>
 
-      <LegalSection title="5. Publicidad">
+      <LegalSection title="5. Publicidad y medición de campañas">
+        <p>
+          Si aceptas esta categoría, se carga el Meta Pixel (Facebook/Instagram Ads, id{' '}
+          <code>1303653491853194</code>) para medir visitas y conversiones de campañas. Meta puede usar cookies propias
+          y de terceros.
+        </p>
         {adsConfig.enabled ? (
           <p>
-            Si aceptas, se carga Google AdSense. Google puede usar cookies propias y de terceros para mostrar anuncios,
-            medir su rendimiento y, en su caso, personalizarlos. Si rechazas esta categoría, los anuncios no se
-            cargan. AdSense no se incluye en registro, inicio de sesión, checkout ni área privada.
+            También se carga Google AdSense. Google puede usar cookies propias y de terceros para mostrar anuncios,
+            medir su rendimiento y, en su caso, personalizarlos. AdSense no se incluye en registro, inicio de sesión,
+            checkout ni área privada.
           </p>
         ) : (
           <p>
-            Durante el lanzamiento no hay publicidad. No se carga Google AdSense ni otros anuncios, ni siquiera si
-            aceptas cookies. Si se activa en el futuro, solo se cargará tras una elección válida y fuera de registro,
-            login, checkout y área privada.
+            Google AdSense puede activarse más adelante en páginas públicas; solo se cargará con el mismo consentimiento
+            de publicidad y fuera de registro, login, checkout y área privada.
           </p>
         )}
+        <p>Si rechazas esta categoría, no se cargan el Meta Pixel ni AdSense.</p>
       </LegalSection>
 
       <LegalSection title="6. Otras tecnologías de terceros">

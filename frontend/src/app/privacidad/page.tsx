@@ -17,7 +17,7 @@ export default function PrivacyPage() {
       badge="Privacidad"
       title="Política de privacidad"
       description="Qué datos tratamos, para qué, con quién los compartimos y cómo ejercer tus derechos."
-      updatedAt="25 de octubre de 2026"
+      updatedAt="29 de octubre de 2026"
     >
       <LegalSection title="1. Responsable del tratamiento">
         <OwnerIdentity />
@@ -71,13 +71,10 @@ export default function PrivacyPage() {
             consentimiento.
           </li>
           <li>
-            <strong className="text-[var(--ink)]">Medición y publicidad:</strong> Vercel Analytics, el contador
-            propio de visitas
-            {adsConfig.enabled
-              ? ' y Google AdSense (anuncios en páginas públicas)'
-              : ' y, si se activa, Google AdSense'}
-            . Solo si aceptas esas cookies. Base jurídica: consentimiento.
-            {!adsConfig.enabled ? ' Hoy la publicidad no está activa en el sitio.' : ''} Detalle en la{' '}
+            <strong className="text-[var(--ink)]">Medición y publicidad:</strong> Google Analytics 4, Vercel
+            Analytics, el contador propio de visitas, Meta Pixel (campañas en Facebook/Instagram)
+            {adsConfig.enabled ? ' y Google AdSense en páginas públicas' : ''}
+            . Solo si aceptas esas cookies. Base jurídica: consentimiento. Detalle en la{' '}
             <Link href="/cookies" className="font-semibold text-[var(--green-700)]">
               política de cookies
             </Link>
@@ -93,6 +90,8 @@ export default function PrivacyPage() {
           <li>Brevo: envío de emails transaccionales y, si hay móvil, SMS de avisos PRO.</li>
           <li>Alojamiento: frontend en Vercel y API y base de datos en Railway.</li>
           <li>Almacenamiento de archivos: Amazon S3 (documentos y material de cursos).</li>
+          <li>Google Analytics (Google Ireland / Google LLC): solo si consientes cookies de analítica.</li>
+          <li>Meta Platforms (Meta Pixel): solo si consientes cookies de publicidad / campañas.</li>
           {adsConfig.enabled ? <li>Google AdSense: solo si consientes cookies de publicidad.</li> : null}
           <li>Vercel Analytics: solo si consientes cookies de analítica.</li>
           <li>
