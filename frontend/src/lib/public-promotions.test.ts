@@ -44,4 +44,13 @@ describe('publicPublishedPromotions', () => {
       ]),
     ).toEqual(['Girona', 'Mataró']); // orden estable, sin locale del runtime
   });
+
+  it('collapses Montgat and a Montgat into one filter option', () => {
+    expect(
+      uniqueMunicipalities([
+        promo({ id: '1', title: 'Alquiler', municipality: 'Montgat' }),
+        promo({ id: '2', title: 'Venta', municipality: 'a Montgat' }),
+      ]),
+    ).toEqual(['Montgat']);
+  });
 });

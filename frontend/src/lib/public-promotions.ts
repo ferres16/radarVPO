@@ -1,3 +1,4 @@
+import { resolveMunicipalityLabel } from '@/lib/municipalities';
 import { canViewPromotionDocument } from '@/lib/promotion-access';
 import { isAmendmentPublication } from '@/lib/promotion-content-filters';
 import type { Promotion } from '@/types';
@@ -28,7 +29,7 @@ export function publicPublishedPromotions(
 export function uniqueMunicipalities(promotions: readonly Promotion[]): string[] {
   const values = new Set<string>();
   for (const item of promotions) {
-    const name = item.municipality?.trim();
+    const name = resolveMunicipalityLabel(item.municipality, item.municipalityId);
     if (name) values.add(name);
   }
   return [...values].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));

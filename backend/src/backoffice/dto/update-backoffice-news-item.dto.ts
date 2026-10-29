@@ -1,5 +1,6 @@
 import {
   IsDateString,
+  IsIn,
   IsOptional,
   IsString,
   IsUrl,
@@ -45,6 +46,15 @@ export class UpdateBackofficeNewsItemDto {
   @IsString()
   @MaxLength(32)
   relevance?: string;
+
+  @IsOptional()
+  @IsIn(['draft', 'published', 'archived'])
+  editorialStatus?: 'draft' | 'published' | 'archived';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  correctionNote?: string;
 
   @IsOptional()
   @IsDateString()

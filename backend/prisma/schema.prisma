@@ -85,6 +85,13 @@ enum LessonStatus {
   published
 }
 
+/** Estado editorial de noticias (RV01 / RV19). */
+enum NewsEditorialStatus {
+  draft
+  published
+  archived
+}
+
 enum LessonType {
   text
   video
@@ -202,6 +209,16 @@ model User {
    * Quiere SMS de avisos PRO. false por defecto: guardar teléfono ≠ activar SMS.
    */
   smsAlertsEnabled           Boolean             @default(false) @map("sms_alerts_enabled")
+  /**
+   * Preferencias PRO de avisos (RV06): ids canónicos de municipio.
+   * null/[] = sin filtro territorial (comportamiento previo).
+   */
+  alertMunicipalityIds       Json?               @map("alert_municipality_ids")
+  /**
+   * Preferencias PRO: venta | alquiler | mixto.
+   * null/[] = sin filtro por régimen.
+   */
+  alertPromotionTypes        Json?               @map("alert_promotion_types")
   stripeCustomerId           String?             @map("stripe_customer_id")
   proCancellationRequestedAt DateTime?           @map("pro_cancellation_requested_at")
   createdAt                  DateTime            @default(now()) @map("created_at")
@@ -223,6 +240,7 @@ model User {
   uploadedFiles FileAsset[]
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
+  waitlistLeads WaitlistLead[]
 
   @@map("users")
 }
@@ -300,7 +318,14 @@ model Promotion {
   sourceId                 String              @map("source_id")
   title                    String
   location                 String?
+  /** Texto municipal canónico para filtros (p. ej. Montgat). */
   municipality             String?
+  /** Texto original detectado antes de normalizar (p. ej. "a Montgat"). */
+  municipalityRaw          String?             @map("municipality_raw")
+  /** Identificador estable del catálogo canónico. */
+  municipalityId           String?             @map("municipality_id")
+  /** true si la normalización no fue inequívoca y requiere revisión humana. */
+  municipalityNeedsReview  Boolean             @default(false) @map("municipality_needs_review")
   province                 String?
   autonomousCommunity      String?             @map("autonomous_community")
   promotionType            PromotionType       @default(desconocido) @map("promotion_type")
@@ -454,6 +479,13 @@ model NewsItem {
   category    String   @default("general")
   topic       String?
   municipality String?
+  /** draft = no público hasta revisión; archived = retirado con trazabilidad. */
+  editorialStatus NewsEditorialStatus @default(draft) @map("editorial_status")
+  /** Motivos de rechazo automático de anclaje a fuente (JSON string[]). */
+  groundingIssues Json? @map("grounding_issues")
+  /** Nota pública/admin cuando una publicación indujo a error y se corrigió. */
+  correctionNote String? @map("correction_note")
+  reviewedAt  DateTime? @map("reviewed_at")
   /** URL pública de la imagen de portada en S3 (generada o subida). */
   coverImageUrl String? @map("cover_image_url")
   coverImageAssetId String? @map("cover_image_asset_id")
@@ -463,8 +495,29 @@ model NewsItem {
 
   @@index([publishedAt])
   @@index([category, publishedAt])
+  @@index([editorialStatus, publishedAt])
 
   @@map("news_items")
+}
+
+/** Captación mientras las ventas están cerradas (RV02). */
+model WaitlistLead {
+  id                String   @id @default(cuid())
+  email             String
+  product           String
+  municipality      String?
+  /** Consentimiento del aviso solicitado (lista de espera). */
+  waitlistConsentAt DateTime @map("waitlist_consent_at")
+  /** Consentimiento opcional a campañas futuras (separado). */
+  marketingConsentAt DateTime? @map("marketing_consent_at")
+  sourcePath        String?  @map("source_path")
+  userId            String?  @map("user_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@unique([email, product])
+  @@index([createdAt])
+  @@map("waitlist_leads")
 }
 
 model NewsFeedItem {

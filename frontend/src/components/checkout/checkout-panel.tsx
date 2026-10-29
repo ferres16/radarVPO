@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { FormField } from '@/components/design-system';
 import { useProAccess } from '@/components/pro-access-provider';
+import { WaitlistForm } from '@/components/waitlist-form';
 import { api } from '@/lib/api';
 import { trackEvent } from '@/lib/analytics';
 import { formatEuro } from '@/lib/offer';
@@ -222,6 +223,12 @@ export function CheckoutPanel({
           </Link>
           .
         </p>
+      ) : paymentsEnabled === false ? (
+        <WaitlistForm
+          product={isCourse ? 'guide' : 'pro'}
+          maintenanceMessage={maintenanceMessage}
+          sourcePath={summary.backHref}
+        />
       ) : (
         <form
           className="mt-4 space-y-4"
@@ -323,12 +330,6 @@ export function CheckoutPanel({
                 : 'Quiero activar la suscripción de inmediato. Si desisto en 14 días, abono la parte ya disfrutada.'}
             </span>
           </label>
-
-          {paymentsEnabled === false ? (
-            <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">
-              {maintenanceMessage}
-            </p>
-          ) : null}
 
           {error ? (
             <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-800" role="alert">

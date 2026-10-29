@@ -1,6 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
+  ArrayMaxSize,
+  IsArray,
   IsBoolean,
+  IsIn,
   IsOptional,
   IsString,
   Matches,
@@ -36,4 +39,24 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsBoolean()
   marketingOptIn?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Ids canónicos de municipio para filtrar avisos PRO.',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(40)
+  @IsString({ each: true })
+  alertMunicipalityIds?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Regímenes de interés para avisos PRO.',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(3)
+  @IsIn(['venta', 'alquiler', 'mixto'], { each: true })
+  alertPromotionTypes?: Array<'venta' | 'alquiler' | 'mixto'>;
 }

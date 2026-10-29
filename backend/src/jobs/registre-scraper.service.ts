@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PromotionType } from '@prisma/client';
 import * as cheerio from 'cheerio';
 import { PrismaService } from '../prisma/prisma.service';
+import { inferMunicipalityFromText } from '../common/municipalities/catalunya-municipalities';
 import {
   isAlertCancellationNotice,
   isAmendmentPublication,
@@ -141,9 +142,10 @@ export class RegistreScraperService {
         alertLeadDays != null
           ? this.addDays(alertDate, alertLeadDays)
           : alertDate;
-      const inferredMunicipality = this.inferMunicipality(
+      const municipalityNorm = this.inferMunicipality(
         `${entry.title}\n${rawText}`,
       );
+      const inferredMunicipality = municipalityNorm.canonicalName;
       const inferredPromoter = this.inferPromoter(rawText);
       const inferredType = this.guessPromotionType(
         `${entry.title}\n${rawText}`,
@@ -157,6 +159,9 @@ export class RegistreScraperService {
             title: this.sanitizeTitle(entry.title),
             location: inferredMunicipality ?? undefined,
             municipality: inferredMunicipality ?? undefined,
+            municipalityRaw: municipalityNorm.raw || undefined,
+            municipalityId: municipalityNorm.canonicalId ?? undefined,
+            municipalityNeedsReview: municipalityNorm.needsReview,
             promoter: inferredPromoter ?? undefined,
             sourceUrl: entry.detailUrl,
             rawText,
@@ -193,6 +198,9 @@ export class RegistreScraperService {
           data: {
             rawText: mergedRawText,
             municipality: inferredMunicipality ?? undefined,
+            municipalityRaw: municipalityNorm.raw || undefined,
+            municipalityId: municipalityNorm.canonicalId ?? undefined,
+            municipalityNeedsReview: municipalityNorm.needsReview,
             promoter: inferredPromoter ?? undefined,
             promotionType: inferredType,
             alertDetectedAt: alertDate,
@@ -733,22 +741,8 @@ export class RegistreScraperService {
     await this.prisma.promotion.delete({ where: { id: duplicateId } });
   }
 
-  private inferMunicipality(text: string): string | null {
-    const patterns = [
-      /al\s+municipi\s+d(?:e|')\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\s-]{2,60})/i,
-      /al\s+municipio\s+de\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\s-]{2,60})/i,
-      /\ba\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\s-]{2,60})(?:[.,\n]|$)/i,
-    ];
-
-    for (const pattern of patterns) {
-      const match = text.match(pattern);
-      const value = match?.[1]?.trim();
-      if (value && !/catalunya|termini|dies|anunci/i.test(value)) {
-        return value;
-      }
-    }
-
-    return null;
+  private inferMunicipality(text: string) {
+    return inferMunicipalityFromText(text);
   }
 
   private inferPromoter(text: string): string | null {

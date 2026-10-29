@@ -5,6 +5,9 @@ export type Promotion = {
   title: string;
   location?: string | null;
   municipality?: string | null;
+  municipalityRaw?: string | null;
+  municipalityId?: string | null;
+  municipalityNeedsReview?: boolean;
   province?: string | null;
   promotionType: 'venta' | 'alquiler' | 'mixto' | 'desconocido';
   status: 'pending_review' | 'published_unreviewed' | 'published_reviewed' | 'archived';
@@ -56,6 +59,8 @@ export type UserProfile = {
   emailVerifiedAt?: string | null;
   marketingOptInAt?: string | null;
   smsAlertsEnabled?: boolean;
+  alertMunicipalityIds?: string[];
+  alertPromotionTypes?: Array<'venta' | 'alquiler' | 'mixto'>;
   createdAt?: string;
   lastLoginAt?: string | null;
   proAccess?: {
@@ -150,6 +155,7 @@ export type NewsItem = {
   category?: 'vpo' | 'alquiler' | 'ayudas' | 'normativa' | 'general';
   municipality?: string | null;
   relevance: string;
+  correctionNote?: string | null;
   publishedAt: string;
   coverImageUrl?: string | null;
 };
@@ -519,6 +525,9 @@ export type BackofficeNewsItem = {
   practicalImpact?: string | null;
   topic?: string | null;
   relevance: string;
+  editorialStatus?: 'draft' | 'published' | 'archived';
+  groundingIssues?: string[] | null;
+  correctionNote?: string | null;
   publishedAt: string;
   createdAt: string;
 };

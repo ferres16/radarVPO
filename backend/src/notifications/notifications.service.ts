@@ -23,6 +23,7 @@ import {
   formatMadridDate,
   hasIncompleteRender,
 } from './message-vars';
+import { userMatchesProAlertPreferences } from '../common/pro-alert-preferences';
 
 /** SMS PRO: solo publicación oficial por defecto (aunque el usuario tenga SMS on). */
 const PRO_SMS_KINDS = new Set<ProNotifyKind>(['new_publication']);
@@ -32,7 +33,9 @@ type ProAlertPromotion = Pick<
   | 'id'
   | 'title'
   | 'municipality'
+  | 'municipalityId'
   | 'province'
+  | 'promotionType'
   | 'estimatedPublicationDate'
   | 'status'
 >;
@@ -383,7 +386,9 @@ export class NotificationsService {
         id: true,
         title: true,
         municipality: true,
+        municipalityId: true,
         province: true,
+        promotionType: true,
         estimatedPublicationDate: true,
         status: true,
       },
@@ -599,12 +604,18 @@ export class NotificationsService {
         fullName: true,
         phone: true,
         smsAlertsEnabled: true,
+        alertMunicipalityIds: true,
+        alertPromotionTypes: true,
       },
     });
 
+    const preferenceFiltered = users.filter((user) =>
+      userMatchesProAlertPreferences(user, promotion),
+    );
+
     const recipients = favoriteUserIds
-      ? users.filter((user) => favoriteUserIds.has(user.id))
-      : users;
+      ? preferenceFiltered.filter((user) => favoriteUserIds.has(user.id))
+      : preferenceFiltered;
 
     const channels: string[] = [];
     let sent = 0;

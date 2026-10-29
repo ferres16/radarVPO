@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { NewsEditorialStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { S3StorageService } from '../storage/s3-storage.service';
 import { ListNewsDto } from './dto/list-news.dto';
@@ -82,16 +83,21 @@ export class NewsService {
     if (cached) return cached;
 
     const items = await this.prisma.newsItem.findMany({
-      where: query.q
-        ? {
-            OR: [
-              { title: { contains: query.q, mode: 'insensitive' } },
-              { summary: { contains: query.q, mode: 'insensitive' } },
-              { body: { contains: query.q, mode: 'insensitive' } },
-              { practicalImpact: { contains: query.q, mode: 'insensitive' } },
-            ],
-          }
-        : undefined,
+      where: {
+        editorialStatus: NewsEditorialStatus.published,
+        ...(query.q
+          ? {
+              OR: [
+                { title: { contains: query.q, mode: 'insensitive' } },
+                { summary: { contains: query.q, mode: 'insensitive' } },
+                { body: { contains: query.q, mode: 'insensitive' } },
+                {
+                  practicalImpact: { contains: query.q, mode: 'insensitive' },
+                },
+              ],
+            }
+          : {}),
+      },
       orderBy: { publishedAt: 'desc' },
       take: limit,
       skip: offset,
@@ -108,6 +114,7 @@ export class NewsService {
         category: true,
         topic: true,
         relevance: true,
+        correctionNote: true,
       },
     });
 
@@ -117,8 +124,11 @@ export class NewsService {
   }
 
   async byId(id: string): Promise<unknown> {
-    const item = await this.prisma.newsItem.findUnique({
-      where: { id },
+    const item = await this.prisma.newsItem.findFirst({
+      where: {
+        id,
+        editorialStatus: NewsEditorialStatus.published,
+      },
       select: {
         id: true,
         slug: true,
@@ -133,6 +143,7 @@ export class NewsService {
         category: true,
         topic: true,
         municipality: true,
+        correctionNote: true,
         publishedAt: true,
         createdAt: true,
         coverImageUrl: true,

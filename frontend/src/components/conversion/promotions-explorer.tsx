@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { PromotionCard } from '@/components/promotion-card';
+import { resolveMunicipalityId, resolveMunicipalityLabel } from '@/lib/municipalities';
 import { uniqueMunicipalities } from '@/lib/public-promotions';
 import type { Promotion } from '@/types';
 
@@ -16,7 +17,12 @@ export function PromotionsExplorer({ promotions }: { promotions: Promotion[] }) 
 
   const visible = useMemo(() => {
     if (municipality === 'all') return promotions;
-    return promotions.filter((item) => item.municipality === municipality);
+    return promotions.filter((item) => {
+      const itemId = resolveMunicipalityId(item.municipality, item.municipalityId);
+      const selectedId = resolveMunicipalityId(municipality);
+      if (itemId && selectedId) return itemId === selectedId;
+      return resolveMunicipalityLabel(item.municipality, item.municipalityId) === municipality;
+    });
   }, [municipality, promotions]);
 
   return (
@@ -33,12 +39,25 @@ export function PromotionsExplorer({ promotions }: { promotions: Promotion[] }) 
             className="lp-filter-bar__select"
           >
             <option value="all">Todos ({promotions.length})</option>
-            {municipalities.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
+            {municipalities.map((name) => {
+              const count = promotions.filter((item) => {
+                const itemId = resolveMunicipalityId(item.municipality, item.municipalityId);
+                const optionId = resolveMunicipalityId(name);
+                if (itemId && optionId) return itemId === optionId;
+                return resolveMunicipalityLabel(item.municipality, item.municipalityId) === name;
+              }).length;
+              return (
+                <option key={name} value={name}>
+                  {name} ({count})
+                </option>
+              );
+            })}
           </select>
+          <p className="lp-filter-bar__meta" aria-live="polite">
+            {municipality === 'all'
+              ? `${promotions.length} promociones`
+              : `${visible.length} resultado${visible.length === 1 ? '' : 's'} en ${municipality}`}
+          </p>
         </div>
       ) : null}
 

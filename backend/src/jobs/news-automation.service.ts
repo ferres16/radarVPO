@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { NewsEditorialStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { assessNewsSourceGrounding } from '../common/news/source-grounding';
 import { sha256 } from './hash.util';
 import { RssNewsService, RssNewsItem } from './rss-news.service';
 import {
@@ -8,6 +9,12 @@ import {
   GeneratedNewsDraft,
 } from '../ai/ai.provider.service';
 import { NewsCoverService } from '../news/news-cover.service';
+
+/** Casos RV01 confirmados el 27–29/10/2026: fuente no respalda el contenido. */
+const KNOWN_MISATTRIBUTED_NEWS_IDS = [
+  'cmvlvex9v0029o420xpaeazcw',
+  'cmvq7vked002hpe20f53ut4op',
+] as const;
 
 const CATEGORY_PRIORITY: Record<GeneratedNewsDraft['category'], number> = {
   vpo: 40,
@@ -28,7 +35,28 @@ const CATALONIA_KEYWORDS = [
   'incasol',
   'ajuntament',
   'habitatge',
-  'vivienda',
+];
+
+const NON_CATALONIA_REGION_KEYWORDS = [
+  'castilla y leon',
+  'castilla y león',
+  'castilla-la mancha',
+  'comunidad de madrid',
+  'andalucia',
+  'andalucía',
+  'galicia',
+  'pais vasco',
+  'país vasco',
+  'euskadi',
+  'extremadura',
+  'murcia',
+  'navarra',
+  'la rioja',
+  'aragon',
+  'aragón',
+  'asturias',
+  'cantabria',
+  'comunidad valenciana',
 ];
 
 const MANDATORY_KEYWORDS = [
@@ -84,6 +112,7 @@ export class NewsAutomationService {
     }
 
     await this.purgeLegacyNewsOnce();
+    await this.archiveKnownMisattributedNews();
 
     const rawItems = await this.rssNewsService.fetchRecentItems(3);
     const cachedItems = await this.cacheRawItems(rawItems);
@@ -165,6 +194,28 @@ export class NewsAutomationService {
         },
       }),
     ]);
+  }
+
+  /** Retira del catálogo público los casos RV01 ya confirmados (trazabilidad conservada). */
+  private async archiveKnownMisattributedNews() {
+    const result = await this.prisma.newsItem.updateMany({
+      where: {
+        id: { in: [...KNOWN_MISATTRIBUTED_NEWS_IDS] },
+        editorialStatus: { not: NewsEditorialStatus.archived },
+      },
+      data: {
+        editorialStatus: NewsEditorialStatus.archived,
+        correctionNote:
+          'Retirada temporal (auditoría 2026-10-29 RV01): la fuente enlazada no respaldaba territorio/cifras del contenido.',
+        reviewedAt: new Date(),
+      },
+    });
+
+    if (result.count > 0) {
+      this.logger.warn(
+        `Archived ${result.count} misattributed news item(s) (RV01).`,
+      );
+    }
   }
 
   private async cacheRawItems(items: RssNewsItem[]) {
@@ -278,7 +329,7 @@ export class NewsAutomationService {
         continue;
       }
 
-      if (!this.hasCataloniaContext(item.title, item.snippet)) {
+      if (!this.hasCataloniaContext(item.title, item.snippet, item.content)) {
         continue;
       }
 
@@ -377,7 +428,11 @@ export class NewsAutomationService {
       }
       return total + 3;
     }, 0);
-    const cataloniaScore = this.hasCataloniaContext(item.title, item.snippet)
+    const cataloniaScore = this.hasCataloniaContext(
+      item.title,
+      item.snippet,
+      item.content,
+    )
       ? 10
       : 0;
 
@@ -463,8 +518,14 @@ export class NewsAutomationService {
     return 'Catalunya';
   }
 
-  private hasCataloniaContext(title: string, snippet: string) {
-    const text = `${title}\n${snippet}`.toLowerCase();
+  private hasCataloniaContext(title: string, snippet: string, content = '') {
+    const text = `${title}\n${snippet}\n${content}`.toLowerCase();
+    if (
+      NON_CATALONIA_REGION_KEYWORDS.some((keyword) => text.includes(keyword)) &&
+      !CATALONIA_KEYWORDS.some((keyword) => text.includes(keyword))
+    ) {
+      return false;
+    }
     return CATALONIA_KEYWORDS.some((keyword) => text.includes(keyword));
   }
 
@@ -508,39 +569,44 @@ export class NewsAutomationService {
     >,
     maxArticles: number,
   ): GeneratedNewsDraft[] {
-    return candidates.slice(0, maxArticles).map((candidate, index) => {
-      const intro = this.takeSentences(
-        candidate.snippet || candidate.content || candidate.title,
-        2,
-      );
-      const context = this.takeSentences(
-        candidate.content || candidate.snippet || candidate.title,
-        4,
-      );
-      const title = this.enhanceTitle(
-        candidate.title,
-        candidate.category,
-        candidate.municipality,
-      );
-      const summary = `${intro} Esta es la clave para quien sigue convocatorias de vivienda en Catalunya.`;
-      const content = [
-        `${summary}`,
-        `La noticia parte de ${candidate.sourceName} y afecta especialmente a personas que buscan VPO, alquiler asequible o ayudas de vivienda en ${candidate.municipality}.`,
-        `En la práctica, lo importante no es solo el anuncio, sino qué cambia en plazos, requisitos, baremos o disponibilidad. ${context}`,
-        `Si estás esperando una convocatoria concreta, revisa empadronamiento, ingresos, documentación y fechas oficiales. En vivienda pública, un pequeño detalle puede dejar fuera una solicitud aunque encaje en teoría.`,
-        `Conviene seguir la publicación original y comparar esta novedad con procesos anteriores del mismo municipio para detectar si hay más plazas, nuevas reservas o cambios de acceso.`,
-      ].join('\n\n');
+    return candidates
+      .filter((candidate) =>
+        this.hasCataloniaContext(
+          candidate.title,
+          candidate.snippet,
+          candidate.content,
+        ),
+      )
+      .slice(0, maxArticles)
+      .map((candidate, index) => {
+        const intro = this.takeSentences(
+          candidate.snippet || candidate.content || candidate.title,
+          2,
+        );
+        const context = this.takeSentences(
+          candidate.content || candidate.snippet || candidate.title,
+          4,
+        );
+        const place = candidate.municipality || 'Catalunya';
+        const title = candidate.title.slice(0, 220);
+        const summary = `${intro}`;
+        const content = [
+          summary,
+          `Fuente: ${candidate.sourceName}. Ámbito: ${place}.`,
+          context,
+          'Contrasta siempre fechas, cifras y requisitos en la publicación original antes de presentar una solicitud.',
+        ].join('\n\n');
 
-      return {
-        sourceItemId: candidate.id,
-        title,
-        summary,
-        content: this.ensureWordTarget(content),
-        category: candidate.category,
-        municipality: candidate.municipality,
-        isFeatured: index === 0 || candidate.category === 'vpo',
-      };
-    });
+        return {
+          sourceItemId: candidate.id,
+          title,
+          summary,
+          content: this.ensureWordTarget(content),
+          category: candidate.category,
+          municipality: place,
+          isFeatured: index === 0 || candidate.category === 'vpo',
+        };
+      });
   }
 
   private ensureWordTarget(text: string) {
@@ -560,24 +626,6 @@ export class NewsAutomationService {
     ].join(' ');
 
     return `${text} ${padding}`.trim();
-  }
-
-  private enhanceTitle(
-    title: string,
-    category: GeneratedNewsDraft['category'],
-    municipality: string,
-  ) {
-    const prefix =
-      category === 'vpo'
-        ? 'Nuevas VPO'
-        : category === 'alquiler'
-          ? 'Alquiler asequible'
-          : category === 'ayudas'
-            ? 'Ayudas de vivienda'
-            : category === 'normativa'
-              ? 'Normativa de vivienda'
-              : 'Vivienda en Catalunya';
-    return `${prefix} en ${municipality}: ${title}`.slice(0, 220);
   }
 
   private takeSentences(text: string, count: number) {
@@ -622,6 +670,22 @@ export class NewsAutomationService {
         continue;
       }
 
+      const grounding = assessNewsSourceGrounding({
+        sourceTitle: source.title,
+        sourceSnippet: source.snippet,
+        sourceContent: source.content,
+        draftTitle: draft.title,
+        draftSummary: draft.summary,
+        draftBody: draft.content,
+        draftMunicipality: draft.municipality || source.municipality,
+      });
+
+      if (!grounding.ok) {
+        this.logger.warn(
+          `News draft kept as draft/rejected grounding for ${source.link}: ${grounding.reasons.join(',')}`,
+        );
+      }
+
       const slug = this.buildSlug(draft.title, source.id);
       const contentHash = sha256(
         [slug, draft.title, draft.summary, draft.content].join('|'),
@@ -629,7 +693,7 @@ export class NewsAutomationService {
 
       const existing = await this.prisma.newsItem.findFirst({
         where: {
-          OR: [{ contentHash }, { slug }],
+          OR: [{ contentHash }, { slug }, { itemUrl: source.link }],
         },
         select: { id: true },
       });
@@ -642,14 +706,16 @@ export class NewsAutomationService {
         continue;
       }
 
+      // Fuente = URL del artículo concreto (no la portada del feed).
+      const articleUrl = source.link;
       const created = await this.prisma.newsItem.create({
         data: {
           slug,
           sourceName: source.sourceName,
-          sourceUrl: source.sourceUrl,
-          itemUrl: source.link,
+          sourceUrl: articleUrl,
+          itemUrl: articleUrl,
           title: draft.title,
-          rawText: source.content,
+          rawText: source.content || source.snippet || source.title,
           summary: draft.summary,
           body: draft.content,
           practicalImpact: this.extractPracticalImpact(draft.content),
@@ -658,12 +724,17 @@ export class NewsAutomationService {
           category: draft.category,
           topic: `${draft.category}_${source.municipality.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`,
           municipality: source.municipality,
+          editorialStatus: NewsEditorialStatus.draft,
+          groundingIssues: grounding.ok ? Prisma.JsonNull : grounding.reasons,
           contentHash,
           publishedAt: source.publishedAt,
         },
       });
 
-      await this.newsCover.attachGeneratedCover(created.id).catch(() => false);
+      // No publicar automáticamente: la aceptación RV01 exige revisión humana.
+      if (grounding.ok) {
+        await this.newsCover.attachGeneratedCover(created.id).catch(() => false);
+      }
 
       await this.prisma.newsFeedItem.update({
         where: { id: source.id },

@@ -40,6 +40,8 @@ export class UsersController {
       phone: dto.phone ?? null,
       smsAlertsEnabled: dto.smsAlertsEnabled,
       marketingOptIn: dto.marketingOptIn,
+      alertMunicipalityIds: dto.alertMunicipalityIds,
+      alertPromotionTypes: dto.alertPromotionTypes,
     });
   }
 

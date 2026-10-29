@@ -95,6 +95,8 @@ export default function AdminNewsPage() {
         practicalImpact: item.practicalImpact,
         topic: item.topic,
         relevance: item.relevance,
+        editorialStatus: item.editorialStatus || 'draft',
+        correctionNote: item.correctionNote || undefined,
       });
       setItems((prev) => prev.map((row) => (row.id === item.id ? updated : row)));
     } catch (err) {
@@ -135,7 +137,8 @@ export default function AdminNewsPage() {
       <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
         <h1 className="text-2xl font-bold text-[var(--ink)]">Administrar noticias</h1>
         <p className="mt-1 text-sm text-[var(--ink-soft)]">
-          Crea, edita y elimina noticias publicadas en la web.
+          Crea, edita y elimina noticias. Las generadas por automatización nacen en borrador hasta que
+          revisas la fuente. Publicado solo si el artículo respalda territorio, cifras y afirmaciones.
         </p>
       </header>
 
@@ -253,6 +256,51 @@ export default function AdminNewsPage() {
                 <option value="low">low</option>
               </select>
             </div>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">
+              <select
+                value={item.editorialStatus || 'draft'}
+                onChange={(e) =>
+                  setItems((prev) =>
+                    prev.map((row) =>
+                      row.id === item.id
+                        ? {
+                            ...row,
+                            editorialStatus: e.target.value as BackofficeNewsItem['editorialStatus'],
+                          }
+                        : row,
+                    ),
+                  )
+                }
+                className="rounded-xl border border-[var(--stroke)] px-3 py-2"
+              >
+                <option value="draft">Borrador (no público)</option>
+                <option value="published">Publicado</option>
+                <option value="archived">Archivado</option>
+              </select>
+              <input
+                value={item.correctionNote || ''}
+                onChange={(e) =>
+                  setItems((prev) =>
+                    prev.map((row) =>
+                      row.id === item.id ? { ...row, correctionNote: e.target.value } : row,
+                    ),
+                  )
+                }
+                placeholder="Nota de corrección (si indujo a error)"
+                className="rounded-xl border border-[var(--stroke)] px-3 py-2"
+              />
+            </div>
+            {Array.isArray(item.groundingIssues) && item.groundingIssues.length > 0 ? (
+              <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+                Anclaje a fuente: {item.groundingIssues.join(', ')}
+              </p>
+            ) : null}
+            <p className="mt-2 text-xs text-[var(--ink-soft)]">
+              Fuente:{' '}
+              <a href={item.itemUrl || item.sourceUrl} target="_blank" rel="noopener noreferrer" className="underline">
+                {item.itemUrl || item.sourceUrl}
+              </a>
+            </p>
             <textarea
               value={item.summary || ''}
               onChange={(e) =>

@@ -1474,6 +1474,9 @@ export class BackofficeService {
         topic: dto.topic,
         relevance: dto.relevance,
         category: 'general',
+        // Creación manual en admin: publicada tras revisión humana implícita.
+        editorialStatus: 'published',
+        reviewedAt: new Date(),
         contentHash: `manual-${token}`,
         publishedAt: new Date(dto.publishedAt),
       },
@@ -1551,6 +1554,12 @@ export class BackofficeService {
         practicalImpact: dto.practicalImpact,
         topic: dto.topic,
         relevance: dto.relevance,
+        editorialStatus: dto.editorialStatus,
+        correctionNote: dto.correctionNote,
+        reviewedAt:
+          dto.editorialStatus || dto.correctionNote
+            ? new Date()
+            : existing.reviewedAt,
         publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
       },
     });
@@ -2615,7 +2624,7 @@ export class BackofficeService {
   private async ensureNews(newsId: string) {
     const item = await this.prisma.newsItem.findUnique({
       where: { id: newsId },
-      select: { id: true, slug: true },
+      select: { id: true, slug: true, reviewedAt: true },
     });
 
     if (!item) {

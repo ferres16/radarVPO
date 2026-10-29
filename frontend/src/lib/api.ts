@@ -249,6 +249,22 @@ export const api = {
       { method: 'PATCH', body: JSON.stringify(payload) },
     ),
   getCheckoutStatus: () => request<CheckoutStatus>('/billing/checkout-status'),
+  joinWaitlist: (payload: {
+    email: string;
+    product: 'pro' | 'guide' | 'both';
+    municipality?: string;
+    waitlistConsent: boolean;
+    marketingConsent?: boolean;
+    sourcePath?: string;
+  }) =>
+    request<{
+      ok: true;
+      message: string;
+      lead: { id: string; email: string; product: string; municipality: string | null };
+    }>('/waitlist', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   createCheckout: (payload: {
     product: 'pro' | 'pro_pack_3m' | 'course';
     courseSlug?: string;
@@ -767,6 +783,8 @@ export const api = {
     phone?: string;
     smsAlertsEnabled?: boolean;
     marketingOptIn?: boolean;
+    alertMunicipalityIds?: string[];
+    alertPromotionTypes?: Array<'venta' | 'alquiler' | 'mixto'>;
   }) =>
     request<UserProfile>('/users/me', {
       method: 'PATCH',

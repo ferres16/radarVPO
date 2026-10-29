@@ -34,7 +34,7 @@ export function SavePromotionButton({ promotionId }: { promotionId: string }) {
   if (state === 'anonymous') {
     return (
       <Link
-        href={`/login?next=${encodeURIComponent(`/promotions/${promotionId}`)}`}
+        href={`/register?next=${encodeURIComponent(`/promotions/${promotionId}`)}`}
         className={buttonClass}
       >
         Guardar en Mi espacio

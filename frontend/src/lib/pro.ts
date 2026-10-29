@@ -45,6 +45,7 @@ export const freePlanFeatures = [
 
 export const proExclusiveFeatures = [
   'Avisos por email de nuevas promociones y próximos lanzamientos',
+  'Filtro de avisos por municipio y compra/alquiler',
   'Avisos por SMS si indicas tu móvil',
   'Mi espacio sin límite de promociones guardadas',
 ] as const;
@@ -57,12 +58,17 @@ export const proIncludes = [
   {
     title: 'Avisos por email',
     description:
-      'Te escribimos cuando se publica una nueva promoción y cuando detectamos un próximo lanzamiento en las fuentes que monitorizamos.',
+      'Te escribimos cuando se publica una nueva promoción y cuando detectamos un próximo lanzamiento en las fuentes que monitorizamos. Puedes limitar municipios y régimen.',
   },
   {
     title: 'Avisos por SMS',
     description:
       'El mismo aviso en el móvil si has indicado tu número. Es el canal que no suele estar en los boletines gratuitos.',
+  },
+  {
+    title: 'Preferencias territoriales',
+    description:
+      'Elige municipios y compra/alquiler en Mi cuenta. Configurar dos municipios excluye avisos de terceros; no borra tus guardados.',
   },
   {
     title: 'Mi espacio sin límite',
@@ -127,13 +133,13 @@ export const proForWhom = {
   ],
   no: [
     'Solo quieres mirar PDFs de vez en cuando: eso es gratis, sin PRO.',
-    'Buscas filtro de avisos por municipio: hoy PRO avisa de las promociones que detectamos, sin ese filtro.',
+    'No quieres configurar municipios ni régimen: sin preferencias recibes todos los avisos detectados.',
     'Esperas que presentemos la solicitud o te asesoremos en tu caso: no lo hacemos.',
   ],
 } as const;
 
 export const proLimits = [
-  'Los avisos cubren las promociones que Radar VPO detecta en las fuentes oficiales que monitoriza; hoy no se pueden filtrar por municipio.',
+  'Puedes filtrar avisos por municipios y por compra/alquiler desde Mi cuenta; sin preferencias recibes todos los detectados.',
   'Las fechas de próximos lanzamientos son estimaciones y se indican como tales: pueden no cumplirse o no publicarse.',
   'Los SMS solo se envían si tu cuenta tiene un móvil válido y has activado ese canal.',
   'Radar VPO informa y organiza: no presenta solicitudes por ti ni garantiza una adjudicación.',

@@ -115,6 +115,11 @@ export default async function NewsDetailPage({ params }: NewsDetailParams) {
               El enlace apunta a la portada del medio. Comprueba en la fuente la pieza concreta y la fecha del hecho.
             </p>
           ) : null}
+          {item.correctionNote ? (
+            <p className="mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-950">
+              Corrección: {item.correctionNote}
+            </p>
+          ) : null}
 
           <p className="mt-4 text-sm leading-7 text-[var(--ink)]">
             {item.summary || 'Sin resumen disponible.'}

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { freePlanFeatures } from '@/lib/pro';
+import { resolveRegisterIntent } from '@/lib/register-intent';
 import { safeNextPath } from '@/lib/safe-next';
 import { FormField } from '@/components/design-system';
 
@@ -26,10 +27,12 @@ export default function RegisterPage() {
 
 function RegisterForm() {
   const searchParams = useSearchParams();
-  const nextPath = useMemo(() => {
-      const legacyIntent = searchParams.get('intent') === 'pro' ? '/pro#pagar' : '';
-    return safeNextPath(searchParams.get('next'), legacyIntent);
+  const intentInfo = useMemo(() => {
+    const legacyIntent = searchParams.get('intent') === 'pro' ? '/pro#pagar' : '';
+    const next = searchParams.get('next') || legacyIntent;
+    return resolveRegisterIntent(next);
   }, [searchParams]);
+  const nextPath = intentInfo.nextPath;
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -72,10 +75,7 @@ function RegisterForm() {
   }
 
   const loginHref = nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : '/login';
-  const buying =
-    nextPath.startsWith('/checkout') ||
-    nextPath.startsWith('/pro') ||
-    nextPath.startsWith('/cursos/');
+  const savingOnly = intentInfo.intent === 'save';
 
   return (
     <main className="lp lp--inner lp--app auth-shell">
@@ -84,13 +84,9 @@ function RegisterForm() {
           <div className="p-5 md:p-8">
             <span className="lp-hero__badge">Cuenta gratuita</span>
             <h1 className="mt-3 text-2xl font-bold text-[var(--ink)] md:text-3xl">
-              Crea tu cuenta en 1 minuto
+              {intentInfo.title}
             </h1>
-            <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">
-              {buying
-                ? 'Necesitamos una cuenta para activar tu compra. Al terminar vuelves a pagar en la ficha.'
-                : 'La cuenta es gratis. Con ella guardas promociones y accedes a la muestra de las guías que la ofrezcan.'}
-            </p>
+            <p className="mt-2 text-sm leading-6 text-[var(--ink-soft)]">{intentInfo.description}</p>
 
             <form className="mt-5 space-y-4" onSubmit={onSubmit}>
               <p className="rounded-xl bg-[var(--bg-eco)] px-3 py-2 text-xs leading-5 text-[var(--ink)]">
@@ -165,11 +161,17 @@ function RegisterForm() {
                 </p>
               ) : null}
               <button type="submit" disabled={loading || !acceptedPrivacy} className="btn btn--primary btn--lg btn--block">
-                {loading ? 'Creando...' : buying ? 'Crear cuenta y continuar' : 'Crear cuenta gratis'}
+                {loading ? 'Creando...' : intentInfo.submitLabel}
               </button>
-              <p className="text-center text-xs text-[var(--ink-soft)]">
-                La información es orientativa y no sustituye a las fuentes oficiales.
-              </p>
+              {savingOnly ? (
+                <p className="text-center text-xs text-[var(--ink-soft)]">
+                  Guardar una promoción no activa ningún cobro.
+                </p>
+              ) : (
+                <p className="text-center text-xs text-[var(--ink-soft)]">
+                  La información es orientativa y no sustituye a las fuentes oficiales.
+                </p>
+              )}
             </form>
 
             <p className="mt-4 text-center text-sm text-[var(--ink-soft)]">

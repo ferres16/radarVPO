@@ -62,6 +62,8 @@ export class UsersService {
         emailVerifiedAt: true,
         marketingOptInAt: true,
         smsAlertsEnabled: true,
+        alertMunicipalityIds: true,
+        alertPromotionTypes: true,
         createdAt: true,
         lastLoginAt: true,
       },
@@ -72,12 +74,32 @@ export class UsersService {
     return user;
   }
 
-  async getProfileWithProAccess(id: string) {
-    const [user, proAccess] = await Promise.all([
-      this.findById(id),
-      this.proAccess.resolveForUser(id),
-    ]);
+  private asStringArray(value: unknown): string[] {
+    if (!Array.isArray(value)) return [];
+    return value
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
 
+  private toPublicProfile(
+    user: {
+      id: string;
+      email: string;
+      fullName: string;
+      phone: string;
+      role: UserRole;
+      plan: UserPlan;
+      emailVerifiedAt: Date | null;
+      marketingOptInAt: Date | null;
+      smsAlertsEnabled: boolean;
+      alertMunicipalityIds?: unknown;
+      alertPromotionTypes?: unknown;
+      createdAt: Date;
+      lastLoginAt: Date | null;
+    },
+    proAccess: Awaited<ReturnType<ProAccessService['resolveForUser']>>,
+  ) {
     return {
       id: user.id,
       email: user.email,
@@ -88,10 +110,21 @@ export class UsersService {
       emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
       marketingOptInAt: user.marketingOptInAt?.toISOString() ?? null,
       smsAlertsEnabled: user.smsAlertsEnabled,
+      alertMunicipalityIds: this.asStringArray(user.alertMunicipalityIds),
+      alertPromotionTypes: this.asStringArray(user.alertPromotionTypes),
       createdAt: user.createdAt.toISOString(),
       lastLoginAt: user.lastLoginAt?.toISOString() ?? null,
       proAccess,
     };
+  }
+
+  async getProfileWithProAccess(id: string) {
+    const [user, proAccess] = await Promise.all([
+      this.findById(id),
+      this.proAccess.resolveForUser(id),
+    ]);
+
+    return this.toPublicProfile(user, proAccess);
   }
 
   async updateProfileWithProAccess(
@@ -101,25 +134,14 @@ export class UsersService {
       phone?: string | null;
       smsAlertsEnabled?: boolean;
       marketingOptIn?: boolean;
+      alertMunicipalityIds?: string[];
+      alertPromotionTypes?: Array<'venta' | 'alquiler' | 'mixto'>;
     },
   ) {
     const updated = await this.updateProfile(id, data);
     const proAccess = await this.proAccess.resolveForUser(id);
 
-    return {
-      id: updated.id,
-      email: updated.email,
-      fullName: updated.fullName,
-      phone: updated.phone,
-      role: updated.role,
-      plan: updated.plan,
-      emailVerifiedAt: updated.emailVerifiedAt?.toISOString() ?? null,
-      marketingOptInAt: updated.marketingOptInAt?.toISOString() ?? null,
-      smsAlertsEnabled: updated.smsAlertsEnabled,
-      createdAt: updated.createdAt.toISOString(),
-      lastLoginAt: updated.lastLoginAt?.toISOString() ?? null,
-      proAccess,
-    };
+    return this.toPublicProfile(updated, proAccess);
   }
 
   async updateProfile(
@@ -129,6 +151,8 @@ export class UsersService {
       phone?: string | null;
       smsAlertsEnabled?: boolean;
       marketingOptIn?: boolean;
+      alertMunicipalityIds?: string[];
+      alertPromotionTypes?: Array<'venta' | 'alquiler' | 'mixto'>;
     },
   ) {
     const current = await this.prisma.user.findUnique({
@@ -138,6 +162,8 @@ export class UsersService {
         phone: true,
         smsAlertsEnabled: true,
         marketingOptInAt: true,
+        alertMunicipalityIds: true,
+        alertPromotionTypes: true,
       },
     });
 
@@ -157,12 +183,37 @@ export class UsersService {
       typeof data.marketingOptIn === 'boolean'
         ? data.marketingOptIn
         : Boolean(current.marketingOptInAt);
+    const nextMunicipalities =
+      data.alertMunicipalityIds === undefined
+        ? this.asStringArray(current.alertMunicipalityIds)
+        : [
+            ...new Set(
+              data.alertMunicipalityIds
+                .map((item) => item.trim())
+                .filter(Boolean),
+            ),
+          ].sort();
+    const nextPromotionTypes =
+      data.alertPromotionTypes === undefined
+        ? this.asStringArray(current.alertPromotionTypes)
+        : [...new Set(data.alertPromotionTypes)].sort();
+
+    const sameList = (a: string[], b: string[]) => {
+      const left = [...a].sort();
+      const right = [...b].sort();
+      return (
+        left.length === right.length &&
+        left.every((item, index) => item === right[index])
+      );
+    };
 
     const unchanged =
       nextFullName === current.fullName &&
       nextPhone === current.phone &&
       nextSms === current.smsAlertsEnabled &&
-      nextMarketing === Boolean(current.marketingOptInAt);
+      nextMarketing === Boolean(current.marketingOptInAt) &&
+      sameList(nextMunicipalities, this.asStringArray(current.alertMunicipalityIds)) &&
+      sameList(nextPromotionTypes, this.asStringArray(current.alertPromotionTypes));
     if (unchanged) {
       throw new BadRequestException('No hay cambios que guardar.');
     }
@@ -188,6 +239,14 @@ export class UsersService {
               ? (current.marketingOptInAt ?? new Date())
               : null
             : undefined,
+        alertMunicipalityIds:
+          data.alertMunicipalityIds === undefined
+            ? undefined
+            : nextMunicipalities,
+        alertPromotionTypes:
+          data.alertPromotionTypes === undefined
+            ? undefined
+            : nextPromotionTypes,
       },
       select: {
         id: true,
@@ -199,6 +258,8 @@ export class UsersService {
         emailVerifiedAt: true,
         marketingOptInAt: true,
         smsAlertsEnabled: true,
+        alertMunicipalityIds: true,
+        alertPromotionTypes: true,
         createdAt: true,
         lastLoginAt: true,
       },

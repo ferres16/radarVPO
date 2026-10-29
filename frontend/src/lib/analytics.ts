@@ -26,7 +26,9 @@ export type AnalyticsEventName =
   | 'favorite_saved'
   | 'favorite_removed'
   | 'subscription_cancel_requested'
-  | 'subscription_cancel_withdrawn';
+  | 'subscription_cancel_withdrawn'
+  | 'waitlist_joined'
+  | 'waitlist_viewed';
 
 type EventProperties = Record<string, string | number | boolean | null>;
 
