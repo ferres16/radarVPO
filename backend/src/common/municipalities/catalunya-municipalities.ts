@@ -39,6 +39,7 @@ export const CATALUNYA_MUNICIPALITIES: CanonicalMunicipality[] = [
   { id: 'vic', name: 'Vic', aliases: [] },
   { id: 'blanes', name: 'Blanes', aliases: [] },
   { id: 'vilafranca-del-penedes', name: 'Vilafranca del Penedès', aliases: ['vilafranca', 'vilafranca del penedes'] },
+  { id: 'vilallonga-del-camp', name: 'Vilallonga del Camp', aliases: ['vilallonga', 'vilallonga del camp'] },
   { id: 'figueres', name: 'Figueres', aliases: ['figueras'] },
   { id: 'lloret-de-mar', name: 'Lloret de Mar', aliases: ['lloret'] },
   { id: 'martorell', name: 'Martorell', aliases: [] },
@@ -48,6 +49,15 @@ export const CATALUNYA_MUNICIPALITIES: CanonicalMunicipality[] = [
   { id: 'sant-pere-de-ribes', name: 'Sant Pere de Ribes', aliases: ['sant pere ribes'] },
   { id: 'calafell', name: 'Calafell', aliases: [] },
   { id: 'vendrell', name: 'El Vendrell', aliases: ['vendrell', 'el vendrell'] },
+  { id: 'valls', name: 'Valls', aliases: [] },
+  { id: 'montblanc', name: 'Montblanc', aliases: [] },
+  { id: 'constanti', name: 'Constantí', aliases: ['constanti'] },
+  { id: 'altafulla', name: 'Altafulla', aliases: [] },
+  { id: 'roquetes', name: 'Roquetes', aliases: [] },
+  { id: 'deltebre', name: 'Deltebre', aliases: [] },
+  { id: 'sant-carles-de-la-rapita', name: 'Sant Carles de la Ràpita', aliases: ['la rapita', 'sant carles'] },
+  { id: 'ampolla', name: "L'Ampolla", aliases: ['ampolla'] },
+  { id: 'hospitalet-de-infant', name: "L'Hospitalet de l'Infant", aliases: ['hospitalet de infant'] },
   { id: 'sant-andreu-de-la-barca', name: 'Sant Andreu de la Barca', aliases: [] },
   { id: 'sant-vicenc-dels-horts', name: "Sant Vicenç dels Horts", aliases: ['sant vicenc dels horts', 'sant vicenç dels horts'] },
   { id: 'esparreguera', name: 'Esparreguera', aliases: ['esparraguera'] },
@@ -224,35 +234,129 @@ export function normalizeMunicipality(
   };
 }
 
-/** Extrae el mejor candidato municipal desde un bloque de texto (título + cuerpo). */
-export function inferMunicipalityFromText(text: string): MunicipalityNormalization {
+const SMALL_WORDS = new Set([
+  'i',
+  'de',
+  'del',
+  'dels',
+  'la',
+  'les',
+  'el',
+  'els',
+  'l',
+  'd',
+  'en',
+  'al',
+]);
+
+/** Pasa VILALLONGA DEL CAMP → Vilallonga del Camp (si no está en catálogo). */
+export function titleCaseMunicipality(value: string): string {
+  const cleaned = cleanMunicipalityRaw(value);
+  if (!cleaned) return '';
+  return cleaned
+    .split(/\s+/)
+    .map((word, index) => {
+      const lower = word.toLowerCase();
+      if (index > 0 && SMALL_WORDS.has(lower.replace(/'/g, ''))) {
+        return lower;
+      }
+      if (/^d'/i.test(word)) {
+        return `d'${word.slice(2, 3).toUpperCase()}${word.slice(3).toLowerCase()}`;
+      }
+      if (/^l'/i.test(word)) {
+        return `l'${word.slice(2, 3).toUpperCase()}${word.slice(3).toLowerCase()}`;
+      }
+      return lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join(' ');
+}
+
+function isRejectedMunicipalityToken(value: string) {
+  return /^(catalunya|cataluña|termini|dies|días|anunci|plazo|detalls|procediment|adjudicacio|adjudicación|vigor|venda|venta|lloguer|alquiler|hpo|vpo|slu|sl|sa)$/i.test(
+    value.trim(),
+  );
+}
+
+function finalizeCandidate(rawValue: string): MunicipalityNormalization {
+  const normalized = normalizeMunicipality(rawValue);
+  if (normalized.canonicalId && normalized.canonicalName) {
+    return normalized;
+  }
+  const display = titleCaseMunicipality(rawValue);
+  if (!display || looksLikeStreetOrNoise(display) || isRejectedMunicipalityToken(display)) {
+    return {
+      raw: rawValue,
+      canonicalId: null,
+      canonicalName: null,
+      needsReview: true,
+      reason: 'rejected_candidate',
+    };
+  }
+  return {
+    raw: rawValue,
+    canonicalId: null,
+    canonicalName: display,
+    needsReview: true,
+    reason: 'unknown_municipality',
+  };
+}
+
+/**
+ * Extracción prioritaria para títulos de alerta del Registre:
+ * "… promoguts per EMPRESA a MUNICIPI"
+ */
+export function extractMunicipalityFromAlertTitle(
+  title: string,
+): MunicipalityNormalization {
+  const text = title
+    .replace(/\s*En el termini de\s+\d+\s*dies\s+es\s+publicar[\s\S]*$/i, '')
+    .replace(/\s*En el plazo de\s+\d+\s*d[ií]as\s+se\s+publicar[\s\S]*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
   const patterns = [
-    /al\s+municipi\s+d(?:e|')\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\s-]{2,60})/i,
-    /al\s+municipio\s+de\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\s-]{2,60})/i,
-    /\ben\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\s-]{2,40})(?:[.,\n]|$)/i,
-    /\ba\s+([A-ZÀ-Ú][A-Za-zÀ-ú'\s-]{2,40})(?:[.,\n]|$)/i,
+    /\bpromoguts?\s+per\s+.+\s+a\s+([A-ZÀ-ÜÁÉÍÓÚÑ][A-ZÀ-ÜÁÉÍÓÚÑa-zà-üáéíóúñ'\s-]{1,80})$/i,
+    /\bpromovidos?\s+por\s+.+\s+en\s+([A-ZÀ-ÜÁÉÍÓÚÑ][A-ZÀ-ÜÁÉÍÓÚÑa-zà-üáéíóúñ'\s-]{1,80})$/i,
+    /\ba\s+([A-ZÀ-ÜÁÉÍÓÚÑ][A-ZÀ-ÜÁÉÍÓÚÑa-zà-üáéíóúñ'\s-]{1,80})$/i,
+    /\ben\s+([A-ZÀ-ÜÁÉÍÓÚÑ][A-ZÀ-ÜÁÉÍÓÚÑa-zà-üáéíóúñ'\s-]{1,80})$/i,
+    /al\s+municipi\s+d(?:e|')\s+([A-ZÀ-ÜÁÉÍÓÚÑ][A-ZÀ-ÜÁÉÍÓÚÑa-zà-üáéíóúñ'\s-]{1,80})/i,
+    /al\s+municipio\s+de\s+([A-ZÀ-ÜÁÉÍÓÚÑ][A-ZÀ-ÜÁÉÍÓÚÑa-zà-üáéíóúñ'\s-]{1,80})/i,
   ];
 
   for (const pattern of patterns) {
     const match = text.match(pattern);
-    const value = match?.[1]?.trim();
-    if (!value || /catalunya|cataluña|termini|dies|anunci|plazo|días/i.test(value)) {
-      continue;
-    }
-    const normalized = normalizeMunicipality(value);
-    if (normalized.canonicalId || !normalized.needsReview) {
-      return normalized;
-    }
-    if (normalized.canonicalName && !looksLikeStreetOrNoise(normalized.canonicalName)) {
-      return normalized;
-    }
+    const value = match?.[1]?.trim().replace(/[.,;:]+$/, '');
+    if (!value || isRejectedMunicipalityToken(value)) continue;
+    const finalized = finalizeCandidate(value);
+    if (finalized.canonicalName) return finalized;
   }
 
-  // Búsqueda directa de nombres canónicos en el texto.
+  return {
+    raw: '',
+    canonicalId: null,
+    canonicalName: null,
+    needsReview: true,
+    reason: 'not_found',
+  };
+}
+
+/** Extrae el mejor candidato municipal desde un bloque de texto (título + cuerpo). */
+export function inferMunicipalityFromText(text: string): MunicipalityNormalization {
+  const fromTitle = extractMunicipalityFromAlertTitle(text);
+  if (fromTitle.canonicalName) {
+    return fromTitle;
+  }
+
+  // Búsqueda directa de nombres canónicos (más largos primero).
   const haystack = normalizeKey(text);
-  for (const item of CATALUNYA_MUNICIPALITIES) {
+  const ranked = [...CATALUNYA_MUNICIPALITIES].sort(
+    (a, b) => normalizeKey(b.name).length - normalizeKey(a.name).length,
+  );
+  for (const item of ranked) {
     const nameKey = normalizeKey(item.name);
-    if (nameKey.length >= 4 && haystack.includes(nameKey)) {
+    if (nameKey.length < 4) continue;
+    const re = new RegExp(`(?:^|\\s)${nameKey.replace(/\s+/g, '\\s+')}(?:\\s|$|\\.|,)`, 'i');
+    if (re.test(haystack)) {
       return {
         raw: item.name,
         canonicalId: item.id,

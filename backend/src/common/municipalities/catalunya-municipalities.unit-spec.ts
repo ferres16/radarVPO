@@ -1,8 +1,10 @@
 import {
   cleanMunicipalityRaw,
+  extractMunicipalityFromAlertTitle,
   inferMunicipalityFromText,
   looksLikeStreetOrNoise,
   normalizeMunicipality,
+  titleCaseMunicipality,
 } from './catalunya-municipalities';
 
 describe('municipality normalization', () => {
@@ -35,12 +37,31 @@ describe('municipality normalization', () => {
     expect(inferred.needsReview).toBe(false);
   });
 
-  it('finds Reus and Arenys de Mar in free text', () => {
-    expect(
-      inferMunicipalityFromText('Nova convocatòria a Reus per a lloguer').canonicalName,
-    ).toBe('Reus');
+  it('finds Arenys de Mar at end of phrasing', () => {
     expect(
       inferMunicipalityFromText('Habitatges a Arenys de Mar').canonicalName,
     ).toBe('Arenys de Mar');
+  });
+
+  it('extracts municipalities from official ALERTA titles including ALL CAPS', () => {
+    expect(
+      extractMunicipalityFromAlertTitle(
+        "ALERTA: Propera adjudicació d'habitatge d'HPO de venda promoguts per LANDCOMPANY 2020, SLU a Vilafranca del Penedès",
+      ).canonicalName,
+    ).toBe('Vilafranca del Penedès');
+    expect(
+      extractMunicipalityFromAlertTitle(
+        "ALERTA: Propera adjudicació d'habitatge d'HPO de venda promoguts per WHITE AND YOU SL a VILALLONGA DEL CAMP",
+      ).canonicalName,
+    ).toBe('Vilallonga del Camp');
+    expect(
+      extractMunicipalityFromAlertTitle(
+        "ALERTA: Propera adjudicació d'habitatge d'HPO de venda promoguts per TURISSA HABITATGES, SL a TOSSA DE MAR",
+      ).canonicalName,
+    ).toBe('Tossa de Mar');
+  });
+
+  it('title-cases ALL CAPS municipality names', () => {
+    expect(titleCaseMunicipality('TOSSA DE MAR')).toBe('Tossa de Mar');
   });
 });

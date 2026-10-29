@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { extractMunicipalityFromAlertTitle } from '../common/municipalities/catalunya-municipalities';
 import { withPromotionView } from '../common/promotion-view.util';
 import {
   AMENDMENT_TITLE_CONTAINS,
@@ -64,11 +65,41 @@ export class AlertsService {
       });
     }
 
-    return valid.map((alert) =>
-      withPromotionView({
+    const enriched = valid.map((alert) => {
+      const inferred = extractMunicipalityFromAlertTitle(alert.title);
+      const municipality =
+        inferred.canonicalName ||
+        alert.municipality ||
+        null;
+      const municipalityId = inferred.canonicalId || alert.municipalityId || null;
+
+      // Autocorregir en caliente si el scrape dejó el municipio vacío o en MAYÚSCULAS.
+      if (
+        inferred.canonicalName &&
+        (alert.municipality !== inferred.canonicalName ||
+          alert.municipalityId !== municipalityId)
+      ) {
+        void this.prisma.promotion
+          .update({
+            where: { id: alert.id },
+            data: {
+              municipality: inferred.canonicalName,
+              municipalityId: inferred.canonicalId,
+              municipalityRaw: inferred.raw || alert.municipalityRaw,
+              municipalityNeedsReview: inferred.needsReview,
+            },
+          })
+          .catch(() => undefined);
+      }
+
+      return withPromotionView({
         ...alert,
         title: shortenAlertTitle(alert.title),
-      }),
-    );
+        municipality,
+        municipalityId,
+      });
+    });
+
+    return enriched;
   }
 }
