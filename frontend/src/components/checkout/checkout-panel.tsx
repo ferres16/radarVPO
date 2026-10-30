@@ -7,6 +7,11 @@ import { useProAccess } from '@/components/pro-access-provider';
 import { WaitlistForm } from '@/components/waitlist-form';
 import { api } from '@/lib/api';
 import { trackEvent } from '@/lib/analytics';
+import { trackBeginCheckout, trackCompleteRegistration } from '@/lib/conversion-pixels';
+import {
+  CONTRACT_TERMS_TEXT,
+  immediateConsentForProduct,
+} from '@/lib/contract-consent';
 import { formatEuro } from '@/lib/offer';
 
 export type CheckoutSummary = {
@@ -52,6 +57,7 @@ export function CheckoutPanel({
   const isProProduct = summary.product === 'pro' || summary.product === 'pro_pack_3m';
   const alreadyPro = isProProduct && Boolean(me?.proAccess?.hasAccess ?? me?.plan === 'pro');
   const [alreadyOwned, setAlreadyOwned] = useState(false);
+  const immediateCopy = immediateConsentForProduct(summary.product);
   const displayPriceLabel =
     isProProduct && apiProPriceLabel ? apiProPriceLabel : summary.priceLabel;
   const embedded = layout === 'embedded';
@@ -117,6 +123,10 @@ export function CheckoutPanel({
   }, [isCourse, loading, me, summary.courseSlug]);
 
   async function goToStripe() {
+    trackBeginCheckout({
+      product: summary.product,
+      courseSlug: summary.courseSlug,
+    });
     const { url } = await api.createCheckout({
       product: summary.product,
       courseSlug: summary.courseSlug,
@@ -134,6 +144,7 @@ export function CheckoutPanel({
       if (!me) {
         if (accountMode === 'register') {
           await api.register(email, password, fullName, undefined, true, false);
+          trackCompleteRegistration();
         } else {
           await api.login(email, password);
         }
@@ -305,19 +316,19 @@ export function CheckoutPanel({
               className="mt-1 h-4 w-4 shrink-0"
             />
             <span>
-              He leído y acepto las{' '}
+              {CONTRACT_TERMS_TEXT}{' '}
               <Link href="/condiciones" target="_blank" className="font-semibold text-[var(--green-700)] underline">
-                condiciones de contratación
+                Condiciones
               </Link>{' '}
-              y la{' '}
+              ·{' '}
               <Link href="/privacidad" target="_blank" className="font-semibold text-[var(--green-700)] underline">
-                política de privacidad
+                Privacidad
               </Link>
               .
             </span>
           </label>
 
-          <label className="flex items-start gap-3 text-sm leading-6 text-[var(--ink)]">
+          <label className="flex items-start gap-3 rounded-xl border border-[var(--stroke)] bg-white/80 px-3 py-3 text-sm leading-6 text-[var(--ink)]">
             <input
               type="checkbox"
               checked={acceptedImmediate}
@@ -325,9 +336,10 @@ export function CheckoutPanel({
               className="mt-1 h-4 w-4 shrink-0"
             />
             <span>
-              {isCourse
-                ? 'Quiero acceder al contenido de inmediato y, al ser digital, pierdo el desistimiento cuando empiece el acceso.'
-                : 'Quiero activar la suscripción de inmediato. Si desisto en 14 días, abono la parte ya disfrutada.'}
+              <strong className="block text-[var(--ink)]">
+                {isCourse ? 'Inicio inmediato del contenido digital' : 'Inicio inmediato del servicio PRO'}
+              </strong>
+              <span className="mt-1 block text-[var(--ink-soft)]">{immediateCopy.text}</span>
             </span>
           </label>
 

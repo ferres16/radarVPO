@@ -819,35 +819,110 @@ export class BackofficeService {
       throw new NotFoundException('User not found');
     }
 
-    const [courses, services, courseAccesses, serviceAccesses] =
-      await Promise.all([
-        this.prisma.course.findMany({
-          orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
-        }),
-        this.prisma.service.findMany({ orderBy: { createdAt: 'desc' } }),
-        this.prisma.userCourseAccess.findMany({
-          where: { userId },
-          select: {
-            courseId: true,
-            isActive: true,
-            activatedAt: true,
-            activatedBy: true,
-            activatedByAdmin: true,
-            notes: true,
-          },
-        }),
-        this.prisma.userServiceAccess.findMany({
-          where: { userId },
-          select: {
-            serviceId: true,
-            isActive: true,
-            activatedAt: true,
-            activatedBy: true,
-            activatedByAdmin: true,
-            notes: true,
-          },
-        }),
-      ]);
+    const [
+      courses,
+      services,
+      courseAccesses,
+      serviceAccesses,
+      purchases,
+      purchaseConsents,
+      contentSupplyEvents,
+      subscriptions,
+    ] = await Promise.all([
+      this.prisma.course.findMany({
+        orderBy: [{ order: 'asc' }, { createdAt: 'desc' }],
+      }),
+      this.prisma.service.findMany({ orderBy: { createdAt: 'desc' } }),
+      this.prisma.userCourseAccess.findMany({
+        where: { userId },
+        select: {
+          courseId: true,
+          isActive: true,
+          activatedAt: true,
+          activatedBy: true,
+          activatedByAdmin: true,
+          notes: true,
+        },
+      }),
+      this.prisma.userServiceAccess.findMany({
+        where: { userId },
+        select: {
+          serviceId: true,
+          isActive: true,
+          activatedAt: true,
+          activatedBy: true,
+          activatedByAdmin: true,
+          notes: true,
+        },
+      }),
+      this.prisma.purchase.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: {
+          id: true,
+          productKey: true,
+          status: true,
+          amount: true,
+          currency: true,
+          purchasedAt: true,
+          createdAt: true,
+          courseId: true,
+          providerRef: true,
+        },
+      }),
+      this.prisma.purchaseConsent.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        select: {
+          id: true,
+          purchaseId: true,
+          stripeSessionId: true,
+          productKey: true,
+          courseId: true,
+          termsVersion: true,
+          termsAcceptedAt: true,
+          immediateConsentVersion: true,
+          immediateAcceptedAt: true,
+          confirmationEmailStatus: true,
+          confirmationEmailSentAt: true,
+          firstContentOpenedAt: true,
+          lastContentOpenedAt: true,
+          accessGrantedAt: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.contentSupplyEvent.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
+        select: {
+          id: true,
+          courseId: true,
+          consentId: true,
+          productKey: true,
+          kind: true,
+          path: true,
+          createdAt: true,
+        },
+      }),
+      this.prisma.subscription.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 20,
+        select: {
+          id: true,
+          status: true,
+          planKey: true,
+          currentPeriodStart: true,
+          currentPeriodEnd: true,
+          cancelAt: true,
+          providerRef: true,
+          createdAt: true,
+        },
+      }),
+    ]);
 
     return {
       user,
@@ -855,6 +930,34 @@ export class BackofficeService {
       services,
       courseAccesses,
       serviceAccesses,
+      purchases: purchases.map((row) => ({
+        ...row,
+        amount: row.amount != null ? Number(row.amount) : null,
+        purchasedAt: row.purchasedAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+      })),
+      purchaseConsents: purchaseConsents.map((row) => ({
+        ...row,
+        termsAcceptedAt: row.termsAcceptedAt.toISOString(),
+        immediateAcceptedAt: row.immediateAcceptedAt?.toISOString() ?? null,
+        confirmationEmailSentAt:
+          row.confirmationEmailSentAt?.toISOString() ?? null,
+        firstContentOpenedAt: row.firstContentOpenedAt?.toISOString() ?? null,
+        lastContentOpenedAt: row.lastContentOpenedAt?.toISOString() ?? null,
+        accessGrantedAt: row.accessGrantedAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+      })),
+      contentSupplyEvents: contentSupplyEvents.map((row) => ({
+        ...row,
+        createdAt: row.createdAt.toISOString(),
+      })),
+      subscriptions: subscriptions.map((row) => ({
+        ...row,
+        currentPeriodStart: row.currentPeriodStart?.toISOString() ?? null,
+        currentPeriodEnd: row.currentPeriodEnd?.toISOString() ?? null,
+        cancelAt: row.cancelAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+      })),
     };
   }
 

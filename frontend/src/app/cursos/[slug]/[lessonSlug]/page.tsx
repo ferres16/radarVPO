@@ -42,6 +42,14 @@ export default function LessonPage() {
         if (!active) return;
         setPayload(data);
         setError('');
+        if (data.access?.canAccess) {
+          void api
+            .recordContentSupplyStart({
+              courseSlug: slug,
+              path: `/cursos/${slug}/${lessonSlug}`,
+            })
+            .catch(() => undefined);
+        }
         try {
           const progress = await api.getCourseProgress(slug);
           if (!active) return;

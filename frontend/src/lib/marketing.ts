@@ -13,6 +13,15 @@ function envOrDefault(value: string | undefined, fallback: string) {
 export const marketingConfig = {
   metaPixelId: envOrDefault(process.env.NEXT_PUBLIC_META_PIXEL_ID, '1303653491853194'),
   gaMeasurementId: envOrDefault(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, 'G-EQPBRQLPQ6'),
+  /**
+   * Google Ads (AW-…). Vacío hasta configurar la etiqueta de conversión en Ads.
+   * Sin esto NO hay conversiones de compra en Google Ads (solo GA4 si hay G-).
+   */
+  googleAdsId: envOrDefault(process.env.NEXT_PUBLIC_GOOGLE_ADS_ID, ''),
+  googleAdsPurchaseLabel: envOrDefault(
+    process.env.NEXT_PUBLIC_GOOGLE_ADS_PURCHASE_LABEL,
+    '',
+  ),
 };
 
 export function hasMetaPixel() {

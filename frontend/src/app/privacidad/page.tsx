@@ -115,6 +115,11 @@ export default function PrivacyPage() {
           <li>Sesiones y tokens de recuperación: caducan de forma automática.</li>
           <li>Consentimiento de cookies: hasta 13 meses.</li>
           <li>Contador de visitas: cookie de un día, si has aceptado analítica.</li>
+          <li>
+            Evidencia de compra y consentimiento contractual (versión/texto aceptados, estado de email de
+            confirmación, aperturas efectivas de contenido): plazos de obligaciones legales de consumo, facturación y
+            defensa frente a reclamaciones; no usamos Meta ni Google Analytics como prueba contractual.
+          </li>
         </ul>
       </LegalSection>
 

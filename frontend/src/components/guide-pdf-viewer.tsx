@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { api } from '@/lib/api';
 import { collectPdfPageLinks, type PdfPageLink } from '@/lib/pdf-page-links';
 
 type Props = {
@@ -69,6 +70,18 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
       setRendering(false);
     }
   }, [title]);
+
+  useEffect(() => {
+    if (!canAccess || !slug) return;
+    // Criterio técnico de inicio de suministro: primera carga del visor con acceso.
+    // No prueba lectura completa.
+    void api
+      .recordContentSupplyStart({
+        courseSlug: slug,
+        path: typeof window !== 'undefined' ? window.location.pathname : undefined,
+      })
+      .catch(() => undefined);
+  }, [canAccess, slug]);
 
   useEffect(() => {
     if (!canAccess) {

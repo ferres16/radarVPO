@@ -19,7 +19,7 @@ export default function ConditionsPage() {
       badge="Condiciones"
       title="Condiciones de contratación"
       description="Qué compras, cuánto cuesta, cómo se cobra, cómo se cancela y qué no incluye Radar VPO."
-      updatedAt="20 de octubre de 2026"
+      updatedAt="30 de octubre de 2026"
     >
       <LegalSection title="1. Quién presta el servicio">
         <OwnerIdentity />
@@ -84,21 +84,31 @@ export default function ConditionsPage() {
 
       <LegalSection title="6. Acceso inmediato y derecho de desistimiento">
         <p>
-          Los cursos y la suscripción se activan de inmediato tras el pago. Antes de pagar se te pide que confirmes
-          expresamente que quieres acceso inmediato.
+          Antes de pagar debes marcar, de forma separada, (1) la aceptación de estas condiciones y (2) una casilla
+          específica de inicio inmediato. Conservamos en servidor la versión y el texto exacto aceptados, vinculados a
+          la sesión de pago.
         </p>
         <ul className="list-disc space-y-1 pl-5">
           <li>
-            <strong className="text-[var(--ink)]">Cursos (contenido digital):</strong> al solicitar el acceso inmediato
-            con tu consentimiento expreso, reconoces que pierdes el derecho de desistimiento una vez comenzado el
-            suministro del contenido.
+            <strong className="text-[var(--ink)]">Guías y cursos (contenido digital):</strong> si solicitas el inicio
+            del suministro durante el plazo de desistimiento, reconoces que perderás ese derecho cuando comience el
+            suministro (art. 103.m TRLGDCU), sin perjuicio de tus derechos por falta de conformidad o incumplimiento.
+            Hoy Radar VPO solo vende con acceso inmediato: si no marcas esa casilla, no se inicia el pago. No
+            registramos un consentimiento que no hayas marcado.
           </li>
           <li>
-            <strong className="text-[var(--ink)]">Suscripción:</strong> si ejerces el desistimiento dentro de los 14
-            días siguientes a la contratación, abonarás la parte proporcional del servicio ya disfrutado hasta ese
-            momento, conforme a la normativa de consumidores.
+            <strong className="text-[var(--ink)]">Radar VPO PRO (suscripción):</strong> el servicio puede empezar de
+            inmediato. Cancelar la renovación desde Mi cuenta no es lo mismo que desistir ni que un reembolso por
+            incidencia: tras cancelar la renovación conservas PRO hasta el final del periodo ya pagado. El desistimiento
+            en 14 días, si procede, se gestiona aparte y puede implicar el abono de la parte ya disfrutada. La apertura
+            de una guía incluida en un pack no elimina por sí sola el desistimiento de toda la suscripción.
           </li>
         </ul>
+        <p>
+          El inicio efectivo del suministro digital se registra con un criterio técnico (primera apertura autenticada
+          del visor o lección con acceso activo). Eso no prueba que hayas leído el contenido completo. Meta Pixel y
+          Google Analytics no se usan como prueba contractual.
+        </p>
         <p>
           Para ejercer tus derechos o solicitar una devolución escribe a{' '}
           <a href={`mailto:${supportEmail}`} className="font-semibold text-[var(--green-700)] underline">
@@ -108,7 +118,12 @@ export default function ConditionsPage() {
           <Link href="/contacto" className="font-semibold text-[var(--green-700)]">
             /contacto
           </Link>
-          , sin iniciar sesión.
+          , sin iniciar sesión. Cada reclamación se revisa con el consentimiento, la confirmación enviada y el motivo;
+          un acceso previo no implica automáticamente que la devolución sea improcedente.
+        </p>
+        <p className="text-sm text-[var(--ink-soft)]">
+          Validación jurídica pendiente: textos de desistimiento, plazos y excepciones deben contrastarse con asesoría
+          legal antes de tratarse como certificación de cumplimiento.
         </p>
       </LegalSection>
 

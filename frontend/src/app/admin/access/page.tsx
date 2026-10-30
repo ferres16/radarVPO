@@ -245,6 +245,7 @@ export default function AdminAccessPage() {
             <SkeletonCard />
           ) : detail ? (
             <>
+              <CommerceEvidence detail={detail} />
               <AccessGroup
                 title="Cursos"
                 items={detail.courses}
@@ -276,6 +277,134 @@ export default function AdminAccessPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function CommerceEvidence({ detail }: { detail: BackofficeAccessDetail }) {
+  const purchases = detail.purchases ?? [];
+  const consents = detail.purchaseConsents ?? [];
+  const supply = detail.contentSupplyEvents ?? [];
+  const subscriptions = detail.subscriptions ?? [];
+
+  return (
+    <article className="space-y-4 rounded-3xl border border-[var(--stroke)] bg-white p-5 shadow-card">
+      <div>
+        <h3 className="text-lg font-black text-[var(--ink)]">Evidencia contractual y accesos</h3>
+        <p className="mt-1 text-xs leading-5 text-[var(--ink-soft)]">
+          Pago, consentimiento, email de confirmación y apertura efectiva del contenido. Un acceso no implica por sí
+          solo que una devolución sea improcedente: revisa consentimiento, confirmación y motivo.
+        </p>
+      </div>
+
+      <EvidenceTable
+        title="Compras"
+        empty="Sin compras registradas"
+        rows={purchases.map((row) => [
+          row.productKey,
+          row.status,
+          row.amount != null ? `${row.amount} ${row.currency || ''}`.trim() : '—',
+          row.purchasedAt || row.createdAt,
+          row.id,
+        ])}
+        headers={['Producto', 'Pago', 'Importe', 'Fecha', 'Id']}
+      />
+
+      <EvidenceTable
+        title="Consentimientos"
+        empty="Sin consentimientos de checkout"
+        rows={consents.map((row) => [
+          row.productKey,
+          row.termsVersion,
+          row.immediateConsentVersion || '—',
+          row.termsAcceptedAt,
+          row.confirmationEmailStatus,
+          row.accessGrantedAt || '—',
+          row.firstContentOpenedAt || '—',
+          row.lastContentOpenedAt || '—',
+        ])}
+        headers={[
+          'Producto',
+          'Ver. términos',
+          'Ver. inmediato',
+          'Aceptado',
+          'Email conf.',
+          'Acceso',
+          '1ª apertura',
+          'Última apertura',
+        ]}
+      />
+
+      <EvidenceTable
+        title="Suscripciones PRO"
+        empty="Sin suscripciones"
+        rows={subscriptions.map((row) => [
+          row.planKey,
+          row.status,
+          row.currentPeriodEnd || '—',
+          row.cancelAt || '—',
+          row.providerRef || row.id,
+        ])}
+        headers={['Plan', 'Estado', 'Fin periodo', 'Cancel at', 'Ref']}
+      />
+
+      <EvidenceTable
+        title="Historial de aperturas de contenido"
+        empty="Sin aperturas registradas"
+        rows={supply.map((row) => [
+          row.productKey,
+          row.kind,
+          row.path || '—',
+          row.createdAt,
+        ])}
+        headers={['Producto', 'Tipo', 'Ruta', 'Fecha']}
+      />
+    </article>
+  );
+}
+
+function EvidenceTable({
+  title,
+  headers,
+  rows,
+  empty,
+}: {
+  title: string;
+  headers: string[];
+  rows: string[][];
+  empty: string;
+}) {
+  return (
+    <div>
+      <h4 className="text-sm font-bold text-[var(--ink)]">{title}</h4>
+      {rows.length === 0 ? (
+        <p className="mt-1 text-xs text-[var(--ink-soft)]">{empty}</p>
+      ) : (
+        <div className="mt-2 overflow-x-auto">
+          <table className="min-w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-[var(--stroke)] text-[var(--ink-soft)]">
+                {headers.map((header) => (
+                  <th key={header} className="px-2 py-1 font-semibold">
+                    {header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, index) => (
+                <tr key={`${title}-${index}`} className="border-b border-[var(--stroke)]/60">
+                  {row.map((cell, cellIndex) => (
+                    <td key={`${title}-${index}-${cellIndex}`} className="max-w-[14rem] truncate px-2 py-1 text-[var(--ink)]">
+                      {cell}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
   );
 }
 

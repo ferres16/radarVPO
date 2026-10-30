@@ -49,6 +49,12 @@ import {
   shouldKeepProPlan,
   stripeKeyMode,
 } from './stripe-fulfillment';
+import {
+  CONTENT_SUPPLY_START_CRITERION,
+  CONTRACT_TERMS_TEXT,
+  CONTRACT_TERMS_VERSION,
+  immediateConsentForProduct,
+} from './contract-consent';
 
 function getSubscriptionPeriodEnd(subscription: {
   current_period_end?: number;
@@ -377,12 +383,18 @@ export class BillingService {
       const priceLabel = formatEuroAmount(unitAmount);
       const guideSlug =
         pack?.guideSlug || commerce.proPackGuideSlug || 'vpo-inicial';
+      const nowIso = new Date().toISOString();
+      const immediate = immediateConsentForProduct(
+        isPack ? 'pro_pack_3m' : 'pro',
+      );
       const metadata = {
         userId: user.id,
         product: isPack ? 'pro_pack_3m' : 'pro',
         ...(isPack ? { guideSlug } : {}),
-        termsAcceptedAt: new Date().toISOString(),
+        termsAcceptedAt: nowIso,
+        termsVersion: CONTRACT_TERMS_VERSION,
         immediateAccessAccepted: 'true',
+        immediateConsentVersion: immediate.version,
       };
       const session = await this.createStripeCheckoutSession(
         stripe,
@@ -433,8 +445,8 @@ export class BillingService {
                 : `Suscripción de ${priceLabel} al mes. Se renueva cada mes hasta que la canceles desde "Mi cuenta"; mantendrás el acceso hasta el final del periodo ya pagado.`,
             },
           },
-          success_url: `${siteUrl}/account?checkout=success&product=${isPack ? 'pro_pack_3m' : 'pro'}`,
-          cancel_url: `${siteUrl}/pro?canceled=1`,
+          success_url: `${siteUrl}/gracias?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${siteUrl}/pro?canceled=1#pagar`,
         },
         user,
       );
@@ -444,6 +456,14 @@ export class BillingService {
           'No se pudo iniciar el pago. Inténtalo de nuevo.',
         );
       }
+      await this.createPendingPurchaseConsent({
+        userId: user.id,
+        stripeSessionId: session.id,
+        productKey: isPack ? 'pro_pack_3m' : 'pro',
+        courseId: null,
+        immediateVersion: immediate.version,
+        immediateText: immediate.text,
+      });
       return { url: session.url };
     }
 
@@ -505,13 +525,17 @@ export class BillingService {
       throw new BadRequestException('Ya tienes acceso a este curso.');
     }
 
+    const nowIso = new Date().toISOString();
+    const immediate = immediateConsentForProduct('course');
     const metadata = {
       userId: user.id,
       product: 'course',
       courseId: course.id,
       courseSlug: course.slug,
-      termsAcceptedAt: new Date().toISOString(),
+      termsAcceptedAt: nowIso,
+      termsVersion: CONTRACT_TERMS_VERSION,
       immediateAccessAccepted: 'true',
+      immediateConsentVersion: immediate.version,
     };
     const session = await this.createStripeCheckoutSession(
       stripe,
@@ -564,8 +588,8 @@ export class BillingService {
             message: `Pago único de ${formatEuroAmount(unitAmount)}. Sin renovaciones. Acceso inmediato al contenido tras confirmarse el pago.`,
           },
         },
-        success_url: `${siteUrl}/cursos/${course.slug}?checkout=success`,
-        cancel_url: `${siteUrl}/cursos/${course.slug}?canceled=1`,
+        success_url: `${siteUrl}/gracias?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${siteUrl}/cursos/${course.slug}?canceled=1#pagar`,
       },
       user,
     );
@@ -575,6 +599,14 @@ export class BillingService {
         'No se pudo iniciar el pago. Inténtalo de nuevo.',
       );
     }
+    await this.createPendingPurchaseConsent({
+      userId: user.id,
+      stripeSessionId: session.id,
+      productKey: `course:${course.slug}`,
+      courseId: course.id,
+      immediateVersion: immediate.version,
+      immediateText: immediate.text,
+    });
     return { url: session.url };
   }
 
@@ -785,39 +817,53 @@ export class BillingService {
       });
       const courseTitle = course?.title || 'tu compra';
       const courseUrl = `${siteUrl}/cursos/${course?.slug || meta.courseSlug || ''}`;
+      const purchase = await this.prisma.purchase.findFirst({
+        where: { provider: 'stripe', providerRef },
+        select: { id: true },
+      });
+      const consent = await this.markConsentFulfilled({
+        stripeSessionId: session.id,
+        userId: user.id,
+        purchaseId: purchase?.id ?? null,
+        accessGranted: true,
+      });
+      const consentBlock = this.formatConsentEmailBlock(consent);
+      const purchaseRef = purchase?.id ?? session.id;
       if (!course?.slug && !meta.courseSlug) {
         this.logger.warn(
           `purchase.course email skipped: missing course slug for ${session.id}`,
         );
+        await this.markConfirmationEmail(session.id, 'skipped', 'missing_slug');
       } else {
-        void this.notifications
-          .sendTemplatedEmail({
-            templateKey: 'purchase.course',
-            toEmail: user.email,
-            toName: displayName,
-            vars: {
-              name: displayName,
-              email: user.email,
-              product: courseTitle,
-              url: courseUrl,
-              title: courseTitle,
-              location: '',
-              date: '',
-              price: formatEuroAmount(session.amount_total ?? 0),
-              phone: '',
-              access_until: '',
-              billing_summary: buildBillingSummary({
-                kind: 'course',
-                amountCents: session.amount_total ?? 0,
-              }),
-            },
-            requiredVars: ['product', 'url', 'price'],
-            fallbackSubject: `Ya tienes acceso a ${courseTitle}`,
-            fallbackHtml: `<p>Hola,</p><p>Tu compra de ${courseTitle} se ha confirmado.</p><p><a href="${courseUrl}">Acceder</a></p>`,
-          })
-          .catch(() => undefined);
+        await this.sendPurchaseConfirmationOnce({
+          stripeSessionId: session.id,
+          templateKey: 'purchase.course',
+          toEmail: user.email,
+          toName: displayName,
+          vars: {
+            name: displayName,
+            email: user.email,
+            product: courseTitle,
+            url: courseUrl,
+            title: courseTitle,
+            location: '',
+            date: '',
+            price: formatEuroAmount(session.amount_total ?? 0),
+            phone: '',
+            access_until: 'Acceso mínimo 24 meses desde la compra (según condiciones).',
+            billing_summary: buildBillingSummary({
+              kind: 'course',
+              amountCents: session.amount_total ?? 0,
+            }),
+            purchase_ref: purchaseRef,
+            consent_summary: consentBlock,
+            contract_version: consent?.termsVersion ?? CONTRACT_TERMS_VERSION,
+          },
+          requiredVars: ['product', 'url', 'price', 'consent_summary'],
+          fallbackSubject: `Confirmación de compra: ${courseTitle}`,
+          fallbackHtml: `<p>Hola,</p><p>Compra confirmada: ${courseTitle} (${formatEuroAmount(session.amount_total ?? 0)}). Ref. ${purchaseRef}.</p><p>${consentBlock}</p><p><a href="${courseUrl}">Acceder</a></p><p>Versión contractual: ${consent?.termsVersion ?? CONTRACT_TERMS_VERSION}</p>`,
+        });
       }
-      await this.recordCheckoutConsent(user.id, session);
       return;
     }
 
@@ -867,62 +913,428 @@ export class BillingService {
       const accessUntil = formatMadridDate(period.end);
       const isPack = meta.product === 'pro_pack_3m';
       const renews = !subscription.cancel_at_period_end;
-      void this.notifications
-        .sendTemplatedEmail({
-          templateKey: isPack ? 'purchase.pro_pack' : 'purchase.pro',
-          toEmail: user.email,
-          toName: displayName,
-          vars: {
-            name: displayName,
-            email: user.email,
-            product: guideTitle,
-            url: isPack ? guideUrl : `${siteUrl}/account`,
-            title: 'Radar VPO PRO',
-            location: '',
-            date: accessUntil,
-            price: formatEuroAmount(session.amount_total ?? 0),
-            phone: '',
-            access_until: accessUntil,
-            billing_summary: buildBillingSummary({
-              kind: isPack ? 'pro_pack_3m' : 'pro_monthly',
-              amountCents: session.amount_total ?? 0,
-              accessUntil,
-              renews,
-            }),
-          },
-          requiredVars: isPack
-            ? ['product', 'url', 'access_until', 'billing_summary']
-            : ['url', 'billing_summary'],
-          fallbackSubject: isPack
-            ? 'Tu pack PRO de tres meses está activo'
-            : 'Tu Radar VPO PRO ya está activo',
-          fallbackHtml: `<p>Hola,</p><p>Tu suscripción PRO ya está activa.</p><p><a href="${siteUrl}/account">Entrar en mi cuenta</a></p>`,
-        })
-        .catch(() => undefined);
-      await this.recordCheckoutConsent(user.id, session);
+      const consent = await this.markConsentFulfilled({
+        stripeSessionId: session.id,
+        userId: user.id,
+        purchaseId: null,
+        accessGranted: true,
+      });
+      const consentBlock = this.formatConsentEmailBlock(consent);
+      const productLabel = isPack
+        ? `Radar VPO PRO (pack 3 meses)${guideTitle ? ` + ${guideTitle}` : ''}`
+        : 'Radar VPO PRO (suscripción mensual)';
+      await this.sendPurchaseConfirmationOnce({
+        stripeSessionId: session.id,
+        templateKey: isPack ? 'purchase.pro_pack' : 'purchase.pro',
+        toEmail: user.email,
+        toName: displayName,
+        vars: {
+          name: displayName,
+          email: user.email,
+          product: productLabel,
+          url: isPack ? guideUrl : `${siteUrl}/account`,
+          title: 'Radar VPO PRO',
+          location: '',
+          date: accessUntil,
+          price: formatEuroAmount(session.amount_total ?? 0),
+          phone: '',
+          access_until: accessUntil,
+          billing_summary: buildBillingSummary({
+            kind: isPack ? 'pro_pack_3m' : 'pro_monthly',
+            amountCents: session.amount_total ?? 0,
+            accessUntil,
+            renews,
+          }),
+          purchase_ref: session.id,
+          consent_summary: consentBlock,
+          contract_version: consent?.termsVersion ?? CONTRACT_TERMS_VERSION,
+          cancel_hint:
+            'Puedes cancelar la renovación desde Mi cuenta; conservarás el acceso hasta el final del periodo ya pagado. El desistimiento y los reembolsos por incidencia se gestionan por separado escribiendo a soporte.',
+        },
+        requiredVars: ['url', 'billing_summary', 'consent_summary'],
+        fallbackSubject: isPack
+          ? 'Confirmación: pack PRO de tres meses'
+          : 'Confirmación: Radar VPO PRO',
+        fallbackHtml: `<p>Hola,</p><p>${productLabel} confirmado (${formatEuroAmount(session.amount_total ?? 0)}). Ref. ${session.id}.</p><p>Acceso hasta ${accessUntil || 'el final del periodo pagado'}.</p><p>${consentBlock}</p><p><a href="${siteUrl}/account">Mi cuenta</a></p><p>Versión contractual: ${consent?.termsVersion ?? CONTRACT_TERMS_VERSION}</p>`,
+      });
     }
   }
 
-  private async recordCheckoutConsent(
-    userId: string,
-    session: Stripe.Checkout.Session,
-  ) {
-    const termsAcceptedAt = session.metadata?.termsAcceptedAt;
-    if (!termsAcceptedAt) return;
+  private async createPendingPurchaseConsent(input: {
+    userId: string;
+    stripeSessionId: string;
+    productKey: string;
+    courseId: string | null;
+    immediateVersion: string;
+    immediateText: string;
+  }) {
+    const now = new Date();
+    await this.prisma.purchaseConsent.upsert({
+      where: { stripeSessionId: input.stripeSessionId },
+      create: {
+        userId: input.userId,
+        stripeSessionId: input.stripeSessionId,
+        productKey: input.productKey,
+        courseId: input.courseId,
+        termsVersion: CONTRACT_TERMS_VERSION,
+        termsTextSnapshot: CONTRACT_TERMS_TEXT,
+        termsAcceptedAt: now,
+        immediateConsentVersion: input.immediateVersion,
+        immediateTextSnapshot: input.immediateText,
+        immediateAcceptedAt: now,
+        confirmationEmailStatus: 'pending',
+      },
+      update: {
+        productKey: input.productKey,
+        courseId: input.courseId,
+        termsVersion: CONTRACT_TERMS_VERSION,
+        termsTextSnapshot: CONTRACT_TERMS_TEXT,
+        immediateConsentVersion: input.immediateVersion,
+        immediateTextSnapshot: input.immediateText,
+        immediateAcceptedAt: now,
+      },
+    });
     await this.prisma.auditLog.create({
       data: {
-        userId,
-        action: 'billing.checkout.terms_accepted',
-        entity: 'CheckoutSession',
-        entityId: session.id,
+        userId: input.userId,
+        action: 'billing.checkout.consent_recorded',
+        entity: 'PurchaseConsent',
+        entityId: input.stripeSessionId,
         metadata: {
-          product: session.metadata?.product ?? null,
-          termsAcceptedAt,
-          immediateAccessAccepted:
-            session.metadata?.immediateAccessAccepted ?? null,
+          productKey: input.productKey,
+          termsVersion: CONTRACT_TERMS_VERSION,
+          immediateConsentVersion: input.immediateVersion,
         },
       },
     });
+  }
+
+  private async markConsentFulfilled(input: {
+    stripeSessionId: string;
+    userId: string;
+    purchaseId: string | null;
+    accessGranted: boolean;
+  }) {
+    const existing = await this.prisma.purchaseConsent.findUnique({
+      where: { stripeSessionId: input.stripeSessionId },
+    });
+    if (!existing) {
+      return this.prisma.purchaseConsent.create({
+        data: {
+          userId: input.userId,
+          stripeSessionId: input.stripeSessionId,
+          purchaseId: input.purchaseId,
+          productKey: 'unknown',
+          termsVersion: CONTRACT_TERMS_VERSION,
+          termsTextSnapshot: CONTRACT_TERMS_TEXT,
+          termsAcceptedAt: new Date(),
+          accessGrantedAt: input.accessGranted ? new Date() : null,
+          confirmationEmailStatus: 'pending',
+        },
+      });
+    }
+    return this.prisma.purchaseConsent.update({
+      where: { id: existing.id },
+      data: {
+        purchaseId: input.purchaseId ?? existing.purchaseId,
+        accessGrantedAt:
+          input.accessGranted && !existing.accessGrantedAt
+            ? new Date()
+            : existing.accessGrantedAt,
+      },
+    });
+  }
+
+  private formatConsentEmailBlock(
+    consent: {
+      termsVersion: string;
+      termsTextSnapshot: string;
+      termsAcceptedAt: Date;
+      immediateConsentVersion: string | null;
+      immediateTextSnapshot: string | null;
+      immediateAcceptedAt: Date | null;
+    } | null,
+  ) {
+    if (!consent) {
+      return 'Consentimiento: no consta snapshot en servidor para esta sesión (revisar logs).';
+    }
+    const termsAt = consent.termsAcceptedAt.toISOString();
+    const lines = [
+      `Condiciones aceptadas (${consent.termsVersion}) el ${termsAt}: «${consent.termsTextSnapshot}»`,
+    ];
+    if (consent.immediateTextSnapshot && consent.immediateAcceptedAt) {
+      lines.push(
+        `Suministro/inicio inmediato (${consent.immediateConsentVersion}) el ${consent.immediateAcceptedAt.toISOString()}: «${consent.immediateTextSnapshot}»`,
+      );
+    }
+    return lines.join(' ');
+  }
+
+  private async markConfirmationEmail(
+    stripeSessionId: string,
+    status: 'sent' | 'failed' | 'skipped',
+    error?: string,
+  ) {
+    await this.prisma.purchaseConsent.updateMany({
+      where: { stripeSessionId },
+      data: {
+        confirmationEmailStatus: status,
+        confirmationEmailSentAt: status === 'sent' ? new Date() : undefined,
+        confirmationEmailError: error?.slice(0, 2000) ?? null,
+      },
+    });
+  }
+
+  private async sendPurchaseConfirmationOnce(input: {
+    stripeSessionId: string;
+    templateKey: string;
+    toEmail: string;
+    toName: string;
+    vars: Record<string, string>;
+    requiredVars: string[];
+    fallbackSubject: string;
+    fallbackHtml: string;
+  }) {
+    const consent = await this.prisma.purchaseConsent.findUnique({
+      where: { stripeSessionId: input.stripeSessionId },
+      select: { confirmationEmailStatus: true },
+    });
+    if (consent?.confirmationEmailStatus === 'sent') {
+      return;
+    }
+    try {
+      const ok = await this.notifications.sendTemplatedEmail({
+        templateKey: input.templateKey,
+        toEmail: input.toEmail,
+        toName: input.toName,
+        vars: input.vars,
+        requiredVars: input.requiredVars,
+        fallbackSubject: input.fallbackSubject,
+        fallbackHtml: input.fallbackHtml,
+      });
+      await this.markConfirmationEmail(
+        input.stripeSessionId,
+        ok ? 'sent' : 'failed',
+        ok ? undefined : 'send_returned_false',
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'email_send_error';
+      await this.markConfirmationEmail(input.stripeSessionId, 'failed', message);
+    }
+  }
+
+  /**
+   * Estado de una sesión de Checkout para la página /gracias.
+   * No concede acceso: solo refleja Stripe + cumplimiento en BD.
+   */
+  async getCheckoutResult(userId: string, sessionId: string) {
+    if (!sessionId?.startsWith('cs_')) {
+      throw new BadRequestException('Sesión de pago no válida.');
+    }
+    const stripe = await this.getStripe();
+    if (!stripe) {
+      throw new ServiceUnavailableException('Pagos no disponibles.');
+    }
+
+    let session: Stripe.Checkout.Session;
+    try {
+      session = await stripe.checkout.sessions.retrieve(sessionId, {
+        expand: ['subscription', 'payment_intent'],
+      });
+    } catch {
+      throw new BadRequestException('No se encontró esa sesión de pago.');
+    }
+
+    const meta = parseCheckoutMetadata(
+      session.metadata,
+      session.client_reference_id,
+    );
+    if (!meta || meta.userId !== userId) {
+      throw new BadRequestException('Esta sesión no pertenece a tu cuenta.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        email: true,
+        emailVerifiedAt: true,
+        plan: true,
+      },
+    });
+
+    const consent = await this.prisma.purchaseConsent.findUnique({
+      where: { stripeSessionId: sessionId },
+    });
+
+    const paymentStatus = session.payment_status; // paid | unpaid | no_payment_required
+    const sessionStatus = session.status; // open | complete | expired
+
+    let product: 'pro' | 'pro_pack_3m' | 'course' =
+      meta.product === 'pro_pack_3m'
+        ? 'pro_pack_3m'
+        : meta.product === 'course'
+          ? 'course'
+          : 'pro';
+    let productTitle = 'Radar VPO PRO';
+    let ctaHref = '/account';
+    let ctaLabel = 'Ir a mi cuenta';
+    let accessReady = false;
+
+    if (product === 'course' && meta.courseId) {
+      const course = await this.prisma.course.findUnique({
+        where: { id: meta.courseId },
+        select: { title: true, slug: true, format: true },
+      });
+      productTitle = course?.title || 'Tu compra';
+      if (course?.slug) {
+        ctaHref = `/cursos/${course.slug}`;
+        ctaLabel =
+          course.format === 'guide_pdf' ? 'Ir a mi guía' : 'Ir a mi curso';
+      }
+      const access = await this.prisma.userCourseAccess.findFirst({
+        where: {
+          userId,
+          courseId: meta.courseId,
+          isActive: true,
+        },
+        select: { id: true },
+      });
+      accessReady = Boolean(access);
+    } else {
+      productTitle =
+        product === 'pro_pack_3m'
+          ? 'Radar VPO PRO (pack 3 meses)'
+          : 'Radar VPO PRO';
+      ctaHref = '/account';
+      ctaLabel = 'Ir a mi cuenta';
+      accessReady =
+        user?.plan === UserPlan.pro ||
+        Boolean(
+          await this.prisma.subscription.findFirst({
+            where: {
+              userId,
+              planKey: PRO_PLAN_KEY,
+              status: { in: ACTIVE_SUBSCRIPTION_STATUSES },
+            },
+            select: { id: true },
+          }),
+        );
+    }
+
+    const paid =
+      paymentStatus === 'paid' || paymentStatus === 'no_payment_required';
+    const failed =
+      sessionStatus === 'expired' ||
+      (!paid && sessionStatus !== 'open' && paymentStatus === 'unpaid');
+    const processing = paid && !accessReady && sessionStatus === 'complete';
+    const confirmed = paid && accessReady;
+
+    let uiStatus: 'confirmed' | 'processing' | 'pending' | 'failed' = 'pending';
+    if (failed) uiStatus = 'failed';
+    else if (confirmed) uiStatus = 'confirmed';
+    else if (processing || (paid && !accessReady)) uiStatus = 'processing';
+    else if (sessionStatus === 'open' || !paid) uiStatus = 'pending';
+
+    return {
+      sessionId,
+      uiStatus,
+      paymentStatus,
+      sessionStatus,
+      paid,
+      accessReady,
+      product,
+      productTitle,
+      amountTotal: session.amount_total,
+      currency: (session.currency || 'eur').toUpperCase(),
+      ctaHref,
+      ctaLabel,
+      emailVerified: Boolean(user?.emailVerifiedAt),
+      email: user?.email ?? null,
+      consent: consent
+        ? {
+            termsVersion: consent.termsVersion,
+            immediateConsentVersion: consent.immediateConsentVersion,
+            termsAcceptedAt: consent.termsAcceptedAt.toISOString(),
+            immediateAcceptedAt:
+              consent.immediateAcceptedAt?.toISOString() ?? null,
+            confirmationEmailStatus: consent.confirmationEmailStatus,
+            firstContentOpenedAt:
+              consent.firstContentOpenedAt?.toISOString() ?? null,
+            accessGrantedAt: consent.accessGrantedAt?.toISOString() ?? null,
+          }
+        : null,
+      transactionId:
+        typeof session.payment_intent === 'string'
+          ? session.payment_intent
+          : session.payment_intent &&
+              typeof session.payment_intent === 'object' &&
+              'id' in session.payment_intent
+            ? String((session.payment_intent as { id: string }).id)
+            : session.id,
+      contentSupplyCriterion: CONTENT_SUPPLY_START_CRITERION,
+    };
+  }
+
+  /** Registra apertura efectiva del contenido digital (no prueba lectura completa). */
+  async recordContentSupplyStart(
+    userId: string,
+    input: { courseSlug: string; path?: string },
+  ) {
+    const course = await this.prisma.course.findUnique({
+      where: { slug: input.courseSlug },
+      select: { id: true, slug: true },
+    });
+    if (!course) {
+      throw new BadRequestException('Curso no encontrado.');
+    }
+    const access = await this.prisma.userCourseAccess.findFirst({
+      where: { userId, courseId: course.id, isActive: true },
+      select: { id: true },
+    });
+    if (!access) {
+      throw new BadRequestException('No tienes acceso activo a este contenido.');
+    }
+
+    const consent = await this.prisma.purchaseConsent.findFirst({
+      where: {
+        userId,
+        OR: [
+          { courseId: course.id },
+          { productKey: `course:${course.slug}` },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const now = new Date();
+    if (consent) {
+      await this.prisma.purchaseConsent.update({
+        where: { id: consent.id },
+        data: {
+          firstContentOpenedAt: consent.firstContentOpenedAt ?? now,
+          lastContentOpenedAt: now,
+        },
+      });
+    }
+
+    await this.prisma.contentSupplyEvent.create({
+      data: {
+        userId,
+        courseId: course.id,
+        consentId: consent?.id,
+        productKey: `course:${course.slug}`,
+        kind: 'open',
+        path: input.path?.slice(0, 500) ?? `/cursos/${course.slug}`,
+      },
+    });
+
+    return {
+      ok: true as const,
+      firstOpen: !consent?.firstContentOpenedAt,
+      openedAt: now.toISOString(),
+      criterion: CONTENT_SUPPLY_START_CRITERION,
+    };
   }
 
   /**

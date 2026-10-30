@@ -505,12 +505,95 @@ export type BackofficeAccessRecord = {
   notes?: string | null;
 };
 
+export type BackofficePurchaseRow = {
+  id: string;
+  productKey: string;
+  status: string;
+  amount: number | null;
+  currency: string | null;
+  purchasedAt: string | null;
+  createdAt: string;
+  courseId: string | null;
+  providerRef: string | null;
+};
+
+export type BackofficePurchaseConsentRow = {
+  id: string;
+  purchaseId: string | null;
+  stripeSessionId: string;
+  productKey: string;
+  courseId: string | null;
+  termsVersion: string;
+  termsAcceptedAt: string;
+  immediateConsentVersion: string | null;
+  immediateAcceptedAt: string | null;
+  confirmationEmailStatus: string;
+  confirmationEmailSentAt: string | null;
+  firstContentOpenedAt: string | null;
+  lastContentOpenedAt: string | null;
+  accessGrantedAt: string | null;
+  createdAt: string;
+};
+
+export type BackofficeContentSupplyEvent = {
+  id: string;
+  courseId: string | null;
+  consentId: string | null;
+  productKey: string;
+  kind: string;
+  path: string | null;
+  createdAt: string;
+};
+
+export type BackofficeSubscriptionRow = {
+  id: string;
+  status: string;
+  planKey: string;
+  currentPeriodStart: string | null;
+  currentPeriodEnd: string | null;
+  cancelAt: string | null;
+  providerRef: string | null;
+  createdAt: string;
+};
+
 export type BackofficeAccessDetail = {
   user: BackofficeUser;
   courses: Course[];
   services: Service[];
   courseAccesses: Array<BackofficeAccessRecord & { courseId: string }>;
   serviceAccesses: Array<BackofficeAccessRecord & { serviceId: string }>;
+  purchases?: BackofficePurchaseRow[];
+  purchaseConsents?: BackofficePurchaseConsentRow[];
+  contentSupplyEvents?: BackofficeContentSupplyEvent[];
+  subscriptions?: BackofficeSubscriptionRow[];
+};
+
+export type CheckoutResult = {
+  sessionId: string;
+  uiStatus: 'confirmed' | 'processing' | 'pending' | 'failed';
+  paymentStatus: string;
+  sessionStatus: string | null;
+  paid: boolean;
+  accessReady: boolean;
+  product: 'pro' | 'pro_pack_3m' | 'course';
+  productTitle: string;
+  amountTotal: number | null;
+  currency: string;
+  ctaHref: string;
+  ctaLabel: string;
+  emailVerified: boolean;
+  email: string | null;
+  transactionId: string;
+  contentSupplyCriterion: string;
+  consent: {
+    termsVersion: string;
+    immediateConsentVersion: string | null;
+    termsAcceptedAt: string;
+    immediateAcceptedAt: string | null;
+    confirmationEmailStatus: string;
+    firstContentOpenedAt: string | null;
+    accessGrantedAt: string | null;
+  } | null;
 };
 
 export type BackofficeNewsItem = {

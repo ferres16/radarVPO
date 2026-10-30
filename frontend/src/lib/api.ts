@@ -6,6 +6,7 @@ import {
   BackofficeCancellationProcessResult,
   BackofficeUser,
   CatalogStats,
+  CheckoutResult,
   CheckoutStatus,
   CommercePromoRule,
   CommerceSettings,
@@ -272,6 +273,20 @@ export const api = {
     acceptedImmediateAccess?: boolean;
   }) =>
     request<{ url: string }>('/billing/checkout', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  getCheckoutResult: (sessionId: string) =>
+    request<CheckoutResult>(
+      `/billing/checkout-result${queryString({ session_id: sessionId })}`,
+    ),
+  recordContentSupplyStart: (payload: { courseSlug: string; path?: string }) =>
+    request<{
+      ok: true;
+      firstOpen: boolean;
+      openedAt: string;
+      criterion: string;
+    }>('/billing/content-supply-start', {
       method: 'POST',
       body: JSON.stringify(payload),
     }),

@@ -5,6 +5,7 @@ import {
   Headers,
   HttpCode,
   Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -16,6 +17,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import { BillingService } from './billing.service';
+import { ContentSupplyStartDto } from './dto/content-supply.dto';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 
 @ApiTags('billing')
@@ -38,6 +40,30 @@ export class BillingController {
     @Body() dto: CreateCheckoutDto,
   ) {
     return this.billingService.createCheckoutSession(user.sub, dto);
+  }
+
+  /** Resultado de Checkout Session para /gracias (validado en servidor). */
+  @Get('checkout-result')
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 30, ttl: seconds(60) } })
+  checkoutResult(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query('session_id') sessionId?: string,
+  ) {
+    return this.billingService.getCheckoutResult(user.sub, sessionId || '');
+  }
+
+  /** Apertura efectiva de guía/curso (inicio de suministro digital). */
+  @Post('content-supply-start')
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 60, ttl: seconds(60) } })
+  contentSupplyStart(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: ContentSupplyStartDto,
+  ) {
+    return this.billingService.recordContentSupplyStart(user.sub, dto);
   }
 
   /** Webhook de Stripe. Verifica la firma sobre el cuerpo sin procesar. */

@@ -11,7 +11,7 @@ const ADSENSE_SCRIPT_ID = 'radar-vpo-adsense';
 const META_PIXEL_SCRIPT_ID = 'radar-vpo-meta-pixel';
 const GA_SCRIPT_ID = 'radar-vpo-ga-gtag';
 
-type FbqFn = ((...args: unknown[]) => void) & {
+export type FbqFn = ((...args: unknown[]) => void) & {
   callMethod?: (...args: unknown[]) => void;
   queue?: unknown[];
   loaded?: boolean;
@@ -78,6 +78,10 @@ function ensureGoogleAnalytics(measurementId: string) {
     document.head.appendChild(script);
     window.gtag('js', new Date());
     window.gtag('config', measurementId, { send_page_view: false });
+    const adsId = marketingConfig.googleAdsId;
+    if (adsId) {
+      window.gtag('config', adsId);
+    }
   }
 
   window.gtag('event', 'page_view', {

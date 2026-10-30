@@ -241,6 +241,8 @@ model User {
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
   waitlistLeads WaitlistLead[]
+  purchaseConsents PurchaseConsent[]
+  contentSupplyEvents ContentSupplyEvent[]
 
   @@map("users")
 }
@@ -857,11 +859,65 @@ model Purchase {
   createdAt   DateTime       @default(now()) @map("created_at")
   user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   course      Course?        @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  consent     PurchaseConsent?
 
   @@index([userId, status])
   @@index([courseId, status])
   @@unique([provider, providerRef])
   @@map("purchases")
+}
+
+/**
+ * Evidencia de consentimiento contractual en checkout (términos + suministro inmediato).
+ * Independiente del estado de pago: se crea al iniciar Stripe y se vincula al pagar.
+ */
+model PurchaseConsent {
+  id                         String    @id @default(cuid())
+  userId                     String    @map("user_id")
+  purchaseId                 String?   @unique @map("purchase_id")
+  stripeSessionId            String    @unique @map("stripe_session_id")
+  productKey                 String    @map("product_key")
+  courseId                   String?   @map("course_id")
+  termsVersion               String    @map("terms_version")
+  termsTextSnapshot          String    @map("terms_text_snapshot") @db.Text
+  termsAcceptedAt            DateTime  @map("terms_accepted_at")
+  immediateConsentVersion    String?   @map("immediate_consent_version")
+  immediateTextSnapshot      String?   @map("immediate_text_snapshot") @db.Text
+  immediateAcceptedAt        DateTime? @map("immediate_accepted_at")
+  /** pending | sent | failed | skipped */
+  confirmationEmailStatus    String    @default("pending") @map("confirmation_email_status")
+  confirmationEmailSentAt    DateTime? @map("confirmation_email_sent_at")
+  confirmationEmailError     String?   @map("confirmation_email_error") @db.Text
+  /** Inicio efectivo del suministro (criterio técnico documentado; no prueba lectura completa). */
+  firstContentOpenedAt       DateTime? @map("first_content_opened_at")
+  lastContentOpenedAt        DateTime? @map("last_content_opened_at")
+  accessGrantedAt            DateTime? @map("access_granted_at")
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+  user                       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchase                   Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([productKey, createdAt])
+  @@index([confirmationEmailStatus])
+  @@map("purchase_consents")
+}
+
+model ContentSupplyEvent {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  courseId  String?  @map("course_id")
+  consentId String?  @map("consent_id")
+  productKey String  @map("product_key")
+  /** open = apertura efectiva del contenido con acceso activo */
+  kind      String   @default("open")
+  path      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, courseId, createdAt])
+  @@index([consentId, createdAt])
+  @@map("content_supply_events")
 }
 
 model Subscription {
