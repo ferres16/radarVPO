@@ -18,7 +18,7 @@ export function MyCoursesSection({ courses, error }: MyCoursesSectionProps) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[var(--green-700)]">
-            Tus guías
+            Tu guía
           </p>
           <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)]">
             Acceso activo
@@ -34,7 +34,7 @@ export function MyCoursesSection({ courses, error }: MyCoursesSectionProps) {
         <div className="mt-4 rounded-2xl border border-dashed border-[var(--stroke)] bg-[var(--bg-app)] p-6 text-center">
           <p className="font-semibold text-[var(--ink)]">Aún no tienes ninguna guía activa.</p>
           <Link href="/cursos" className="btn btn--primary mt-4 inline-flex">
-            Ver las guías
+            Ver la guía
           </Link>
         </div>
       ) : (

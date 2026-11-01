@@ -11,6 +11,7 @@ import { SpaceDemo } from '@/components/conversion/space-demo';
 import { ProGate, ProOnlyMessage } from '@/components/pro/pro-cta';
 import { ProComparison } from '@/components/pro-comparison';
 import { StructuredData } from '@/components/structured-data';
+import { ButtonLink } from '@/components/design-system';
 import { getCourseStatusSummary, isIncludedInPro } from '@/lib/offer';
 import { publicCatalogCourses } from '@/lib/public-courses';
 import { publicPublishedPromotions } from '@/lib/public-promotions';
@@ -34,6 +35,24 @@ export const metadata: Metadata = createMetadata({
   keywords: ['alertas vivienda protegida', 'avisos VPO', 'suscripción VPO'],
 });
 
+const PRO_STEPS = [
+  {
+    step: '1',
+    title: 'Te suscribes',
+    text: `${proPlan.priceShort}/mes. Renovación automática; cancelas desde Mi cuenta cuando quieras.`,
+  },
+  {
+    step: '2',
+    title: 'Te avisamos',
+    text: 'Email (y SMS si activas el móvil) cuando detectamos una promoción publicada o un próximo lanzamiento.',
+  },
+  {
+    step: '3',
+    title: 'Organizas lo que sigues',
+    text: 'Mi espacio sin límite: checklist, etapa y notas en cualquier dispositivo.',
+  },
+] as const;
+
 export default async function ProPage({
   searchParams,
 }: {
@@ -49,10 +68,10 @@ export default async function ProPage({
   const listed = publicPublishedPromotions(promotions);
   const sample = listed[0];
   const includeBullets = [
-    'Avisos por email y SMS',
+    'Avisos por email de todas las promociones detectadas',
+    'SMS si activas tu móvil',
     'Mi espacio sin límite',
-    'Precio final: sin recargos extra',
-    'Cancelas cuando quieras desde Mi cuenta',
+    'Cancelas cuando quieras; acceso hasta fin de periodo pagado',
     ...(includedGuides ? [includedGuides.title] : []),
   ];
 
@@ -71,10 +90,10 @@ export default async function ProPage({
 
       <PublicPageHero
         animated={false}
-        badge="Suscripción"
-        title="Recibe avisos de vivienda protegida"
-        titleAccent="sin revisar las webs cada día"
-        description={`${proPlan.priceShort} al mes (precio final). Avisos por email y SMS de publicaciones detectadas, y Mi espacio sin límite. Renovación automática; cancelas desde Mi cuenta y mantienes el acceso hasta el fin del periodo pagado.`}
+        badge={`${proPlan.priceShort} / mes · cancelas cuando quieras`}
+        title="Avisos de vivienda protegida"
+        titleAccent="sin revisar diez webs cada día"
+        description="PRO te avisa por email y SMS cuando detectamos una convocatoria, y te deja organizar en Mi espacio todo lo que sigues. Consultar los PDF oficiales sigue siendo gratis."
         actions={
           <>
             <ProGate>
@@ -85,7 +104,7 @@ export default async function ProPage({
                 event="pro_cta_clicked"
                 eventProperties={{ source: 'pro_hero' }}
               >
-                {`Empezar · ${proPlan.priceShort}/mes`}
+                {`Empezar PRO · ${proPlan.priceShort}/mes`}
               </TrackedButtonLink>
             </ProGate>
             <ProOnlyMessage>
@@ -97,36 +116,58 @@ export default async function ProPage({
                 .
               </p>
             </ProOnlyMessage>
+            <ButtonLink href="#como-funciona" variant="secondary" size="lg" block>
+              Cómo funciona
+            </ButtonLink>
           </>
+        }
+        footer={
+          <ul className="lp-hero__proof" aria-label="Resumen PRO">
+            <li>
+              <span className="lp-hero__proof-mark" aria-hidden>
+                ✓
+              </span>
+              Email + SMS
+            </li>
+            <li>
+              <span className="lp-hero__proof-mark" aria-hidden>
+                ✓
+              </span>
+              Todos los avisos detectados
+            </li>
+            <li>
+              <span className="lp-hero__proof-mark" aria-hidden>
+                ✓
+              </span>
+              Sin permanencia
+            </li>
+          </ul>
         }
       />
 
-      <ProGate>
-        <PublicSection animated={false}>
-          <div id="pagar" className="mx-auto max-w-lg scroll-mt-24">
-            <CheckoutPanel
-              layout="embedded"
-              canceled={canceled}
-              summary={{
-                product: 'pro',
-                title: proPlan.name,
-                priceLabel: proPlan.priceShort,
-                cadenceLabel: 'al mes',
-                recurrenceNote:
-                  'Renovación mensual. Cancelas desde Mi cuenta y conservas el acceso hasta el final del periodo pagado.',
-                bullets: includeBullets,
-                backHref: '/',
-                backLabel: 'Volver al inicio',
-              }}
-            />
-          </div>
-        </PublicSection>
-      </ProGate>
+      <PublicSection id="como-funciona">
+        <div className="lp-section__head">
+          <p className="lp-eyebrow">Cómo funciona</p>
+          <h2 className="lp-title">Tres pasos, sin letra pequeña inventada</h2>
+          <p className="lp-lead">
+            Pagas la suscripción, recibes avisos de lo que detectamos y organizas las oportunidades en tu cuenta.
+          </p>
+        </div>
+        <div className="lp-why-grid">
+          {PRO_STEPS.map((item) => (
+            <article key={item.step} className="lp-why-card">
+              <p className="lp-offer-card__eyebrow">Paso {item.step}</p>
+              <h3 className="lp-why-card__title">{item.title}</h3>
+              <p className="lp-why-card__text">{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </PublicSection>
 
-      <PublicSection>
+      <PublicSection muted>
         <div className="lp-section__head">
           <p className="lp-eyebrow">Por qué PRO</p>
-          <h2 className="lp-title">Menos vigilancia manual. Más control de lo que importa</h2>
+          <h2 className="lp-title">Menos vigilancia manual</h2>
           <p className="lp-lead">
             Consultar convocatorias es gratis. PRO cubre el aviso a tiempo y la organización con cuenta.
           </p>
@@ -141,16 +182,14 @@ export default async function ProPage({
         </div>
       </PublicSection>
 
-      <PublicSection muted>
+      <PublicSection>
         <div className="lp-section__head">
           <p className="lp-eyebrow">Qué incluye</p>
-          <h2 id="pro-includes-title" className="lp-title">
-            La oferta verificable de hoy
-          </h2>
+          <h2 className="lp-title">La oferta de hoy</h2>
           <p className="lp-lead">
             {includedGuides
-              ? 'Avisos, espacio y la guía listada más abajo. Nada de cursos inventados.'
-              : 'Avisos y espacio. Hoy no hay una guía incluida en PRO: si se añade, aparecerá aquí con nombre y enlace.'}
+              ? 'Avisos, espacio y la guía listada más abajo. Nada inventado.'
+              : 'Avisos y espacio. Si una guía pasa a estar incluida en PRO, aparecerá aquí con nombre y enlace.'}
           </p>
         </div>
         <div className="lp-why-grid">
@@ -181,20 +220,19 @@ export default async function ProPage({
         ) : null}
       </PublicSection>
 
-      <PublicSection>
+      <PublicSection muted>
         <div className="lp-hero__split">
           <div>
-            <p className="lp-eyebrow">Demostración</p>
+            <p className="lp-eyebrow">Ejemplo real</p>
             <h2 className="lp-title">Así llega un aviso</h2>
             {sample ? (
               <p className="lp-lead">
-                Texto real del sistema para una promoción publicada ahora. El envío depende de las fuentes que
+                Texto del sistema para una promoción publicada ahora. El envío depende de las fuentes que
                 monitorizamos.
               </p>
             ) : (
               <p className="lp-lead">
-                Cuando se publique una promoción, el SMS incluye el municipio y el enlace a su ficha. No mostramos un
-                ejemplo inventado.
+                Cuando se publique una promoción, el SMS incluye el municipio y el enlace a su ficha.
               </p>
             )}
             {sample ? (
@@ -207,7 +245,50 @@ export default async function ProPage({
         </div>
       </PublicSection>
 
-      <PublicSection muted>
+      <PublicSection>
+        <ProComparison showCta={false} />
+      </PublicSection>
+
+      <PublicSection muted id="pagar">
+        <div className="lp-section__head">
+          <p className="lp-eyebrow">Suscripción</p>
+          <h2 className="lp-title">{`${proPlan.priceShort} al mes`}</h2>
+          <p className="lp-lead">
+            Precio final. Renovación automática. Cancelas desde Mi cuenta y conservas el acceso hasta el final del
+            periodo ya pagado.
+          </p>
+        </div>
+        <ProGate>
+          <div className="mx-auto max-w-lg scroll-mt-24">
+            <CheckoutPanel
+              layout="embedded"
+              canceled={canceled}
+              summary={{
+                product: 'pro',
+                title: proPlan.name,
+                priceLabel: proPlan.priceShort,
+                cadenceLabel: 'al mes',
+                recurrenceNote:
+                  'Renovación mensual. Cancelas desde Mi cuenta y conservas el acceso hasta el final del periodo pagado.',
+                bullets: includeBullets,
+                backHref: '/',
+                backLabel: 'Volver al inicio',
+              }}
+            />
+          </div>
+        </ProGate>
+        <ProOnlyMessage>
+          <p className="mx-auto mt-4 max-w-lg rounded-xl bg-white px-4 py-3 text-center text-sm font-semibold text-[var(--ink)]">
+            Ya tienes PRO. Ve a{' '}
+            <Link href="/account" className="underline">
+              Mi cuenta
+            </Link>{' '}
+            para gestionar la suscripción.
+          </p>
+        </ProOnlyMessage>
+      </PublicSection>
+
+      <PublicSection>
         <div className="lp-hero__split">
           <div>
             <p className="lp-eyebrow">Para quién</p>
@@ -222,27 +303,28 @@ export default async function ProPage({
             </ul>
           </div>
           <div>
-            <p className="lp-eyebrow">No es para</p>
-            <h2 className="lp-title lp-title--sm">Mejor quédate en gratis si…</h2>
+            <p className="lp-eyebrow">Mejor gratis si…</p>
+            <h2 className="lp-title lp-title--sm">No hace falta PRO</h2>
             <ul className="mt-4 space-y-2 text-sm leading-6 text-[var(--ink-soft)]">
               {proForWhom.no.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
+            <p className="mt-4 text-sm text-[var(--ink-soft)]">
+              También puedes comprar la{' '}
+              <Link href="/cursos" className="font-semibold text-[var(--green-700)]">
+                guía
+              </Link>{' '}
+              por separado (pago único).
+            </p>
           </div>
         </div>
-      </PublicSection>
-
-      <PublicSection>
-        <ProComparison showCta />
       </PublicSection>
 
       <PublicSection muted>
         <div className="lp-section__head">
           <p className="lp-eyebrow">Límites</p>
-          <h2 id="pro-limits-title" className="lp-title">
-            Lo que PRO no hace
-          </h2>
+          <h2 className="lp-title">Lo que PRO no hace</h2>
         </div>
         <ul className="mx-auto max-w-3xl list-disc space-y-2 pl-5 text-sm leading-7 text-[var(--ink-soft)]">
           {proLimits.map((limit) => (
@@ -253,13 +335,34 @@ export default async function ProPage({
 
       <PublicSection border>
         <HomeFaq items={proFaqs} lead="Precio, cancelación, inclusiones y alcance de los avisos." />
-        <p className="mt-6 text-center text-sm text-[var(--ink-soft)]">
-          Consulta las{' '}
-          <Link href="/condiciones" className="font-semibold text-[var(--green-700)]">
-            condiciones de contratación
-          </Link>{' '}
-          antes de suscribirte.
-        </p>
+        <div className="public-cta-band mt-8">
+          <div>
+            <h2 className="lp-title lp-title--sm">¿Listo para los avisos?</h2>
+            <p className="lp-lead">
+              {proPlan.priceShort}/mes. Sin permanencia. Cancelas cuando quieras desde Mi cuenta.
+            </p>
+          </div>
+          <div className="public-cta-band__actions">
+            <ProGate>
+              <TrackedButtonLink
+                href="#pagar"
+                size="lg"
+                block
+                event="pro_cta_clicked"
+                eventProperties={{ source: 'pro_footer' }}
+              >
+                {`Empezar · ${proPlan.priceShort}/mes`}
+              </TrackedButtonLink>
+            </ProGate>
+            <p className="text-center text-xs text-[var(--ink-soft)]">
+              Condiciones en{' '}
+              <Link href="/condiciones" className="underline">
+                /condiciones
+              </Link>
+              .
+            </p>
+          </div>
+        </div>
       </PublicSection>
     </PublicPage>
   );

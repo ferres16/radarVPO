@@ -196,7 +196,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
         data={[
           breadcrumbJsonLd([
             { name: 'Inicio', path: '/' },
-            { name: 'Guías', path: '/cursos' },
+            { name: 'Guía', path: '/cursos' },
             { name: publicTitle, path: `/cursos/${course.slug}` },
           ]),
           courseJsonLd,
@@ -325,7 +325,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                       recurrenceNote: `${GUIDE_FORMAT_TEXT} ${COURSE_ACCESS_DURATION_TEXT}`,
                       bullets: getCoursePayBullets(course),
                       backHref: '/cursos',
-                      backLabel: 'Ver todas las guías',
+                      backLabel: 'Volver a la guía',
                     }}
                   />
                 ) : (
@@ -383,7 +383,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                       recurrenceNote: 'Sin renovaciones. Acceso inmediato al confirmar el pago.',
                       bullets: getCoursePayBullets(course),
                       backHref: '/cursos',
-                      backLabel: 'Ver todas las guías',
+                      backLabel: 'Volver a la guía',
                     }}
                   />
                 ) : (
@@ -508,7 +508,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
 
             <div className="pb-2">
               <Link href="/cursos" className="text-sm font-bold text-[var(--green-700)]">
-                Volver a guías
+                Volver a la guía
               </Link>
             </div>
           </section>
@@ -617,7 +617,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                 ) : null}
 
                 <Link href="/cursos" className="inline-block text-sm font-bold text-[var(--green-700)]">
-                  Ver todas las guías
+                  Volver a la guía
                 </Link>
               </aside>
             </div>

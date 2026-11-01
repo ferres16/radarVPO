@@ -40,7 +40,7 @@ export const freePlanFeatures = [
   'Consultar todas las promociones publicadas',
   'Ver el documento oficial (PDF) de cada promoción',
   'Guardar hasta 3 promociones en Mi espacio',
-  'Muestra gratuita de las guías que la ofrezcan',
+  'Muestra gratuita de la guía si la ofrece',
 ] as const;
 
 export const proExclusiveFeatures = [
@@ -148,7 +148,7 @@ export const proFaqs = [
   {
     question: '¿Qué puedo hacer gratis?',
     answer:
-      'Consultar todas las promociones, abrir su documento oficial en PDF, guardar hasta 3 promociones en Mi espacio y ver la muestra de las guías que la ofrezcan.',
+      'Consultar todas las promociones, abrir su documento oficial en PDF, guardar hasta 3 promociones en Mi espacio y ver la muestra de la guía si la ofrece.',
   },
   {
     question: 'Hay avisos por correo gratis. ¿Qué añade PRO?',
@@ -188,9 +188,9 @@ export const proComparisonRows = [
   { feature: 'Avisos por email', free: false as const, pro: true as const },
   { feature: 'Avisos por SMS', free: false as const, pro: true as const },
   {
-    feature: 'Guías incluidas en PRO',
+    feature: 'Guía incluida en PRO',
     free: 'No',
-    pro: 'Solo si aparecen listadas en la página PRO',
+    pro: 'Solo si aparece listada en la página PRO',
   },
 ] as const;
 

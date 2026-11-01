@@ -73,7 +73,7 @@ export const homeFaqs = [
   {
     question: '¿Radar VPO presenta la solicitud por mí o me asesora individualmente?',
     answer:
-      'No. Radar VPO ofrece información, guías y herramientas de organización. Cada persona presenta su propia solicitud ante los organismos oficiales. El soporte cubre compras, acceso, facturación e incidencias técnicas.',
+      'No. Radar VPO ofrece información, una guía práctica y herramientas de organización. Cada persona presenta su propia solicitud ante los organismos oficiales. El soporte cubre compras, acceso, facturación e incidencias técnicas.',
   },
 ];
 

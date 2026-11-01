@@ -72,7 +72,7 @@ export function resolveRegisterIntent(nextRaw: string | null | undefined): {
     nextPath: nextPath || '/account',
     title: 'Crea tu cuenta en 1 minuto',
     description:
-      'La cuenta es gratis. Con ella guardas promociones y accedes a la muestra de las guías que la ofrezcan.',
+      'La cuenta es gratis. Con ella guardas promociones y accedes a la muestra de la guía si la ofrece.',
     submitLabel: 'Crear cuenta gratis',
   };
 }
