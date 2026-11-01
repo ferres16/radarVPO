@@ -225,6 +225,11 @@ export class BackofficeController {
     return this.backofficeService.listCourses(query);
   }
 
+  @Get('waitlist')
+  listWaitlist(@Query() query: BackofficeListDto) {
+    return this.backofficeService.listWaitlistLeads(query);
+  }
+
   @Get('access/users')
   listAccessUsers(@Query() query: BackofficeListDto) {
     return this.backofficeService.listAccessUsers(query);

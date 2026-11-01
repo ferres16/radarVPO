@@ -403,6 +403,45 @@ export class BackofficeService {
     });
   }
 
+  /** Leads de lista de espera mientras la venta está cerrada. */
+  async listWaitlistLeads(query: BackofficeListDto) {
+    const limit = Math.min(query.limit ?? 200, 500);
+    const offset = query.offset ?? 0;
+    const search = query.q?.trim();
+    const rows = await this.prisma.waitlistLead.findMany({
+      where: search
+        ? {
+            OR: [
+              { email: { contains: search, mode: 'insensitive' } },
+              { product: { contains: search, mode: 'insensitive' } },
+              { municipality: { contains: search, mode: 'insensitive' } },
+              { sourcePath: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : undefined,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+      select: {
+        id: true,
+        email: true,
+        product: true,
+        municipality: true,
+        sourcePath: true,
+        waitlistConsentAt: true,
+        marketingConsentAt: true,
+        userId: true,
+        createdAt: true,
+      },
+    });
+    return rows.map((row) => ({
+      ...row,
+      waitlistConsentAt: row.waitlistConsentAt.toISOString(),
+      marketingConsentAt: row.marketingConsentAt?.toISOString() ?? null,
+      createdAt: row.createdAt.toISOString(),
+    }));
+  }
+
   async listCancellationRequests() {
     return this.prisma.user.findMany({
       where: {

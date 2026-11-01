@@ -4,6 +4,7 @@ import {
   BackofficeAccessDetail,
   BackofficeCancellationRequest,
   BackofficeCancellationProcessResult,
+  BackofficeWaitlistLead,
   BackofficeUser,
   CatalogStats,
   CheckoutResult,
@@ -381,6 +382,8 @@ export const api = {
       method: 'POST',
     }),
   getBackofficeUsers: (q?: string) => request<BackofficeUser[]>(`/backoffice/users${queryString({ q })}`),
+  getBackofficeWaitlist: (q?: string) =>
+    request<BackofficeWaitlistLead[]>(`/backoffice/waitlist${queryString({ q })}`),
   updateBackofficeUser: (
     id: string,
     payload: Partial<Pick<BackofficeUser, 'fullName' | 'role' | 'plan' | 'stripeCustomerId'>>,

@@ -23,8 +23,6 @@ import {
   formatMadridDate,
   hasIncompleteRender,
 } from './message-vars';
-import { userMatchesProAlertPreferences } from '../common/pro-alert-preferences';
-
 /** SMS PRO: solo publicación oficial por defecto (aunque el usuario tenga SMS on). */
 const PRO_SMS_KINDS = new Set<ProNotifyKind>(['new_publication']);
 
@@ -604,18 +602,13 @@ export class NotificationsService {
         fullName: true,
         phone: true,
         smsAlertsEnabled: true,
-        alertMunicipalityIds: true,
-        alertPromotionTypes: true,
       },
     });
 
-    const preferenceFiltered = users.filter((user) =>
-      userMatchesProAlertPreferences(user, promotion),
-    );
-
+    // Sin filtro territorial: todos los PRO verificados reciben el aviso.
     const recipients = favoriteUserIds
-      ? preferenceFiltered.filter((user) => favoriteUserIds.has(user.id))
-      : preferenceFiltered;
+      ? users.filter((user) => favoriteUserIds.has(user.id))
+      : users;
 
     const channels: string[] = [];
     let sent = 0;

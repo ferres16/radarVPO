@@ -8,7 +8,6 @@ import { ProfileHeader } from '@/components/profile/profile-header';
 import { ProStatusCard } from '@/components/pro/pro-status-card';
 import { MyCoursesSection } from '@/components/profile/my-courses-section';
 import { PersonalInfoSection } from '@/components/profile/personal-info-section';
-import { ProAlertPreferences } from '@/components/profile/pro-alert-preferences';
 import { AccountManagementSection } from '@/components/profile/account-management-section';
 import { ProfileCard } from '@/components/profile-card';
 import type { UserCourseProgress, UserProfile } from '@/types';
@@ -119,7 +118,6 @@ export default function AccountPage() {
           </div>
         ) : null}
         <ProStatusCard profile={me} onProfileUpdate={handleProfileUpdate} />
-        <ProAlertPreferences profile={me} onProfileUpdate={handleProfileUpdate} />
         <MyCoursesSection courses={courses} error={coursesError} />
         <PersonalInfoSection profile={me} onProfileUpdate={handleProfileUpdate} />
         <AccountManagementSection />

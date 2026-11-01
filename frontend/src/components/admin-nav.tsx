@@ -23,6 +23,7 @@ const adminGroups: AdminNavGroup[] = [
     links: [
       { href: '/admin/users', label: 'Usuarios' },
       { href: '/admin/access', label: 'Compras y accesos' },
+      { href: '/admin/waitlist', label: 'Lista de espera' },
       { href: '/admin/cancellations', label: 'Bajas PRO' },
     ],
   },

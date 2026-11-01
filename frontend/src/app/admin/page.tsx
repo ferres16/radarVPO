@@ -245,6 +245,7 @@ export default function AdminPage() {
               {[
                 ['/admin/users', 'Usuarios (eliminar / editar)'],
                 ['/admin/access', 'Compras y accesos'],
+                ['/admin/waitlist', 'Lista de espera'],
                 ['/admin/cancellations', 'Bajas PRO'],
                 ['/admin/promotions', 'Promociones'],
                 ['/admin/courses', 'Cursos CMS'],

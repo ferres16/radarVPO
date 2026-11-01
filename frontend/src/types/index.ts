@@ -505,6 +505,18 @@ export type BackofficeAccessRecord = {
   notes?: string | null;
 };
 
+export type BackofficeWaitlistLead = {
+  id: string;
+  email: string;
+  product: string;
+  municipality: string | null;
+  sourcePath: string | null;
+  waitlistConsentAt: string;
+  marketingConsentAt: string | null;
+  userId: string | null;
+  createdAt: string;
+};
+
 export type BackofficePurchaseRow = {
   id: string;
   productKey: string;
