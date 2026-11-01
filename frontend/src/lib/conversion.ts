@@ -19,8 +19,8 @@ export const homeOfferLayers = [
     title: 'Entiende el proceso y qué preparar',
     price: 'Precio en la ficha',
     description: `Lectura en pantalla, acceso mínimo ${COURSE_ACCESS_MIN_MONTHS} meses. Registro, papeles y pasos hasta la firma.`,
-    cta: 'Descubrir la guía',
-    href: '/cursos/guiav1',
+    cta: 'Comprar la guía',
+    href: '/cursos/guiav1#pagar',
     event: 'course_cta_clicked' as const,
   },
   {
@@ -82,6 +82,6 @@ export const pdfNextStep = {
   title: '¿Quieres entender el proceso antes de presentar nada?',
   description:
     'El visor te muestra el documento oficial. La guía ordena registro, papeles y pasos hasta la firma.',
-  cta: 'Ver la guía',
-  href: '/cursos/guiav1',
+  cta: 'Comprar la guía',
+  href: '/cursos/guiav1#pagar',
 } as const;

@@ -5,8 +5,8 @@ import { ProGate } from '@/components/pro/pro-cta';
 import { proHomePitch, proPlan } from '@/lib/pro';
 
 export function HomeHeroActions({
-  guideHref = '/cursos/guiav1',
-  guideCta = 'Descubrir la guía',
+  guideHref = '/cursos/guiav1#pagar',
+  guideCta = 'Comprar la guía',
 }: {
   guideHref?: string;
   guideCta?: string;

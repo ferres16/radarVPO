@@ -7,7 +7,7 @@ const tabLinks = [
   { href: '/', label: 'Inicio', icon: 'home' as const },
   { href: '/alerts', label: 'Alertas', icon: 'alerts' as const },
   { href: '/promotions', label: 'Publicadas', icon: 'promotions' as const },
-  { href: '/cursos', label: 'Guía', icon: 'courses' as const },
+  { href: '/cursos/guiav1#pagar', label: 'Guía', icon: 'courses' as const },
   { href: '/account', label: 'Cuenta', icon: 'account' as const },
 ];
 
@@ -36,8 +36,9 @@ export function MobileNav() {
   }
 
   const isActive = (href: string) => {
-    if (href === '/') return pathname === '/';
-    return pathname === href || pathname.startsWith(`${href}/`);
+    const path = href.split('#')[0] || href;
+    if (path === '/') return pathname === '/';
+    return pathname === path || pathname.startsWith(`${path}/`);
   };
 
   return (

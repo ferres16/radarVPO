@@ -46,13 +46,13 @@ export default async function Home() {
   const featuredHref = featuredCourse
     ? featuredOwned
       ? getGuideReadHref(featuredCourse.slug)
-      : `/cursos/${featuredCourse.slug}`
-    : '/cursos/guiav1';
+      : `/cursos/${featuredCourse.slug}#pagar`
+    : '/cursos/guiav1#pagar';
   const featuredCta = featuredOwned
     ? 'Abrir la guía'
     : featuredSellable && featuredPrice !== null
-      ? `Descubrir la guía · ${formatEuro(featuredPrice)}`
-      : 'Descubrir la guía';
+      ? `Comprar la guía · ${formatEuro(featuredPrice)}`
+      : 'Comprar la guía';
   const listed = publicPublishedPromotions(promotions);
   const previewPromotions = listed.slice(0, 3);
   const samplePromotion = previewPromotions[0];

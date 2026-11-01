@@ -33,8 +33,8 @@ export function MyCoursesSection({ courses, error }: MyCoursesSectionProps) {
       {courses.length === 0 ? (
         <div className="mt-4 rounded-2xl border border-dashed border-[var(--stroke)] bg-[var(--bg-app)] p-6 text-center">
           <p className="font-semibold text-[var(--ink)]">Aún no tienes ninguna guía activa.</p>
-          <Link href="/cursos" className="btn btn--primary mt-4 inline-flex">
-            Ver la guía
+          <Link href="/cursos/guiav1#pagar" className="btn btn--primary mt-4 inline-flex">
+            Comprar la guía
           </Link>
         </div>
       ) : (

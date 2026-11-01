@@ -28,6 +28,6 @@ describe('news source helpers', () => {
       topic: 'subvenciones',
       title: 'Nueva ayuda a la entrada',
     });
-    expect(step.href).toBe('/cursos/guiav1');
+    expect(step.href).toBe('/cursos/guiav1#pagar');
   });
 });

@@ -12,7 +12,6 @@ import { CourseModuleIndex } from '@/components/course-module-index';
 import { CoursePublicIndex } from '@/components/course-public-index';
 import { CourseStickyBuyBar } from '@/components/course-sticky-buy-bar';
 import { GuidePdfViewer } from '@/components/guide-pdf-viewer';
-import { GuideSample } from '@/components/conversion/guide-sample';
 import { GuideVpoOutline } from '@/components/conversion/guide-vpo-outline';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
 import { PublicPage } from '@/components/conversion/public-shell';
@@ -38,6 +37,8 @@ import { getCourseCoverSrc } from '@/lib/course-media-url';
 import {
   GUIDE_VPO_FAQS,
   GUIDE_VPO_SEO_DESCRIPTION,
+  GUIDE_VPO_SHORT,
+  GUIDE_VPO_VALUE,
   getPublicCourseDescription,
   getPublicCourseTitle,
   isGuideVpoSlug,
@@ -261,9 +262,16 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
               {guideMode ? (
                 <AccessSwitch
                   fallback={
-                    <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
-                      {publicDescription}
-                    </p>
+                    <div className="space-y-3">
+                      <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
+                        {brandedGuide ? GUIDE_VPO_VALUE : publicDescription}
+                      </p>
+                      {brandedGuide ? (
+                        <p className="text-sm font-semibold leading-6 text-[var(--ink)]">
+                          {GUIDE_VPO_SHORT}
+                        </p>
+                      ) : null}
+                    </div>
                   }
                 >
                   <p className="text-sm leading-7 text-[var(--ink-soft)] md:text-base">
@@ -324,8 +332,8 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                       cadenceLabel: 'pago único',
                       recurrenceNote: `${GUIDE_FORMAT_TEXT} ${COURSE_ACCESS_DURATION_TEXT}`,
                       bullets: getCoursePayBullets(course),
-                      backHref: '/cursos',
-                      backLabel: 'Volver a la guía',
+                      backHref: '/',
+                      backLabel: 'Volver al inicio',
                     }}
                   />
                 ) : (
@@ -382,8 +390,8 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
                       cadenceLabel: 'pago único',
                       recurrenceNote: 'Sin renovaciones. Acceso inmediato al confirmar el pago.',
                       bullets: getCoursePayBullets(course),
-                      backHref: '/cursos',
-                      backLabel: 'Volver a la guía',
+                      backHref: '/',
+                      backLabel: 'Volver al inicio',
                     }}
                   />
                 ) : (
@@ -426,15 +434,7 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
           <section className="shell scroll-mt-24 space-y-6 py-6 md:py-8">
             <LockedOnly>
               {brandedGuide ? (
-                <>
-                  <GuideSample
-                    slug={course.slug}
-                    coverSrc={course.coverImage}
-                    title={publicTitle}
-                    payHref="#pagar"
-                  />
-                  <GuideVpoOutline />
-                </>
+                <GuideVpoOutline />
               ) : (
                 <div className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr] lg:gap-6">
                   <article className="public-card p-5 md:p-6">
@@ -507,8 +507,8 @@ export default async function CourseDetailPage({ params, searchParams }: CourseD
             </article>
 
             <div className="pb-2">
-              <Link href="/cursos" className="text-sm font-bold text-[var(--green-700)]">
-                Volver a la guía
+              <Link href="/" className="text-sm font-bold text-[var(--green-700)]">
+                Volver al inicio
               </Link>
             </div>
           </section>

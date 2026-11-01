@@ -32,8 +32,8 @@ export function getNewsNextStep(
       title: '¿Quieres situar el dinero necesario?',
       description:
         'La guía ordena ahorro, gastos y pasos hasta la firma. Consultar promociones sigue siendo gratis.',
-      href: '/cursos/guiav1',
-      cta: 'Ver la guía',
+      href: '/cursos/guiav1#pagar',
+      cta: 'Comprar la guía',
     };
   }
 
@@ -51,8 +51,8 @@ export function getNewsNextStep(
       title: 'Entiende el proceso antes de presentar nada',
       description:
         'Registro, documentación y requisitos están ordenados en la guía. Las bases oficiales se consultan gratis.',
-      href: '/cursos/guiav1',
-      cta: 'Ver la guía',
+      href: '/cursos/guiav1#pagar',
+      cta: 'Comprar la guía',
     };
   }
 

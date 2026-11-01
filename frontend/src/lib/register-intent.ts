@@ -62,7 +62,7 @@ export function resolveRegisterIntent(nextRaw: string | null | undefined): {
       nextPath,
       title: 'Crea tu cuenta para la guía',
       description:
-        'Si vas a comprar, la cuenta activa el acceso tras el pago. Consultar la muestra no requiere pagar.',
+        'Si vas a comprar, la cuenta activa el acceso tras el pago.',
       submitLabel: 'Crear cuenta y continuar',
     };
   }
@@ -72,7 +72,7 @@ export function resolveRegisterIntent(nextRaw: string | null | undefined): {
     nextPath: nextPath || '/account',
     title: 'Crea tu cuenta en 1 minuto',
     description:
-      'La cuenta es gratis. Con ella guardas promociones y accedes a la muestra de la guía si la ofrece.',
+      'La cuenta es gratis. Con ella guardas promociones y, tras comprar, abres la guía en tu cuenta.',
     submitLabel: 'Crear cuenta gratis',
   };
 }

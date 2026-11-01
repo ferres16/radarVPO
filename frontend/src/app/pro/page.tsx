@@ -312,7 +312,7 @@ export default async function ProPage({
             </ul>
             <p className="mt-4 text-sm text-[var(--ink-soft)]">
               También puedes comprar la{' '}
-              <Link href="/cursos" className="font-semibold text-[var(--green-700)]">
+              <Link href="/cursos/guiav1#pagar" className="font-semibold text-[var(--green-700)]">
                 guía
               </Link>{' '}
               por separado (pago único).
