@@ -1,6 +1,11 @@
 /**
  * Orígenes CSP para Meta Pixel y Google Analytics 4 (gtag.js).
  * Se permiten en CSP siempre; los scripts solo se inyectan con consentimiento.
+ *
+ * Meta Pixel usa además:
+ * - form POST a facebook.com/tr/  → form-action
+ * - iframe de facebook.com        → frame-src
+ * Sin eso, el navegador bloquea el pixel aunque fbevents.js cargue.
  */
 
 export const MARKETING_SCRIPT_SRC = [
@@ -27,4 +32,21 @@ export const MARKETING_IMG_SRC = [
   'https://www.facebook.com',
   'https://www.google-analytics.com',
   'https://www.googletagmanager.com',
+].join(' ');
+
+/** Iframes del pixel / botones de Meta. */
+export const MARKETING_FRAME_SRC = [
+  'https://www.facebook.com',
+  'https://*.facebook.com',
+  'https://web.facebook.com',
+].join(' ');
+
+/**
+ * form-action del pixel (POST a /tr/). Sin esto Chrome bloquea el envío
+ * aunque connect-src e img-src permitan facebook.com.
+ */
+export const MARKETING_FORM_ACTION = [
+  'https://www.facebook.com',
+  'https://facebook.com',
+  'https://*.facebook.com',
 ].join(' ');

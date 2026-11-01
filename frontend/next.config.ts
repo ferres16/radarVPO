@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
 import { ADSENSE_CONNECT_SRC, ADSENSE_FRAME_SRC, ADSENSE_SCRIPT_SRC } from "./src/lib/ads-csp";
-import { MARKETING_CONNECT_SRC, MARKETING_SCRIPT_SRC } from "./src/lib/marketing-csp";
+import {
+  MARKETING_CONNECT_SRC,
+  MARKETING_FORM_ACTION,
+  MARKETING_FRAME_SRC,
+  MARKETING_SCRIPT_SRC,
+} from "./src/lib/marketing-csp";
 
 const isProduction = process.env.NODE_ENV === "production";
 const adsEnabled = process.env.NEXT_PUBLIC_ADSENSE_ENABLED === "true";
@@ -31,16 +36,19 @@ const frameSrc = [
   "https://www.youtube.com",
   "https://www.youtube-nocookie.com",
   adsEnabled ? ADSENSE_FRAME_SRC : "",
+  MARKETING_FRAME_SRC,
 ]
   .filter(Boolean)
   .join(" ");
+
+const formAction = ["'self'", "mailto:", MARKETING_FORM_ACTION].filter(Boolean).join(" ");
 
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
   "frame-ancestors 'none'",
   "object-src 'none'",
-  "form-action 'self' mailto:",
+  `form-action ${formAction}`,
   "img-src 'self' data: blob: https:",
   "media-src 'self' blob: https:",
   "font-src 'self' data:",
