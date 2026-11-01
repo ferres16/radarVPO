@@ -2,6 +2,12 @@ import type { NextResponse } from 'next/server';
 
 const AUTH_COOKIE_NAMES = new Set(['access_token', 'refresh_token', 'session_id']);
 
+/**
+ * Marcador legible por JS (no httpOnly). Indica que puede haber sesión.
+ * Evita llamar a /users/me + /auth/refresh en visitantes anónimos (ruido 401/400 en consola).
+ */
+export const AUTH_SESSION_MARKER = 'rv_session';
+
 function parseSetCookieHeader(raw: string) {
   const parts = raw.split(';').map((part) => part.trim());
   const [nameValue, ...attributes] = parts;
@@ -42,9 +48,11 @@ export function applyAuthCookiesFromBackend(upstream: Response, response: NextRe
     setCookieHeaders.push(...fallback.split(/,(?=[^;]+?=)/));
   }
 
+  let appliedAuth = false;
   for (const raw of setCookieHeaders) {
     const parsed = parseSetCookieHeader(raw);
     if (!parsed) continue;
+    appliedAuth = true;
 
     response.cookies.set(parsed.name, parsed.value, {
       httpOnly: true,
@@ -54,6 +62,16 @@ export function applyAuthCookiesFromBackend(upstream: Response, response: NextRe
       maxAge:
         parsed.maxAge ??
         (parsed.name === 'access_token' ? 7 * 24 * 60 * 60 : 30 * 24 * 60 * 60),
+    });
+  }
+
+  if (appliedAuth) {
+    response.cookies.set(AUTH_SESSION_MARKER, '1', {
+      httpOnly: false,
+      secure: isProduction,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60,
     });
   }
 }
@@ -71,4 +89,12 @@ export function clearAuthCookies(response: NextResponse) {
   for (const name of AUTH_COOKIE_NAMES) {
     response.cookies.set(name, '', options);
   }
+
+  response.cookies.set(AUTH_SESSION_MARKER, '', {
+    httpOnly: false,
+    secure: isProduction,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
 }

@@ -11,6 +11,11 @@ import {
 } from 'react';
 import { api } from '@/lib/api';
 import { hasProAccess } from '@/lib/pro-access';
+import {
+  clearAuthSessionMarkerClient,
+  hasAuthSessionMarker,
+  markAuthSessionClient,
+} from '@/lib/session-marker';
 import type { UserProfile } from '@/types';
 
 type ProAccessContextValue = {
@@ -30,8 +35,10 @@ export function ProAccessProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const profile = await api.getMe();
+      markAuthSessionClient();
       setMe(profile);
     } catch {
+      clearAuthSessionMarkerClient();
       setMe(null);
     } finally {
       setLoading(false);
@@ -42,12 +49,23 @@ export function ProAccessProvider({ children }: { children: ReactNode }) {
     let active = true;
 
     (async () => {
+      // Visitante anónimo: no dispares /users/me ni /auth/refresh (evita 401+400 en consola).
+      if (!hasAuthSessionMarker()) {
+        if (active) {
+          setMe(null);
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
         const profile = await api.getMe();
         if (!active) return;
+        markAuthSessionClient();
         setMe(profile);
       } catch {
         if (!active) return;
+        clearAuthSessionMarkerClient();
         setMe(null);
       } finally {
         if (active) setLoading(false);

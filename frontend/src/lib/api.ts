@@ -116,6 +116,11 @@ async function parseErrorResponse(res: Response, fallback: string) {
 
 let refreshInFlight: Promise<boolean> | null = null;
 
+type RequestOptions = {
+  /** Si false, un 401 no dispara /auth/refresh (probe de sesión anónima). */
+  allowRefresh?: boolean;
+};
+
 async function refreshAuthSession(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
   if (!refreshInFlight) {
@@ -137,7 +142,13 @@ async function refreshAuthSession(): Promise<boolean> {
   return refreshInFlight;
 }
 
-async function request<T>(path: string, init?: RequestInit, retried = false): Promise<T> {
+async function request<T>(
+  path: string,
+  init?: RequestInit,
+  retried = false,
+  options: RequestOptions = {},
+): Promise<T> {
+  const allowRefresh = options.allowRefresh !== false;
   const res = await fetch(`${getBrowserApiBaseUrl()}${path}`, {
     ...init,
     credentials: 'include',
@@ -148,10 +159,10 @@ async function request<T>(path: string, init?: RequestInit, retried = false): Pr
     cache: 'no-store',
   });
 
-  if (res.status === 401 && !retried && typeof window !== 'undefined') {
+  if (res.status === 401 && !retried && allowRefresh && typeof window !== 'undefined') {
     const refreshed = await refreshAuthSession();
     if (refreshed) {
-      return request<T>(path, init, true);
+      return request<T>(path, init, true, options);
     }
   }
 
@@ -236,7 +247,8 @@ export const api = {
   getAlerts: () => requestPublic<Promotion[]>('/alerts/upcoming', 15),
   getNews: () => requestPublic<NewsItem[]>('/news'),
   getNewsById: (id: string) => requestPublic<NewsItem & { rawText?: string }>(`/news/${id}`, 60),
-  getMe: () => request<UserProfile>('/users/me'),
+  getMe: (options?: { allowRefresh?: boolean }) =>
+    request<UserProfile>('/users/me', undefined, false, options),
   getMyCourses: () => request<import('@/types').UserCourseProgress[]>('/users/me/courses'),
   getMyAccess: () => request<UserAccessSummary>('/users/access'),
   getFavorites: () => request<SavedPromotion[]>('/promotions/user/favorites'),
