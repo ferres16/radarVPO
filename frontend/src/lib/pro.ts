@@ -18,9 +18,9 @@ export const proPlan = {
   landingHref: '/pro',
   checkoutHref: '/pro#pagar',
   /** Foto de producto / creativo de campaña. */
-  productImageSrc: '/pro-product.png',
+  productImageSrc: '/pro-product-v2.png',
   productImageAlt:
-    'Suscripción Radar VPO PRO: alertas de vivienda protegida y acceso a WhatsApp para consultas',
+    'Suscripción Radar VPO PRO: alertas por email y SMS y acceso a WhatsApp para consultas',
 };
 
 export const proHref = proPlan.landingHref;

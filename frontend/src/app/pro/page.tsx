@@ -9,9 +9,9 @@ import { NotifyPreview } from '@/components/conversion/notify-preview';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
 import { PublicPage, PublicSection } from '@/components/conversion/public-shell';
 import { ProGate, ProOnlyMessage } from '@/components/pro/pro-cta';
+import { ProStickyCta } from '@/components/pro/pro-sticky-cta';
 import { ProComparison } from '@/components/pro-comparison';
 import { StructuredData } from '@/components/structured-data';
-import { ButtonLink } from '@/components/design-system';
 import { getCourseStatusSummary, isIncludedInPro } from '@/lib/offer';
 import { publicCatalogCourses } from '@/lib/public-courses';
 import { publicPublishedPromotions } from '@/lib/public-promotions';
@@ -61,6 +61,13 @@ const PRO_STEPS = [
   },
 ] as const;
 
+const HERO_BENEFITS = [
+  'Alertas por email de nuevas promociones',
+  'SMS si activas tu móvil',
+  'WhatsApp para consultas',
+  'Sin permanencia: cancelas cuando quieras',
+] as const;
+
 export default async function ProPage({
   searchParams,
 }: {
@@ -87,7 +94,7 @@ export default async function ProPage({
   );
 
   return (
-    <PublicPage>
+    <PublicPage className="lp-pro-page">
       <PageViewTracker event="pro_page_viewed" />
       <StructuredData
         data={[
@@ -98,92 +105,105 @@ export default async function ProPage({
           faqJsonLd([...proFaqs]),
         ]}
       />
+      <ProStickyCta />
 
-      <section className="lp-page-hero">
+      <section className="lp-page-hero lp-pro-hero" aria-labelledby="pro-title">
         <div className="lp-page-hero__backdrop" aria-hidden="true" />
         <div className="shell">
-          <div className="lp-hero__split lp-hero__split--product">
-            <div className="lp-page-hero__inner">
+          <div className="lp-pro-buy">
+            <div className="lp-pro-buy__media">
+              <figure className="lp-product-shot lp-product-shot--hero">
+                <Image
+                  src={proPlan.productImageSrc}
+                  alt={proPlan.productImageAlt}
+                  width={1024}
+                  height={1536}
+                  priority
+                  className="lp-product-shot__image"
+                  sizes="(max-width: 960px) 100vw, 420px"
+                />
+              </figure>
+              <div className="lp-pro-buy__chips" aria-label="Incluye">
+                <span className="lp-pro-chip">Alertas email + SMS</span>
+                <span className="lp-pro-chip lp-pro-chip--whatsapp">WhatsApp consultas</span>
+              </div>
+            </div>
+
+            <div className="lp-pro-buy__offer" id="pagar">
               <span className="lp-hero__badge">{`${proPlan.priceShort} / mes · cancelas cuando quieras`}</span>
-              <h1 className="lp-page-hero__title">
+              <h1 id="pro-title" className="lp-page-hero__title">
                 Suscripción <span className="lp-hero__title-accent">Radar VPO PRO</span>
               </h1>
               <p className="lp-page-hero__subtitle">
                 Recibe alertas de nuevas promociones de vivienda protegida en Catalunya y resuelve dudas por
                 WhatsApp. Sigue las novedades. Prepara tu próximo paso.
               </p>
-              <ul className="lp-hero__proof" aria-label="Resumen PRO">
-                <li>
-                  <span className="lp-hero__proof-mark" aria-hidden>
-                    ✓
-                  </span>
-                  Alertas email + SMS
-                </li>
-                <li>
-                  <span className="lp-hero__proof-mark" aria-hidden>
-                    ✓
-                  </span>
-                  WhatsApp para consultas
-                </li>
-                <li>
-                  <span className="lp-hero__proof-mark" aria-hidden>
-                    ✓
-                  </span>
-                  Sin permanencia
-                </li>
+
+              <ul className="lp-pro-buy__benefits" aria-label="Qué incluye">
+                {HERO_BENEFITS.map((item) => (
+                  <li key={item}>
+                    <span className="lp-hero__proof-mark" aria-hidden>
+                      ✓
+                    </span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+                {includedGuides ? (
+                  <li>
+                    <span className="lp-hero__proof-mark" aria-hidden>
+                      ✓
+                    </span>
+                    <span>{includedGuides.title}</span>
+                  </li>
+                ) : null}
               </ul>
-              <div className="lp-hero__actions lp-hero__actions--stack">
-                <ProGate>
-                  <TrackedButtonLink
-                    href="#pagar"
-                    size="lg"
-                    block
-                    event="pro_cta_clicked"
-                    eventProperties={{ source: 'pro_hero' }}
-                  >
-                    {`Empezar PRO · ${proPlan.priceShort}/mes`}
-                  </TrackedButtonLink>
-                </ProGate>
-                <ProOnlyMessage>
-                  <div className="space-y-3 rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-[var(--ink)]">
-                    <p>
-                      Ya tienes Radar VPO PRO activo. Gestiónalo en{' '}
-                      <Link href="/account" className="underline">
-                        Mi cuenta
-                      </Link>
-                      .
-                    </p>
-                    {whatsappHref ? (
-                      <a
-                        href={whatsappHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn btn--primary btn--lg btn--block"
-                      >
-                        Abrir WhatsApp de consultas
-                      </a>
-                    ) : null}
-                  </div>
-                </ProOnlyMessage>
-                <ButtonLink href="#incluye" variant="secondary" size="lg" block>
-                  Qué incluye
-                </ButtonLink>
-              </div>
+
+              <ProGate>
+                <CheckoutPanel
+                  layout="embedded"
+                  canceled={canceled}
+                  summary={{
+                    product: 'pro',
+                    title: proPlan.name,
+                    priceLabel: proPlan.priceShort,
+                    cadenceLabel: 'al mes',
+                    recurrenceNote:
+                      'Renovación mensual. Cancelas desde Mi cuenta y conservas el acceso hasta el final del periodo pagado.',
+                    bullets: includeBullets,
+                    backHref: '/',
+                    backLabel: 'Volver al inicio',
+                  }}
+                />
+              </ProGate>
+              <ProOnlyMessage>
+                <div className="lp-pro-active-card">
+                  <p>
+                    Ya tienes Radar VPO PRO activo. Gestiónalo en{' '}
+                    <Link href="/account" className="underline">
+                      Mi cuenta
+                    </Link>
+                    .
+                  </p>
+                  {whatsappHref ? (
+                    <a
+                      href={whatsappHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn--primary btn--lg btn--block"
+                    >
+                      Abrir WhatsApp de consultas
+                    </a>
+                  ) : null}
+                </div>
+              </ProOnlyMessage>
+              <p className="lp-pro-buy__trust">
+                Precio final. Sin permanencia. Condiciones en{' '}
+                <Link href="/condiciones" className="underline">
+                  /condiciones
+                </Link>
+                .
+              </p>
             </div>
-            <figure className="lp-product-shot">
-              <Image
-                src={proPlan.productImageSrc}
-                alt={proPlan.productImageAlt}
-                width={1024}
-                height={1536}
-                priority
-                className="lp-product-shot__image"
-                sizes="(max-width: 768px) 100vw, 420px"
-              />
-              <figcaption className="lp-product-shot__caption">
-                Promociones · Alertas · WhatsApp · radarvpo.com
-              </figcaption>
-            </figure>
           </div>
         </div>
       </section>
@@ -307,6 +327,18 @@ export default async function ProPage({
             </article>
           ))}
         </div>
+        <div className="mt-6 flex justify-center">
+          <ProGate>
+            <TrackedButtonLink
+              href="#pagar"
+              size="lg"
+              event="pro_cta_clicked"
+              eventProperties={{ source: 'pro_steps' }}
+            >
+              {`Empezar ahora · ${proPlan.priceShort}/mes`}
+            </TrackedButtonLink>
+          </ProGate>
+        </div>
       </PublicSection>
 
       <PublicSection muted>
@@ -334,63 +366,26 @@ export default async function ProPage({
             </p>
           </div>
           <NotifyPreview promotion={sample} />
+          <div className="mt-6 flex justify-center">
+            <ProGate>
+              <TrackedButtonLink
+                href="#pagar"
+                size="lg"
+                event="pro_cta_clicked"
+                eventProperties={{ source: 'pro_notify_preview' }}
+              >
+                Quiero recibir avisos
+              </TrackedButtonLink>
+            </ProGate>
+          </div>
         </PublicSection>
       ) : null}
 
       <PublicSection muted>
-        <ProComparison showCta={false} />
+        <ProComparison showCta />
       </PublicSection>
 
-      <PublicSection id="pagar">
-        <div className="lp-section__head">
-          <p className="lp-eyebrow">Suscripción</p>
-          <h2 className="lp-title">{`${proPlan.priceShort} al mes`}</h2>
-          <p className="lp-lead">
-            Precio final. Renovación automática. Cancelas desde Mi cuenta y conservas el acceso hasta el final del
-            periodo ya pagado.
-          </p>
-        </div>
-        <ProGate>
-          <div className="mx-auto max-w-lg scroll-mt-24">
-            <CheckoutPanel
-              layout="embedded"
-              canceled={canceled}
-              summary={{
-                product: 'pro',
-                title: proPlan.name,
-                priceLabel: proPlan.priceShort,
-                cadenceLabel: 'al mes',
-                recurrenceNote:
-                  'Renovación mensual. Cancelas desde Mi cuenta y conservas el acceso hasta el final del periodo pagado.',
-                bullets: includeBullets,
-                backHref: '/',
-                backLabel: 'Volver al inicio',
-              }}
-            />
-          </div>
-        </ProGate>
-        <ProOnlyMessage>
-          <p className="mx-auto mt-4 max-w-lg rounded-xl bg-white px-4 py-3 text-center text-sm font-semibold text-[var(--ink)]">
-            Ya tienes PRO. Ve a{' '}
-            <Link href="/account" className="underline">
-              Mi cuenta
-            </Link>{' '}
-            para gestionar la suscripción
-            {whatsappHref ? (
-              <>
-                {' '}
-                o{' '}
-                <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="underline">
-                  escribe por WhatsApp
-                </a>
-              </>
-            ) : null}
-            .
-          </p>
-        </ProOnlyMessage>
-      </PublicSection>
-
-      <PublicSection muted>
+      <PublicSection>
         <div className="lp-hero__split">
           <div>
             <p className="lp-eyebrow">Para quién</p>
@@ -423,7 +418,7 @@ export default async function ProPage({
         </div>
       </PublicSection>
 
-      <PublicSection>
+      <PublicSection muted>
         <div className="lp-section__head">
           <p className="lp-eyebrow">Límites</p>
           <h2 className="lp-title">Lo que PRO no hace</h2>
@@ -435,7 +430,7 @@ export default async function ProPage({
         </ul>
       </PublicSection>
 
-      <PublicSection border muted>
+      <PublicSection border>
         <HomeFaq items={proFaqs} lead="Precio, cancelación, WhatsApp y alcance de los avisos." />
         <div className="public-cta-band mt-8">
           <div>
@@ -453,7 +448,7 @@ export default async function ProPage({
                 event="pro_cta_clicked"
                 eventProperties={{ source: 'pro_footer' }}
               >
-                {`Empezar · ${proPlan.priceShort}/mes`}
+                {`Volver al pago · ${proPlan.priceShort}/mes`}
               </TrackedButtonLink>
             </ProGate>
             <p className="text-center text-xs text-[var(--ink-soft)]">
