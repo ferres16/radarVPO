@@ -19,7 +19,7 @@ export default function ConditionsPage() {
       badge="Condiciones"
       title="Condiciones de contratación"
       description="Qué compras, cuánto cuesta, cómo se cobra, cómo se cancela y qué no incluye Radar VPO."
-      updatedAt="30 de octubre de 2026"
+      updatedAt="2 de noviembre de 2026"
     >
       <LegalSection title="1. Quién presta el servicio">
         <OwnerIdentity />
@@ -29,15 +29,15 @@ export default function ConditionsPage() {
         <ul className="list-disc space-y-1 pl-5">
           <li>
             <strong className="text-[var(--ink)]">Gratis:</strong> consulta de promociones de vivienda protegida y
-            acceso a su documento oficial, cuenta gratuita y lección de muestra de los cursos que la tengan.
+            acceso a su documento oficial, y cuenta gratuita para gestionar compras y avisos.
           </li>
           <li>
             <strong className="text-[var(--ink)]">Cursos:</strong> contenido formativo digital, de pago único.
           </li>
           <li>
             <strong className="text-[var(--ink)]">{proPlan.name}:</strong> suscripción mensual con avisos por email y
-            SMS de nuevas promociones y espacio personal sin límite de promociones guardadas. Solo incluye una guía
-            o curso si su ficha publicada lo indica.
+            SMS de nuevas promociones y WhatsApp para consultas. Solo incluye una guía o curso si su ficha publicada
+            lo indica.
           </li>
         </ul>
         <p>
@@ -78,7 +78,8 @@ export default function ConditionsPage() {
         <p>
           Los avisos cubren las promociones que Radar VPO detecta en las fuentes oficiales que monitoriza. Las fechas de
           próximos lanzamientos son estimaciones y se identifican como tales. Los SMS requieren un móvil válido en tu
-          cuenta.
+          cuenta. El WhatsApp incluido en PRO es un canal de consultas orientativas sobre el proceso y las
+          promociones; no sustituye asesoramiento jurídico ni implica la presentación de solicitudes en tu nombre.
         </p>
       </LegalSection>
 

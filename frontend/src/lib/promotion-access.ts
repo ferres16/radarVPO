@@ -4,7 +4,7 @@ export function isAlertPromotion(promotion: Pick<Promotion, 'type' | 'status'>) 
   return promotion.type === 'alert' || promotion.status === 'pending_review';
 }
 
-/** Las promociones publicadas se consultan en el documento oficial (visor de PDF). */
+/** Las promociones publicadas se consultan mediante el documento oficial (PDF). */
 export function canViewPromotionDocument(promotion: Pick<Promotion, 'type' | 'status'>) {
   return !isAlertPromotion(promotion);
 }

@@ -92,9 +92,9 @@ export default function LoginPage() {
 
           <aside className="order-2 border-t border-[var(--stroke)] bg-[var(--ink)] p-5 text-white md:order-1 md:border-t-0 md:border-r md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-white/70">Radar VPO</p>
-            <h2 className="mt-3 text-xl font-bold leading-tight md:text-2xl">Tu espacio para seguir las VPO</h2>
+            <h2 className="mt-3 text-xl font-bold leading-tight md:text-2xl">Tu cuenta en Radar VPO</h2>
             <p className="mt-3 text-sm leading-6 text-white/78">
-              Accede a tu perfil, cursos activos y las promociones que estás siguiendo.
+              Accede a tu perfil, la guía comprada y la suscripción PRO con avisos y WhatsApp para consultas.
             </p>
           </aside>
         </section>

@@ -1,6 +1,6 @@
 import { safeNextPath } from '@/lib/safe-next';
 
-export type RegisterIntent = 'save' | 'buy_guide' | 'buy_pro' | 'general';
+export type RegisterIntent = 'buy_guide' | 'buy_pro' | 'general';
 
 export function resolveRegisterIntent(nextRaw: string | null | undefined): {
   intent: RegisterIntent;
@@ -10,17 +10,6 @@ export function resolveRegisterIntent(nextRaw: string | null | undefined): {
   submitLabel: string;
 } {
   const nextPath = safeNextPath(nextRaw, '');
-
-  if (nextPath.startsWith('/promotions/') || nextPath.startsWith('/mi-espacio')) {
-    return {
-      intent: 'save',
-      nextPath: nextPath || '/mi-espacio',
-      title: 'Crea tu cuenta para guardar esta promoción',
-      description:
-        'La cuenta es gratis. Al terminar vuelves a la promoción que querías guardar. No te pedimos pagar por guardar.',
-      submitLabel: 'Crear cuenta y guardar',
-    };
-  }
 
   if (
     nextPath.startsWith('/checkout') ||
@@ -51,7 +40,7 @@ export function resolveRegisterIntent(nextRaw: string | null | undefined): {
       intent: 'buy_pro',
       nextPath,
       title: 'Crea tu cuenta para Radar VPO PRO',
-      description: 'Con la cuenta gestionas avisos y el acceso PRO. Si solo quieres guardar promociones, no hace falta pagar.',
+      description: 'Con la cuenta gestionas avisos, WhatsApp de consultas y el acceso PRO.',
       submitLabel: 'Crear cuenta y continuar',
     };
   }
@@ -61,18 +50,17 @@ export function resolveRegisterIntent(nextRaw: string | null | undefined): {
       intent: 'buy_guide',
       nextPath,
       title: 'Crea tu cuenta para la guía',
-      description:
-        'Si vas a comprar, la cuenta activa el acceso tras el pago.',
+      description: 'Si vas a comprar, la cuenta activa el acceso tras el pago.',
       submitLabel: 'Crear cuenta y continuar',
     };
   }
 
   return {
     intent: 'general',
-    nextPath: nextPath || '/account',
+    nextPath: nextPath && !nextPath.startsWith('/mi-espacio') ? nextPath : '/account',
     title: 'Crea tu cuenta en 1 minuto',
     description:
-      'La cuenta es gratis. Con ella guardas promociones y, tras comprar, abres la guía en tu cuenta.',
+      'La cuenta es gratis. Con ella gestionas avisos y, tras comprar, abres la guía o activas PRO en tu perfil.',
     submitLabel: 'Crear cuenta gratis',
   };
 }

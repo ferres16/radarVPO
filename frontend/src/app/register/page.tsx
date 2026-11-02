@@ -75,7 +75,6 @@ function RegisterForm() {
   }
 
   const loginHref = nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : '/login';
-  const savingOnly = intentInfo.intent === 'save';
 
   return (
     <main className="lp lp--inner lp--app auth-shell">
@@ -163,15 +162,9 @@ function RegisterForm() {
               <button type="submit" disabled={loading || !acceptedPrivacy} className="btn btn--primary btn--lg btn--block">
                 {loading ? 'Creando...' : intentInfo.submitLabel}
               </button>
-              {savingOnly ? (
-                <p className="text-center text-xs text-[var(--ink-soft)]">
-                  Guardar una promoción no activa ningún cobro.
-                </p>
-              ) : (
-                <p className="text-center text-xs text-[var(--ink-soft)]">
-                  La información es orientativa y no sustituye a las fuentes oficiales.
-                </p>
-              )}
+              <p className="text-center text-xs text-[var(--ink-soft)]">
+                La información es orientativa y no sustituye a las fuentes oficiales.
+              </p>
             </form>
 
             <p className="mt-4 text-center text-sm text-[var(--ink-soft)]">

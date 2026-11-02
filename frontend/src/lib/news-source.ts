@@ -40,7 +40,7 @@ export function getNewsNextStep(
   if (/alquiler|lloguer|arrend/.test(haystack)) {
     return {
       title: 'Consulta promociones de alquiler protegido',
-      description: 'Abre las bases oficiales en el visor, sin cuenta.',
+      description: 'Abre las bases oficiales sin cuenta.',
       href: '/promotions',
       cta: 'Ver promociones',
     };

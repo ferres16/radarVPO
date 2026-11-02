@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { CheckoutPanel } from '@/components/checkout/checkout-panel';
@@ -6,8 +7,7 @@ import { TrackedButtonLink } from '@/components/tracked-link';
 import { HomeFaq } from '@/components/conversion/home-faq';
 import { NotifyPreview } from '@/components/conversion/notify-preview';
 import { PageViewTracker } from '@/components/conversion/page-view-tracker';
-import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
-import { SpaceDemo } from '@/components/conversion/space-demo';
+import { PublicPage, PublicSection } from '@/components/conversion/public-shell';
 import { ProGate, ProOnlyMessage } from '@/components/pro/pro-cta';
 import { ProComparison } from '@/components/pro-comparison';
 import { StructuredData } from '@/components/structured-data';
@@ -25,14 +25,22 @@ import {
   proWhyPay,
 } from '@/lib/pro';
 import { breadcrumbJsonLd, createMetadata, faqJsonLd } from '@/lib/seo';
+import { getProWhatsappHref, proWhatsapp } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = createMetadata({
-  title: 'Radar VPO PRO: avisos de vivienda protegida',
-  description: `Recibe avisos de vivienda protegida sin revisar las webs cada día. ${proPlan.priceShort} al mes, renovación automática, cancelación cuando quieras.`,
+  title: 'Radar VPO PRO: alertas y WhatsApp para consultas',
+  description: `Suscripción Radar VPO PRO: alertas de vivienda protegida en Catalunya, SMS y WhatsApp para consultas. ${proPlan.priceShort} al mes, cancelas cuando quieras.`,
   path: '/pro',
-  keywords: ['alertas vivienda protegida', 'avisos VPO', 'suscripción VPO'],
+  image: proPlan.productImageSrc,
+  keywords: [
+    'alertas vivienda protegida',
+    'avisos VPO',
+    'WhatsApp VPO',
+    'suscripción VPO',
+    'Radar VPO PRO',
+  ],
 });
 
 const PRO_STEPS = [
@@ -44,12 +52,12 @@ const PRO_STEPS = [
   {
     step: '2',
     title: 'Te avisamos',
-    text: 'Email (y SMS si activas el móvil) cuando detectamos una promoción publicada o un próximo lanzamiento.',
+    text: 'Email y SMS cuando detectamos una promoción publicada o un próximo lanzamiento.',
   },
   {
     step: '3',
-    title: 'Organizas lo que sigues',
-    text: 'Mi espacio sin límite: checklist, etapa y notas en cualquier dispositivo.',
+    title: 'Consultas por WhatsApp',
+    text: 'Canal directo para dudas del proceso mientras tu suscripción esté activa.',
   },
 ] as const;
 
@@ -70,10 +78,13 @@ export default async function ProPage({
   const includeBullets = [
     'Avisos por email de todas las promociones detectadas',
     'SMS si activas tu móvil',
-    'Mi espacio sin límite',
+    'WhatsApp para consultas',
     'Cancelas cuando quieras; acceso hasta fin de periodo pagado',
     ...(includedGuides ? [includedGuides.title] : []),
   ];
+  const whatsappHref = getProWhatsappHref(
+    'Hola, soy suscriptor/a de Radar VPO PRO y tengo una consulta.',
+  );
 
   return (
     <PublicPage>
@@ -88,113 +99,109 @@ export default async function ProPage({
         ]}
       />
 
-      <PublicPageHero
-        animated={false}
-        badge={`${proPlan.priceShort} / mes · cancelas cuando quieras`}
-        title="Avisos de vivienda protegida"
-        titleAccent="sin revisar diez webs cada día"
-        description="PRO te avisa por email y SMS cuando detectamos una convocatoria, y te deja organizar en Mi espacio todo lo que sigues. Consultar los PDF oficiales sigue siendo gratis."
-        actions={
-          <>
-            <ProGate>
-              <TrackedButtonLink
-                href="#pagar"
-                size="lg"
-                block
-                event="pro_cta_clicked"
-                eventProperties={{ source: 'pro_hero' }}
-              >
-                {`Empezar PRO · ${proPlan.priceShort}/mes`}
-              </TrackedButtonLink>
-            </ProGate>
-            <ProOnlyMessage>
-              <p className="rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-[var(--ink)]">
-                Ya tienes Radar VPO PRO activo. Gestiónalo en{' '}
-                <Link href="/account" className="underline">
-                  Mi cuenta
-                </Link>
-                .
+      <section className="lp-page-hero">
+        <div className="lp-page-hero__backdrop" aria-hidden="true" />
+        <div className="shell">
+          <div className="lp-hero__split lp-hero__split--product">
+            <div className="lp-page-hero__inner">
+              <span className="lp-hero__badge">{`${proPlan.priceShort} / mes · cancelas cuando quieras`}</span>
+              <h1 className="lp-page-hero__title">
+                Suscripción <span className="lp-hero__title-accent">Radar VPO PRO</span>
+              </h1>
+              <p className="lp-page-hero__subtitle">
+                Recibe alertas de nuevas promociones de vivienda protegida en Catalunya y resuelve dudas por
+                WhatsApp. Sigue las novedades. Prepara tu próximo paso.
               </p>
-            </ProOnlyMessage>
-            <ButtonLink href="#como-funciona" variant="secondary" size="lg" block>
-              Cómo funciona
-            </ButtonLink>
-          </>
-        }
-        footer={
-          <ul className="lp-hero__proof" aria-label="Resumen PRO">
-            <li>
-              <span className="lp-hero__proof-mark" aria-hidden>
-                ✓
-              </span>
-              Email + SMS
-            </li>
-            <li>
-              <span className="lp-hero__proof-mark" aria-hidden>
-                ✓
-              </span>
-              Todos los avisos detectados
-            </li>
-            <li>
-              <span className="lp-hero__proof-mark" aria-hidden>
-                ✓
-              </span>
-              Sin permanencia
-            </li>
-          </ul>
-        }
-      />
+              <ul className="lp-hero__proof" aria-label="Resumen PRO">
+                <li>
+                  <span className="lp-hero__proof-mark" aria-hidden>
+                    ✓
+                  </span>
+                  Alertas email + SMS
+                </li>
+                <li>
+                  <span className="lp-hero__proof-mark" aria-hidden>
+                    ✓
+                  </span>
+                  WhatsApp para consultas
+                </li>
+                <li>
+                  <span className="lp-hero__proof-mark" aria-hidden>
+                    ✓
+                  </span>
+                  Sin permanencia
+                </li>
+              </ul>
+              <div className="lp-hero__actions lp-hero__actions--stack">
+                <ProGate>
+                  <TrackedButtonLink
+                    href="#pagar"
+                    size="lg"
+                    block
+                    event="pro_cta_clicked"
+                    eventProperties={{ source: 'pro_hero' }}
+                  >
+                    {`Empezar PRO · ${proPlan.priceShort}/mes`}
+                  </TrackedButtonLink>
+                </ProGate>
+                <ProOnlyMessage>
+                  <div className="space-y-3 rounded-xl bg-white/80 px-4 py-3 text-sm font-semibold text-[var(--ink)]">
+                    <p>
+                      Ya tienes Radar VPO PRO activo. Gestiónalo en{' '}
+                      <Link href="/account" className="underline">
+                        Mi cuenta
+                      </Link>
+                      .
+                    </p>
+                    {whatsappHref ? (
+                      <a
+                        href={whatsappHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn--primary btn--lg btn--block"
+                      >
+                        Abrir WhatsApp de consultas
+                      </a>
+                    ) : null}
+                  </div>
+                </ProOnlyMessage>
+                <ButtonLink href="#incluye" variant="secondary" size="lg" block>
+                  Qué incluye
+                </ButtonLink>
+              </div>
+            </div>
+            <figure className="lp-product-shot">
+              <Image
+                src={proPlan.productImageSrc}
+                alt={proPlan.productImageAlt}
+                width={1024}
+                height={1536}
+                priority
+                className="lp-product-shot__image"
+                sizes="(max-width: 768px) 100vw, 420px"
+              />
+              <figcaption className="lp-product-shot__caption">
+                Promociones · Alertas · WhatsApp · radarvpo.com
+              </figcaption>
+            </figure>
+          </div>
+        </div>
+      </section>
 
-      <PublicSection id="como-funciona">
+      <PublicSection id="incluye">
         <div className="lp-section__head">
-          <p className="lp-eyebrow">Cómo funciona</p>
-          <h2 className="lp-title">Tres pasos, sin letra pequeña inventada</h2>
+          <p className="lp-eyebrow">El producto</p>
+          <h2 className="lp-title">Qué incluye Radar VPO PRO</h2>
           <p className="lp-lead">
-            Pagas la suscripción, recibes avisos de lo que detectamos y organizas las oportunidades en tu cuenta.
-          </p>
-        </div>
-        <div className="lp-why-grid">
-          {PRO_STEPS.map((item) => (
-            <article key={item.step} className="lp-why-card">
-              <p className="lp-offer-card__eyebrow">Paso {item.step}</p>
-              <h3 className="lp-why-card__title">{item.title}</h3>
-              <p className="lp-why-card__text">{item.text}</p>
-            </article>
-          ))}
-        </div>
-      </PublicSection>
-
-      <PublicSection muted>
-        <div className="lp-section__head">
-          <p className="lp-eyebrow">Por qué PRO</p>
-          <h2 className="lp-title">Menos vigilancia manual</h2>
-          <p className="lp-lead">
-            Consultar convocatorias es gratis. PRO cubre el aviso a tiempo y la organización con cuenta.
-          </p>
-        </div>
-        <div className="lp-why-grid">
-          {proWhyPay.map((item) => (
-            <article key={item.title} className="lp-why-card">
-              <h3 className="lp-why-card__title">{item.title}</h3>
-              <p className="lp-why-card__text">{item.body}</p>
-            </article>
-          ))}
-        </div>
-      </PublicSection>
-
-      <PublicSection>
-        <div className="lp-section__head">
-          <p className="lp-eyebrow">Qué incluye</p>
-          <h2 className="lp-title">La oferta de hoy</h2>
-          <p className="lp-lead">
-            {includedGuides
-              ? 'Avisos, espacio y la guía listada más abajo. Nada inventado.'
-              : 'Avisos y espacio. Si una guía pasa a estar incluida en PRO, aparecerá aquí con nombre y enlace.'}
+            Alertas a tiempo y un canal de consultas. Consultar las convocatorias sigue siendo gratis.
           </p>
         </div>
         <div className="lp-why-grid">
           {proIncludes.map((item) => (
-            <article key={item.title} className="lp-why-card">
+            <article
+              key={item.title}
+              className={`lp-why-card${item.title.includes('WhatsApp') ? ' lp-why-card--highlight' : ''}`}
+            >
               <h3 className="lp-why-card__title">{item.title}</h3>
               <p className="lp-why-card__text">{item.description}</p>
             </article>
@@ -220,36 +227,121 @@ export default async function ProPage({
         ) : null}
       </PublicSection>
 
-      <PublicSection muted>
+      <PublicSection muted id="whatsapp">
         <div className="lp-hero__split">
           <div>
-            <p className="lp-eyebrow">Ejemplo real</p>
-            <h2 className="lp-title">Así llega un aviso</h2>
-            {sample ? (
-              <p className="lp-lead">
-                Texto del sistema para una promoción publicada ahora. El envío depende de las fuentes que
-                monitorizamos.
+            <p className="lp-eyebrow">Diferencial</p>
+            <h2 className="lp-title">WhatsApp para consultas</h2>
+            <p className="lp-lead">
+              Cuando te llega un aviso o no sabes el siguiente paso, escribes por WhatsApp. Orientación sobre el
+              proceso y las promociones mientras tu PRO esté activo.
+            </p>
+            <ul className="mt-4 space-y-2 text-sm leading-6 text-[var(--ink)]">
+              <li className="flex gap-2">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" aria-hidden />
+                <span>Dudas sobre registro, plazos y documentación habitual</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" aria-hidden />
+                <span>Aclarar qué significa un aviso o una ficha concreta</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--ink-soft)]" aria-hidden />
+                <span>No presentamos tu solicitud ni damos asesoramiento jurídico 1:1 formal</span>
+              </li>
+            </ul>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <ProGate>
+                <TrackedButtonLink
+                  href="#pagar"
+                  size="lg"
+                  event="pro_cta_clicked"
+                  eventProperties={{ source: 'pro_whatsapp' }}
+                >
+                  Activar PRO y WhatsApp
+                </TrackedButtonLink>
+              </ProGate>
+              <ProOnlyMessage>
+                {whatsappHref ? (
+                  <a
+                    href={whatsappHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn btn--primary btn--lg"
+                  >
+                    Escribir por WhatsApp
+                  </a>
+                ) : (
+                  <p className="text-sm font-semibold text-[var(--ink)]">
+                    El enlace de WhatsApp se activa en tu cuenta PRO.
+                  </p>
+                )}
+              </ProOnlyMessage>
+            </div>
+            {!proWhatsapp.available ? (
+              <p className="mt-3 text-xs text-[var(--ink-soft)]">
+                Tras activar PRO verás el acceso a WhatsApp en Mi cuenta.
               </p>
-            ) : (
-              <p className="lp-lead">
-                Cuando se publique una promoción, el SMS incluye el municipio y el enlace a su ficha.
-              </p>
-            )}
-            {sample ? (
-              <div className="mt-4">
-                <NotifyPreview promotion={sample} />
-              </div>
             ) : null}
           </div>
-          {sample ? <SpaceDemo promotion={sample} /> : null}
+          <aside className="lp-whatsapp-card" aria-label="Acceso a WhatsApp">
+            <p className="lp-whatsapp-card__kicker">Incluido en PRO</p>
+            <p className="lp-whatsapp-card__title">Acceso a WhatsApp</p>
+            <p className="lp-whatsapp-card__text">para consultas</p>
+            <p className="lp-whatsapp-card__note">Disponible mientras la suscripción esté activa.</p>
+          </aside>
         </div>
       </PublicSection>
 
-      <PublicSection>
+      <PublicSection id="como-funciona">
+        <div className="lp-section__head">
+          <p className="lp-eyebrow">Cómo funciona</p>
+          <h2 className="lp-title">Tres pasos claros</h2>
+        </div>
+        <div className="lp-why-grid">
+          {PRO_STEPS.map((item) => (
+            <article key={item.step} className="lp-why-card">
+              <p className="lp-offer-card__eyebrow">Paso {item.step}</p>
+              <h3 className="lp-why-card__title">{item.title}</h3>
+              <p className="lp-why-card__text">{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </PublicSection>
+
+      <PublicSection muted>
+        <div className="lp-section__head">
+          <p className="lp-eyebrow">Por qué PRO</p>
+          <h2 className="lp-title">Menos vigilancia manual</h2>
+        </div>
+        <div className="lp-why-grid">
+          {proWhyPay.map((item) => (
+            <article key={item.title} className="lp-why-card">
+              <h3 className="lp-why-card__title">{item.title}</h3>
+              <p className="lp-why-card__text">{item.body}</p>
+            </article>
+          ))}
+        </div>
+      </PublicSection>
+
+      {sample ? (
+        <PublicSection>
+          <div className="lp-section__head">
+            <p className="lp-eyebrow">Ejemplo real</p>
+            <h2 className="lp-title">Así llega un aviso</h2>
+            <p className="lp-lead">
+              Texto del sistema para una promoción publicada. El envío depende de las fuentes que monitorizamos.
+            </p>
+          </div>
+          <NotifyPreview promotion={sample} />
+        </PublicSection>
+      ) : null}
+
+      <PublicSection muted>
         <ProComparison showCta={false} />
       </PublicSection>
 
-      <PublicSection muted id="pagar">
+      <PublicSection id="pagar">
         <div className="lp-section__head">
           <p className="lp-eyebrow">Suscripción</p>
           <h2 className="lp-title">{`${proPlan.priceShort} al mes`}</h2>
@@ -283,12 +375,22 @@ export default async function ProPage({
             <Link href="/account" className="underline">
               Mi cuenta
             </Link>{' '}
-            para gestionar la suscripción.
+            para gestionar la suscripción
+            {whatsappHref ? (
+              <>
+                {' '}
+                o{' '}
+                <a href={whatsappHref} target="_blank" rel="noopener noreferrer" className="underline">
+                  escribe por WhatsApp
+                </a>
+              </>
+            ) : null}
+            .
           </p>
         </ProOnlyMessage>
       </PublicSection>
 
-      <PublicSection>
+      <PublicSection muted>
         <div className="lp-hero__split">
           <div>
             <p className="lp-eyebrow">Para quién</p>
@@ -321,7 +423,7 @@ export default async function ProPage({
         </div>
       </PublicSection>
 
-      <PublicSection muted>
+      <PublicSection>
         <div className="lp-section__head">
           <p className="lp-eyebrow">Límites</p>
           <h2 className="lp-title">Lo que PRO no hace</h2>
@@ -333,13 +435,13 @@ export default async function ProPage({
         </ul>
       </PublicSection>
 
-      <PublicSection border>
-        <HomeFaq items={proFaqs} lead="Precio, cancelación, inclusiones y alcance de los avisos." />
+      <PublicSection border muted>
+        <HomeFaq items={proFaqs} lead="Precio, cancelación, WhatsApp y alcance de los avisos." />
         <div className="public-cta-band mt-8">
           <div>
-            <h2 className="lp-title lp-title--sm">¿Listo para los avisos?</h2>
+            <h2 className="lp-title lp-title--sm">Sigue las novedades. Prepara tu próximo paso.</h2>
             <p className="lp-lead">
-              {proPlan.priceShort}/mes. Sin permanencia. Cancelas cuando quieras desde Mi cuenta.
+              {proPlan.priceShort}/mes. Alertas + WhatsApp. Sin permanencia.
             </p>
           </div>
           <div className="public-cta-band__actions">

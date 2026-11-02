@@ -152,18 +152,6 @@ export function TopNav() {
               />
             ) : null}
             {me ? (
-              <Link
-                href="/mi-espacio"
-                className={`whitespace-nowrap rounded-full px-3 py-2 text-[13px] font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-3.5 xl:text-sm ${
-                  isActive('/mi-espacio')
-                    ? 'bg-[rgba(22,112,85,0.10)] text-[var(--green-700)]'
-                    : 'text-[var(--ink)] hover:bg-white/80'
-                }`}
-              >
-                Mi espacio
-              </Link>
-            ) : null}
-            {me ? (
               <div className="relative">
                 <button
                   type="button"
@@ -193,14 +181,6 @@ export function TopNav() {
                       role="menuitem"
                     >
                       Mi cuenta
-                    </Link>
-                    <Link
-                      href="/mi-espacio"
-                      className="block rounded-2xl px-3 py-2 text-sm font-semibold text-[var(--ink)] hover:bg-[var(--bg-app)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
-                      onClick={() => setMenuOpen(false)}
-                      role="menuitem"
-                    >
-                      Mi espacio
                     </Link>
                     {me.role === 'admin' ? (
                       <Link
@@ -279,17 +259,6 @@ export function TopNav() {
                   onClick={() => setMobileOpen(false)}
                 >
                   Mi cuenta
-                </Link>
-              </li>
-            ) : null}
-            {me ? (
-              <li>
-                <Link
-                  href="/mi-espacio"
-                  className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Mi espacio
                 </Link>
               </li>
             ) : null}

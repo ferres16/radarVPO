@@ -200,7 +200,7 @@ export default function AdminPromotionEditPage() {
                 <SectionHeader
                   eyebrow="Listado"
                   title="Cabecera pública"
-                  description="Estos datos aparecen en la tarjeta y en la cabecera del visor. Si un dato no consta, déjalo vacío."
+                  description="Estos datos aparecen en la tarjeta y en la ficha pública. Si un dato no consta, déjalo vacío."
                 />
                 <div className="mt-4 grid gap-3 md:grid-cols-2">
                   <Field label="Título">
@@ -310,7 +310,7 @@ export default function AdminPromotionEditPage() {
                 <SectionHeader
                   eyebrow="Documento oficial"
                   title="PDF de la promoción"
-                  description="Adjunta las bases, anexos y modificaciones. La vista pública abre estos archivos en el visor."
+                  description="Adjunta las bases, anexos y modificaciones. La vista pública enlaza estos archivos al documento oficial."
                 />
                 <label className="mt-4 block rounded-xl border border-dashed p-4 text-sm">
                   Añadir PDF

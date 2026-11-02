@@ -22,7 +22,7 @@ export function SiteFooter() {
         <div>
           <p className="site-footer__brand">Radar VPO</p>
           <p className="site-footer__tagline">
-            Consulta promociones de vivienda protegida en Cataluña, entiende el contexto con una guía y organiza tus oportunidades.
+            Consulta promociones de vivienda protegida en Cataluña, entiende el proceso con una guía y recibe alertas con Radar VPO PRO.
           </p>
           {supportEmail ? (
             <p className="site-footer__tagline">
@@ -39,14 +39,7 @@ export function SiteFooter() {
               {link.mobileLabel ?? link.label}
             </Link>
           ))}
-          {!loading && me ? (
-            <>
-              <Link href="/mi-espacio">Mi espacio</Link>
-              <Link href="/account">Mi cuenta</Link>
-            </>
-          ) : !loading ? (
-            <Link href="/login">Entrar</Link>
-          ) : null}
+          {!loading && me ? <Link href="/account">Mi cuenta</Link> : !loading ? <Link href="/login">Entrar</Link> : null}
         </nav>
       </div>
       <div className="shell site-footer__legal">

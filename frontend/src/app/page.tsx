@@ -1,19 +1,21 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
+import Link from 'next/link';
 import { api } from '@/lib/api';
 import { ButtonLink } from '@/components/design-system';
 import { FeaturedCourseSpotlight } from '@/components/conversion/featured-course-spotlight';
 import { HomeFaq } from '@/components/conversion/home-faq';
 import { HomeFinalCtaBand, HomeHeroActions } from '@/components/conversion/home-pro-ctas';
 import { HomeOfferStrip } from '@/components/conversion/home-offer-strip';
-import { PdfViewerDemo } from '@/components/conversion/pdf-viewer-demo';
-import { SpaceDemo } from '@/components/conversion/space-demo';
 import { PromotionCard } from '@/components/promotion-card';
+import { TrackedButtonLink } from '@/components/tracked-link';
 import { StructuredData } from '@/components/structured-data';
 import { homeFaqs } from '@/lib/conversion';
 import { formatEuro, getCoursePrice, isCourseSellable, isIncludedInPro } from '@/lib/offer';
 import { getGuideReadHref, getOwnedCourseSlugs } from '@/lib/owned-courses';
 import { pickFeaturedPublicCourse, publicCatalogCourses } from '@/lib/public-courses';
 import { publicPublishedPromotions } from '@/lib/public-promotions';
+import { proPlan } from '@/lib/pro';
 import { createMetadata, faqJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -21,7 +23,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = createMetadata({
   title: 'Consulta promociones de vivienda protegida en Cataluña',
   description:
-    'Consulta promociones de vivienda protegida con su documento oficial, entiende el contexto con una guía y organiza tus oportunidades en un solo lugar.',
+    'Consulta promociones de vivienda protegida con su documento oficial, entiende el proceso con una guía y recibe alertas con Radar VPO PRO.',
   path: '/',
   keywords: [
     'vivienda protegida Cataluña',
@@ -55,7 +57,6 @@ export default async function Home() {
       : 'Comprar la guía';
   const listed = publicPublishedPromotions(promotions);
   const previewPromotions = listed.slice(0, 3);
-  const samplePromotion = previewPromotions[0];
   const includedProGuideTitles = publicCatalogCourses(courses)
     .filter(isIncludedInPro)
     .map((course) => course.title);
@@ -68,7 +69,7 @@ export default async function Home() {
         <section className="lp-hero" aria-labelledby="hero-title">
           <div className="lp-hero__backdrop" aria-hidden="true" />
           <div className="shell">
-            <div className="lp-hero__split">
+            <div className="lp-hero__split lp-hero__split--product">
               <div className="lp-hero__inner">
                 <span className="lp-hero__badge">Radar VPO · Cataluña</span>
                 <h1 id="hero-title" className="lp-hero__title">
@@ -81,7 +82,22 @@ export default async function Home() {
                 </p>
                 <HomeHeroActions guideHref={featuredHref} guideCta={featuredCta} />
               </div>
-              {samplePromotion ? <PdfViewerDemo promotion={samplePromotion} /> : null}
+              <figure className="lp-product-shot">
+                <Link href="/pro" aria-label="Ver Radar VPO PRO">
+                  <Image
+                    src={proPlan.productImageSrc}
+                    alt={proPlan.productImageAlt}
+                    width={1024}
+                    height={1536}
+                    priority
+                    className="lp-product-shot__image"
+                    sizes="(max-width: 768px) 100vw, 380px"
+                  />
+                </Link>
+                <figcaption className="lp-product-shot__caption">
+                  Radar VPO PRO · Alertas · WhatsApp · {proPlan.priceShort}/mes
+                </figcaption>
+              </figure>
             </div>
           </div>
         </section>
@@ -122,7 +138,9 @@ export default async function Home() {
                 <h2 id="promos-title" className="lp-title">
                   Promociones publicadas, con su documento oficial
                 </h2>
-                <p className="lp-lead">Abre las bases sin registrarte. El visor funciona en el móvil y en el ordenador.</p>
+                <p className="lp-lead">
+                  Abre las bases en la fuente oficial, sin registrarte. El documento oficial es la referencia.
+                </p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {previewPromotions.map((promotion) => (
@@ -157,25 +175,53 @@ export default async function Home() {
           </section>
         ) : null}
 
-        <section className="lp-section lp-section--muted lp-section--border" aria-labelledby="space-title">
+        <section className="lp-section lp-section--muted lp-section--border" aria-labelledby="pro-title">
           <div className="shell lp-hero__split">
             <div>
-              <p className="lp-eyebrow">PRO</p>
-              <h2 id="space-title" className="lp-title">
-                Organiza lo que sigues, en tu cuenta
+              <p className="lp-eyebrow">Radar VPO PRO</p>
+              <h2 id="pro-title" className="lp-title">
+                Alertas a tiempo y WhatsApp para consultas
               </h2>
               <p className="lp-lead">
-                Los marcadores de un navegador se pierden al cambiar de dispositivo. Mi espacio guarda etapa, notas y
-                una lista de pasos con tu usuario. Gratis hasta 3 promociones; PRO quita el límite y añade avisos por
-                SMS.
+                Te avisamos por email y SMS cuando detectamos una promoción. Con PRO también tienes WhatsApp para
+                resolver dudas del proceso mientras la suscripción esté activa.
               </p>
-              <div className="mt-6">
-                <ButtonLink href="/pro#pagar" variant="secondary" className="w-full sm:w-auto">
-                  Ver qué incluye PRO
+              <ul className="mt-4 space-y-2 text-sm leading-6 text-[var(--ink)]">
+                <li className="flex gap-2">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" aria-hidden />
+                  <span>Avisos por email y SMS</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" aria-hidden />
+                  <span>WhatsApp para consultas (no presentamos la solicitud por ti)</span>
+                </li>
+                <li className="flex gap-2">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--green-700)]" aria-hidden />
+                  <span>{proPlan.priceShort}/mes · cancelas cuando quieras</span>
+                </li>
+              </ul>
+              <div className="mt-6 flex flex-wrap gap-3">
+                <TrackedButtonLink
+                  href="/pro#pagar"
+                  size="lg"
+                  event="pro_cta_clicked"
+                  eventProperties={{ source: 'home_whatsapp_promo' }}
+                >
+                  {`Empezar PRO · ${proPlan.priceShort}/mes`}
+                </TrackedButtonLink>
+                <ButtonLink href="/pro" variant="secondary" size="lg">
+                  Ver ficha PRO
                 </ButtonLink>
               </div>
             </div>
-            {samplePromotion ? <SpaceDemo promotion={samplePromotion} /> : null}
+            <aside className="lp-whatsapp-card" aria-label="Acceso a WhatsApp">
+              <p className="lp-whatsapp-card__kicker">Incluido en PRO</p>
+              <p className="lp-whatsapp-card__title">Acceso a WhatsApp</p>
+              <p className="lp-whatsapp-card__text">para consultas</p>
+              <p className="lp-whatsapp-card__note">
+                Canal directo para dudas del proceso y las promociones. Disponible mientras tu suscripción esté activa.
+              </p>
+            </aside>
           </div>
         </section>
 

@@ -5,10 +5,8 @@ import { api } from '@/lib/api';
 import { copy } from '@/lib/navigation';
 import { isAlertPromotion } from '@/lib/promotion-access';
 import { isAmendmentPublication } from '@/lib/promotion-content-filters';
-import { getViewableDocuments } from '@/lib/promotion-documents';
+import { categoryLabel, getViewableDocuments } from '@/lib/promotion-documents';
 import { ButtonLink } from '@/components/design-system';
-import { PromotionPdfViewer } from '@/components/pdf-viewer/promotion-pdf-viewer';
-import { SavePromotionButton } from '@/components/save-promotion-button';
 import { StructuredData } from '@/components/structured-data';
 import { pdfNextStep } from '@/lib/conversion';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
@@ -100,24 +98,50 @@ export default async function PromotionDetailPage({ params }: PromotionDetailPar
           >
             Fuente oficial
           </ButtonLink>
-          <SavePromotionButton promotionId={promotion.id} />
         </div>
       </header>
 
       {documents.length > 0 ? (
-        <PromotionPdfViewer
-          promotionId={promotion.id}
-          documents={documents}
-          sourceUrl={promotion.sourceUrl}
-        />
+        <section className="premium-card p-4 md:p-6" aria-labelledby="docs-title">
+          <h2 id="docs-title" className="text-lg font-bold text-[var(--ink)]">
+            Documentos oficiales
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
+            Enlaces al PDF publicado por la administración. Se abren en una pestaña nueva; Radar VPO no altera el
+            contenido.
+          </p>
+          <ul className="mt-4 space-y-3">
+            {documents.map((document) => (
+              <li
+                key={document.id}
+                className="flex flex-col gap-2 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+              >
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--ink-soft)]">
+                    {categoryLabel(document.category)}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--ink)]">{document.label}</p>
+                </div>
+                <a
+                  href={document.originalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn--secondary sm:shrink-0"
+                >
+                  Abrir PDF
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
       ) : (
         <section className="premium-card p-5 text-center md:p-8" aria-live="polite">
           <h2 className="text-lg font-bold text-[var(--ink)]">
             Esta promoción todavía no tiene un PDF asociado
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-[var(--ink-soft)]">
-            Consulta la publicación original en la fuente oficial. Cuando el documento esté
-            disponible aquí, podrás leerlo sin salir de Radar VPO.
+            Consulta la publicación original en la fuente oficial. Cuando el documento esté disponible aquí, podrás
+            abrirlo desde Radar VPO.
           </p>
           <div className="mt-4 flex justify-center">
             <ButtonLink href={promotion.sourceUrl} variant="primary">
@@ -138,8 +162,8 @@ export default async function PromotionDetailPage({ params }: PromotionDetailPar
       </section>
 
       <p className="px-1 text-xs leading-5 text-[var(--ink-soft)]">
-        Documentos publicados por la administración y mostrados tal cual. Radar VPO es un servicio
-        independiente; las bases oficiales son siempre la referencia.
+        Documentos publicados por la administración y mostrados tal cual. Radar VPO es un servicio independiente; las
+        bases oficiales son siempre la referencia.
       </p>
     </main>
   );

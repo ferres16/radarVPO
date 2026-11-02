@@ -1,4 +1,5 @@
 import { PRO_PRICE_AMOUNT, formatEuro, proPriceLabel } from '@/lib/offer';
+import { proWhatsapp } from '@/lib/whatsapp';
 
 /**
  * Fuente única de Radar VPO PRO.
@@ -16,6 +17,10 @@ export const proPlan = {
   ctaLabel: 'Hazte PRO',
   landingHref: '/pro',
   checkoutHref: '/pro#pagar',
+  /** Foto de producto / creativo de campaña. */
+  productImageSrc: '/pro-product.png',
+  productImageAlt:
+    'Suscripción Radar VPO PRO: alertas de vivienda protegida y acceso a WhatsApp para consultas',
 };
 
 export const proHref = proPlan.landingHref;
@@ -27,7 +32,7 @@ export function getProHref(): string {
 
 export const proActiveMessages = [
   'Radar VPO PRO está activo en tu cuenta.',
-  'Tienes Radar VPO PRO activo: recibirás los avisos por email y SMS.',
+  'Tienes Radar VPO PRO activo: avisos por email y SMS, y WhatsApp para consultas.',
 ] as const;
 
 export function getProActiveMessage(seed?: string): string {
@@ -38,36 +43,34 @@ export function getProActiveMessage(seed?: string): string {
 
 export const freePlanFeatures = [
   'Consultar todas las promociones publicadas',
-  'Ver el documento oficial (PDF) de cada promoción',
-  'Guardar hasta 3 promociones en Mi espacio',
-  'Muestra gratuita de la guía si la ofrece',
+  'Abrir el documento oficial (PDF) de cada promoción',
+  'Comprar la guía por separado (pago único)',
 ] as const;
 
 export const proExclusiveFeatures = [
   'Avisos por email de nuevas promociones y próximos lanzamientos',
   'Avisos por SMS si indicas tu móvil',
-  'Mi espacio sin límite de promociones guardadas',
+  'Acceso a WhatsApp para consultas',
 ] as const;
 
 export const freeVsProDescription =
-  'Consultar promociones y ver sus documentos oficiales es gratis. PRO añade avisos por email y SMS, y organización sin límite.';
+  'Consultar promociones y abrir sus documentos oficiales es gratis. PRO añade avisos por email y SMS, y WhatsApp para consultas.';
 
 /** Inclusiones fijas de PRO (siempre verdaderas). */
 export const proIncludes = [
   {
     title: 'Avisos por email',
     description:
-      'Te escribimos cuando se publica una nueva promoción y cuando detectamos un próximo lanzamiento en las fuentes que monitorizamos. Recibes todos los avisos detectados.',
+      'Te escribimos cuando se publica una nueva promoción y cuando detectamos un próximo lanzamiento en las fuentes que monitorizamos.',
   },
   {
     title: 'Avisos por SMS',
     description:
-      'El mismo aviso en el móvil si has indicado tu número. Es el canal que no suele estar en los boletines gratuitos.',
+      'El mismo aviso en el móvil si has indicado tu número. Llega aunque no estés mirando el correo.',
   },
   {
-    title: 'Mi espacio sin límite',
-    description:
-      'Guarda promociones con tu cuenta —checklist, etapa y notas— en cualquier dispositivo. La cuenta gratuita solo permite 3.',
+    title: 'WhatsApp para consultas',
+    description: proWhatsapp.pitch,
   },
 ] as const;
 
@@ -98,36 +101,34 @@ export function proOfferIncludes(guideTitles: string[]) {
 /** Mensaje corto y estable para portada y bandas: nunca inventa un curso. */
 export function proHomePitch(includedGuideTitles: string[] = []): string {
   const guides = proIncludedGuidesCopy(includedGuideTitles);
-  if (guides) {
-    return `Consultar el PDF oficial es gratis. ${proPlan.name} añade avisos por email y SMS, Mi espacio sin límite y ${guides.description.split('.')[0].toLowerCase()}. ${proPlan.price}. Cancelas desde Mi cuenta.`;
-  }
-  return `Consultar el PDF oficial es gratis. ${proPlan.name} añade avisos por email y SMS, y Mi espacio sin límite para organizar lo que sigues. ${proPlan.price}. Cancelas desde Mi cuenta.`;
+  const guideBit = guides ? ` y ${guides.description.split('.')[0].toLowerCase()}` : '';
+  return `Consultar promociones es gratis. ${proPlan.name} añade avisos por email y SMS, y WhatsApp para consultas${guideBit}. ${proPlan.price}. Cancelas desde Mi cuenta.`;
 }
 
 export const proWhyPay = [
   {
     title: 'Enterarte sin abrir diez webs',
-    body: 'PRO te avisa cuando detectamos una publicación o un próximo lanzamiento. Tú decides cuándo mirar la ficha; no hace falta revisar el registro cada día.',
+    body: 'PRO te avisa cuando detectamos una publicación o un próximo lanzamiento. Tú decides cuándo mirar la ficha.',
   },
   {
     title: 'SMS, no solo correo',
-    body: 'Hay avisos por email gratuitos de terceros. PRO añade el SMS si tu cuenta tiene un móvil válido: el aviso llega aunque no estés mirando la bandeja.',
+    body: 'Hay avisos por email gratuitos de terceros. PRO añade el SMS si tu cuenta tiene un móvil válido.',
   },
   {
-    title: 'Organización con cuenta',
-    body: 'Con la cuenta gratuita guardas hasta 3 promociones. PRO quita el límite. Checklist, etapa y notas viajan contigo en cualquier dispositivo.',
+    title: 'WhatsApp para consultas',
+    body: 'Canal directo para resolver dudas sobre el proceso y las promociones mientras tu suscripción esté activa. No presentamos la solicitud por ti.',
   },
 ] as const;
 
 export const proForWhom = {
   yes: [
     'Quieres enterarte en el móvil cuando se publica una convocatoria, no solo al abrir el correo.',
-    'Sigues varias promociones y necesitas una lista con pasos, no un marcador del navegador.',
+    'Prefieres poder preguntar por WhatsApp cuando te atasques con un paso del proceso.',
     'Prefieres un aviso sobrio de lo detectado, sin inventar urgencias ni plazas limitadas.',
   ],
   no: [
-    'Solo quieres mirar PDFs de vez en cuando: eso es gratis, sin PRO.',
-    'Esperas que presentemos la solicitud o te asesoremos en tu caso: no lo hacemos.',
+    'Solo quieres mirar convocatorias de vez en cuando: eso es gratis, sin PRO.',
+    'Esperas que presentemos la solicitud o te representemos ante la administración: no lo hacemos.',
   ],
 } as const;
 
@@ -135,7 +136,8 @@ export const proLimits = [
   'Los avisos PRO (email y SMS) cubren todas las promociones que detectamos; no hay filtro por municipio ni por compra/alquiler.',
   'Las fechas de próximos lanzamientos son estimaciones y se indican como tales: pueden no cumplirse o no publicarse.',
   'Los SMS solo se envían si tu cuenta tiene un móvil válido y has activado ese canal.',
-  'Radar VPO informa y organiza: no presenta solicitudes por ti ni garantiza una adjudicación.',
+  'WhatsApp es para consultas orientativas sobre el proceso; no sustituye asesoramiento jurídico ni presenta solicitudes.',
+  'Radar VPO no garantiza una adjudicación.',
   'Una guía concreta solo forma parte de PRO si aparece listada en esta página con su nombre y enlace.',
 ] as const;
 
@@ -143,17 +145,22 @@ export const proFaqs = [
   {
     question: '¿Qué recibo exactamente con PRO?',
     answer:
-      'Avisos por email (y por SMS si indicas tu móvil) cuando se publica una nueva promoción o detectamos un próximo lanzamiento, y Mi espacio sin límite de promociones guardadas. Una guía concreta solo forma parte de PRO si aparece listada en esta página.',
+      'Avisos por email (y por SMS si indicas tu móvil) cuando se publica una nueva promoción o detectamos un próximo lanzamiento, y acceso a WhatsApp para consultas. Una guía concreta solo forma parte de PRO si aparece listada en esta página.',
   },
   {
     question: '¿Qué puedo hacer gratis?',
     answer:
-      'Consultar todas las promociones, abrir su documento oficial en PDF, guardar hasta 3 promociones en Mi espacio y ver la muestra de la guía si la ofrece.',
+      'Consultar todas las promociones y abrir su documento oficial en PDF. La guía se puede comprar aparte con pago único.',
   },
   {
     question: 'Hay avisos por correo gratis. ¿Qué añade PRO?',
     answer:
-      'El aviso por SMS si indicas tu móvil y Mi espacio sin límite con cuenta. El correo, por sí solo, no es el motivo para pagar.',
+      'El aviso por SMS si indicas tu móvil y WhatsApp para consultas. El correo, por sí solo, no es el motivo para pagar.',
+  },
+  {
+    question: '¿Qué cubre el WhatsApp?',
+    answer:
+      'Consultas sobre el proceso de la VPO y las promociones que monitorizamos, mientras tu suscripción esté activa. No presentamos tu solicitud ni damos asesoramiento jurídico personalizado.',
   },
   {
     question: '¿Incluye un curso o una guía?',
@@ -177,16 +184,16 @@ export const proFaqs = [
   {
     question: '¿Garantiza conseguir una vivienda protegida?',
     answer:
-      'No. Te ayuda a enterarte y a organizarte. La adjudicación depende siempre de los organismos oficiales.',
+      'No. Te ayuda a enterarte a tiempo y a resolver dudas del proceso. La adjudicación depende siempre de los organismos oficiales.',
   },
 ] as const;
 
 export const proComparisonRows = [
   { feature: 'Consultar promociones publicadas', free: true as const, pro: true as const },
-  { feature: 'Ver el documento oficial (PDF)', free: true as const, pro: true as const },
-  { feature: 'Promociones guardadas en Mi espacio', free: 'Hasta 3', pro: 'Sin límite' },
+  { feature: 'Abrir el documento oficial (PDF)', free: true as const, pro: true as const },
   { feature: 'Avisos por email', free: false as const, pro: true as const },
   { feature: 'Avisos por SMS', free: false as const, pro: true as const },
+  { feature: 'WhatsApp para consultas', free: false as const, pro: true as const },
   {
     feature: 'Guía incluida en PRO',
     free: 'No',

@@ -12,6 +12,7 @@ import {
   getProStatusTone,
 } from '@/lib/pro-access';
 import { getProActiveMessage, proIncludes, proPlan } from '@/lib/pro';
+import { getProWhatsappHref, proWhatsapp } from '@/lib/whatsapp';
 import type { UserProfile } from '@/types';
 
 type ProStatusCardProps = {
@@ -102,7 +103,7 @@ export function ProStatusCard({ profile, onProfileUpdate }: ProStatusCardProps) 
             {proPlan.name}
           </p>
           <h2 className="display-type mt-2 text-2xl font-black text-[var(--ink)] md:text-3xl">
-            Avisos y organización sin límite
+            Alertas y WhatsApp para consultas
           </h2>
           <p className="mt-4 text-3xl font-black text-[var(--ink)]">{proPlan.price}</p>
           <p className="mt-1 text-sm text-[var(--ink-soft)]">Cancelas cuando quieras desde esta misma página.</p>
@@ -209,6 +210,22 @@ export function ProStatusCard({ profile, onProfileUpdate }: ProStatusCardProps) 
             </div>
           </div>
         ) : null}
+
+        {proWhatsapp.available ? (
+          <a
+            href={getProWhatsappHref('Hola, soy suscriptor/a de Radar VPO PRO y tengo una consulta.')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn--primary"
+          >
+            Abrir WhatsApp de consultas
+          </a>
+        ) : (
+          <p className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3 text-sm text-[var(--ink-soft)]">
+            El acceso a WhatsApp para consultas forma parte de tu PRO. Si no ves el enlace, escribe a soporte desde
+            Contacto.
+          </p>
+        )}
 
         <div className="flex flex-col gap-2 sm:flex-row">
           {isStripeManaged ? (

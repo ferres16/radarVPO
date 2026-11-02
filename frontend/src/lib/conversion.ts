@@ -1,4 +1,3 @@
-import { FREE_SAVED_PROMOTIONS_LIMIT } from '@/lib/my-space';
 import { COURSE_ACCESS_MIN_MONTHS, proPriceLabel } from '@/lib/offer';
 
 /** Tres capas de la oferta, con una acción cada una. */
@@ -8,7 +7,8 @@ export const homeOfferLayers = [
     eyebrow: 'Gratis',
     title: 'Consulta las promociones',
     price: '0 €',
-    description: `Abre el PDF oficial de cada convocatoria sin cuenta. Con registro puedes guardar hasta ${FREE_SAVED_PROMOTIONS_LIMIT} promociones.`,
+    description:
+      'Abre cada convocatoria y su documento oficial sin cuenta. Sin registro obligatorio para consultar.',
     cta: 'Ver promociones',
     href: '/promotions',
     event: 'promotion_list_cta_clicked' as const,
@@ -26,10 +26,10 @@ export const homeOfferLayers = [
   {
     id: 'pro',
     eyebrow: 'Suscripción',
-    title: 'Avisos y organización',
+    title: 'Alertas y WhatsApp',
     price: proPriceLabel,
     description:
-      'Email y SMS cuando se publica una promoción, y Mi espacio sin límite. Renovación mensual; cancelas cuando quieras.',
+      'Email y SMS cuando se publica una promoción, y WhatsApp para consultas. Renovación mensual; cancelas cuando quieras.',
     cta: 'Ver Radar PRO',
     href: '/pro',
     event: 'pro_cta_clicked' as const,
@@ -37,29 +37,30 @@ export const homeOfferLayers = [
 ] as const;
 
 export const homeHeroProof = [
-  'Consultar promociones y su PDF oficial es gratis, sin registrarte.',
+  'Consultar promociones y su documento oficial es gratis, sin registrarte.',
   'La guía es lectura en pantalla, pago único, con acceso mínimo de 24 meses.',
-  `PRO (${proPriceLabel}) añade avisos y espacio ilimitado.`,
+  `PRO (${proPriceLabel}) añade avisos por SMS y WhatsApp para consultas.`,
 ] as const;
 
 export const homeFaqs = [
   {
     question: '¿Qué es Radar VPO?',
     answer:
-      'Un servicio independiente para consultar promociones de vivienda protegida en Cataluña con su documento oficial, entender el proceso con una guía y organizar las oportunidades que sigues. No es una administración ni adjudica viviendas.',
+      'Un servicio independiente para consultar promociones de vivienda protegida en Cataluña con su documento oficial, entender el proceso con una guía y recibir avisos con Radar VPO PRO. No es una administración ni adjudica viviendas.',
   },
   {
     question: '¿Puedo ver promociones sin pagar?',
-    answer: `Sí. Consultar las promociones y abrir su documento oficial en PDF es gratis. Con una cuenta gratuita también puedes guardar hasta ${FREE_SAVED_PROMOTIONS_LIMIT} promociones en Mi espacio.`,
+    answer:
+      'Sí. Consultar las promociones y abrir su documento oficial es gratis, sin necesidad de registrarte.',
   },
   {
     question: '¿Qué es Radar VPO PRO?',
-    answer: `Una suscripción de ${proPriceLabel} que añade avisos por email y SMS de nuevas promociones y Mi espacio sin límite. Se renueva cada mes hasta que la canceles; mantienes el acceso hasta el final del periodo ya pagado. Una guía concreta solo se incluye si aparece listada en la página PRO.`,
+    answer: `Una suscripción de ${proPriceLabel} que añade avisos por email y SMS de nuevas promociones y WhatsApp para consultas. Se renueva cada mes hasta que la canceles; mantienes el acceso hasta el final del periodo ya pagado. Una guía concreta solo se incluye si aparece listada en la página PRO.`,
   },
   {
     question: 'Hay avisos por correo gratis en otros sitios. ¿Por qué PRO?',
     answer:
-      'PRO no se vende solo por el correo. Añade el aviso por SMS (si indicas tu móvil) y un espacio personal con cuenta —checklist, etapa y notas en cualquier dispositivo—.',
+      'PRO no se vende solo por el correo. Añade el aviso por SMS (si indicas tu móvil) y WhatsApp para consultas sobre el proceso mientras la suscripción esté activa.',
   },
   {
     question: '¿La guía es una suscripción?',
@@ -73,15 +74,15 @@ export const homeFaqs = [
   {
     question: '¿Radar VPO presenta la solicitud por mí o me asesora individualmente?',
     answer:
-      'No. Radar VPO ofrece información, una guía práctica y herramientas de organización. Cada persona presenta su propia solicitud ante los organismos oficiales. El soporte cubre compras, acceso, facturación e incidencias técnicas.',
+      'No. Radar VPO ofrece información, una guía práctica y avisos. Cada persona presenta su propia solicitud ante los organismos oficiales. El WhatsApp de PRO es para consultas orientativas, no para presentar solicitudes. El soporte cubre compras, acceso, facturación e incidencias técnicas.',
   },
 ];
 
-/** CTA tras el visor PDF de una promoción. */
+/** CTA tras los documentos de una promoción. */
 export const pdfNextStep = {
   title: '¿Quieres entender el proceso antes de presentar nada?',
   description:
-    'El visor te muestra el documento oficial. La guía ordena registro, papeles y pasos hasta la firma.',
+    'Los enlaces te llevan al documento oficial. La guía ordena registro, papeles y pasos hasta la firma.',
   cta: 'Comprar la guía',
   href: '/cursos/guiav1#pagar',
 } as const;
