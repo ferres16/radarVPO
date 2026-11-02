@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import { CheckoutPanel } from '@/components/checkout/checkout-panel';
@@ -87,7 +86,7 @@ export default async function ProPage({
   );
 
   return (
-    <PublicPage className="pb-24 md:pb-0">
+    <PublicPage className="course-detail--locked">
       <PageViewTracker event="pro_page_viewed" />
       <StructuredData
         data={[
@@ -98,23 +97,20 @@ export default async function ProPage({
           faqJsonLd([...proFaqs]),
         ]}
       />
-      <ProStickyCta />
 
       <header className="lp-page-hero lp-page-hero--flush">
-        <div className="shell grid gap-5 py-4 md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] md:items-start md:gap-8 md:py-5">
-          <div className="overflow-hidden rounded-[1.5rem] border border-[var(--stroke)] bg-[#f4efe6]">
-            <Image
+        <div className="shell py-4 md:grid md:grid-cols-[minmax(0,18rem)_minmax(0,1fr)] md:items-start md:gap-8 md:py-5">
+          <div className="overflow-hidden rounded-[1.5rem] border border-[var(--stroke)] bg-[#f4efe6] shadow-sm">
+            {/* Misma técnica que la portada de la guía: img fluido, sin forzar altura. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={proPlan.productImageSrc}
               alt={proPlan.productImageAlt}
-              width={1024}
-              height={1536}
-              priority
-              className="h-auto w-full object-contain"
-              sizes="(max-width: 768px) 100vw, 352px"
+              className="mx-auto h-auto max-h-[28rem] w-full object-contain object-top md:max-h-none"
             />
           </div>
 
-          <div className="grid min-w-0 gap-5">
+          <div className="mt-5 grid min-w-0 gap-5 md:mt-0">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--green-700)] md:text-[11px]">
                 Suscripción Radar VPO
@@ -129,9 +125,9 @@ export default async function ProPage({
               <p className="mt-3 text-sm font-semibold leading-6 text-[var(--ink)]">
                 {proPlan.priceShort}/mes · email + SMS · WhatsApp para consultas · sin permanencia
               </p>
-              <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-soft)]">
+              <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-soft)] md:mt-5">
                 <span className="rounded-full bg-[var(--bg-app)] px-3 py-1">Alertas email + SMS</span>
-                <span className="rounded-full bg-[rgba(37,211,102,0.14)] px-3 py-1 text-[#0f766e]">
+                <span className="rounded-full bg-[rgba(37,211,102,0.14)] px-3 py-1 text-[var(--green-700)]">
                   WhatsApp consultas
                 </span>
                 <span className="rounded-full bg-[var(--bg-app)] px-3 py-1">Cancelas cuando quieras</span>
@@ -188,6 +184,8 @@ export default async function ProPage({
           </div>
         </div>
       </header>
+
+      <ProStickyCta />
 
       <PublicSection id="incluye">
         <div className="lp-section__head">

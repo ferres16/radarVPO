@@ -5,10 +5,10 @@ import { TrackedButtonLink } from '@/components/tracked-link';
 import { useProAccess } from '@/components/pro-access-provider';
 import { proPlan } from '@/lib/pro';
 
-/** Barra fija al hacer scroll fuera del formulario de compra. */
+/** Misma barra móvil que la guía (`course-sticky-buy`). */
 export function ProStickyCta() {
   const { me, loading } = useProAccess();
-  const [visible, setVisible] = useState(false);
+  const [pastCheckout, setPastCheckout] = useState(false);
   const hasPro = Boolean(me?.proAccess?.hasAccess ?? me?.plan === 'pro');
 
   useEffect(() => {
@@ -17,34 +17,36 @@ export function ProStickyCta() {
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setVisible(!entry.isIntersecting);
+        setPastCheckout(!entry.isIntersecting);
       },
-      { threshold: 0.12, rootMargin: '-48px 0px 0px 0px' },
+      { threshold: 0.08, rootMargin: '-40px 0px 0px 0px' },
     );
     observer.observe(target);
     return () => observer.disconnect();
   }, []);
 
-  if (loading || hasPro || !visible) return null;
+  if (loading || hasPro) return null;
+
+  // Igual que la guía: visible en móvil. Si el formulario ya está en pantalla, se oculta.
+  if (!pastCheckout) return null;
 
   return (
-    <div className="lp-pro-sticky" role="region" aria-label="Activar Radar VPO PRO">
-      <div className="lp-pro-sticky__inner">
-        <div className="lp-pro-sticky__copy">
-          <p className="lp-pro-sticky__title">{proPlan.name}</p>
-          <p className="lp-pro-sticky__meta">
-            {proPlan.priceShort}/mes · alertas + WhatsApp · sin permanencia
-          </p>
+    <div className="course-sticky-buy md:hidden" role="region" aria-label="Activar Radar VPO PRO">
+      <div className="course-sticky-buy__inner">
+        <div className="min-w-0">
+          <p className="course-sticky-buy__label">Suscripción mensual</p>
+          <p className="course-sticky-buy__price">{proPlan.priceShort}</p>
         </div>
-        <TrackedButtonLink
-          href="#pagar"
-          size="lg"
-          event="pro_cta_clicked"
-          eventProperties={{ source: 'pro_sticky' }}
-          className="lp-pro-sticky__btn"
-        >
-          {`Activar · ${proPlan.priceShort}/mes`}
-        </TrackedButtonLink>
+        <div className="course-sticky-buy__actions">
+          <TrackedButtonLink
+            href="#pagar"
+            event="pro_cta_clicked"
+            eventProperties={{ source: 'pro_sticky' }}
+            className="btn btn--primary btn--sm shrink-0"
+          >
+            Activar PRO
+          </TrackedButtonLink>
+        </div>
       </div>
     </div>
   );
