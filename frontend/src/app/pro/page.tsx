@@ -61,13 +61,6 @@ const PRO_STEPS = [
   },
 ] as const;
 
-const HERO_BENEFITS = [
-  'Alertas por email de nuevas promociones',
-  'SMS si activas tu móvil',
-  'WhatsApp para consultas',
-  'Sin permanencia: cancelas cuando quieras',
-] as const;
-
 export default async function ProPage({
   searchParams,
 }: {
@@ -94,7 +87,7 @@ export default async function ProPage({
   );
 
   return (
-    <PublicPage className="lp-pro-page">
+    <PublicPage className="pb-24 md:pb-0">
       <PageViewTracker event="pro_page_viewed" />
       <StructuredData
         data={[
@@ -107,57 +100,45 @@ export default async function ProPage({
       />
       <ProStickyCta />
 
-      <section className="lp-page-hero lp-pro-hero" aria-labelledby="pro-title">
-        <div className="lp-page-hero__backdrop" aria-hidden="true" />
-        <div className="shell">
-          <div className="lp-pro-buy">
-            <div className="lp-pro-buy__media">
-              <figure className="lp-product-shot lp-product-shot--hero">
-                <Image
-                  src={proPlan.productImageSrc}
-                  alt={proPlan.productImageAlt}
-                  width={1024}
-                  height={1536}
-                  priority
-                  className="lp-product-shot__image"
-                  sizes="(max-width: 960px) 100vw, 420px"
-                />
-              </figure>
-              <div className="lp-pro-buy__chips" aria-label="Incluye">
-                <span className="lp-pro-chip">Alertas email + SMS</span>
-                <span className="lp-pro-chip lp-pro-chip--whatsapp">WhatsApp consultas</span>
+      <header className="lp-page-hero lp-page-hero--flush">
+        <div className="shell grid gap-5 py-4 md:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] md:items-start md:gap-8 md:py-5">
+          <div className="overflow-hidden rounded-[1.5rem] border border-[var(--stroke)] bg-[#f4efe6]">
+            <Image
+              src={proPlan.productImageSrc}
+              alt={proPlan.productImageAlt}
+              width={1278}
+              height={841}
+              priority
+              className="h-auto w-full object-contain"
+              sizes="(max-width: 768px) 100vw, 352px"
+            />
+          </div>
+
+          <div className="grid min-w-0 gap-5">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--green-700)] md:text-[11px]">
+                Suscripción Radar VPO
+              </p>
+              <h1 className="display-type mt-1 text-2xl font-black text-[var(--ink)] sm:mt-2 sm:text-3xl md:text-4xl">
+                {proPlan.name}
+              </h1>
+              <p className="mt-3 text-sm leading-7 text-[var(--ink-soft)] md:text-base">
+                Recibe alertas de nuevas promociones de vivienda protegida en Catalunya y resuelve dudas por WhatsApp.
+                Sigue las novedades. Prepara tu próximo paso.
+              </p>
+              <p className="mt-3 text-sm font-semibold leading-6 text-[var(--ink)]">
+                {proPlan.priceShort}/mes · email + SMS · WhatsApp para consultas · sin permanencia
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.12em] text-[var(--ink-soft)]">
+                <span className="rounded-full bg-[var(--bg-app)] px-3 py-1">Alertas email + SMS</span>
+                <span className="rounded-full bg-[rgba(37,211,102,0.14)] px-3 py-1 text-[#0f766e]">
+                  WhatsApp consultas
+                </span>
+                <span className="rounded-full bg-[var(--bg-app)] px-3 py-1">Cancelas cuando quieras</span>
               </div>
             </div>
 
-            <div className="lp-pro-buy__offer" id="pagar">
-              <span className="lp-hero__badge">{`${proPlan.priceShort} / mes · cancelas cuando quieras`}</span>
-              <h1 id="pro-title" className="lp-page-hero__title">
-                Suscripción <span className="lp-hero__title-accent">Radar VPO PRO</span>
-              </h1>
-              <p className="lp-page-hero__subtitle">
-                Recibe alertas de nuevas promociones de vivienda protegida en Catalunya y resuelve dudas por
-                WhatsApp. Sigue las novedades. Prepara tu próximo paso.
-              </p>
-
-              <ul className="lp-pro-buy__benefits" aria-label="Qué incluye">
-                {HERO_BENEFITS.map((item) => (
-                  <li key={item}>
-                    <span className="lp-hero__proof-mark" aria-hidden>
-                      ✓
-                    </span>
-                    <span>{item}</span>
-                  </li>
-                ))}
-                {includedGuides ? (
-                  <li>
-                    <span className="lp-hero__proof-mark" aria-hidden>
-                      ✓
-                    </span>
-                    <span>{includedGuides.title}</span>
-                  </li>
-                ) : null}
-              </ul>
-
+            <aside id="pagar" className="scroll-mt-24">
               <ProGate>
                 <CheckoutPanel
                   layout="embedded"
@@ -176,7 +157,7 @@ export default async function ProPage({
                 />
               </ProGate>
               <ProOnlyMessage>
-                <div className="lp-pro-active-card">
+                <div className="space-y-3 rounded-2xl border border-[var(--stroke)] bg-white px-4 py-4 text-sm font-semibold text-[var(--ink)]">
                   <p>
                     Ya tienes Radar VPO PRO activo. Gestiónalo en{' '}
                     <Link href="/account" className="underline">
@@ -196,17 +177,17 @@ export default async function ProPage({
                   ) : null}
                 </div>
               </ProOnlyMessage>
-              <p className="lp-pro-buy__trust">
+              <p className="mt-3 text-xs leading-5 text-[var(--ink-soft)]">
                 Precio final. Sin permanencia. Condiciones en{' '}
                 <Link href="/condiciones" className="underline">
                   /condiciones
                 </Link>
                 .
               </p>
-            </div>
+            </aside>
           </div>
         </div>
-      </section>
+      </header>
 
       <PublicSection id="incluye">
         <div className="lp-section__head">
