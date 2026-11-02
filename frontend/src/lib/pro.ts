@@ -66,7 +66,7 @@ export const proIncludes = [
   {
     title: 'Avisos por SMS',
     description:
-      'El mismo aviso en el móvil si has indicado tu número. Llega aunque no estés mirando el correo.',
+      'El mismo aviso en el móvil con el número que indiques al activar PRO. Llega aunque no estés mirando el correo.',
   },
   {
     title: 'WhatsApp para consultas',

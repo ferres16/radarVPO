@@ -13,6 +13,7 @@ import {
   immediateConsentForProduct,
 } from '@/lib/contract-consent';
 import { formatEuro } from '@/lib/offer';
+import { isValidSmsPhone, normalizePhoneForSms } from '@/lib/phone';
 
 export type CheckoutSummary = {
   product: 'pro' | 'pro_pack_3m' | 'course';
@@ -38,7 +39,7 @@ export function CheckoutPanel({
   canceled?: boolean;
   layout?: 'page' | 'embedded';
 }) {
-  const { me, loading } = useProAccess();
+  const { me, loading, setMe } = useProAccess();
   const [paymentsEnabled, setPaymentsEnabled] = useState<boolean | null>(null);
   const [maintenanceMessage, setMaintenanceMessage] = useState(
     'El pago online todavía no está activo. Vuelve a intentarlo más adelante.',
@@ -52,6 +53,7 @@ export function CheckoutPanel({
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
 
   const isCourse = summary.product === 'course';
   const isProProduct = summary.product === 'pro' || summary.product === 'pro_pack_3m';
@@ -61,6 +63,9 @@ export function CheckoutPanel({
   const displayPriceLabel =
     isProProduct && apiProPriceLabel ? apiProPriceLabel : summary.priceLabel;
   const embedded = layout === 'embedded';
+  const phoneRequired = isProProduct;
+  const normalizedPhone = normalizePhoneForSms(phone);
+  const phoneReady = !phoneRequired || Boolean(normalizedPhone);
 
   useEffect(() => {
     trackEvent('checkout_viewed', { product: summary.product, course: summary.courseSlug ?? null });
@@ -122,6 +127,11 @@ export function CheckoutPanel({
     };
   }, [isCourse, loading, me, summary.courseSlug]);
 
+  useEffect(() => {
+    if (!me?.phone) return;
+    setPhone((current) => (current.trim() ? current : me.phone || ''));
+  }, [me?.phone]);
+
   async function goToStripe() {
     trackBeginCheckout({
       product: summary.product,
@@ -136,19 +146,47 @@ export function CheckoutPanel({
     window.location.assign(url);
   }
 
+  async function ensureProPhoneSaved(value: string) {
+    const normalized = normalizePhoneForSms(value);
+    if (!normalized) {
+      throw new Error('Indica un móvil válido (España: 6/7/8/9 + 8 dígitos, o formato internacional).');
+    }
+    const updated = await api.updateMe({
+      phone: normalized,
+      smsAlertsEnabled: true,
+    });
+    setMe(updated);
+  }
+
   async function startCheckout() {
     setSubmitting(true);
     setError('');
     trackEvent('checkout_started', { product: summary.product, course: summary.courseSlug ?? null });
     try {
+      if (phoneRequired && !isValidSmsPhone(phone)) {
+        throw new Error('El móvil es obligatorio para PRO (avisos SMS).');
+      }
+
       if (!me) {
         if (accountMode === 'register') {
-          await api.register(email, password, fullName, undefined, true, false);
+          await api.register(
+            email,
+            password,
+            fullName,
+            phoneRequired ? normalizePhoneForSms(phone) || phone.trim() : undefined,
+            true,
+            false,
+          );
           trackCompleteRegistration();
         } else {
           await api.login(email, password);
         }
       }
+
+      if (phoneRequired) {
+        await ensureProPhoneSaved(phone);
+      }
+
       await goToStripe();
     } catch (err) {
       trackEvent('checkout_failed', { product: summary.product });
@@ -176,7 +214,8 @@ export function CheckoutPanel({
     !alreadyPro &&
     !alreadyOwned &&
     !loading &&
-    accountReady;
+    accountReady &&
+    phoneReady;
 
   const payLabel = submitting
     ? 'Redirigiendo a Stripe…'
@@ -185,6 +224,27 @@ export function CheckoutPanel({
       : accountMode === 'login'
         ? `Entrar y pagar ${displayPriceLabel}`
         : `Crear cuenta y pagar ${displayPriceLabel}`;
+
+  const phoneField = phoneRequired ? (
+    <FormField
+      id="buy-phone"
+      label="Móvil"
+      hint="Obligatorio para avisos SMS de PRO. España: 6XXXXXXXX. También aceptamos formato internacional."
+    >
+      <input
+        id="buy-phone"
+        type="tel"
+        inputMode="tel"
+        autoComplete="tel"
+        value={phone}
+        onChange={(event) => setPhone(event.target.value)}
+        required
+        placeholder="612 345 678"
+        className="ds-control w-full"
+        aria-invalid={phone.trim().length > 0 && !phoneReady ? true : undefined}
+      />
+    </FormField>
+  ) : null;
 
   const form = (
     <section className="public-card p-5 md:p-6" aria-labelledby="checkout-action-title">
@@ -249,15 +309,25 @@ export function CheckoutPanel({
           }}
         >
           {me ? (
-            <p className="text-sm text-[var(--ink-soft)]">
-              Sesión iniciada como <strong className="text-[var(--ink)]">{me.email}</strong>.
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-[var(--ink-soft)]">
+                Sesión iniciada como <strong className="text-[var(--ink)]">{me.email}</strong>.
+                {phoneRequired
+                  ? ' Solo necesitamos tu móvil para activar los avisos SMS de PRO.'
+                  : null}
+              </p>
+              {phoneField}
+            </div>
           ) : (
             <div className="space-y-3">
               <p className="text-sm leading-6 text-[var(--ink-soft)]">
                 {accountMode === 'register'
-                  ? 'Crea la cuenta aquí mismo. En el siguiente paso pagas en Stripe.'
-                  : 'Entra con tu cuenta para pagar en Stripe.'}
+                  ? phoneRequired
+                    ? 'Crea la cuenta aquí mismo. El móvil es obligatorio para los avisos SMS de PRO.'
+                    : 'Crea la cuenta aquí mismo. En el siguiente paso pagas en Stripe.'
+                  : phoneRequired
+                    ? 'Entra con tu cuenta e indica el móvil para los avisos SMS.'
+                    : 'Entra con tu cuenta para pagar en Stripe.'}
               </p>
               {accountMode === 'register' ? (
                 <FormField id="buy-name" label="Nombre">
@@ -295,6 +365,7 @@ export function CheckoutPanel({
                   className="ds-control w-full"
                 />
               </FormField>
+              {phoneField}
               <button
                 type="button"
                 className="text-sm font-semibold text-[var(--green-700)] underline"

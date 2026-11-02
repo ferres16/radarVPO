@@ -77,7 +77,7 @@ export default async function ProPage({
   const sample = listed[0];
   const includeBullets = [
     'Avisos por email de todas las promociones detectadas',
-    'SMS si activas tu móvil',
+    'SMS al móvil que indiques',
     'WhatsApp para consultas',
     'Cancelas cuando quieras; acceso hasta fin de periodo pagado',
     ...(includedGuides ? [includedGuides.title] : []),
