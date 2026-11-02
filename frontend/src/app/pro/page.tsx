@@ -106,8 +106,8 @@ export default async function ProPage({
             <Image
               src={proPlan.productImageSrc}
               alt={proPlan.productImageAlt}
-              width={1278}
-              height={841}
+              width={1024}
+              height={1536}
               priority
               className="h-auto w-full object-contain"
               sizes="(max-width: 768px) 100vw, 352px"

@@ -87,8 +87,8 @@ export default async function Home() {
                   <Image
                     src={proPlan.productImageSrc}
                     alt={proPlan.productImageAlt}
-                    width={1278}
-                    height={841}
+                    width={1024}
+                    height={1536}
                     priority
                     className="lp-product-shot__image"
                     sizes="(max-width: 768px) 100vw, 380px"
