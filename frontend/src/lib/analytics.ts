@@ -13,6 +13,7 @@ export type AnalyticsEventName =
   | 'pdf_document_selected'
   | 'pdf_download_clicked'
   | 'pdf_original_opened'
+  | 'pdf_fullscreen_toggled'
   | 'promotion_pdf_cta_clicked'
   | 'promotion_list_cta_clicked'
   | 'pro_cta_clicked'

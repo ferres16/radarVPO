@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
+import { usePdfFullscreen } from '@/hooks/use-pdf-fullscreen';
 import { collectPdfPageLinks, type PdfPageLink } from '@/lib/pdf-page-links';
 
 type Props = {
@@ -37,6 +38,7 @@ type PdfDoc = {
  */
 export function GuidePdfViewer({ slug, title, canAccess }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PdfDoc | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
@@ -45,36 +47,40 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
   const [rendering, setRendering] = useState(false);
   const [links, setLinks] = useState<PdfPageLink[]>([]);
   const [viewportSize, setViewportSize] = useState({ width: 1, height: 1 });
+  const { fullscreen, enter, exit, toggle } = usePdfFullscreen();
 
-  const renderPage = useCallback(async (pageNum: number) => {
-    const pdf = pdfRef.current;
-    const canvas = canvasRef.current;
-    if (!pdf || !canvas) return;
+  const renderPage = useCallback(
+    async (pageNum: number) => {
+      const pdf = pdfRef.current;
+      const canvas = canvasRef.current;
+      if (!pdf || !canvas) return;
 
-    setRendering(true);
-    try {
-      const pdfPage = await pdf.getPage(pageNum);
-      const base = pdfPage.getViewport({ scale: 1 });
-      const maxWidth = Math.min(920, canvas.parentElement?.clientWidth || 920);
-      const scale = Math.max(1, maxWidth / base.width);
-      const viewport = pdfPage.getViewport({ scale });
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      canvas.setAttribute('aria-label', `${title} · página ${pageNum} de ${pdf.numPages}`);
-      const context = canvas.getContext('2d');
-      if (!context) return;
-      await pdfPage.render({ canvasContext: context, viewport, canvas }).promise;
-      setViewportSize({ width: viewport.width, height: viewport.height });
-      setLinks(await collectPdfPageLinks(pdf, pdfPage, scale));
-    } finally {
-      setRendering(false);
-    }
-  }, [title]);
+      setRendering(true);
+      try {
+        const pdfPage = await pdf.getPage(pageNum);
+        const base = pdfPage.getViewport({ scale: 1 });
+        const available =
+          stageRef.current?.clientWidth || canvas.parentElement?.clientWidth || window.innerWidth || 920;
+        const maxWidth = Math.min(fullscreen ? available - 16 : 920, available - (fullscreen ? 8 : 0));
+        const scale = Math.max(1, Math.max(280, maxWidth) / base.width);
+        const viewport = pdfPage.getViewport({ scale });
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.setAttribute('aria-label', `${title} · página ${pageNum} de ${pdf.numPages}`);
+        const context = canvas.getContext('2d');
+        if (!context) return;
+        await pdfPage.render({ canvasContext: context, viewport, canvas }).promise;
+        setViewportSize({ width: viewport.width, height: viewport.height });
+        setLinks(await collectPdfPageLinks(pdf, pdfPage, scale));
+      } finally {
+        setRendering(false);
+      }
+    },
+    [fullscreen, title],
+  );
 
   useEffect(() => {
     if (!canAccess || !slug) return;
-    // Criterio técnico de inicio de suministro: primera carga del visor con acceso.
-    // No prueba lectura completa.
     void api
       .recordContentSupplyStart({
         courseSlug: slug,
@@ -138,6 +144,15 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
     void renderPage(page);
   }, [canAccess, loading, error, pageCount, page, renderPage]);
 
+  useEffect(() => {
+    if (!fullscreen || !stageRef.current) return;
+    const observer = new ResizeObserver(() => {
+      if (pageCount > 0) void renderPage(page);
+    });
+    observer.observe(stageRef.current);
+    return () => observer.disconnect();
+  }, [fullscreen, page, pageCount, renderPage]);
+
   if (!canAccess) {
     return (
       <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-5">
@@ -150,41 +165,94 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
   }
 
   const progress = pageCount > 0 ? Math.round((page / pageCount) * 100) : 0;
+  const navButtons = (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <button
+        type="button"
+        disabled={page <= 1 || rendering}
+        onClick={() => setPage((p) => Math.max(1, p - 1))}
+        className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        ← Anterior
+      </button>
+      <button
+        type="button"
+        disabled={page >= pageCount || rendering}
+        onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+        className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white transition hover:bg-[var(--green-900)] disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        Siguiente →
+      </button>
+    </div>
+  );
 
   return (
     <div
-      className="space-y-4"
+      className={`space-y-4${fullscreen ? ' pdf-viewer--fullscreen pdf-viewer--guide' : ''}`}
       onContextMenu={(e) => e.preventDefault()}
       onDragStart={(e) => e.preventDefault()}
+      aria-modal={fullscreen || undefined}
     >
       {loading ? <p className="text-sm text-[var(--ink-soft)]">Cargando la guía…</p> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
 
       {!loading && !error && pageCount > 0 ? (
         <>
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
-              <p className="font-semibold text-[var(--ink)]">
-                Página {page} de {pageCount}
-              </p>
-              <p className="tabular-nums text-[var(--ink-soft)]">{progress}% completado</p>
+          {fullscreen ? (
+            <div className="pdf-viewer__fs-bar">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-bold uppercase tracking-[0.12em] text-[var(--green-700)]">
+                  Guía
+                </p>
+                <p className="truncate text-sm font-semibold text-[var(--ink)]">{title}</p>
+              </div>
+              <button
+                type="button"
+                onClick={exit}
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white"
+              >
+                Salir
+              </button>
             </div>
-            <div
-              className="h-2 overflow-hidden rounded-full bg-[var(--bg-app)]"
-              role="progressbar"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={progress}
-              aria-label="Progreso de lectura"
-            >
+          ) : (
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <p className="font-semibold text-[var(--ink)]">
+                  Página {page} de {pageCount}
+                </p>
+                <div className="flex items-center gap-2">
+                  <p className="tabular-nums text-[var(--ink-soft)]">{progress}% completado</p>
+                  <button
+                    type="button"
+                    onClick={toggle}
+                    className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)] md:hidden"
+                  >
+                    Pantalla completa
+                  </button>
+                </div>
+              </div>
               <div
-                className="h-full rounded-full bg-[var(--green-700)] transition-[width] duration-300 ease-out"
-                style={{ width: `${progress}%` }}
-              />
+                className="h-2 overflow-hidden rounded-full bg-[var(--bg-app)]"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progress}
+                aria-label="Progreso de lectura"
+              >
+                <div
+                  className="h-full rounded-full bg-[var(--green-700)] transition-[width] duration-300 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="overflow-hidden rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-2 sm:p-3">
+          <div
+            ref={stageRef}
+            className={`overflow-auto rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] p-2 sm:p-3${
+              fullscreen ? ' pdf-viewer__stage pdf-viewer__stage--fullscreen border-0' : ''
+            }`}
+          >
             <div className="relative mx-auto w-fit max-w-full">
               <canvas
                 ref={canvasRef}
@@ -232,24 +300,40 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <button
-              type="button"
-              disabled={page <= 1 || rendering}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              ← Anterior
-            </button>
-            <button
-              type="button"
-              disabled={page >= pageCount || rendering}
-              onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-              className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white transition hover:bg-[var(--green-900)] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Siguiente →
-            </button>
-          </div>
+          {fullscreen ? (
+            <div className="pdf-viewer__fs-nav" role="group" aria-label="Navegación de páginas">
+              <button
+                type="button"
+                disabled={page <= 1 || rendering}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-bold text-[var(--ink)] disabled:opacity-40"
+              >
+                ← Anterior
+              </button>
+              <p className="text-sm font-semibold text-[var(--ink)]" aria-live="polite">
+                {page} / {pageCount} · {progress}%
+              </p>
+              <button
+                type="button"
+                disabled={page >= pageCount || rendering}
+                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white disabled:opacity-40"
+              >
+                Siguiente →
+              </button>
+            </div>
+          ) : (
+            <>
+              {navButtons}
+              <button
+                type="button"
+                onClick={enter}
+                className="w-full rounded-full bg-[var(--green-700)] px-4 py-3 text-sm font-bold text-white transition hover:bg-[var(--green-900)] md:hidden"
+              >
+                Ver en pantalla completa
+              </button>
+            </>
+          )}
         </>
       ) : null}
     </div>

@@ -78,11 +78,11 @@ export const homeFaqs = [
   },
 ];
 
-/** CTA tras los documentos de una promoción. */
+/** CTA tras el visor PDF de una promoción. */
 export const pdfNextStep = {
   title: '¿Quieres entender el proceso antes de presentar nada?',
   description:
-    'Los enlaces te llevan al documento oficial. La guía ordena registro, papeles y pasos hasta la firma.',
+    'El visor te muestra el documento oficial. La guía ordena registro, papeles y pasos hasta la firma.',
   cta: 'Comprar la guía',
   href: '/cursos/guiav1#pagar',
 } as const;
