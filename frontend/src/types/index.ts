@@ -685,11 +685,26 @@ export type SmsOpsSnapshot = {
   failed7d: number;
   proWithSms: number;
   proWithPhone: number;
+  proMissingSms: number;
   recentFailures: Array<{
     channel: string;
     target: string;
     errorCode: string;
     createdAt: string;
   }>;
+  confirmationLogs: DeliveryLog[];
   logs: DeliveryLog[];
+};
+
+export type SmsSyncResult = {
+  scanned: number;
+  enabled: number;
+  smsSent: number;
+  skipped: number;
+  results: Array<{
+    userId: string;
+    enabled: boolean;
+    smsSent: boolean;
+    reason?: string;
+  }>;
 };

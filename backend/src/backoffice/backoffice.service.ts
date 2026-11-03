@@ -317,58 +317,91 @@ export class BackofficeService {
     const offset = query.offset ?? 0;
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-    const [logs, sent7d, failed7d, proWithSms, proWithPhone, diagnostics] =
-      await Promise.all([
-        this.prisma.deliveryLog.findMany({
-          where: { channel: 'sms' },
-          orderBy: { createdAt: 'desc' },
-          take: limit,
-          skip: offset,
-        }),
-        this.prisma.deliveryLog.count({
-          where: { channel: 'sms', status: 'sent', createdAt: { gte: since } },
-        }),
-        this.prisma.deliveryLog.count({
-          where: {
-            channel: 'sms',
-            status: 'failed',
-            createdAt: { gte: since },
-          },
-        }),
-        this.prisma.user.count({
-          where: {
-            smsAlertsEnabled: true,
-            OR: [
-              { plan: 'pro' },
-              {
-                subscriptions: {
-                  some: {
-                    planKey: 'pro',
-                    status: { in: ['active', 'trialing'] },
-                  },
+    const [
+      logs,
+      confirmationLogs,
+      sent7d,
+      failed7d,
+      proWithSms,
+      proWithPhone,
+      proMissingSms,
+      diagnostics,
+    ] = await Promise.all([
+      this.prisma.deliveryLog.findMany({
+        where: { channel: 'sms' },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+      }),
+      this.prisma.deliveryLog.findMany({
+        where: {
+          channel: 'sms',
+          sourceRef: { startsWith: 'pro_sms_configured:' },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+      }),
+      this.prisma.deliveryLog.count({
+        where: { channel: 'sms', status: 'sent', createdAt: { gte: since } },
+      }),
+      this.prisma.deliveryLog.count({
+        where: {
+          channel: 'sms',
+          status: 'failed',
+          createdAt: { gte: since },
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          smsAlertsEnabled: true,
+          OR: [
+            { plan: 'pro' },
+            {
+              subscriptions: {
+                some: {
+                  planKey: 'pro',
+                  status: { in: ['active', 'trialing'] },
                 },
               },
-            ],
-          },
-        }),
-        this.prisma.user.count({
-          where: {
-            phone: { not: '' },
-            OR: [
-              { plan: 'pro' },
-              {
-                subscriptions: {
-                  some: {
-                    planKey: 'pro',
-                    status: { in: ['active', 'trialing'] },
-                  },
+            },
+          ],
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          phone: { not: '' },
+          OR: [
+            { plan: 'pro' },
+            {
+              subscriptions: {
+                some: {
+                  planKey: 'pro',
+                  status: { in: ['active', 'trialing'] },
                 },
               },
-            ],
-          },
-        }),
-        this.notificationsService.getProAlertsDiagnostics(),
-      ]);
+            },
+          ],
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          smsAlertsEnabled: false,
+          phone: { not: '' },
+          OR: [
+            { plan: 'pro' },
+            {
+              subscriptions: {
+                some: {
+                  planKey: 'pro',
+                  status: { in: ['active', 'trialing'] },
+                },
+              },
+            },
+          ],
+        },
+      }),
+      this.notificationsService.getProAlertsDiagnostics(),
+    ]);
 
     return {
       configured: diagnostics.configured,
@@ -380,9 +413,24 @@ export class BackofficeService {
       failed7d,
       proWithSms,
       proWithPhone,
-      recentFailures: diagnostics.recentFailures,
+      proMissingSms,
+      recentFailures: diagnostics.recentFailures.map((row) => ({
+        ...row,
+        createdAt:
+          row.createdAt instanceof Date
+            ? row.createdAt.toISOString()
+            : String(row.createdAt),
+      })),
+      confirmationLogs,
       logs,
     };
+  }
+
+  async syncProSmsAlerts(onlyUserId?: string) {
+    return this.notificationsService.syncProSmsAlerts({
+      onlyUserId,
+      sendConfirmation: true,
+    });
   }
 
   async dispatchPendingProAlertNotifications(force = false) {
@@ -653,7 +701,7 @@ export class BackofficeService {
   async updateUser(userId: string, dto: UpdateUserDto) {
     const existing = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true },
+      select: { id: true, role: true, plan: true },
     });
 
     if (!existing) {
@@ -689,7 +737,7 @@ export class BackofficeService {
       }
     }
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         fullName: dto.fullName,
@@ -712,6 +760,27 @@ export class BackofficeService {
         proCancellationRequestedAt: true,
       },
     });
+
+    if (
+      dto.plan === UserPlan.pro &&
+      existing.plan !== UserPlan.pro
+    ) {
+      try {
+        await this.notificationsService.enableProSmsAlerts(userId, {
+          sourceRef: `pro_sms_configured:admin:${userId}`,
+          sendConfirmation: true,
+        });
+      } catch (error) {
+        // No bloquear el alta PRO en admin si Brevo falla.
+        console.warn(
+          `PRO SMS auto-enable after admin plan update failed for ${userId}: ${
+            error instanceof Error ? error.message : 'unknown'
+          }`,
+        );
+      }
+    }
+
+    return updated;
   }
 
   async deleteUser(userId: string, actorUserId: string) {

@@ -187,7 +187,8 @@ export function PersonalInfoSection({
         <div className="mt-6 space-y-3 border-t border-[var(--stroke)] pt-5">
           <h3 className="text-sm font-semibold text-[var(--ink)]">SMS de nuevas promociones</h3>
           <p className="text-sm leading-6 text-[var(--ink-soft)]">
-            Se activa automáticamente al contratar Radar VPO PRO (si hay móvil válido). No hay SMS de marketing.
+            Si está marcado, te enviamos SMS al detectar nuevas promociones. Se activa solo al
+            contratar PRO (con móvil válido). Puedes desmarcarlo cuando quieras. No hay SMS de marketing.
           </p>
           <label className="flex items-start gap-3 text-sm text-[var(--ink)]">
             <input

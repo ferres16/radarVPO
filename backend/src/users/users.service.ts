@@ -160,6 +160,7 @@ export class UsersService {
       select: {
         fullName: true,
         phone: true,
+        plan: true,
         smsAlertsEnabled: true,
         marketingOptInAt: true,
         alertMunicipalityIds: true,
@@ -175,10 +176,15 @@ export class UsersService {
       data.fullName === undefined ? current.fullName : (data.fullName ?? '');
     const nextPhone =
       data.phone === undefined ? current.phone : (data.phone ?? '');
+    // Si un PRO guarda/actualiza móvil sin tocar el toggle, activar SMS.
     const nextSms =
       typeof data.smsAlertsEnabled === 'boolean'
         ? data.smsAlertsEnabled
-        : current.smsAlertsEnabled;
+        : data.phone !== undefined &&
+            current.plan === UserPlan.pro &&
+            nextPhone.trim()
+          ? true
+          : current.smsAlertsEnabled;
     const nextMarketing =
       typeof data.marketingOptIn === 'boolean'
         ? data.marketingOptIn
@@ -230,9 +236,7 @@ export class UsersService {
         fullName: data.fullName ?? undefined,
         phone: data.phone ?? undefined,
         smsAlertsEnabled:
-          typeof data.smsAlertsEnabled === 'boolean'
-            ? data.smsAlertsEnabled
-            : undefined,
+          nextSms !== current.smsAlertsEnabled ? nextSms : undefined,
         marketingOptInAt:
           typeof data.marketingOptIn === 'boolean'
             ? data.marketingOptIn

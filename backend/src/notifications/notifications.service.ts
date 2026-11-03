@@ -149,17 +149,17 @@ export class NotificationsService {
           },
           select: { phone: true },
         }),
-        this.prisma.deliveryLog.findMany({
+        this.prisma.deliveryFailure.findMany({
           where: {
-            status: 'failed',
             OR: [
               { sourceRef: 'radar_vpo_pro' },
               { sourceRef: { startsWith: 'pro_alert:' } },
               { sourceRef: { startsWith: 'pro_sms_configured:' } },
+              { channel: 'sms' },
             ],
           },
           orderBy: { createdAt: 'desc' },
-          take: 5,
+          take: 8,
           select: {
             channel: true,
             target: true,
@@ -1056,7 +1056,12 @@ export class NotificationsService {
 
     const sourceRef = options?.sourceRef || `pro_sms_configured:${userId}`;
     const alreadySent = await this.prisma.deliveryLog.findFirst({
-      where: { channel: 'sms', status: 'sent', sourceRef },
+      where: {
+        channel: 'sms',
+        status: 'sent',
+        sourceRef: { startsWith: 'pro_sms_configured:' },
+        target: phone,
+      },
       select: { id: true },
     });
     if (alreadySent) {
@@ -1081,6 +1086,87 @@ export class NotificationsService {
       enabled: true,
       smsSent,
       reason: smsSent ? undefined : 'brevo_delivery_failed',
+    };
+  }
+
+  /**
+   * Activa SMS y envía confirmación a PRO con móvil (o a un usuario concreto).
+   * Idempotente: no reenvía si ya hubo confirmación enviada a ese móvil.
+   */
+  async syncProSmsAlerts(options?: {
+    onlyUserId?: string;
+    sendConfirmation?: boolean;
+    limit?: number;
+  }): Promise<{
+    scanned: number;
+    enabled: number;
+    smsSent: number;
+    skipped: number;
+    results: Array<{ userId: string; enabled: boolean; smsSent: boolean; reason?: string }>;
+  }> {
+    const limit = Math.min(options?.limit ?? 200, 500);
+    const users = await this.prisma.user.findMany({
+      where: {
+        ...(options?.onlyUserId ? { id: options.onlyUserId } : {}),
+        OR: [
+          { plan: 'pro' },
+          {
+            subscriptions: {
+              some: {
+                planKey: 'pro',
+                status: {
+                  in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+                },
+              },
+            },
+          },
+        ],
+      },
+      select: { id: true, phone: true, smsAlertsEnabled: true },
+      take: limit,
+      orderBy: { createdAt: 'asc' },
+    });
+
+    const results: Array<{
+      userId: string;
+      enabled: boolean;
+      smsSent: boolean;
+      reason?: string;
+    }> = [];
+    let enabled = 0;
+    let smsSent = 0;
+    let skipped = 0;
+
+    for (const user of users) {
+      if (!normalizePhoneForSms(user.phone)) {
+        skipped += 1;
+        results.push({
+          userId: user.id,
+          enabled: false,
+          smsSent: false,
+          reason: 'no_phone',
+        });
+        continue;
+      }
+
+      const result = await this.enableProSmsAlerts(user.id, {
+        sourceRef: `pro_sms_configured:sync:${user.id}`,
+        sendConfirmation: options?.sendConfirmation !== false,
+      });
+      results.push({ userId: user.id, ...result });
+      if (result.enabled) enabled += 1;
+      if (result.smsSent) smsSent += 1;
+      if (!result.enabled || result.reason === 'already_notified') {
+        if (!result.smsSent) skipped += 1;
+      }
+    }
+
+    return {
+      scanned: users.length,
+      enabled,
+      smsSent,
+      skipped,
+      results,
     };
   }
 

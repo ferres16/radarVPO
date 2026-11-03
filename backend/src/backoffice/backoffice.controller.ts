@@ -116,6 +116,16 @@ export class BackofficeController {
     return this.backofficeService.smsOps(query);
   }
 
+  @Post('sms-ops/sync')
+  syncProSmsAlerts() {
+    return this.backofficeService.syncProSmsAlerts();
+  }
+
+  @Post('sms-ops/confirm-me')
+  confirmMyProSms(@CurrentUser() user: CurrentUserPayload) {
+    return this.backofficeService.syncProSmsAlerts(user.sub);
+  }
+
   @Post('notifications/pro-alerts/dispatch')
   dispatchProAlertNotifications(@Query('force') force?: string) {
     return this.backofficeService.dispatchPendingProAlertNotifications(
