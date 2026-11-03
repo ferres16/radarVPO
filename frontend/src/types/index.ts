@@ -673,6 +673,9 @@ export type DeliveryLog = {
   errorCode?: string | null;
   errorDetail?: unknown;
   createdAt: string;
+  recipientName?: string | null;
+  recipientEmail?: string | null;
+  recipientUserId?: string | null;
 };
 
 export type SmsOpsSnapshot = {
@@ -683,9 +686,21 @@ export type SmsOpsSnapshot = {
   proUsersWithPhone: number;
   sent7d: number;
   failed7d: number;
+  smsSent7d: number;
+  smsFailed7d: number;
+  emailSent7d: number;
+  emailFailed7d: number;
   proWithSms: number;
   proWithPhone: number;
   proMissingSms: number;
+  totalLogs: number;
+  filters: {
+    channel: 'all' | 'sms' | 'email';
+    status: 'all' | 'sent' | 'failed';
+    q: string;
+    limit: number;
+    offset: number;
+  };
   recentFailures: Array<{
     channel: string;
     target: string;

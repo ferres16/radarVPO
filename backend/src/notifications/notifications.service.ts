@@ -655,12 +655,16 @@ export class NotificationsService {
         pageUrl: copy.pageUrl,
       });
 
-      const emailSent = await this.sendEmail({
-        sender: this.parseEmailSender(),
-        to: [{ email: user.email, name: displayName || undefined }],
-        subject: copy.subject,
-        htmlContent: html,
-      });
+      const alertSourceRef = `pro_alert:${kind}:${promotion.id}`;
+      const emailSent = await this.sendEmail(
+        {
+          sender: this.parseEmailSender(),
+          to: [{ email: user.email, name: displayName || undefined }],
+          subject: copy.subject,
+          htmlContent: html,
+        },
+        alertSourceRef,
+      );
       if (emailSent) {
         sent += 1;
         emailsSent += 1;
@@ -680,7 +684,7 @@ export class NotificationsService {
             content: copy.sms,
             type: 'transactional',
           },
-          `pro_alert:${kind}:${promotion.id}`,
+          alertSourceRef,
         );
         if (smsSentForUser) {
           sent += 1;
@@ -841,12 +845,15 @@ export class NotificationsService {
     const html = body.includes('<')
       ? `<div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">${body}</div>`
       : `<div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">${body}</div>`;
-    return this.sendEmail({
-      sender: this.parseEmailSender(),
-      to: [{ email: input.toEmail, name: vars.name || undefined }],
-      subject: subject.slice(0, 140),
-      htmlContent: html,
-    });
+    return this.sendEmail(
+      {
+        sender: this.parseEmailSender(),
+        to: [{ email: input.toEmail, name: vars.name || undefined }],
+        subject: subject.slice(0, 140),
+        htmlContent: html,
+      },
+      `email:${input.templateKey}`,
+    );
   }
 
   /** Envoltura slim: el cuerpo de plantilla ya trae CTA y avisos (sin duplicar). */

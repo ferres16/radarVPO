@@ -42,7 +42,7 @@ const adminGroups: AdminNavGroup[] = [
     links: [
       { href: '/admin/commerce', label: 'Comercio' },
       { href: '/admin/message-templates', label: 'Emails / SMS' },
-      { href: '/admin/sms', label: 'Control SMS' },
+      { href: '/admin/sms', label: 'Envíos' },
     ],
   },
 ];

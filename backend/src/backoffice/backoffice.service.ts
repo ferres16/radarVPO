@@ -312,27 +312,54 @@ export class BackofficeService {
     });
   }
 
-  async smsOps(query: BackofficeListDto) {
+  async smsOps(query: {
+    q?: string;
+    channel?: 'all' | 'sms' | 'email';
+    status?: 'all' | 'sent' | 'failed';
+    limit?: number;
+    offset?: number;
+  }) {
     const limit = Math.min(query.limit ?? 100, 500);
     const offset = query.offset ?? 0;
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const channel = query.channel && query.channel !== 'all' ? query.channel : undefined;
+    const status = query.status && query.status !== 'all' ? query.status : undefined;
+    const search = query.q?.trim();
+
+    const logWhere = {
+      ...(channel ? { channel } : { channel: { in: ['sms', 'email'] } }),
+      ...(status ? { status } : {}),
+      ...(search
+        ? {
+            OR: [
+              { target: { contains: search, mode: 'insensitive' as const } },
+              { sourceRef: { contains: search, mode: 'insensitive' as const } },
+              { errorCode: { contains: search, mode: 'insensitive' as const } },
+            ],
+          }
+        : {}),
+    };
 
     const [
       logs,
+      totalLogs,
       confirmationLogs,
-      sent7d,
-      failed7d,
+      smsSent7d,
+      smsFailed7d,
+      emailSent7d,
+      emailFailed7d,
       proWithSms,
       proWithPhone,
       proMissingSms,
       diagnostics,
     ] = await Promise.all([
       this.prisma.deliveryLog.findMany({
-        where: { channel: 'sms' },
+        where: logWhere,
         orderBy: { createdAt: 'desc' },
         take: limit,
         skip: offset,
       }),
+      this.prisma.deliveryLog.count({ where: logWhere }),
       this.prisma.deliveryLog.findMany({
         where: {
           channel: 'sms',
@@ -347,6 +374,16 @@ export class BackofficeService {
       this.prisma.deliveryLog.count({
         where: {
           channel: 'sms',
+          status: 'failed',
+          createdAt: { gte: since },
+        },
+      }),
+      this.prisma.deliveryLog.count({
+        where: { channel: 'email', status: 'sent', createdAt: { gte: since } },
+      }),
+      this.prisma.deliveryLog.count({
+        where: {
+          channel: 'email',
           status: 'failed',
           createdAt: { gte: since },
         },
@@ -403,17 +440,35 @@ export class BackofficeService {
       this.notificationsService.getProAlertsDiagnostics(),
     ]);
 
+    const enrichedLogs = await this.enrichDeliveryLogs([
+      ...logs,
+      ...confirmationLogs,
+    ]);
+    const byId = new Map(enrichedLogs.map((row) => [row.id, row]));
+
     return {
       configured: diagnostics.configured,
       hasApiKey: diagnostics.hasApiKey,
       proAlertsEnabled: diagnostics.proAlertsEnabled,
       proUsers: diagnostics.proUsers,
       proUsersWithPhone: diagnostics.proUsersWithPhone,
-      sent7d,
-      failed7d,
+      sent7d: smsSent7d,
+      failed7d: smsFailed7d,
+      smsSent7d,
+      smsFailed7d,
+      emailSent7d,
+      emailFailed7d,
       proWithSms,
       proWithPhone,
       proMissingSms,
+      totalLogs,
+      filters: {
+        channel: query.channel || 'all',
+        status: query.status || 'all',
+        q: search || '',
+        limit,
+        offset,
+      },
       recentFailures: diagnostics.recentFailures.map((row) => ({
         ...row,
         createdAt:
@@ -421,9 +476,116 @@ export class BackofficeService {
             ? row.createdAt.toISOString()
             : String(row.createdAt),
       })),
-      confirmationLogs,
-      logs,
+      confirmationLogs: confirmationLogs.map(
+        (row) => byId.get(row.id) || this.toDeliveryLogDto(row),
+      ),
+      logs: logs.map((row) => byId.get(row.id) || this.toDeliveryLogDto(row)),
     };
+  }
+
+  private toDeliveryLogDto(row: {
+    id: string;
+    channel: string;
+    status: string;
+    target: string;
+    sourceRef: string | null;
+    errorCode: string | null;
+    errorDetail: unknown;
+    createdAt: Date;
+  }) {
+    return {
+      id: row.id,
+      channel: row.channel,
+      status: row.status,
+      target: row.target,
+      sourceRef: row.sourceRef,
+      errorCode: row.errorCode,
+      errorDetail: row.errorDetail,
+      createdAt: row.createdAt.toISOString(),
+      recipientName: null as string | null,
+      recipientEmail: null as string | null,
+      recipientUserId: null as string | null,
+    };
+  }
+
+  private async enrichDeliveryLogs(
+    rows: Array<{
+      id: string;
+      channel: string;
+      status: string;
+      target: string;
+      sourceRef: string | null;
+      errorCode: string | null;
+      errorDetail: unknown;
+      createdAt: Date;
+    }>,
+  ) {
+    const unique = new Map(rows.map((row) => [row.id, row]));
+    const list = [...unique.values()];
+    if (list.length === 0) return [];
+
+    const targets = [...new Set(list.map((row) => row.target).filter(Boolean))];
+    const emails = targets.filter((target) => target.includes('@'));
+    const phones = targets.filter((target) => !target.includes('@'));
+
+    const phoneVariants = [
+      ...new Set(
+        phones.flatMap((phone) => {
+          const digits = phone.replace(/[^\d]/g, '');
+          const local = digits.startsWith('34') ? digits.slice(2) : digits;
+          return [phone, digits, `+${digits}`, local, `+34${local}`, `34${local}`].filter(
+            Boolean,
+          );
+        }),
+      ),
+    ];
+
+    const users =
+      targets.length === 0
+        ? []
+        : await this.prisma.user.findMany({
+            where: {
+              OR: [
+                ...(emails.length ? [{ email: { in: emails } }] : []),
+                ...(phoneVariants.length ? [{ phone: { in: phoneVariants } }] : []),
+              ],
+            },
+            select: {
+              id: true,
+              email: true,
+              phone: true,
+              fullName: true,
+            },
+            take: 500,
+          });
+
+    const byEmail = new Map(
+      users.map((user) => [user.email.toLowerCase(), user] as const),
+    );
+    const byPhone = new Map<string, (typeof users)[number]>();
+    for (const user of users) {
+      const normalized = user.phone?.replace(/[^\d+]/g, '') || '';
+      if (normalized) byPhone.set(normalized, user);
+      const digits = normalized.replace(/^\+/, '');
+      if (digits) byPhone.set(digits, user);
+      if (user.phone) byPhone.set(user.phone, user);
+    }
+
+    return list.map((row) => {
+      const matched =
+        row.channel === 'email'
+          ? byEmail.get(row.target.toLowerCase())
+          : byPhone.get(row.target) ||
+            byPhone.get(row.target.replace(/^\+/, '')) ||
+            byPhone.get(row.target.replace(/[^\d]/g, ''));
+
+      return {
+        ...this.toDeliveryLogDto(row),
+        recipientName: matched?.fullName?.trim() || null,
+        recipientEmail: matched?.email || (row.channel === 'email' ? row.target : null),
+        recipientUserId: matched?.id || null,
+      };
+    });
   }
 
   async syncProSmsAlerts(onlyUserId?: string) {

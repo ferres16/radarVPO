@@ -33,6 +33,7 @@ import {
   BackofficeListFilesDto,
   BackofficeListPromotionsDto,
 } from './dto/list-backoffice.dto';
+import { BackofficeDeliveryOpsDto } from './dto/delivery-ops.dto';
 import { SimulateProAlertsDto } from './dto/simulate-pro-alerts.dto';
 import { ReorderCourseItemsDto } from './dto/reorder-course-items.dto';
 import { ReorderUnitsDto } from './dto/reorder-units.dto';
@@ -112,7 +113,7 @@ export class BackofficeController {
   }
 
   @Get('sms-ops')
-  smsOps(@Query() query: BackofficeListDto) {
+  smsOps(@Query() query: BackofficeDeliveryOpsDto) {
     return this.backofficeService.smsOps(query);
   }
 

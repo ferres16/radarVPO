@@ -8,6 +8,9 @@ import { SkeletonCard } from '@/components/skeleton-card';
 import { api } from '@/lib/api';
 import type { DeliveryLog, SmsOpsSnapshot, UserProfile } from '@/types';
 
+type ChannelFilter = 'all' | 'sms' | 'email';
+type StatusFilter = 'all' | 'sent' | 'failed';
+
 function formatWhen(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -19,13 +22,44 @@ function formatWhen(value: string) {
 
 function sourceLabel(sourceRef?: string | null) {
   if (!sourceRef) return '—';
-  if (sourceRef.startsWith('pro_sms_configured:')) return 'Confirmación PRO';
-  if (sourceRef.startsWith('pro_alert:')) return 'Aviso promoción';
+  if (sourceRef.startsWith('pro_sms_configured:')) return 'Confirmación PRO (SMS)';
+  if (sourceRef.startsWith('pro_alert:')) {
+    const kind = sourceRef.split(':')[1] || '';
+    const labels: Record<string, string> = {
+      new_alert: 'Aviso nueva alerta',
+      new_publication: 'Aviso publicación',
+      reminder_7d: 'Recordatorio 7 días',
+      reminder_1d: 'Recordatorio 1 día',
+    };
+    return labels[kind] || 'Aviso PRO';
+  }
+  if (sourceRef.startsWith('email:')) {
+    const key = sourceRef.slice('email:'.length);
+    const labels: Record<string, string> = {
+      'purchase.pro': 'Compra PRO',
+      'purchase.pro_pack': 'Compra pack PRO',
+      'purchase.guide': 'Compra guía',
+      'auth.password_reset': 'Reset contraseña',
+      'cancel.pro_user': 'Baja PRO confirmada',
+      'cancel.pro_user_requested': 'Solicitud baja PRO',
+      'cancel.pro_admin': 'Aviso baja (admin)',
+    };
+    return labels[key] || `Email · ${key}`;
+  }
   if (sourceRef === 'radar_vpo_pro') return 'Transactional';
   return sourceRef;
 }
 
-function SmsTable({ logs, empty }: { logs: DeliveryLog[]; empty: string }) {
+function recipientLabel(log: DeliveryLog) {
+  const name = log.recipientName?.trim();
+  if (name && log.recipientEmail && log.channel === 'sms') {
+    return `${name} · ${log.target}`;
+  }
+  if (name) return `${name} · ${log.target}`;
+  return log.target;
+}
+
+function DeliveryTable({ logs, empty }: { logs: DeliveryLog[]; empty: string }) {
   if (logs.length === 0) {
     return <p className="text-sm text-[var(--ink-soft)]">{empty}</p>;
   }
@@ -36,8 +70,9 @@ function SmsTable({ logs, empty }: { logs: DeliveryLog[]; empty: string }) {
         <thead>
           <tr className="border-b border-[var(--stroke)] text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">
             <th className="px-2 py-2 font-semibold">Cuándo</th>
+            <th className="px-2 py-2 font-semibold">Canal</th>
             <th className="px-2 py-2 font-semibold">Estado</th>
-            <th className="px-2 py-2 font-semibold">Destino</th>
+            <th className="px-2 py-2 font-semibold">Destinatario</th>
             <th className="px-2 py-2 font-semibold">Tipo</th>
             <th className="px-2 py-2 font-semibold">Error</th>
           </tr>
@@ -47,6 +82,11 @@ function SmsTable({ logs, empty }: { logs: DeliveryLog[]; empty: string }) {
             <tr key={log.id} className="border-b border-[var(--stroke)] align-top">
               <td className="whitespace-nowrap px-2 py-2">{formatWhen(log.createdAt)}</td>
               <td className="px-2 py-2">
+                <span className="rounded-full bg-[var(--bg-app)] px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-[var(--ink)]">
+                  {log.channel}
+                </span>
+              </td>
+              <td className="px-2 py-2">
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                     log.status === 'sent'
@@ -54,10 +94,20 @@ function SmsTable({ logs, empty }: { logs: DeliveryLog[]; empty: string }) {
                       : 'bg-red-100 text-red-800'
                   }`}
                 >
-                  {log.status}
+                  {log.status === 'sent' ? 'enviado' : 'fallido'}
                 </span>
               </td>
-              <td className="px-2 py-2 font-mono text-xs">{log.target}</td>
+              <td className="px-2 py-2">
+                <span className="font-semibold text-[var(--ink)]">{recipientLabel(log)}</span>
+                {log.recipientUserId ? (
+                  <Link
+                    href={`/admin/users?q=${encodeURIComponent(log.recipientEmail || log.target)}`}
+                    className="mt-1 block text-xs font-semibold text-[var(--green-700)]"
+                  >
+                    Ver usuario
+                  </Link>
+                ) : null}
+              </td>
               <td className="px-2 py-2 text-xs text-[var(--ink-soft)]">
                 {sourceLabel(log.sourceRef)}
                 <span className="mt-1 block break-all opacity-70">{log.sourceRef || ''}</span>
@@ -78,11 +128,20 @@ export default function AdminSmsPage() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
   const [message, setMessage] = useState('');
+  const [channel, setChannel] = useState<ChannelFilter>('all');
+  const [status, setStatus] = useState<StatusFilter>('all');
+  const [query, setQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
 
   const load = useCallback(async () => {
-    const snapshot = await api.getBackofficeSmsOps();
+    const snapshot = await api.getBackofficeSmsOps({
+      channel,
+      status,
+      q: query,
+      limit: 150,
+    });
     setData(snapshot);
-  }, []);
+  }, [channel, status, query]);
 
   useEffect(() => {
     let active = true;
@@ -98,7 +157,7 @@ export default function AdminSmsPage() {
         await load();
       } catch (err) {
         if (!active) return;
-        setError(err instanceof Error ? err.message : 'No se pudo cargar el control SMS.');
+        setError(err instanceof Error ? err.message : 'No se pudo cargar el control de envíos.');
       } finally {
         if (active) setLoading(false);
       }
@@ -141,7 +200,7 @@ export default function AdminSmsPage() {
     return (
       <main className="shell">
         <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6">
-          <h1 className="text-2xl font-bold text-[var(--ink)]">Control SMS</h1>
+          <h1 className="text-2xl font-bold text-[var(--ink)]">Control de envíos</h1>
           <p className="mt-2 text-sm text-[var(--ink-soft)]">{error}</p>
           <Link
             href="/admin"
@@ -161,8 +220,8 @@ export default function AdminSmsPage() {
         <div className="space-y-4">
           <PageHero
             eyebrow="Backoffice"
-            title="Control SMS"
-            description="Estado de Brevo, SMS de confirmación PRO, avisos de promociones y errores de entrega."
+            title="Control de envíos"
+            description="Historial de SMS y correos enviados por Brevo: destinatario, tipo, estado y errores."
             actions={
               <button
                 type="button"
@@ -203,17 +262,27 @@ export default function AdminSmsPage() {
             </SurfaceCard>
             <SurfaceCard className="p-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
-                SMS 7 días
+                Email 7 días
               </p>
-              <p className="mt-2 text-lg font-black text-[var(--ink)]">{data?.sent7d ?? '—'}</p>
-              <p className="mt-1 text-xs text-[var(--ink-soft)]">Enviados con éxito</p>
+              <p className="mt-2 text-lg font-black text-[var(--ink)]">
+                {data?.emailSent7d ?? '—'}
+                <span className="ml-2 text-sm font-semibold text-red-700">
+                  / {data?.emailFailed7d ?? 0} fallos
+                </span>
+              </p>
+              <p className="mt-1 text-xs text-[var(--ink-soft)]">Correos enviados con éxito</p>
             </SurfaceCard>
             <SurfaceCard className="p-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
-                Errores 7 días
+                SMS 7 días
               </p>
-              <p className="mt-2 text-lg font-black text-[var(--ink)]">{data?.failed7d ?? '—'}</p>
-              <p className="mt-1 text-xs text-[var(--ink-soft)]">Fallos Brevo / SMS</p>
+              <p className="mt-2 text-lg font-black text-[var(--ink)]">
+                {data?.smsSent7d ?? data?.sent7d ?? '—'}
+                <span className="ml-2 text-sm font-semibold text-red-700">
+                  / {data?.smsFailed7d ?? data?.failed7d ?? 0} fallos
+                </span>
+              </p>
+              <p className="mt-1 text-xs text-[var(--ink-soft)]">SMS enviados con éxito</p>
             </SurfaceCard>
             <SurfaceCard className="p-4">
               <p className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--ink-soft)]">
@@ -227,11 +296,88 @@ export default function AdminSmsPage() {
           </div>
 
           <SurfaceCard className="space-y-3 p-4 md:p-5">
-            <h2 className="text-lg font-bold text-[var(--ink)]">Acciones</h2>
+            <h2 className="text-lg font-bold text-[var(--ink)]">Filtros</h2>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ['all', 'Todos'],
+                  ['email', 'Email'],
+                  ['sms', 'SMS'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setChannel(value)}
+                  className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.14em] ${
+                    channel === value
+                      ? 'bg-[var(--green-700)] text-white'
+                      : 'border border-[var(--stroke)] bg-white text-[var(--ink)]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(
+                [
+                  ['all', 'Cualquier estado'],
+                  ['sent', 'Enviados'],
+                  ['failed', 'Fallidos'],
+                ] as const
+              ).map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setStatus(value)}
+                  className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.14em] ${
+                    status === value
+                      ? 'bg-[var(--green-700)] text-white'
+                      : 'border border-[var(--stroke)] bg-white text-[var(--ink)]'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <form
+              className="flex flex-col gap-2 sm:flex-row"
+              onSubmit={(event) => {
+                event.preventDefault();
+                setQuery(searchInput.trim());
+              }}
+            >
+              <input
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Buscar email, teléfono u origen (purchase.pro, pro_alert…)"
+                className="ds-control w-full"
+              />
+              <button type="submit" className="btn btn--secondary min-h-11 shrink-0">
+                Buscar
+              </button>
+            </form>
+            <p className="text-xs text-[var(--ink-soft)]">
+              Mostrando {data?.logs.length ?? 0} de {data?.totalLogs ?? 0} registros.
+            </p>
+          </SurfaceCard>
+
+          <SurfaceCard className="space-y-3 p-4 md:p-5">
+            <h2 className="text-lg font-bold text-[var(--ink)]">Historial de envíos</h2>
+            <p className="text-sm text-[var(--ink-soft)]">
+              Cada fila es un intento real a Brevo (éxito o error), con destinatario y tipo de mensaje.
+            </p>
+            <DeliveryTable
+              logs={data?.logs ?? []}
+              empty="No hay envíos con estos filtros. Cuando se mande un email o SMS aparecerá aquí."
+            />
+          </SurfaceCard>
+
+          <SurfaceCard className="space-y-3 p-4 md:p-5">
+            <h2 className="text-lg font-bold text-[var(--ink)]">Acciones SMS PRO</h2>
             <p className="text-sm leading-6 text-[var(--ink-soft)]">
-              El checkbox de «Recibir SMS» en Mi cuenta controla si un PRO recibe avisos de nuevas
-              promociones. Al pagar PRO (o al activarlo desde Usuarios) se marca solo y se envía un SMS
-              de confirmación. Si ya eras PRO antes, usa «Activar SMS PRO existentes».
+              Activa SMS a PRO existentes, envía el SMS de configuración o dispara avisos de promociones.
             </p>
             <div className="flex flex-wrap gap-2">
               <button
@@ -315,10 +461,7 @@ export default function AdminSmsPage() {
 
           <SurfaceCard className="space-y-3 p-4 md:p-5">
             <h2 className="text-lg font-bold text-[var(--ink)]">SMS de confirmación PRO</h2>
-            <p className="text-sm text-[var(--ink-soft)]">
-              Aparecen aquí al pagar PRO, al activar PRO desde Usuarios, o al usar los botones de arriba.
-            </p>
-            <SmsTable
+            <DeliveryTable
               logs={data?.confirmationLogs ?? []}
               empty="Todavía no hay SMS de confirmación. Usa «Enviar SMS de configuración a mí» para probar."
             />
@@ -327,7 +470,7 @@ export default function AdminSmsPage() {
           <SurfaceCard className="space-y-3 p-4 md:p-5">
             <h2 className="text-lg font-bold text-[var(--ink)]">Errores recientes</h2>
             {(data?.recentFailures.length ?? 0) === 0 ? (
-              <p className="text-sm text-[var(--ink-soft)]">Sin errores recientes de SMS/email PRO.</p>
+              <p className="text-sm text-[var(--ink-soft)]">Sin errores recientes de SMS/email.</p>
             ) : (
               <ul className="space-y-2">
                 {data?.recentFailures.map((failure, index) => (
@@ -344,14 +487,6 @@ export default function AdminSmsPage() {
                 ))}
               </ul>
             )}
-          </SurfaceCard>
-
-          <SurfaceCard className="space-y-3 p-4 md:p-5">
-            <h2 className="text-lg font-bold text-[var(--ink)]">Últimos SMS</h2>
-            <SmsTable
-              logs={data?.logs ?? []}
-              empty="Todavía no hay registros en delivery_logs. Aparecerán al enviar SMS."
-            />
           </SurfaceCard>
         </div>
       </div>

@@ -308,7 +308,22 @@ export const api = {
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
   getBackofficeJobs: () => request<JobRun[]>('/backoffice/jobs'),
   getBackofficeFailures: () => request<DeliveryFailure[]>('/backoffice/failures'),
-  getBackofficeSmsOps: () => request<SmsOpsSnapshot>('/backoffice/sms-ops'),
+  getBackofficeSmsOps: (params?: {
+    q?: string;
+    channel?: 'all' | 'sms' | 'email';
+    status?: 'all' | 'sent' | 'failed';
+    limit?: number;
+    offset?: number;
+  }) => {
+    const search = new URLSearchParams();
+    if (params?.q?.trim()) search.set('q', params.q.trim());
+    if (params?.channel && params.channel !== 'all') search.set('channel', params.channel);
+    if (params?.status && params.status !== 'all') search.set('status', params.status);
+    if (params?.limit) search.set('limit', String(params.limit));
+    if (typeof params?.offset === 'number') search.set('offset', String(params.offset));
+    const qs = search.toString();
+    return request<SmsOpsSnapshot>(`/backoffice/sms-ops${qs ? `?${qs}` : ''}`);
+  },
   syncBackofficeProSms: () =>
     request<SmsSyncResult>('/backoffice/sms-ops/sync', { method: 'POST' }),
   confirmMyBackofficeProSms: () =>
