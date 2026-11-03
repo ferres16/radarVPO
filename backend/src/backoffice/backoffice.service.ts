@@ -352,6 +352,7 @@ export class BackofficeService {
       proWithPhone,
       proMissingSms,
       diagnostics,
+      upcoming,
     ] = await Promise.all([
       this.prisma.deliveryLog.findMany({
         where: logWhere,
@@ -438,6 +439,7 @@ export class BackofficeService {
         },
       }),
       this.notificationsService.getProAlertsDiagnostics(),
+      this.notificationsService.listUpcomingProDeliveries(60),
     ]);
 
     const enrichedLogs = await this.enrichDeliveryLogs([
@@ -469,6 +471,7 @@ export class BackofficeService {
         limit,
         offset,
       },
+      upcoming,
       recentFailures: diagnostics.recentFailures.map((row) => ({
         ...row,
         createdAt:

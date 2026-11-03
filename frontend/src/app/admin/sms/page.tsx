@@ -6,7 +6,7 @@ import { AdminNav } from '@/components/admin-nav';
 import { PageHero, SurfaceCard } from '@/components/design-system';
 import { SkeletonCard } from '@/components/skeleton-card';
 import { api } from '@/lib/api';
-import type { DeliveryLog, SmsOpsSnapshot, UserProfile } from '@/types';
+import type { DeliveryLog, SmsOpsSnapshot, UpcomingDelivery, UserProfile } from '@/types';
 
 type ChannelFilter = 'all' | 'sms' | 'email';
 type StatusFilter = 'all' | 'sent' | 'failed';
@@ -18,6 +18,22 @@ function formatWhen(value: string) {
     dateStyle: 'short',
     timeStyle: 'short',
   }).format(date);
+}
+
+function kindLabel(kind: UpcomingDelivery['kind']) {
+  const labels: Record<UpcomingDelivery['kind'], string> = {
+    new_alert: 'Nueva alerta',
+    new_publication: 'Publicación oficial',
+    reminder_7d: 'Recordatorio 7 días',
+    reminder_1d: 'Recordatorio 1 día',
+  };
+  return labels[kind];
+}
+
+function stateLabel(state: UpcomingDelivery['state']) {
+  if (state === 'ready') return 'Listo ahora';
+  if (state === 'scheduled') return 'Programado';
+  return 'Ventana pasada';
 }
 
 function sourceLabel(sourceRef?: string | null) {
@@ -294,6 +310,96 @@ export default function AdminSmsPage() {
               </p>
             </SurfaceCard>
           </div>
+
+          <SurfaceCard className="space-y-3 p-4 md:p-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-[var(--ink)]">Próximos envíos previstos</h2>
+                <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                  Previsión según alertas pendientes y fechas estimadas. Destinatarios estimados:{' '}
+                  <strong>{data?.upcoming?.emailRecipients ?? data?.proUsers ?? 0} emails</strong>
+                  {' · '}
+                  <strong>{data?.upcoming?.smsRecipients ?? data?.proWithSms ?? 0} SMS</strong>
+                  {' '}(SMS solo en publicaciones oficiales).
+                </p>
+              </div>
+            </div>
+            {(data?.upcoming?.items.length ?? 0) === 0 ? (
+              <p className="text-sm text-[var(--ink-soft)]">
+                No hay avisos PRO pendientes ni recordatorios programados ahora mismo.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-[var(--stroke)] text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">
+                      <th className="px-2 py-2 font-semibold">Estado</th>
+                      <th className="px-2 py-2 font-semibold">Cuándo</th>
+                      <th className="px-2 py-2 font-semibold">Tipo</th>
+                      <th className="px-2 py-2 font-semibold">Canales</th>
+                      <th className="px-2 py-2 font-semibold">Promoción</th>
+                      <th className="px-2 py-2 font-semibold">Destinatarios</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data?.upcoming.items.map((item) => (
+                      <tr key={item.id} className="border-b border-[var(--stroke)] align-top">
+                        <td className="px-2 py-2">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                              item.state === 'ready'
+                                ? 'bg-[rgba(22,112,85,0.12)] text-[var(--green-700)]'
+                                : item.state === 'scheduled'
+                                  ? 'bg-sky-100 text-sky-900'
+                                  : 'bg-amber-100 text-amber-900'
+                            }`}
+                          >
+                            {stateLabel(item.state)}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap px-2 py-2 text-xs">
+                          {item.state === 'ready'
+                            ? 'Hoy / al despachar'
+                            : item.scheduledFor || '—'}
+                          {item.estimatedPublicationDate ? (
+                            <span className="mt-1 block text-[var(--ink-soft)]">
+                              Est. pub.: {item.estimatedPublicationDate}
+                            </span>
+                          ) : null}
+                        </td>
+                        <td className="px-2 py-2 text-xs font-semibold">{kindLabel(item.kind)}</td>
+                        <td className="px-2 py-2 text-xs uppercase tracking-wide">
+                          {item.channels.join(' + ')}
+                        </td>
+                        <td className="px-2 py-2">
+                          <Link
+                            href={`/admin/alerts`}
+                            className="font-semibold text-[var(--ink)] hover:text-[var(--green-700)]"
+                          >
+                            {item.title}
+                          </Link>
+                          {item.location ? (
+                            <span className="mt-1 block text-xs text-[var(--ink-soft)]">
+                              {item.location}
+                            </span>
+                          ) : null}
+                          <span className="mt-1 block text-xs text-[var(--ink-soft)]">{item.note}</span>
+                        </td>
+                        <td className="px-2 py-2 text-xs">
+                          Email ~{item.emailRecipients}
+                          {item.channels.includes('sms') ? (
+                            <span className="mt-1 block">SMS ~{item.smsRecipients}</span>
+                          ) : (
+                            <span className="mt-1 block text-[var(--ink-soft)]">Sin SMS</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </SurfaceCard>
 
           <SurfaceCard className="space-y-3 p-4 md:p-5">
             <h2 className="text-lg font-bold text-[var(--ink)]">Filtros</h2>

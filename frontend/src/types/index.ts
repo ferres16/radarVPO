@@ -678,6 +678,22 @@ export type DeliveryLog = {
   recipientUserId?: string | null;
 };
 
+export type UpcomingDelivery = {
+  id: string;
+  promotionId: string;
+  title: string;
+  location: string;
+  kind: 'new_alert' | 'new_publication' | 'reminder_7d' | 'reminder_1d';
+  channels: Array<'email' | 'sms'>;
+  state: 'ready' | 'scheduled' | 'missed';
+  scheduledFor: string | null;
+  daysUntil: number | null;
+  estimatedPublicationDate: string | null;
+  emailRecipients: number;
+  smsRecipients: number;
+  note: string;
+};
+
 export type SmsOpsSnapshot = {
   configured: boolean;
   hasApiKey: boolean;
@@ -700,6 +716,11 @@ export type SmsOpsSnapshot = {
     q: string;
     limit: number;
     offset: number;
+  };
+  upcoming: {
+    emailRecipients: number;
+    smsRecipients: number;
+    items: UpcomingDelivery[];
   };
   recentFailures: Array<{
     channel: string;

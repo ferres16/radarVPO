@@ -12,6 +12,7 @@ import { resolvePublicSiteUrl } from '../common/public-site-url';
 import { collectAdminEmails } from './admin-emails';
 import {
   calendarDaysUntil,
+  madridYmd,
   PRO_NOTIFY_SOURCE_KIND,
   type ProNotifyKind,
 } from './pro-notify.util';
@@ -197,6 +198,333 @@ export class NotificationsService {
         errorCode: row.errorCode || 'UNKNOWN',
         createdAt: row.createdAt,
       })),
+    };
+  }
+
+  /**
+   * Previsión de próximos avisos PRO (email/SMS): listos ahora o programados
+   * por fecha estimada (recordatorios D-7 / D-1).
+   */
+  async listUpcomingProDeliveries(limit = 60): Promise<{
+    emailRecipients: number;
+    smsRecipients: number;
+    items: Array<{
+      id: string;
+      promotionId: string;
+      title: string;
+      location: string;
+      kind: ProNotifyKind;
+      channels: Array<'email' | 'sms'>;
+      state: 'ready' | 'scheduled' | 'missed';
+      scheduledFor: string | null;
+      daysUntil: number | null;
+      estimatedPublicationDate: string | null;
+      emailRecipients: number;
+      smsRecipients: number;
+      note: string;
+    }>;
+  }> {
+    const [proUsers, proSmsUsers, pending, publications] = await Promise.all([
+      this.prisma.user.count({
+        where: {
+          OR: [
+            { plan: 'pro' },
+            {
+              subscriptions: {
+                some: {
+                  planKey: 'pro',
+                  status: {
+                    in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      }),
+      this.prisma.user.findMany({
+        where: {
+          smsAlertsEnabled: true,
+          OR: [
+            { plan: 'pro' },
+            {
+              subscriptions: {
+                some: {
+                  planKey: 'pro',
+                  status: {
+                    in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+                  },
+                },
+              },
+            },
+          ],
+        },
+        select: { phone: true },
+        take: 2000,
+      }),
+      this.prisma.promotion.findMany({
+        where: { status: 'pending_review' },
+        orderBy: [
+          { estimatedPublicationDate: 'asc' },
+          { createdAt: 'desc' },
+        ],
+        take: 100,
+        select: {
+          id: true,
+          title: true,
+          municipality: true,
+          province: true,
+          estimatedPublicationDate: true,
+          status: true,
+        },
+      }),
+      this.prisma.promotion.findMany({
+        where: {
+          status: { in: ['published_unreviewed', 'published_reviewed'] },
+          createdAt: { gte: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000) },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 40,
+        select: {
+          id: true,
+          title: true,
+          municipality: true,
+          province: true,
+          estimatedPublicationDate: true,
+          status: true,
+        },
+      }),
+    ]);
+
+    const smsRecipients = proSmsUsers.filter((user) =>
+      normalizePhoneForSms(user.phone),
+    ).length;
+    const emailRecipients = proUsers;
+
+    const candidates = [...pending, ...publications].filter(
+      (row) => !isAmendmentPublication(row.title),
+    );
+    const ids = candidates.map((row) => row.id);
+    const sentPosts =
+      ids.length === 0
+        ? []
+        : await this.prisma.publishedPost.findMany({
+            where: {
+              sourceId: { in: ids },
+              audience: AudienceType.pro,
+              channel: 'brevo',
+              status: 'sent',
+            },
+            select: { sourceId: true, sourceKind: true },
+          });
+    const sentKeys = new Set(
+      sentPosts.map((row) => `${row.sourceKind}:${row.sourceId}`),
+    );
+
+    const items: Array<{
+      id: string;
+      promotionId: string;
+      title: string;
+      location: string;
+      kind: ProNotifyKind;
+      channels: Array<'email' | 'sms'>;
+      state: 'ready' | 'scheduled' | 'missed';
+      scheduledFor: string | null;
+      daysUntil: number | null;
+      estimatedPublicationDate: string | null;
+      emailRecipients: number;
+      smsRecipients: number;
+      note: string;
+    }> = [];
+
+    const pushItem = (input: {
+      promotionId: string;
+      title: string;
+      municipality: string | null;
+      province: string | null;
+      kind: ProNotifyKind;
+      state: 'ready' | 'scheduled' | 'missed';
+      scheduledFor: Date | null;
+      daysUntil: number | null;
+      estimatedPublicationDate: Date | null;
+      note: string;
+    }) => {
+      const channels: Array<'email' | 'sms'> = ['email'];
+      if (PRO_SMS_KINDS.has(input.kind)) channels.push('sms');
+      items.push({
+        id: `${input.kind}:${input.promotionId}`,
+        promotionId: input.promotionId,
+        title: input.title,
+        location: formatLocation({
+          municipality: input.municipality,
+          province: input.province,
+        }),
+        kind: input.kind,
+        channels,
+        state: input.state,
+        scheduledFor: input.scheduledFor
+          ? madridYmd(input.scheduledFor)
+          : null,
+        daysUntil: input.daysUntil,
+        estimatedPublicationDate: input.estimatedPublicationDate
+          ? madridYmd(input.estimatedPublicationDate)
+          : null,
+        emailRecipients,
+        smsRecipients: channels.includes('sms') ? smsRecipients : 0,
+        note: input.note,
+      });
+    };
+
+    for (const alert of pending) {
+      if (isAmendmentPublication(alert.title)) continue;
+
+      if (!sentKeys.has(`${PRO_NOTIFY_SOURCE_KIND.new_alert}:${alert.id}`)) {
+        pushItem({
+          promotionId: alert.id,
+          title: alert.title,
+          municipality: alert.municipality,
+          province: alert.province,
+          kind: 'new_alert',
+          state: 'ready',
+          scheduledFor: null,
+          daysUntil: 0,
+          estimatedPublicationDate: alert.estimatedPublicationDate,
+          note: 'Pendiente de enviar aviso de nueva alerta (email a PRO).',
+        });
+      }
+
+      if (!alert.estimatedPublicationDate) continue;
+      const estimated = alert.estimatedPublicationDate;
+      const days = calendarDaysUntil(estimated);
+
+      if (!sentKeys.has(`${PRO_NOTIFY_SOURCE_KIND.reminder_7d}:${alert.id}`)) {
+        if (days === 7) {
+          pushItem({
+            promotionId: alert.id,
+            title: alert.title,
+            municipality: alert.municipality,
+            province: alert.province,
+            kind: 'reminder_7d',
+            state: 'ready',
+            scheduledFor: new Date(),
+            daysUntil: 7,
+            estimatedPublicationDate: estimated,
+            note: 'Recordatorio D-7 listo para enviar hoy.',
+          });
+        } else if (days > 7) {
+          const scheduled = new Date(estimated);
+          scheduled.setUTCDate(scheduled.getUTCDate() - 7);
+          pushItem({
+            promotionId: alert.id,
+            title: alert.title,
+            municipality: alert.municipality,
+            province: alert.province,
+            kind: 'reminder_7d',
+            state: 'scheduled',
+            scheduledFor: scheduled,
+            daysUntil: days,
+            estimatedPublicationDate: estimated,
+            note: `Se enviará cuando falten 7 días (~${madridYmd(scheduled)}).`,
+          });
+        } else if (days > 1) {
+          pushItem({
+            promotionId: alert.id,
+            title: alert.title,
+            municipality: alert.municipality,
+            province: alert.province,
+            kind: 'reminder_7d',
+            state: 'missed',
+            scheduledFor: null,
+            daysUntil: days,
+            estimatedPublicationDate: estimated,
+            note: 'Ventana D-7 ya pasó sin enviar.',
+          });
+        }
+      }
+
+      if (!sentKeys.has(`${PRO_NOTIFY_SOURCE_KIND.reminder_1d}:${alert.id}`)) {
+        if (days === 1) {
+          pushItem({
+            promotionId: alert.id,
+            title: alert.title,
+            municipality: alert.municipality,
+            province: alert.province,
+            kind: 'reminder_1d',
+            state: 'ready',
+            scheduledFor: new Date(),
+            daysUntil: 1,
+            estimatedPublicationDate: estimated,
+            note: 'Recordatorio D-1 listo para enviar hoy.',
+          });
+        } else if (days > 1) {
+          const scheduled = new Date(estimated);
+          scheduled.setUTCDate(scheduled.getUTCDate() - 1);
+          pushItem({
+            promotionId: alert.id,
+            title: alert.title,
+            municipality: alert.municipality,
+            province: alert.province,
+            kind: 'reminder_1d',
+            state: 'scheduled',
+            scheduledFor: scheduled,
+            daysUntil: days,
+            estimatedPublicationDate: estimated,
+            note: `Se enviará cuando falte 1 día (~${madridYmd(scheduled)}).`,
+          });
+        } else if (days < 1) {
+          pushItem({
+            promotionId: alert.id,
+            title: alert.title,
+            municipality: alert.municipality,
+            province: alert.province,
+            kind: 'reminder_1d',
+            state: 'missed',
+            scheduledFor: null,
+            daysUntil: days,
+            estimatedPublicationDate: estimated,
+            note: 'Ventana D-1 ya pasó sin enviar.',
+          });
+        }
+      }
+    }
+
+    for (const publication of publications) {
+      if (isAmendmentPublication(publication.title)) continue;
+      if (!isOfficialProcedureStartAnnouncement(publication.title)) continue;
+      if (
+        sentKeys.has(
+          `${PRO_NOTIFY_SOURCE_KIND.new_publication}:${publication.id}`,
+        )
+      ) {
+        continue;
+      }
+      pushItem({
+        promotionId: publication.id,
+        title: publication.title,
+        municipality: publication.municipality,
+        province: publication.province,
+        kind: 'new_publication',
+        state: 'ready',
+        scheduledFor: null,
+        daysUntil: 0,
+        estimatedPublicationDate: publication.estimatedPublicationDate,
+        note: 'Publicación oficial pendiente de aviso PRO (email + SMS).',
+      });
+    }
+
+    const rank = { ready: 0, scheduled: 1, missed: 2 } as const;
+    items.sort((a, b) => {
+      const byState = rank[a.state] - rank[b.state];
+      if (byState !== 0) return byState;
+      const aDate = a.scheduledFor || a.estimatedPublicationDate || '';
+      const bDate = b.scheduledFor || b.estimatedPublicationDate || '';
+      return aDate.localeCompare(bDate);
+    });
+
+    return {
+      emailRecipients,
+      smsRecipients,
+      items: items.slice(0, Math.min(limit, 100)),
     };
   }
 
