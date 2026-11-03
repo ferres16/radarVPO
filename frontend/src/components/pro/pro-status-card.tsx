@@ -213,12 +213,13 @@ export function ProStatusCard({ profile, onProfileUpdate }: ProStatusCardProps) 
 
         {proWhatsapp.available ? (
           <a
-            href={getProWhatsappHref('Hola, soy suscriptor/a de Radar VPO PRO y tengo una consulta.')}
+            href={getProWhatsappHref()}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn btn--primary"
+            className="btn btn--primary min-h-11 w-full sm:w-auto"
+            onClick={() => trackEvent('pro_whatsapp_opened', { source: 'account' })}
           >
-            Abrir WhatsApp de consultas
+            {proWhatsapp.label}
           </a>
         ) : (
           <p className="rounded-2xl border border-[var(--stroke)] bg-white/80 px-4 py-3 text-sm text-[var(--ink-soft)]">

@@ -17,6 +17,7 @@ export type AnalyticsEventName =
   | 'promotion_pdf_cta_clicked'
   | 'promotion_list_cta_clicked'
   | 'pro_cta_clicked'
+  | 'pro_whatsapp_opened'
   | 'pro_page_viewed'
   | 'course_cta_clicked'
   | 'course_page_viewed'

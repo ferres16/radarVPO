@@ -214,7 +214,7 @@ El backend envia notificaciones a usuarios `plan=pro` cuando hay alertas nuevas 
 BREVO_API_KEY=xkeysib-...
 BREVO_PRO_ALERTS_ENABLED=true
 BREVO_EMAIL_SENDER=Radar VPO <info@radarvpo.com>
-BREVO_SMS_SENDER=RadarVPO
+BREVO_SMS_SENDER=RadarVPOPro
 FRONTEND_URL=https://radar-vpo-frontend-ten.vercel.app
 ```
 

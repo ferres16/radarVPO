@@ -26,6 +26,16 @@ import {
 /** SMS PRO: solo publicación oficial por defecto (aunque el usuario tenga SMS on). */
 const PRO_SMS_KINDS = new Set<ProNotifyKind>(['new_publication']);
 
+/** Remitente alfanumérico Brevo: 3–11 letras/números (sin +34…). */
+function resolveBrevoSmsSender(raw?: string) {
+  const fallback = 'RadarVPOPro';
+  const cleaned = (raw || fallback).replace(/[^A-Za-z0-9 ]/g, '').trim();
+  if (!cleaned) return fallback;
+  if (cleaned.length <= 11) return cleaned;
+  const compact = cleaned.replace(/\s+/g, '');
+  return (compact || fallback).slice(0, 11);
+}
+
 type ProAlertPromotion = Pick<
   Promotion,
   | 'id'
@@ -88,7 +98,8 @@ export type ProAlertDispatchResult = {
 export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
   private readonly apiKey = process.env.BREVO_API_KEY;
-  private readonly smsSender = process.env.BREVO_SMS_SENDER || 'RadarVPO';
+  /** Remitente alfanumérico Brevo (máx. 11 chars). "RadarVPO PRO" → RadarVPOPro. */
+  private readonly smsSender = resolveBrevoSmsSender(process.env.BREVO_SMS_SENDER);
   private readonly emailSender =
     process.env.BREVO_EMAIL_SENDER || 'Radar VPO <info@radarvpo.com>';
   private readonly proAlertsEnabled =

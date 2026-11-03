@@ -81,9 +81,7 @@ export default async function ProPage({
     'Cancelas cuando quieras; acceso hasta fin de periodo pagado',
     ...(includedGuides ? [includedGuides.title] : []),
   ];
-  const whatsappHref = getProWhatsappHref(
-    'Hola, soy suscriptor/a de Radar VPO PRO y tengo una consulta.',
-  );
+  const whatsappHref = getProWhatsappHref();
 
   return (
     <PublicPage className="course-detail--locked">
