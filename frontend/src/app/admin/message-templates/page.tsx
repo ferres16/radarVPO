@@ -124,33 +124,35 @@ export default function AdminMessageTemplatesPage() {
 
   if (loading) {
     return (
-      <div className="admin-shell">
-        <AdminNav />
-        <main className="admin-main">
+      <main className="shell">
+        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6">
           <p className="text-sm text-[var(--ink-soft)]">Cargando plantillas…</p>
-        </main>
-      </div>
+        </article>
+      </main>
     );
   }
 
   if (!me || me.role !== 'admin') {
     return (
-      <div className="admin-shell">
-        <AdminNav />
-        <main className="admin-main">
-          <p className="text-sm font-semibold text-red-700">{error || 'Acceso denegado.'}</p>
-        </main>
-      </div>
+      <main className="shell">
+        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6">
+          <h1 className="text-2xl font-bold text-[var(--ink)]">Emails / SMS</h1>
+          <p className="mt-2 text-sm font-semibold text-red-700">{error || 'Acceso denegado.'}</p>
+        </article>
+      </main>
     );
   }
 
   return (
-    <div className="admin-shell">
-      <AdminNav />
-      <main className="admin-main space-y-6">
-        <header>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Backoffice</p>
-          <h1 className="display-type mt-1 text-3xl font-black text-[var(--ink)]">Emails / SMS</h1>
+    <main className="shell pb-16">
+      <div className="admin-shell">
+        <AdminNav />
+        <div className="space-y-4">
+        <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--green-700)]">
+            Backoffice
+          </p>
+          <h1 className="display-type mt-2 text-3xl font-black text-[var(--ink)]">Emails / SMS</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
             Variables: {'{{name}}'}, {'{{location}}'}, {'{{date}}'}, {'{{url}}'}, {'{{product}}'},{' '}
             {'{{price}}'}, {'{{access_until}}'}, {'{{billing_summary}}'}. Si no personalizas, al
@@ -274,7 +276,8 @@ export default function AdminMessageTemplatesPage() {
             </section>
           ) : null}
         </div>
-      </main>
-    </div>
+        </div>
+      </div>
+    </main>
   );
 }

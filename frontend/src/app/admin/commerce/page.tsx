@@ -108,38 +108,40 @@ export default function AdminCommercePage() {
 
   if (loading) {
     return (
-      <div className="admin-shell">
-        <AdminNav />
-        <main className="admin-main">
+      <main className="shell">
+        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6">
           <p className="text-sm text-[var(--ink-soft)]">Cargando comercio…</p>
-        </main>
-      </div>
+        </article>
+      </main>
     );
   }
 
   if (!me || me.role !== 'admin') {
     return (
-      <div className="admin-shell">
-        <AdminNav />
-        <main className="admin-main">
-          <p className="text-sm font-semibold text-red-700">{error || 'Acceso denegado.'}</p>
-          <Link href="/" className="mt-4 inline-block text-sm font-bold text-[var(--green-700)]">
-            Volver al inicio
+      <main className="shell">
+        <article className="rounded-3xl border border-[var(--stroke)] bg-white p-6">
+          <h1 className="text-2xl font-bold text-[var(--ink)]">Comercio</h1>
+          <p className="mt-2 text-sm font-semibold text-red-700">{error || 'Acceso denegado.'}</p>
+          <Link href="/admin" className="mt-4 inline-block text-sm font-bold text-[var(--green-700)]">
+            Volver al panel
           </Link>
-        </main>
-      </div>
+        </article>
+      </main>
     );
   }
 
   const packPriceEuros = ((Number(packRule?.config.priceCents) || 2997) / 100).toFixed(2);
 
   return (
-    <div className="admin-shell">
-      <AdminNav />
-      <main className="admin-main space-y-6">
-        <header>
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--ink-soft)]">Backoffice</p>
-          <h1 className="display-type mt-1 text-3xl font-black text-[var(--ink)]">Comercio</h1>
+    <main className="shell pb-16">
+      <div className="admin-shell">
+        <AdminNav />
+        <div className="space-y-4">
+        <header className="rounded-3xl border border-[var(--stroke)] bg-white p-6 shadow-card">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-[var(--green-700)]">
+            Backoffice
+          </p>
+          <h1 className="display-type mt-2 text-3xl font-black text-[var(--ink)]">Comercio</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
             Pausar ventas, cupones Stripe y pack PRO 3 meses (incluye guía). Textos de email/SMS en{' '}
             <Link href="/admin/message-templates" className="font-semibold text-[var(--green-700)]">
@@ -377,7 +379,8 @@ export default function AdminCommercePage() {
         <button type="button" className="btn btn--primary" disabled={saving} onClick={() => void save()}>
           {saving ? 'Guardando…' : 'Guardar ajustes'}
         </button>
-      </main>
-    </div>
+        </div>
+      </div>
+    </main>
   );
 }
