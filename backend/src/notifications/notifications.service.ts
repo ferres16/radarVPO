@@ -24,8 +24,13 @@ import {
   formatMadridDate,
   hasIncompleteRender,
 } from './message-vars';
-/** SMS PRO: solo publicación oficial por defecto (aunque el usuario tenga SMS on). */
-const PRO_SMS_KINDS = new Set<ProNotifyKind>(['new_publication']);
+/** SMS PRO: mismos avisos que el email (si el usuario tiene SMS activado y móvil válido). */
+const PRO_SMS_KINDS = new Set<ProNotifyKind>([
+  'new_alert',
+  'reminder_7d',
+  'reminder_1d',
+  'new_publication',
+]);
 
 /** Remitente alfanumérico Brevo: 3–11 letras/números (sin +34…). */
 function resolveBrevoSmsSender(raw?: string) {
@@ -389,7 +394,7 @@ export class NotificationsService {
           scheduledFor: null,
           daysUntil: 0,
           estimatedPublicationDate: alert.estimatedPublicationDate,
-          note: 'Pendiente de enviar aviso de nueva alerta (email a PRO).',
+          note: 'Pendiente de enviar aviso de nueva alerta (email + SMS a PRO).',
         });
       }
 
@@ -409,7 +414,7 @@ export class NotificationsService {
             scheduledFor: new Date(),
             daysUntil: 7,
             estimatedPublicationDate: estimated,
-            note: 'Recordatorio D-7 listo para enviar hoy.',
+            note: 'Recordatorio D-7 listo para enviar hoy (email + SMS).',
           });
         } else if (days > 7) {
           const scheduled = new Date(estimated);
@@ -424,7 +429,7 @@ export class NotificationsService {
             scheduledFor: scheduled,
             daysUntil: days,
             estimatedPublicationDate: estimated,
-            note: `Se enviará cuando falten 7 días (~${madridYmd(scheduled)}).`,
+            note: `Email + SMS cuando falten 7 días (~${madridYmd(scheduled)}).`,
           });
         } else if (days > 1) {
           pushItem({
@@ -454,7 +459,7 @@ export class NotificationsService {
             scheduledFor: new Date(),
             daysUntil: 1,
             estimatedPublicationDate: estimated,
-            note: 'Recordatorio D-1 listo para enviar hoy.',
+            note: 'Recordatorio D-1 listo para enviar hoy (email + SMS).',
           });
         } else if (days > 1) {
           const scheduled = new Date(estimated);
@@ -469,7 +474,7 @@ export class NotificationsService {
             scheduledFor: scheduled,
             daysUntil: days,
             estimatedPublicationDate: estimated,
-            note: `Se enviará cuando falte 1 día (~${madridYmd(scheduled)}).`,
+            note: `Email + SMS cuando falte 1 día (~${madridYmd(scheduled)}).`,
           });
         } else if (days < 1) {
           pushItem({
@@ -521,10 +526,25 @@ export class NotificationsService {
       return aDate.localeCompare(bDate);
     });
 
+    // Evitar filas duplicadas si hay promociones repetidas en BD.
+    const seen = new Set<string>();
+    const deduped = items.filter((item) => {
+      const key = [
+        item.kind,
+        item.state,
+        item.scheduledFor || '',
+        item.estimatedPublicationDate || '',
+        item.title.trim().toLowerCase(),
+      ].join('|');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
     return {
       emailRecipients,
       smsRecipients,
-      items: items.slice(0, Math.min(limit, 100)),
+      items: deduped.slice(0, Math.min(limit, 100)),
     };
   }
 

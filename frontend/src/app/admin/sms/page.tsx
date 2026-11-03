@@ -320,7 +320,7 @@ export default function AdminSmsPage() {
                   <strong>{data?.upcoming?.emailRecipients ?? data?.proUsers ?? 0} emails</strong>
                   {' · '}
                   <strong>{data?.upcoming?.smsRecipients ?? data?.proWithSms ?? 0} SMS</strong>
-                  {' '}(SMS solo en publicaciones oficiales).
+                  {' '}(mismo aviso por email y SMS a PRO con SMS activo).
                 </p>
               </div>
             </div>
@@ -388,7 +388,9 @@ export default function AdminSmsPage() {
                         <td className="px-2 py-2 text-xs">
                           Email ~{item.emailRecipients}
                           {item.channels.includes('sms') ? (
-                            <span className="mt-1 block">SMS ~{item.smsRecipients}</span>
+                            <span className="mt-1 block font-semibold text-[var(--green-700)]">
+                              SMS ~{item.smsRecipients}
+                            </span>
                           ) : (
                             <span className="mt-1 block text-[var(--ink-soft)]">Sin SMS</span>
                           )}
