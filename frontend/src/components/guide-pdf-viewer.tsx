@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { usePdfFullscreen } from '@/hooks/use-pdf-fullscreen';
+import {
+  clampGuidePage,
+  readGuideLastPage,
+  writeGuideLastPage,
+} from '@/lib/guide-reading-position';
 import { collectPdfPageLinks, type PdfPageLink } from '@/lib/pdf-page-links';
 
 type Props = {
@@ -35,11 +40,13 @@ type PdfDoc = {
 /**
  * Visor página a página con barra de progreso.
  * Sin descarga ni enlace al original. Los enlaces del PDF sí son clicables.
+ * Restaura la última página vista (no el máximo alcanzado).
  */
 export function GuidePdfViewer({ slug, title, canAccess }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const pdfRef = useRef<PdfDoc | null>(null);
+  const restoredRef = useRef(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [pageCount, setPageCount] = useState(0);
@@ -96,6 +103,7 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
     }
 
     let cancelled = false;
+    restoredRef.current = false;
 
     (async () => {
       try {
@@ -122,7 +130,11 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
         const pdf = (await pdfjs.getDocument({ data }).promise) as unknown as PdfDoc;
         pdfRef.current = pdf;
         setPageCount(pdf.numPages);
-        setPage(1);
+
+        const saved = readGuideLastPage(slug);
+        const startPage = saved ? clampGuidePage(saved, pdf.numPages) : 1;
+        setPage(startPage);
+        restoredRef.current = true;
         setError('');
       } catch (err) {
         if (!cancelled) {
@@ -143,6 +155,11 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
     if (!canAccess || loading || error || pageCount < 1) return;
     void renderPage(page);
   }, [canAccess, loading, error, pageCount, page, renderPage]);
+
+  useEffect(() => {
+    if (!canAccess || loading || error || pageCount < 1 || !restoredRef.current) return;
+    writeGuideLastPage(slug, page);
+  }, [canAccess, loading, error, pageCount, page, slug]);
 
   useEffect(() => {
     if (!fullscreen || !stageRef.current) return;

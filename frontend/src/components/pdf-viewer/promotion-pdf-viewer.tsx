@@ -35,12 +35,12 @@ function loadPdfJs(): Promise<PdfJs> {
   return pdfJsPromise;
 }
 
-const iconButton =
-  'inline-flex h-11 min-w-11 items-center justify-center rounded-full border border-[var(--stroke)] bg-white px-3 text-sm font-semibold text-[var(--ink)] outline-none transition hover:bg-[var(--bg-eco)] focus-visible:ring-2 focus-visible:ring-[var(--green-700)] disabled:cursor-not-allowed disabled:opacity-40';
-const linkButton =
-  'inline-flex min-h-11 items-center justify-center rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] outline-none transition hover:bg-[var(--bg-eco)] focus-visible:ring-2 focus-visible:ring-[var(--green-700)]';
-const primaryButton =
-  'inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white outline-none transition hover:bg-[var(--green-900)] focus-visible:ring-2 focus-visible:ring-[var(--green-700)] disabled:cursor-not-allowed disabled:opacity-40';
+const navButton =
+  'rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)] disabled:cursor-not-allowed disabled:opacity-40';
+const primaryNavButton =
+  'rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white transition hover:bg-[var(--green-900)] disabled:cursor-not-allowed disabled:opacity-40';
+const compactButton =
+  'rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)] disabled:cursor-not-allowed disabled:opacity-40';
 
 export function PromotionPdfViewer({
   promotionId,
@@ -93,6 +93,7 @@ export function PromotionPdfViewer({
     setProgress(null);
     setNumPages(0);
     setPage(1);
+    setZoom(1);
     pdfRef.current = null;
     trackEvent('pdf_viewer_opened', { promotionId, documentId: active.id });
 
@@ -187,173 +188,30 @@ export function PromotionPdfViewer({
     trackEvent('pdf_document_selected', { promotionId, documentId: id });
   };
 
-  const handleFullscreen = () => {
-    toggle();
-    trackEvent('pdf_fullscreen_toggled', {
-      promotionId,
-      documentId: active?.id ?? null,
-      fullscreen: !fullscreen,
-    });
-  };
-
   if (!active) return null;
 
   const loading = status === 'loading';
+  const ready = status === 'ready';
+  const pageProgress = numPages > 0 ? Math.round((page / numPages) * 100) : 0;
 
-  const toolbar = (
-    <div className="pdf-viewer__toolbar" role="toolbar" aria-label="Controles del visor">
+  const navButtons = (
+    <div className="flex flex-wrap items-center justify-between gap-3">
       <button
         type="button"
-        className={iconButton}
+        className={navButton}
         onClick={() => goToPage(page - 1)}
-        disabled={status !== 'ready' || page <= 1}
-        aria-label="Página anterior"
+        disabled={!ready || page <= 1}
       >
-        ‹
+        ← Anterior
       </button>
-      <label className="flex items-center gap-1.5 text-sm text-[var(--ink-soft)]">
-        <span className="sr-only">Número de página</span>
-        <input
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={Math.max(numPages, 1)}
-          value={page}
-          disabled={status !== 'ready'}
-          onChange={(event) => goToPage(Number(event.target.value))}
-          className="h-11 w-16 rounded-xl border border-[var(--stroke)] bg-white px-2 text-center text-sm font-semibold text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] disabled:opacity-40"
-        />
-        <span aria-live="polite">/ {numPages || '–'}</span>
-      </label>
       <button
         type="button"
-        className={iconButton}
+        className={primaryNavButton}
         onClick={() => goToPage(page + 1)}
-        disabled={status !== 'ready' || page >= numPages}
-        aria-label="Página siguiente"
+        disabled={!ready || page >= numPages}
       >
-        ›
+        Siguiente →
       </button>
-
-      <span className="mx-1 hidden h-6 w-px bg-[var(--stroke)] sm:block" aria-hidden="true" />
-
-      <button
-        type="button"
-        className={iconButton}
-        onClick={() => setZoom((value) => clampZoom(value - ZOOM_STEP))}
-        disabled={status !== 'ready' || zoom <= 0.5}
-        aria-label="Alejar"
-      >
-        −
-      </button>
-      <button
-        type="button"
-        className={iconButton}
-        onClick={() => setZoom(1)}
-        disabled={status !== 'ready'}
-        aria-label="Ajustar al ancho"
-      >
-        {Math.round(zoom * 100)}%
-      </button>
-      <button
-        type="button"
-        className={iconButton}
-        onClick={() => setZoom((value) => clampZoom(value + ZOOM_STEP))}
-        disabled={status !== 'ready' || zoom >= 3}
-        aria-label="Acercar"
-      >
-        +
-      </button>
-
-      <div className="ml-auto flex flex-wrap gap-2">
-        <button
-          type="button"
-          className={fullscreen ? primaryButton : linkButton}
-          onClick={handleFullscreen}
-          aria-pressed={fullscreen}
-        >
-          {fullscreen ? 'Salir' : 'Pantalla completa'}
-        </button>
-        {!fullscreen ? (
-          <>
-            <a
-              href={active.originalUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={linkButton}
-              onClick={() => trackEvent('pdf_original_opened', { promotionId, documentId: active.id })}
-            >
-              Abrir original
-            </a>
-            <a
-              href={downloadUrl}
-              download
-              className={linkButton}
-              onClick={() => trackEvent('pdf_download_clicked', { promotionId, documentId: active.id })}
-            >
-              Descargar
-            </a>
-          </>
-        ) : null}
-      </div>
-    </div>
-  );
-
-  const stage = (
-    <div
-      ref={containerRef}
-      className={`pdf-viewer__stage${fullscreen ? ' pdf-viewer__stage--fullscreen' : ''}`}
-      tabIndex={0}
-      onKeyDown={(event) => {
-        if (status !== 'ready') return;
-        if (event.key === 'ArrowRight' || event.key === 'PageDown') {
-          event.preventDefault();
-          goToPage(page + 1);
-        } else if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
-          event.preventDefault();
-          goToPage(page - 1);
-        }
-      }}
-    >
-      {loading ? (
-        <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 p-6 text-center" role="status">
-          <span
-            className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--stroke)] border-t-[var(--green-700)]"
-            aria-hidden="true"
-          />
-          <p className="text-sm font-semibold text-[var(--ink)]">Cargando el documento oficial…</p>
-          {progress !== null ? (
-            <p className="text-xs text-[var(--ink-soft)]">{Math.round(progress * 100)}%</p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {status === 'error' ? (
-        <div className="mx-auto flex max-w-md flex-col items-center gap-3 p-6 text-center" role="alert">
-          <p className="text-base font-bold text-[var(--ink)]">No hemos podido mostrar este documento aquí</p>
-          <p className="text-sm leading-6 text-[var(--ink-soft)]">
-            El origen no responde o no permite incrustarlo. Puedes abrirlo directamente en su web oficial o volver a
-            intentarlo.
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <a href={active.originalUrl} target="_blank" rel="noopener noreferrer" className={linkButton}>
-              Abrir el original
-            </a>
-            <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className={linkButton}>
-              Ver fuente oficial
-            </a>
-            <button type="button" className={linkButton} onClick={() => setReloadKey((value) => value + 1)}>
-              Reintentar
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      <canvas
-        ref={canvasRef}
-        aria-label={`Página ${page} de ${numPages || '…'} de ${active.label}`}
-        className={`mx-auto block bg-white shadow-md ${status === 'ready' ? '' : 'hidden'}`}
-      />
     </div>
   );
 
@@ -371,50 +229,173 @@ export function PromotionPdfViewer({
             </p>
             <p className="truncate text-sm font-semibold text-[var(--ink)]">{active.label}</p>
           </div>
-          <button type="button" className={primaryButton} onClick={exit}>
+          <button type="button" className={primaryNavButton} onClick={exit}>
             Salir
           </button>
         </div>
-      ) : documents.length > 1 ? (
-        <div className="border-b border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-3 md:px-5">
-          <label
-            htmlFor="pdf-document-select"
-            className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--green-700)]"
-          >
-            Documento ({documents.length})
-          </label>
-          <select
-            id="pdf-document-select"
-            value={active.id}
-            onChange={(event) => selectDocument(event.target.value)}
-            className="mt-2 block min-h-11 w-full rounded-xl border border-[var(--stroke)] bg-white px-3 text-sm font-semibold text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
-          >
-            {documents.map((item) => (
-              <option key={item.id} value={item.id}>
-                {categoryLabel(item.category)} · {item.label}
-              </option>
-            ))}
-          </select>
-        </div>
       ) : (
-        <div className="border-b border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-3 md:px-5">
-          <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--green-700)]">
-            {categoryLabel(active.category)}
-          </p>
-          <p className="mt-1 break-words text-sm font-semibold text-[var(--ink)]">{active.label}</p>
+        <div className="space-y-3 border-b border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-3 md:px-5">
+          {documents.length > 1 ? (
+            <div>
+              <label
+                htmlFor="pdf-document-select"
+                className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--green-700)]"
+              >
+                Documento ({documents.length})
+              </label>
+              <select
+                id="pdf-document-select"
+                value={active.id}
+                onChange={(event) => selectDocument(event.target.value)}
+                className="mt-2 block min-h-11 w-full rounded-xl border border-[var(--stroke)] bg-white px-3 text-sm font-semibold text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)]"
+              >
+                {documents.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {categoryLabel(item.category)} · {item.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--green-700)]">
+                {categoryLabel(active.category)}
+              </p>
+              <p className="mt-1 break-words text-sm font-semibold text-[var(--ink)]">{active.label}</p>
+            </div>
+          )}
+
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <p className="font-semibold text-[var(--ink)]">
+              Página {page} de {numPages || '–'}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="tabular-nums text-[var(--ink-soft)]">{pageProgress}%</p>
+              <button
+                type="button"
+                onClick={() => {
+                  toggle();
+                  trackEvent('pdf_fullscreen_toggled', {
+                    promotionId,
+                    documentId: active.id,
+                    fullscreen: !fullscreen,
+                  });
+                }}
+                className={`${compactButton} md:hidden`}
+              >
+                Pantalla completa
+              </button>
+              <div className="hidden items-center gap-1 md:flex">
+                <button
+                  type="button"
+                  className={compactButton}
+                  onClick={() => setZoom((value) => clampZoom(value - ZOOM_STEP))}
+                  disabled={!ready || zoom <= 0.5}
+                  aria-label="Alejar"
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  className={compactButton}
+                  onClick={() => setZoom(1)}
+                  disabled={!ready}
+                  aria-label="Ajustar al ancho"
+                >
+                  {Math.round(zoom * 100)}%
+                </button>
+                <button
+                  type="button"
+                  className={compactButton}
+                  onClick={() => setZoom((value) => clampZoom(value + ZOOM_STEP))}
+                  disabled={!ready || zoom >= 3}
+                  aria-label="Acercar"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            className="h-2 overflow-hidden rounded-full bg-white"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={pageProgress}
+            aria-label="Progreso del documento"
+          >
+            <div
+              className="h-full rounded-full bg-[var(--green-700)] transition-[width] duration-300 ease-out"
+              style={{ width: `${pageProgress}%` }}
+            />
+          </div>
         </div>
       )}
 
-      {toolbar}
-      {stage}
+      <div
+        ref={containerRef}
+        className={`pdf-viewer__stage${fullscreen ? ' pdf-viewer__stage--fullscreen' : ''}`}
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (!ready) return;
+          if (event.key === 'ArrowRight' || event.key === 'PageDown') {
+            event.preventDefault();
+            goToPage(page + 1);
+          } else if (event.key === 'ArrowLeft' || event.key === 'PageUp') {
+            event.preventDefault();
+            goToPage(page - 1);
+          }
+        }}
+      >
+        {loading ? (
+          <div className="flex min-h-[50vh] flex-col items-center justify-center gap-3 p-6 text-center" role="status">
+            <span
+              className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--stroke)] border-t-[var(--green-700)]"
+              aria-hidden="true"
+            />
+            <p className="text-sm font-semibold text-[var(--ink)]">Cargando el documento oficial…</p>
+            {progress !== null ? (
+              <p className="text-xs text-[var(--ink-soft)]">{Math.round(progress * 100)}%</p>
+            ) : null}
+          </div>
+        ) : null}
+
+        {status === 'error' ? (
+          <div className="mx-auto flex max-w-md flex-col items-center gap-3 p-6 text-center" role="alert">
+            <p className="text-base font-bold text-[var(--ink)]">No hemos podido mostrar este documento aquí</p>
+            <p className="text-sm leading-6 text-[var(--ink-soft)]">
+              El origen no responde o no permite incrustarlo. Puedes abrirlo directamente en su web oficial o volver a
+              intentarlo.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              <a href={active.originalUrl} target="_blank" rel="noopener noreferrer" className={navButton}>
+                Abrir el original
+              </a>
+              <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className={navButton}>
+                Ver fuente oficial
+              </a>
+              <button type="button" className={navButton} onClick={() => setReloadKey((value) => value + 1)}>
+                Reintentar
+              </button>
+            </div>
+          </div>
+        ) : null}
+
+        <canvas
+          ref={canvasRef}
+          aria-label={`Página ${page} de ${numPages || '…'} de ${active.label}`}
+          className={`mx-auto block bg-white shadow-md ${ready ? '' : 'hidden'}`}
+        />
+      </div>
 
       {fullscreen ? (
         <div className="pdf-viewer__fs-nav" role="group" aria-label="Navegación de páginas">
           <button
             type="button"
-            className={linkButton}
+            className={navButton}
             onClick={() => goToPage(page - 1)}
-            disabled={status !== 'ready' || page <= 1}
+            disabled={!ready || page <= 1}
           >
             ← Anterior
           </button>
@@ -423,22 +404,65 @@ export function PromotionPdfViewer({
           </p>
           <button
             type="button"
-            className={primaryButton}
+            className={primaryNavButton}
             onClick={() => goToPage(page + 1)}
-            disabled={status !== 'ready' || page >= numPages}
+            disabled={!ready || page >= numPages}
           >
             Siguiente →
           </button>
         </div>
-      ) : null}
-
-      {!fullscreen ? (
-        <div className="border-t border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-3 md:hidden">
-          <button type="button" className={`${primaryButton} w-full`} onClick={enter}>
+      ) : (
+        <div className="space-y-3 border-t border-[var(--stroke)] bg-white px-3 py-3 md:px-5">
+          {navButtons}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs font-semibold text-[var(--ink-soft)]">
+            <a
+              href={active.originalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+              onClick={() => trackEvent('pdf_original_opened', { promotionId, documentId: active.id })}
+            >
+              Abrir original
+            </a>
+            <a
+              href={downloadUrl}
+              download
+              className="underline"
+              onClick={() => trackEvent('pdf_download_clicked', { promotionId, documentId: active.id })}
+            >
+              Descargar
+            </a>
+            <button
+              type="button"
+              className="hidden underline md:inline"
+              onClick={() => {
+                enter();
+                trackEvent('pdf_fullscreen_toggled', {
+                  promotionId,
+                  documentId: active.id,
+                  fullscreen: true,
+                });
+              }}
+            >
+              Pantalla completa
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              enter();
+              trackEvent('pdf_fullscreen_toggled', {
+                promotionId,
+                documentId: active.id,
+                fullscreen: true,
+              });
+            }}
+            className="w-full rounded-full bg-[var(--green-700)] px-4 py-3 text-sm font-bold text-white transition hover:bg-[var(--green-900)] md:hidden"
+          >
             Ver en pantalla completa
           </button>
         </div>
-      ) : null}
+      )}
     </section>
   );
 }
