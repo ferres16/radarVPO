@@ -34,6 +34,7 @@ import {
 } from '@/types';
 import {
   DeliveryFailure,
+  SmsOpsSnapshot,
   JobRun,
 } from '@/types';
 import { getBrowserApiBaseUrl } from '@/lib/backend-url';
@@ -306,6 +307,7 @@ export const api = {
   getBackofficeOverview: () => request<BackofficeOverview>('/backoffice/overview'),
   getBackofficeJobs: () => request<JobRun[]>('/backoffice/jobs'),
   getBackofficeFailures: () => request<DeliveryFailure[]>('/backoffice/failures'),
+  getBackofficeSmsOps: () => request<SmsOpsSnapshot>('/backoffice/sms-ops'),
   dispatchProAlertNotifications: (force = false) =>
     request<{
       skipped: boolean;

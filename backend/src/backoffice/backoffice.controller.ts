@@ -111,6 +111,11 @@ export class BackofficeController {
     return this.backofficeService.failures(query);
   }
 
+  @Get('sms-ops')
+  smsOps(@Query() query: BackofficeListDto) {
+    return this.backofficeService.smsOps(query);
+  }
+
   @Post('notifications/pro-alerts/dispatch')
   dispatchProAlertNotifications(@Query('force') force?: string) {
     return this.backofficeService.dispatchPendingProAlertNotifications(

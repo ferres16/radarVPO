@@ -149,8 +149,15 @@ export class NotificationsService {
           },
           select: { phone: true },
         }),
-        this.prisma.deliveryFailure.findMany({
-          where: { sourceRef: 'radar_vpo_pro' },
+        this.prisma.deliveryLog.findMany({
+          where: {
+            status: 'failed',
+            OR: [
+              { sourceRef: 'radar_vpo_pro' },
+              { sourceRef: { startsWith: 'pro_alert:' } },
+              { sourceRef: { startsWith: 'pro_sms_configured:' } },
+            ],
+          },
           orderBy: { createdAt: 'desc' },
           take: 5,
           select: {
@@ -173,7 +180,12 @@ export class NotificationsService {
       pendingAlerts,
       proUsers,
       proUsersWithPhone,
-      recentFailures,
+      recentFailures: recentFailures.map((row) => ({
+        channel: row.channel,
+        target: row.target,
+        errorCode: row.errorCode || 'UNKNOWN',
+        createdAt: row.createdAt,
+      })),
     };
   }
 
@@ -650,12 +662,15 @@ export class NotificationsService {
         Boolean(copy.sms?.trim());
       const normalizedPhone = wantSms ? normalizePhoneForSms(user.phone) : null;
       if (normalizedPhone && copy.sms) {
-        const smsSentForUser = await this.sendSms({
-          sender: this.smsSender,
-          recipient: normalizedPhone,
-          content: copy.sms,
-          type: 'transactional',
-        });
+        const smsSentForUser = await this.sendSms(
+          {
+            sender: this.smsSender,
+            recipient: normalizedPhone,
+            content: copy.sms,
+            type: 'transactional',
+          },
+          `pro_alert:${kind}:${promotion.id}`,
+        );
         if (smsSentForUser) {
           sent += 1;
           smsSent += 1;
@@ -1003,21 +1018,89 @@ export class NotificationsService {
     );
   }
 
-  private async sendEmail(payload: BrevoEmailPayload) {
+  /**
+   * Activa SMS PRO si hay móvil válido y envía SMS de confirmación (idempotente por sourceRef).
+   */
+  async enableProSmsAlerts(
+    userId: string,
+    options?: { sourceRef?: string; sendConfirmation?: boolean },
+  ): Promise<{
+    enabled: boolean;
+    smsSent: boolean;
+    reason?: string;
+  }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, phone: true, smsAlertsEnabled: true },
+    });
+    if (!user) {
+      return { enabled: false, smsSent: false, reason: 'user_not_found' };
+    }
+
+    const phone = normalizePhoneForSms(user.phone);
+    if (!phone) {
+      return { enabled: false, smsSent: false, reason: 'no_phone' };
+    }
+
+    if (!user.smsAlertsEnabled) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { smsAlertsEnabled: true },
+      });
+    }
+
+    const sendConfirmation = options?.sendConfirmation !== false;
+    if (!sendConfirmation) {
+      return { enabled: true, smsSent: false, reason: 'confirmation_skipped' };
+    }
+
+    const sourceRef = options?.sourceRef || `pro_sms_configured:${userId}`;
+    const alreadySent = await this.prisma.deliveryLog.findFirst({
+      where: { channel: 'sms', status: 'sent', sourceRef },
+      select: { id: true },
+    });
+    if (alreadySent) {
+      return { enabled: true, smsSent: false, reason: 'already_notified' };
+    }
+
+    const accountUrl = `${this.publicSiteUrl}/account`;
+    const content = fitSmsContent(
+      'Radar VPO PRO activo. Avisos SMS de nuevas promociones configurados correctamente.',
+      accountUrl,
+    );
+    const smsSent = await this.sendSms(
+      {
+        sender: this.smsSender,
+        recipient: phone,
+        content,
+        type: 'transactional',
+      },
+      sourceRef,
+    );
+    return {
+      enabled: true,
+      smsSent,
+      reason: smsSent ? undefined : 'brevo_delivery_failed',
+    };
+  }
+
+  private async sendEmail(payload: BrevoEmailPayload, sourceRef = 'radar_vpo_pro') {
     return this.postBrevo(
       'https://api.brevo.com/v3/smtp/email',
       payload,
       'email',
       payload.to[0]?.email,
+      sourceRef,
     );
   }
 
-  private async sendSms(payload: BrevoSmsPayload) {
+  private async sendSms(payload: BrevoSmsPayload, sourceRef = 'radar_vpo_pro') {
     return this.postBrevo(
       'https://api.brevo.com/v3/transactionalSMS/sms',
       payload,
       'sms',
       payload.recipient,
+      sourceRef,
     );
   }
 
@@ -1026,8 +1109,19 @@ export class NotificationsService {
     payload: BrevoEmailPayload | BrevoSmsPayload,
     channel: string,
     target?: string,
+    sourceRef = 'radar_vpo_pro',
   ) {
-    if (!this.apiKey) return false;
+    if (!this.apiKey) {
+      await this.recordDelivery({
+        channel,
+        status: 'failed',
+        target: target || 'unknown',
+        sourceRef,
+        errorCode: 'BREVO_API_KEY_MISSING',
+        detail: 'BREVO_API_KEY no configurada',
+      });
+      return false;
+    }
 
     try {
       const response = await fetch(url, {
@@ -1041,42 +1135,79 @@ export class NotificationsService {
       });
 
       if (!response.ok) {
-        await this.recordFailure(
+        await this.recordDelivery({
           channel,
-          target || 'unknown',
-          `BREVO_${response.status}`,
-          await response.text(),
-        );
+          status: 'failed',
+          target: target || 'unknown',
+          sourceRef,
+          errorCode: `BREVO_${response.status}`,
+          detail: await response.text(),
+        });
         return false;
       }
 
+      await this.recordDelivery({
+        channel,
+        status: 'sent',
+        target: target || 'unknown',
+        sourceRef,
+      });
       return true;
     } catch (error) {
-      await this.recordFailure(
+      await this.recordDelivery({
         channel,
-        target || 'unknown',
-        'BREVO_REQUEST_FAILED',
-        error instanceof Error ? error.message : 'unknown',
-      );
+        status: 'failed',
+        target: target || 'unknown',
+        sourceRef,
+        errorCode: 'BREVO_REQUEST_FAILED',
+        detail: error instanceof Error ? error.message : 'unknown',
+      });
       return false;
     }
   }
 
-  private async recordFailure(
-    channel: string,
-    target: string,
-    errorCode: string,
-    detail: string,
-  ) {
-    await this.prisma.deliveryFailure.create({
-      data: {
-        channel,
-        target,
-        sourceRef: 'radar_vpo_pro',
-        errorCode,
-        errorDetail: { detail },
-      },
-    });
+  private async recordDelivery(input: {
+    channel: string;
+    status: 'sent' | 'failed';
+    target: string;
+    sourceRef: string;
+    errorCode?: string;
+    detail?: string;
+  }) {
+    try {
+      await this.prisma.deliveryLog.create({
+        data: {
+          channel: input.channel,
+          status: input.status,
+          target: input.target,
+          sourceRef: input.sourceRef,
+          errorCode: input.errorCode,
+          errorDetail: input.detail ? { detail: input.detail.slice(0, 2000) } : undefined,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `deliveryLog write failed: ${error instanceof Error ? error.message : 'unknown'}`,
+      );
+    }
+
+    if (input.status === 'failed') {
+      try {
+        await this.prisma.deliveryFailure.create({
+          data: {
+            channel: input.channel,
+            target: input.target,
+            sourceRef: input.sourceRef,
+            errorCode: input.errorCode || 'UNKNOWN',
+            errorDetail: input.detail ? { detail: input.detail.slice(0, 2000) } : undefined,
+          },
+        });
+      } catch (error) {
+        this.logger.warn(
+          `deliveryFailure write failed: ${error instanceof Error ? error.message : 'unknown'}`,
+        );
+      }
+    }
   }
 
   private parseEmailSender() {

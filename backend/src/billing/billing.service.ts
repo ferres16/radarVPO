@@ -923,6 +923,30 @@ export class BillingService {
       const productLabel = isPack
         ? `Radar VPO PRO (pack 3 meses)${guideTitle ? ` + ${guideTitle}` : ''}`
         : 'Radar VPO PRO (suscripción mensual)';
+
+      // SMS de nuevas promociones: activado automáticamente al pagar PRO.
+      try {
+        const smsSetup = await this.notifications.enableProSmsAlerts(user.id, {
+          sourceRef: `pro_sms_configured:${session.id}`,
+          sendConfirmation: true,
+        });
+        if (!smsSetup.enabled) {
+          this.logger.warn(
+            `PRO SMS auto-enable skipped for ${user.id}: ${smsSetup.reason || 'unknown'}`,
+          );
+        } else if (!smsSetup.smsSent && smsSetup.reason) {
+          this.logger.warn(
+            `PRO SMS confirmation not sent for ${user.id}: ${smsSetup.reason}`,
+          );
+        }
+      } catch (error) {
+        this.logger.warn(
+          `PRO SMS auto-enable failed for ${user.id}: ${
+            error instanceof Error ? error.message : 'unknown'
+          }`,
+        );
+      }
+
       await this.sendPurchaseConfirmationOnce({
         stripeSessionId: session.id,
         templateKey: isPack ? 'purchase.pro_pack' : 'purchase.pro',

@@ -312,6 +312,79 @@ export class BackofficeService {
     });
   }
 
+  async smsOps(query: BackofficeListDto) {
+    const limit = Math.min(query.limit ?? 100, 500);
+    const offset = query.offset ?? 0;
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [logs, sent7d, failed7d, proWithSms, proWithPhone, diagnostics] =
+      await Promise.all([
+        this.prisma.deliveryLog.findMany({
+          where: { channel: 'sms' },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+          skip: offset,
+        }),
+        this.prisma.deliveryLog.count({
+          where: { channel: 'sms', status: 'sent', createdAt: { gte: since } },
+        }),
+        this.prisma.deliveryLog.count({
+          where: {
+            channel: 'sms',
+            status: 'failed',
+            createdAt: { gte: since },
+          },
+        }),
+        this.prisma.user.count({
+          where: {
+            smsAlertsEnabled: true,
+            OR: [
+              { plan: 'pro' },
+              {
+                subscriptions: {
+                  some: {
+                    planKey: 'pro',
+                    status: { in: ['active', 'trialing'] },
+                  },
+                },
+              },
+            ],
+          },
+        }),
+        this.prisma.user.count({
+          where: {
+            phone: { not: '' },
+            OR: [
+              { plan: 'pro' },
+              {
+                subscriptions: {
+                  some: {
+                    planKey: 'pro',
+                    status: { in: ['active', 'trialing'] },
+                  },
+                },
+              },
+            ],
+          },
+        }),
+        this.notificationsService.getProAlertsDiagnostics(),
+      ]);
+
+    return {
+      configured: diagnostics.configured,
+      hasApiKey: diagnostics.hasApiKey,
+      proAlertsEnabled: diagnostics.proAlertsEnabled,
+      proUsers: diagnostics.proUsers,
+      proUsersWithPhone: diagnostics.proUsersWithPhone,
+      sent7d,
+      failed7d,
+      proWithSms,
+      proWithPhone,
+      recentFailures: diagnostics.recentFailures,
+      logs,
+    };
+  }
+
   async dispatchPendingProAlertNotifications(force = false) {
     return this.notificationsService.notifyProUsersForPendingAlerts(20, {
       force,

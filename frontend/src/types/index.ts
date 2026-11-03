@@ -663,3 +663,33 @@ export type DeliveryFailure = {
   errorCode: string;
   createdAt: string;
 };
+
+export type DeliveryLog = {
+  id: string;
+  channel: string;
+  status: string;
+  target: string;
+  sourceRef?: string | null;
+  errorCode?: string | null;
+  errorDetail?: unknown;
+  createdAt: string;
+};
+
+export type SmsOpsSnapshot = {
+  configured: boolean;
+  hasApiKey: boolean;
+  proAlertsEnabled: boolean;
+  proUsers: number;
+  proUsersWithPhone: number;
+  sent7d: number;
+  failed7d: number;
+  proWithSms: number;
+  proWithPhone: number;
+  recentFailures: Array<{
+    channel: string;
+    target: string;
+    errorCode: string;
+    createdAt: string;
+  }>;
+  logs: DeliveryLog[];
+};

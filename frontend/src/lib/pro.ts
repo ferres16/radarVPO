@@ -49,7 +49,7 @@ export const freePlanFeatures = [
 
 export const proExclusiveFeatures = [
   'Avisos por email de nuevas promociones y próximos lanzamientos',
-  'Avisos por SMS si indicas tu móvil',
+  'Avisos por SMS (se activan al contratar PRO con móvil)',
   'Acceso a WhatsApp para consultas',
 ] as const;
 
@@ -66,7 +66,7 @@ export const proIncludes = [
   {
     title: 'Avisos por SMS',
     description:
-      'El mismo aviso en el móvil con el número que indiques al activar PRO. Llega aunque no estés mirando el correo.',
+      'Se activan automáticamente al pagar PRO con un móvil válido. Recibes un SMS de confirmación y luego avisos de nuevas promociones aunque no mires el correo.',
   },
   {
     title: 'WhatsApp para consultas',
@@ -135,7 +135,7 @@ export const proForWhom = {
 export const proLimits = [
   'Los avisos PRO (email y SMS) cubren todas las promociones que detectamos; no hay filtro por municipio ni por compra/alquiler.',
   'Las fechas de próximos lanzamientos son estimaciones y se indican como tales: pueden no cumplirse o no publicarse.',
-  'Los SMS solo se envían si tu cuenta tiene un móvil válido y has activado ese canal.',
+  'Los SMS se activan automáticamente al contratar PRO si hay un móvil válido; puedes desactivarlos en Mi cuenta.',
   'WhatsApp es para consultas orientativas sobre el proceso; no sustituye asesoramiento jurídico ni presenta solicitudes.',
   'Radar VPO no garantiza una adjudicación.',
   'Una guía concreta solo forma parte de PRO si aparece listada en esta página con su nombre y enlace.',

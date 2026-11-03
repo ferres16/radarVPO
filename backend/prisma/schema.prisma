@@ -1017,6 +1017,23 @@ model DeliveryFailure {
   @@map("delivery_failures")
 }
 
+/** Historial de entregas Brevo (éxitos y errores) para operación SMS/email. */
+model DeliveryLog {
+  id          String   @id @default(cuid())
+  channel     String
+  status      String
+  target      String
+  sourceRef   String?  @map("source_ref")
+  errorCode   String?  @map("error_code")
+  errorDetail Json?    @map("error_detail")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([channel, createdAt])
+  @@index([status, createdAt])
+  @@index([sourceRef])
+  @@map("delivery_logs")
+}
+
 model SavedSearch {
   id             String   @id @default(cuid())
   userId         String   @map("user_id")
