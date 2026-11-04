@@ -19,6 +19,7 @@ const emptySettings: CommerceSettings = {
   proPackGuideSlug: 'vpo-inicial',
   allowPromotionCodes: false,
   stripeAutomaticTax: false,
+  proPriceCents: null,
 };
 
 const PACK_KEY = 'pro_pack_3m_grants_guide';
@@ -248,6 +249,43 @@ export default function AdminCommercePage() {
             por última vez”). La clave restringida de la captura no vale: su política es “Ninguna”.
             Usa <code>sk_live_</code> o crea una restringida con permisos de Checkout Sessions,
             Customers y Webhooks.
+          </p>
+        </section>
+
+        <section className="rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] p-5 space-y-5">
+          <h2 className="text-sm font-bold text-[var(--ink)]">Precio PRO mensual</h2>
+          <label className="block text-sm font-semibold text-[var(--ink)]">
+            Importe (€ / mes)
+            <input
+              className="ds-control mt-1 w-full max-w-xs"
+              type="number"
+              step="0.01"
+              min="1"
+              max="500"
+              value={
+                draft.proPriceCents && draft.proPriceCents > 0
+                  ? (draft.proPriceCents / 100).toFixed(2)
+                  : ''
+              }
+              placeholder="9.99"
+              onChange={(e) => {
+                const euros = Number(e.target.value);
+                if (!e.target.value.trim()) {
+                  setDraft((prev) => ({ ...prev, proPriceCents: null }));
+                  return;
+                }
+                if (!Number.isFinite(euros) || euros <= 0) return;
+                setDraft((prev) => ({
+                  ...prev,
+                  proPriceCents: Math.round(euros * 100),
+                }));
+              }}
+            />
+          </label>
+          <p className="text-xs leading-5 text-[var(--ink-soft)]">
+            Este precio es el que se cobra en Stripe Checkout al contratar PRO mensual. Vacío = usar
+            el valor de entorno / default del código (9,99 €). El pack de 3 meses se configura aparte
+            abajo.
           </p>
         </section>
 

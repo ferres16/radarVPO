@@ -1,9 +1,13 @@
 import {
   IsBoolean,
+  IsInt,
   IsOptional,
   IsString,
+  Max,
   MaxLength,
+  Min,
   MinLength,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdateCommerceSettingsDto {
@@ -34,4 +38,12 @@ export class UpdateCommerceSettingsDto {
   @IsOptional()
   @IsBoolean()
   stripeAutomaticTax?: boolean;
+
+  /** Precio mensual PRO en céntimos. null = usar env/default. */
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsInt()
+  @Min(100)
+  @Max(50000)
+  proPriceCents?: number | null;
 }

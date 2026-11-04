@@ -14,6 +14,13 @@ function asString(value: unknown, fallback: string): string {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback;
 }
 
+function asProPriceCents(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isInteger(n) || n < 100 || n > 50000) return null;
+  return n;
+}
+
 @Injectable()
 export class CommerceService {
   constructor(private readonly prisma: PrismaService) {}
@@ -48,6 +55,7 @@ export class CommerceService {
         raw.stripeAutomaticTax,
         DEFAULT_COMMERCE_SETTINGS.stripeAutomaticTax,
       ),
+      proPriceCents: asProPriceCents(raw.proPriceCents),
     };
   }
 
@@ -82,6 +90,10 @@ export class CommerceService {
         typeof patch.stripeAutomaticTax === 'boolean'
           ? patch.stripeAutomaticTax
           : current.stripeAutomaticTax,
+      proPriceCents:
+        patch.proPriceCents === undefined
+          ? current.proPriceCents
+          : asProPriceCents(patch.proPriceCents),
     };
 
     await this.prisma.systemSetting.upsert({

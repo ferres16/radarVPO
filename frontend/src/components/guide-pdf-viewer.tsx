@@ -37,8 +37,16 @@ type PdfDoc = {
   getPageIndex?: (ref: unknown) => Promise<number>;
 };
 
+const ZOOM_STEP = 0.15;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3;
+
+function clampZoom(value: number) {
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(value * 100) / 100));
+}
+
 /**
- * Visor página a página con barra de progreso.
+ * Visor página a página con barra de progreso, zoom y pantalla completa.
  * Sin descarga ni enlace al original. Los enlaces del PDF sí son clicables.
  * Restaura la última página vista (no el máximo alcanzado).
  */
@@ -54,36 +62,41 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
   const [rendering, setRendering] = useState(false);
   const [links, setLinks] = useState<PdfPageLink[]>([]);
   const [viewportSize, setViewportSize] = useState({ width: 1, height: 1 });
+  const [zoom, setZoom] = useState(1);
+  const [containerWidth, setContainerWidth] = useState(0);
   const { fullscreen, enter, exit, toggle } = usePdfFullscreen();
 
   const renderPage = useCallback(
     async (pageNum: number) => {
       const pdf = pdfRef.current;
       const canvas = canvasRef.current;
-      if (!pdf || !canvas) return;
+      if (!pdf || !canvas || !containerWidth) return;
 
       setRendering(true);
       try {
         const pdfPage = await pdf.getPage(pageNum);
         const base = pdfPage.getViewport({ scale: 1 });
-        const available =
-          stageRef.current?.clientWidth || canvas.parentElement?.clientWidth || window.innerWidth || 920;
-        const maxWidth = Math.min(fullscreen ? available - 16 : 920, available - (fullscreen ? 8 : 0));
-        const scale = Math.max(1, Math.max(280, maxWidth) / base.width);
-        const viewport = pdfPage.getViewport({ scale });
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
+        const fitScale = Math.max(0.2, (containerWidth - 8) / base.width);
+        const cssScale = fitScale * zoom;
+        const pixelRatio = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2);
+        const cssViewport = pdfPage.getViewport({ scale: cssScale });
+        const renderViewport = pdfPage.getViewport({ scale: cssScale * pixelRatio });
+
+        canvas.width = Math.floor(renderViewport.width);
+        canvas.height = Math.floor(renderViewport.height);
+        canvas.style.width = `${Math.floor(cssViewport.width)}px`;
+        canvas.style.height = `${Math.floor(cssViewport.height)}px`;
         canvas.setAttribute('aria-label', `${title} · página ${pageNum} de ${pdf.numPages}`);
         const context = canvas.getContext('2d');
         if (!context) return;
-        await pdfPage.render({ canvasContext: context, viewport, canvas }).promise;
-        setViewportSize({ width: viewport.width, height: viewport.height });
-        setLinks(await collectPdfPageLinks(pdf, pdfPage, scale));
+        await pdfPage.render({ canvasContext: context, viewport: renderViewport, canvas }).promise;
+        setViewportSize({ width: cssViewport.width, height: cssViewport.height });
+        setLinks(await collectPdfPageLinks(pdf, pdfPage, cssScale));
       } finally {
         setRendering(false);
       }
     },
-    [fullscreen, title],
+    [containerWidth, title, zoom],
   );
 
   useEffect(() => {
@@ -152,23 +165,24 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
   }, [slug, canAccess]);
 
   useEffect(() => {
-    if (!canAccess || loading || error || pageCount < 1) return;
+    const node = stageRef.current;
+    if (!node) return;
+    const measure = () => setContainerWidth(node.clientWidth || 0);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [fullscreen, loading, error, pageCount]);
+
+  useEffect(() => {
+    if (!canAccess || loading || error || pageCount < 1 || !containerWidth) return;
     void renderPage(page);
-  }, [canAccess, loading, error, pageCount, page, renderPage]);
+  }, [canAccess, loading, error, pageCount, page, renderPage, containerWidth]);
 
   useEffect(() => {
     if (!canAccess || loading || error || pageCount < 1 || !restoredRef.current) return;
     writeGuideLastPage(slug, page);
   }, [canAccess, loading, error, pageCount, page, slug]);
-
-  useEffect(() => {
-    if (!fullscreen || !stageRef.current) return;
-    const observer = new ResizeObserver(() => {
-      if (pageCount > 0) void renderPage(page);
-    });
-    observer.observe(stageRef.current);
-    return () => observer.disconnect();
-  }, [fullscreen, page, pageCount, renderPage]);
 
   if (!canAccess) {
     return (
@@ -182,6 +196,38 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
   }
 
   const progress = pageCount > 0 ? Math.round((page / pageCount) * 100) : 0;
+  const zoomControls = (
+    <div className="flex items-center gap-1">
+      <button
+        type="button"
+        onClick={() => setZoom((value) => clampZoom(value - ZOOM_STEP))}
+        disabled={loading || zoom <= ZOOM_MIN}
+        className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--ink)] disabled:opacity-40"
+        aria-label="Alejar"
+      >
+        −
+      </button>
+      <button
+        type="button"
+        onClick={() => setZoom(1)}
+        disabled={loading}
+        className="min-w-[3.5rem] rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-bold tabular-nums text-[var(--ink)] disabled:opacity-40"
+        aria-label="Ajustar al ancho"
+      >
+        {Math.round(zoom * 100)}%
+      </button>
+      <button
+        type="button"
+        onClick={() => setZoom((value) => clampZoom(value + ZOOM_STEP))}
+        disabled={loading || zoom >= ZOOM_MAX}
+        className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--ink)] disabled:opacity-40"
+        aria-label="Acercar"
+      >
+        +
+      </button>
+    </div>
+  );
+
   const navButtons = (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <button
@@ -223,13 +269,16 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
                 </p>
                 <p className="truncate text-sm font-semibold text-[var(--ink)]">{title}</p>
               </div>
-              <button
-                type="button"
-                onClick={exit}
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white"
-              >
-                Salir
-              </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {zoomControls}
+                <button
+                  type="button"
+                  onClick={exit}
+                  className="inline-flex min-h-11 items-center justify-center rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white"
+                >
+                  Salir
+                </button>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -237,12 +286,13 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
                 <p className="font-semibold text-[var(--ink)]">
                   Página {page} de {pageCount}
                 </p>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <p className="tabular-nums text-[var(--ink-soft)]">{progress}% completado</p>
+                  {zoomControls}
                   <button
                     type="button"
                     onClick={toggle}
-                    className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)] md:hidden"
+                    className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--ink)] transition hover:bg-[var(--bg-eco)]"
                   >
                     Pantalla completa
                   </button>
@@ -273,9 +323,9 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
             <div className="relative mx-auto w-fit max-w-full">
               <canvas
                 ref={canvasRef}
-                className={`block max-w-full select-none bg-white shadow-sm ${rendering ? 'opacity-70' : ''}`}
+                className={`block max-w-none select-none bg-white shadow-sm ${rendering ? 'opacity-70' : ''}`}
                 draggable={false}
-                style={{ WebkitUserSelect: 'none', userSelect: 'none', height: 'auto' }}
+                style={{ WebkitUserSelect: 'none', userSelect: 'none' }}
               />
               {links.length > 0 ? (
                 <div className="absolute inset-0">
@@ -345,14 +395,16 @@ export function GuidePdfViewer({ slug, title, canAccess }: Props) {
               <button
                 type="button"
                 onClick={enter}
-                className="w-full rounded-full bg-[var(--green-700)] px-4 py-3 text-sm font-bold text-white transition hover:bg-[var(--green-900)] md:hidden"
+                className="w-full rounded-full bg-[var(--green-700)] px-4 py-3 text-sm font-bold text-white transition hover:bg-[var(--green-900)]"
               >
                 Ver en pantalla completa
               </button>
             </>
           )}
         </>
-      ) : null}
+      ) : (
+        <div ref={stageRef} className="h-1 w-full" aria-hidden="true" />
+      )}
     </div>
   );
 }

@@ -229,9 +229,40 @@ export function PromotionPdfViewer({
             </p>
             <p className="truncate text-sm font-semibold text-[var(--ink)]">{active.label}</p>
           </div>
-          <button type="button" className={primaryNavButton} onClick={exit}>
-            Salir
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className={compactButton}
+                onClick={() => setZoom((value) => clampZoom(value - ZOOM_STEP))}
+                disabled={!ready || zoom <= 0.5}
+                aria-label="Alejar"
+              >
+                −
+              </button>
+              <button
+                type="button"
+                className={compactButton}
+                onClick={() => setZoom(1)}
+                disabled={!ready}
+                aria-label="Ajustar al ancho"
+              >
+                {Math.round(zoom * 100)}%
+              </button>
+              <button
+                type="button"
+                className={compactButton}
+                onClick={() => setZoom((value) => clampZoom(value + ZOOM_STEP))}
+                disabled={!ready || zoom >= 3}
+                aria-label="Acercar"
+              >
+                +
+              </button>
+            </div>
+            <button type="button" className={primaryNavButton} onClick={exit}>
+              Salir
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-3 border-b border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-3 md:px-5">
@@ -271,21 +302,7 @@ export function PromotionPdfViewer({
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <p className="tabular-nums text-[var(--ink-soft)]">{pageProgress}%</p>
-              <button
-                type="button"
-                onClick={() => {
-                  toggle();
-                  trackEvent('pdf_fullscreen_toggled', {
-                    promotionId,
-                    documentId: active.id,
-                    fullscreen: !fullscreen,
-                  });
-                }}
-                className={`${compactButton} md:hidden`}
-              >
-                Pantalla completa
-              </button>
-              <div className="hidden items-center gap-1 md:flex">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   className={compactButton}
@@ -314,6 +331,20 @@ export function PromotionPdfViewer({
                   +
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={() => {
+                  toggle();
+                  trackEvent('pdf_fullscreen_toggled', {
+                    promotionId,
+                    documentId: active.id,
+                    fullscreen: !fullscreen,
+                  });
+                }}
+                className={compactButton}
+              >
+                Pantalla completa
+              </button>
             </div>
           </div>
 
@@ -432,20 +463,6 @@ export function PromotionPdfViewer({
             >
               Descargar
             </a>
-            <button
-              type="button"
-              className="hidden underline md:inline"
-              onClick={() => {
-                enter();
-                trackEvent('pdf_fullscreen_toggled', {
-                  promotionId,
-                  documentId: active.id,
-                  fullscreen: true,
-                });
-              }}
-            >
-              Pantalla completa
-            </button>
           </div>
           <button
             type="button"
@@ -457,7 +474,7 @@ export function PromotionPdfViewer({
                 fullscreen: true,
               });
             }}
-            className="w-full rounded-full bg-[var(--green-700)] px-4 py-3 text-sm font-bold text-white transition hover:bg-[var(--green-900)] md:hidden"
+            className="w-full rounded-full bg-[var(--green-700)] px-4 py-3 text-sm font-bold text-white transition hover:bg-[var(--green-900)]"
           >
             Ver en pantalla completa
           </button>

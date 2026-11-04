@@ -241,6 +241,8 @@ export type CommerceSettings = {
   proPackGuideSlug: string;
   allowPromotionCodes: boolean;
   stripeAutomaticTax: boolean;
+  /** Céntimos mensuales PRO. null = env/default del backend. */
+  proPriceCents: number | null;
 };
 
 export type CheckoutStatus = {

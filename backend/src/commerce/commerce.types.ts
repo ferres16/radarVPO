@@ -17,6 +17,11 @@ export type CommerceSettings = {
    * y configurar Tax en el Dashboard de Stripe.
    */
   stripeAutomaticTax: boolean;
+  /**
+   * Precio mensual de Radar VPO PRO en céntimos (ej. 999 = 9,99 €).
+   * Si es null, se usa STRIPE_PRO_PRICE_CENTS o el default del código.
+   */
+  proPriceCents: number | null;
 };
 
 export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
@@ -27,4 +32,5 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
   proPackGuideSlug: 'vpo-inicial',
   allowPromotionCodes: false,
   stripeAutomaticTax: false,
+  proPriceCents: null,
 };

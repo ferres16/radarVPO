@@ -213,13 +213,29 @@ export class BillingService {
       maintenanceMessage: commerce.maintenanceMessage,
       proPackGuideSlug: pack?.guideSlug || commerce.proPackGuideSlug,
       allowPromotionCodes: commerce.allowPromotionCodes,
-      proPriceCents: this.getProPriceCents(),
-      proPackPriceCents: pack?.priceCents ?? this.getProPriceCents() * 3,
+      proPriceCents: await this.getProPriceCents(commerce),
+      proPackPriceCents:
+        pack?.priceCents ?? (await this.getProPriceCents(commerce)) * 3,
       currency: 'eur',
     };
   }
 
-  private getProPriceCents(): number {
+  private async getProPriceCents(commerceSettings?: {
+    proPriceCents?: number | null;
+  }): Promise<number> {
+    const fromAdmin = commerceSettings?.proPriceCents;
+    if (Number.isInteger(fromAdmin) && (fromAdmin as number) > 0) {
+      return fromAdmin as number;
+    }
+    if (!commerceSettings) {
+      const commerce = await this.commerce.getSettings();
+      if (
+        Number.isInteger(commerce.proPriceCents) &&
+        (commerce.proPriceCents as number) > 0
+      ) {
+        return commerce.proPriceCents as number;
+      }
+    }
     const raw = Number(this.config.get<string>('STRIPE_PRO_PRICE_CENTS'));
     return Number.isInteger(raw) && raw > 0 ? raw : DEFAULT_PRO_PRICE_CENTS;
   }
@@ -377,9 +393,10 @@ export class BillingService {
 
       const isPack = dto.product === 'pro_pack_3m';
       const pack = isPack ? await this.promoRules.getProPack3m() : null;
+      const monthlyCents = await this.getProPriceCents(commerce);
       const unitAmount = isPack
-        ? (pack?.priceCents ?? this.getProPriceCents() * 3)
-        : this.getProPriceCents();
+        ? (pack?.priceCents ?? monthlyCents * 3)
+        : monthlyCents;
       const priceLabel = formatEuroAmount(unitAmount);
       const guideSlug =
         pack?.guideSlug || commerce.proPackGuideSlug || 'vpo-inicial';
