@@ -5,6 +5,7 @@ import { UsersService } from '../src/users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { NotificationsService } from '../src/notifications/notifications.service';
+import { ProAccessService } from '../src/common/pro-access/pro-access.service';
 
 describe('AuthService', () => {
   it('should be defined', async () => {
@@ -29,6 +30,10 @@ describe('AuthService', () => {
         },
         {
           provide: NotificationsService,
+          useValue: {},
+        },
+        {
+          provide: ProAccessService,
           useValue: {},
         },
       ],

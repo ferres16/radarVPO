@@ -82,6 +82,50 @@ describe('PromotionsService list', () => {
       }),
     );
   });
+
+  it('caps visitors at 10 items and unlocks only the 2 latest', async () => {
+    const rows = Array.from({ length: 15 }, (_, index) => ({
+      id: `p${index}`,
+      title: `Promoción ${index}`,
+      publicDescription: null,
+      _count: { documents: 1 },
+    }));
+    const findMany = jest
+      .fn()
+      .mockImplementation((args: { select?: { _count?: unknown } }) =>
+        Promise.resolve(
+          args.select?._count
+            ? rows
+            : rows.map(({ id, title, publicDescription }) => ({
+                id,
+                title,
+                publicDescription,
+              })),
+        ),
+      );
+    const prisma = {
+      promotion: { findMany },
+      user: { findUnique: jest.fn().mockResolvedValue(null) },
+    } as unknown as PrismaService;
+    const service = new PromotionsService(
+      prisma,
+      {} as FileStorageService,
+      {
+        getVisitorCount: jest.fn().mockResolvedValue(0),
+      } as unknown as MetricsService,
+    );
+
+    const result = (await service.list({ limit: 100 })) as Array<{
+      id: string;
+      detailLocked: boolean;
+    }>;
+
+    expect(result).toHaveLength(10);
+    expect(result.filter((item) => !item.detailLocked).map((item) => item.id)).toEqual([
+      'p0',
+      'p1',
+    ]);
+  });
 });
 
 describe('PromotionsService favorites', () => {

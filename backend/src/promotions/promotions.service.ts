@@ -182,13 +182,24 @@ export class PromotionsService {
       },
     });
 
+    const registered = canUseRegisteredBenefits(tier);
+    const unlockedIds = registered
+      ? null
+      : new Set(
+          await this.getLatestPublishedIds(VISITOR_PROMOTION_DETAIL_LIMIT),
+        );
+
     return items
       .filter(
         (item) => !isAmendmentPublication(item.title, item.publicDescription),
       )
       .slice(0, limit)
       .map(({ _count, ...item }) =>
-        withPromotionView({ ...item, pdfCount: _count.documents }),
+        withPromotionView({
+          ...item,
+          pdfCount: _count.documents,
+          detailLocked: unlockedIds ? !unlockedIds.has(item.id) : false,
+        }),
       );
   }
 
