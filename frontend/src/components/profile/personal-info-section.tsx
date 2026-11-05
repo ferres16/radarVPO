@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { api } from '@/lib/api';
 import { ProfileCard } from '@/components/profile-card';
 import { hasProAccess } from '@/lib/pro-access';
+import { MARKETING_CONSENT_TEXT } from '@/lib/marketing-consent';
 import type { UserProfile } from '@/types';
 
 type PersonalInfoSectionProps = {
@@ -204,10 +205,11 @@ export function PersonalInfoSection({
 
       <details className="mt-6 rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3">
         <summary className="cursor-pointer text-sm font-semibold text-[var(--ink)]">
-          Novedades por email
+          Comunicaciones comerciales
         </summary>
         <p className="mt-3 text-sm leading-6 text-[var(--ink-soft)]">
-          Opcional. Contenidos educativos o novedades del producto. No son los avisos PRO ni SMS.
+          Opcional y separado de la verificación del email y de las alertas PRO. Puedes darte de baja
+          sin perder compras ni suscripción.
         </p>
         <label className="mt-3 flex items-start gap-3 text-sm text-[var(--ink)]">
           <input
@@ -216,8 +218,20 @@ export function PersonalInfoSection({
             checked={marketingEnabled}
             onChange={(e) => void saveMarketingPreference(e.target.checked)}
           />
-          <span>Quiero recibir novedades por email</span>
+          <span>{MARKETING_CONSENT_TEXT}</span>
         </label>
+        {profile.marketingOptInAt ? (
+          <p className="mt-2 text-xs text-[var(--ink-soft)]">
+            Aceptado el {new Date(profile.marketingOptInAt).toLocaleString('es-ES')}
+            {profile.marketingOptInVersion
+              ? ` · versión ${profile.marketingOptInVersion}`
+              : ''}
+          </p>
+        ) : profile.marketingOptOutAt ? (
+          <p className="mt-2 text-xs text-[var(--ink-soft)]">
+            Baja registrada el {new Date(profile.marketingOptOutAt).toLocaleString('es-ES')}
+          </p>
+        ) : null}
       </details>
     </ProfileCard>
   );

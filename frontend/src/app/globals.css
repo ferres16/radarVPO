@@ -1846,6 +1846,10 @@ h3,
   margin-top: 0.75rem;
 }
 
+.compare-mobile__row--3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 .compare-mobile__plan {
   border-radius: 0.75rem;
   padding: 0.65rem;

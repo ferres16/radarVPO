@@ -661,17 +661,43 @@ export class BackofficeService {
     const limit = Math.min(query.limit ?? 100, 500);
     const offset = query.offset ?? 0;
     const search = query.q?.trim();
-    return this.prisma.user.findMany({
-      where: search
+    const emailFilter =
+      query.emailVerified === 'verified'
+        ? { emailVerifiedAt: { not: null } }
+        : query.emailVerified === 'pending'
+          ? { emailVerifiedAt: null }
+          : undefined;
+    const marketingFilter =
+      query.marketing === 'opted_in'
+        ? { marketingOptInAt: { not: null } }
+        : query.marketing === 'opted_out'
+          ? { marketingOptOutAt: { not: null }, marketingOptInAt: null }
+          : query.marketing === 'never'
+            ? { marketingOptInAt: null, marketingOptOutAt: null }
+            : undefined;
+
+    const andFilters = [
+      emailFilter,
+      marketingFilter,
+      search
         ? {
             OR: [
-              { email: { contains: search, mode: 'insensitive' } },
-              { fullName: { contains: search, mode: 'insensitive' } },
-              { phone: { contains: search, mode: 'insensitive' } },
-              { stripeCustomerId: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' as const } },
+              { fullName: { contains: search, mode: 'insensitive' as const } },
+              { phone: { contains: search, mode: 'insensitive' as const } },
+              {
+                stripeCustomerId: {
+                  contains: search,
+                  mode: 'insensitive' as const,
+                },
+              },
             ],
           }
         : undefined,
+    ].filter((item): item is NonNullable<typeof item> => Boolean(item));
+
+    const rows = await this.prisma.user.findMany({
+      where: andFilters.length > 0 ? { AND: andFilters } : undefined,
       select: {
         id: true,
         email: true,
@@ -679,6 +705,10 @@ export class BackofficeService {
         phone: true,
         role: true,
         plan: true,
+        emailVerifiedAt: true,
+        marketingOptInAt: true,
+        marketingOptInVersion: true,
+        marketingOptOutAt: true,
         createdAt: true,
         stripeCustomerId: true,
         proCancellationRequestedAt: true,
@@ -687,6 +717,34 @@ export class BackofficeService {
       take: limit,
       skip: offset,
     });
+
+    const [verifiedCount, pendingCount, marketingOptInCount, marketingOptOutCount] =
+      await Promise.all([
+        this.prisma.user.count({ where: { emailVerifiedAt: { not: null } } }),
+        this.prisma.user.count({ where: { emailVerifiedAt: null } }),
+        this.prisma.user.count({ where: { marketingOptInAt: { not: null } } }),
+        this.prisma.user.count({
+          where: { marketingOptOutAt: { not: null }, marketingOptInAt: null },
+        }),
+      ]);
+
+    return {
+      items: rows.map((row) => ({
+        ...row,
+        emailVerifiedAt: row.emailVerifiedAt?.toISOString() ?? null,
+        marketingOptInAt: row.marketingOptInAt?.toISOString() ?? null,
+        marketingOptOutAt: row.marketingOptOutAt?.toISOString() ?? null,
+        createdAt: row.createdAt.toISOString(),
+        proCancellationRequestedAt:
+          row.proCancellationRequestedAt?.toISOString() ?? null,
+      })),
+      counts: {
+        emailVerified: verifiedCount,
+        emailPending: pendingCount,
+        marketingOptIn: marketingOptInCount,
+        marketingOptOut: marketingOptOutCount,
+      },
+    };
   }
 
   /** Leads de lista de espera mientras la venta está cerrada. */

@@ -82,13 +82,24 @@ export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const backendResponse = await fetch(
       `${getBackendApiUrl()}/promotions/${encodeURIComponent(promotionId)}`,
-      { cache: 'no-store', signal: AbortSignal.timeout(10_000) },
+      {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
+        headers: {
+          // Reenvía la sesión para respetar el gate de visitante vs cuenta verificada.
+          Cookie: request.headers.get('cookie') || '',
+        },
+      },
     );
     if (backendResponse.status === 404) return errorResponse(404, 'not_found');
     if (!backendResponse.ok) return errorResponse(502, 'backend_unavailable');
     promotion = (await backendResponse.json()) as PromotionDetail;
   } catch {
     return errorResponse(502, 'backend_unavailable');
+  }
+
+  if (promotion.detailLocked) {
+    return errorResponse(403, 'detail_locked');
   }
 
   const document = promotion.documents?.find(

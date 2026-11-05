@@ -32,6 +32,7 @@ function buildService(options: FavoriteOptions = {}) {
     user: {
       findUnique: jest.fn().mockResolvedValue({
         plan: options.plan ?? 'free',
+        emailVerifiedAt: new Date('2026-01-01T00:00:00.000Z'),
         subscriptions: Array.from(
           { length: options.proSubscriptions ?? 0 },
           () => ({
@@ -59,6 +60,7 @@ describe('PromotionsService list', () => {
     const findMany = jest.fn().mockResolvedValue([]);
     const prisma = {
       promotion: { findMany },
+      user: { findUnique: jest.fn().mockResolvedValue(null) },
     } as unknown as PrismaService;
     const service = new PromotionsService(
       prisma,
@@ -76,6 +78,7 @@ describe('PromotionsService list', () => {
           { publishedAt: { sort: 'desc', nulls: 'last' } },
           { createdAt: 'desc' },
         ],
+        take: expect.any(Number),
       }),
     );
   });

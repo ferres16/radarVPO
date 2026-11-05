@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { SubscriptionStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { extractMunicipalityFromAlertTitle } from '../common/municipalities/catalunya-municipalities';
 import { withPromotionView } from '../common/promotion-view.util';
@@ -9,6 +10,10 @@ import {
   isProperaAdjudicacioAlert,
   shortenAlertTitle,
 } from '../common/promotion-content-filters';
+import {
+  canUseRegisteredBenefits,
+  resolveAccessTier,
+} from '../common/access-tier';
 
 const ALERTS_TAKE = Number(process.env.ALERTS_TAKE ?? '50');
 
@@ -16,7 +21,8 @@ const ALERTS_TAKE = Number(process.env.ALERTS_TAKE ?? '50');
 export class AlertsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async upcoming(): Promise<unknown[]> {
+  async upcoming(userId?: string | null): Promise<unknown[]> {
+    const showDates = await this.viewerCanSeeEstimatedDates(userId);
     const alerts = await this.prisma.promotion.findMany({
       where: {
         status: 'pending_review',
@@ -97,9 +103,44 @@ export class AlertsService {
         title: shortenAlertTitle(alert.title),
         municipality,
         municipalityId,
+        // Visitantes: listado visible, sin fechas aproximadas ni contadores.
+        estimatedPublicationDate: showDates
+          ? alert.estimatedPublicationDate
+          : null,
+        datesLocked: !showDates,
+        accessTier: showDates ? 'registered' : 'visitor',
       });
     });
 
     return enriched;
+  }
+
+  private async viewerCanSeeEstimatedDates(
+    userId?: string | null,
+  ): Promise<boolean> {
+    if (!userId) return false;
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        emailVerifiedAt: true,
+        plan: true,
+        subscriptions: {
+          where: {
+            planKey: 'pro',
+            status: {
+              in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+            },
+          },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+    const tier = resolveAccessTier({
+      emailVerifiedAt: user?.emailVerifiedAt,
+      plan: user?.plan,
+      hasActiveProSubscription: (user?.subscriptions.length ?? 0) > 0,
+    });
+    return canUseRegisteredBenefits(tier);
   }
 }

@@ -10,7 +10,11 @@ export function AlertTimeline({ alerts }: { alerts: Promotion[] }) {
   return (
     <div className="alert-timeline">
       {alerts.map((alert, index) => {
-        const daysRemaining = getDaysRemaining(alert.estimatedPublicationDate);
+        const datesLocked = Boolean(
+          (alert as Promotion & { datesLocked?: boolean }).datesLocked,
+        );
+        const estimatedDate = datesLocked ? null : alert.estimatedPublicationDate;
+        const daysRemaining = getDaysRemaining(estimatedDate);
         const isLast = index === alerts.length - 1;
         const municipality = resolveAlertMunicipality(alert);
         return (
@@ -20,11 +24,17 @@ export function AlertTimeline({ alerts }: { alerts: Promotion[] }) {
               {!isLast ? <span className="alert-timeline__line" /> : null}
             </div>
             <div className="saas-card-rail">
-              <AlertCountdownBadge
-                daysRemaining={daysRemaining}
-                estimatedDate={alert.estimatedPublicationDate}
-                size="sm"
-              />
+              {datesLocked || daysRemaining === null ? (
+                <p className="rounded-full border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-[var(--ink-soft)]">
+                  {datesLocked ? 'Fecha al verificar email' : 'Sin fecha estimada'}
+                </p>
+              ) : (
+                <AlertCountdownBadge
+                  daysRemaining={daysRemaining}
+                  estimatedDate={estimatedDate}
+                  size="sm"
+                />
+              )}
               {municipality ? (
                 <p className="mt-3 text-sm font-black uppercase tracking-[0.14em] text-[var(--green-700)]">
                   {municipality}

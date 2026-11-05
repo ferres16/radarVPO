@@ -1,10 +1,21 @@
 'use client';
 
-import { proComparisonRows, proPlan, freeVsProDescription, type ProComparisonCell } from '@/lib/pro';
+import {
+  proComparisonRows,
+  proPlan,
+  freeVsProDescription,
+  type ProComparisonCell,
+} from '@/lib/pro';
 import { ButtonLink } from '@/components/design-system';
 import { ProGate } from '@/components/pro/pro-cta';
 
-function ComparisonCell({ value, highlight = false }: { value: ProComparisonCell; highlight?: boolean }) {
+function ComparisonCell({
+  value,
+  highlight = false,
+}: {
+  value: ProComparisonCell;
+  highlight?: boolean;
+}) {
   if (typeof value === 'string') {
     return (
       <span className={`compare-table__text ${highlight ? 'compare-table__text--pro' : ''}`}>
@@ -29,7 +40,7 @@ function cellLabel(value: ProComparisonCell) {
 }
 
 export function ProComparison({
-  title = 'Gratis vs Radar VPO PRO',
+  title = 'Visitante, cuenta verificada y PRO',
   description = freeVsProDescription,
   compact = false,
   showHeader = true,
@@ -42,7 +53,10 @@ export function ProComparison({
   showCta?: boolean;
 }) {
   return (
-    <section className={compact ? 'compare-block compare-block--compact' : 'compare-block'} aria-labelledby="compare-title">
+    <section
+      className={compact ? 'compare-block compare-block--compact' : 'compare-block'}
+      aria-labelledby="compare-title"
+    >
       {showHeader ? (
         <div className="lp-section__head">
           {!compact ? <p className="lp-eyebrow">Comparativa</p> : null}
@@ -50,17 +64,25 @@ export function ProComparison({
             {title}
           </h2>
           {!compact && description ? <p className="lp-lead">{description}</p> : null}
+          <p className="mt-2 text-xs leading-5 text-[var(--ink-soft)]">
+            Registrar una cuenta no activa contenidos hasta verificar el email. Las compras quedan
+            vinculadas y se desbloquean al verificar.
+          </p>
         </div>
       ) : null}
 
-      <div className="compare-mobile" aria-label="Comparativa móvil Gratis vs PRO">
+      <div className="compare-mobile" aria-label="Comparativa móvil de niveles de acceso">
         {proComparisonRows.map((row) => (
           <article key={row.feature} className="compare-mobile__card">
             <p className="compare-mobile__feature">{row.feature}</p>
-            <div className="compare-mobile__row">
+            <div className="compare-mobile__row compare-mobile__row--3">
               <div className="compare-mobile__plan">
-                <p className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">Gratis</p>
-                <p className="mt-1">{cellLabel(row.free)}</p>
+                <p className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">Visitante</p>
+                <p className="mt-1">{cellLabel(row.visitor)}</p>
+              </div>
+              <div className="compare-mobile__plan">
+                <p className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">Verificada</p>
+                <p className="mt-1">{cellLabel(row.registered)}</p>
               </div>
               <div className="compare-mobile__plan compare-mobile__plan--pro">
                 <p className="text-[10px] uppercase tracking-wide">PRO</p>
@@ -76,7 +98,8 @@ export function ProComparison({
           <thead>
             <tr>
               <th scope="col">Función</th>
-              <th scope="col">Gratis</th>
+              <th scope="col">Visitante</th>
+              <th scope="col">Cuenta verificada</th>
               <th scope="col" className="compare-table__pro-col">
                 {proPlan.name}
               </th>
@@ -87,7 +110,10 @@ export function ProComparison({
               <tr key={row.feature}>
                 <th scope="row">{row.feature}</th>
                 <td>
-                  <ComparisonCell value={row.free} />
+                  <ComparisonCell value={row.visitor} />
+                </td>
+                <td>
+                  <ComparisonCell value={row.registered} />
                 </td>
                 <td className="compare-table__pro-col">
                   <ComparisonCell value={row.pro} highlight />
@@ -104,7 +130,9 @@ export function ProComparison({
             <ButtonLink href={proPlan.checkoutHref} size="lg" className="btn--block sm:!w-auto">
               {`${proPlan.ctaLabel} · ${proPlan.price}`}
             </ButtonLink>
-            <p className="compare-block__note">Cancela cuando quieras desde Mi cuenta · Sin permanencia</p>
+            <p className="compare-block__note">
+              Cancela cuando quieras desde Mi cuenta · Requiere email verificado
+            </p>
           </div>
         </ProGate>
       ) : null}

@@ -9,8 +9,8 @@ import { trackPurchaseConversion } from '@/lib/conversion-pixels';
 import { formatEuro } from '@/lib/offer';
 import type { CheckoutResult } from '@/types';
 
-const POLL_MS = 2500;
-const POLL_MAX = 12;
+const POLL_MS = 3000;
+const POLL_MAX = 10;
 
 export function GraciasClient() {
   const search = useSearchParams();
@@ -22,6 +22,9 @@ export function GraciasClient() {
   const [resendMsg, setResendMsg] = useState('');
   const [resending, setResending] = useState(false);
   const [polls, setPolls] = useState(0);
+  const [pollDelayMs, setPollDelayMs] = useState(POLL_MS);
+  const [emailDraft, setEmailDraft] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
 
   const load = useCallback(async () => {
     if (!sessionId) {
@@ -32,7 +35,8 @@ export function GraciasClient() {
       const data = await api.getCheckoutResult(sessionId);
       setResult(data);
       setError('');
-      if (data.uiStatus === 'confirmed') {
+      setPollDelayMs(POLL_MS);
+      if (data.paid) {
         const value =
           typeof data.amountTotal === 'number' ? data.amountTotal / 100 : 0;
         trackPurchaseConversion({
@@ -50,7 +54,14 @@ export function GraciasClient() {
         void refresh();
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo comprobar el pago.');
+      const message = err instanceof Error ? err.message : 'No se pudo comprobar el pago.';
+      const isRateLimited = /429|demasiad|too many|rate/i.test(message);
+      if (isRateLimited) {
+        setPollDelayMs((ms) => Math.min(ms * 2, 20_000));
+        setError('Estamos comprobando el pago con calma. Reintentamos en unos segundos…');
+        return;
+      }
+      setError(message);
     }
   }, [refresh, sessionId]);
 
@@ -61,18 +72,20 @@ export function GraciasClient() {
       router.replace(`/login?next=${next}`);
       return;
     }
+    setEmailDraft(me.email || '');
     void load();
   }, [load, me, meLoading, router, sessionId]);
 
   useEffect(() => {
     if (!result || result.uiStatus !== 'processing') return;
+    if (result.awaitingEmailVerification) return;
     if (polls >= POLL_MAX) return;
     const timer = window.setTimeout(() => {
       setPolls((n) => n + 1);
       void load();
-    }, POLL_MS);
+    }, pollDelayMs);
     return () => window.clearTimeout(timer);
-  }, [load, polls, result]);
+  }, [load, pollDelayMs, polls, result]);
 
   async function resendVerification() {
     setResending(true);
@@ -84,6 +97,20 @@ export function GraciasClient() {
       setResendMsg(err instanceof Error ? err.message : 'No se pudo reenviar.');
     } finally {
       setResending(false);
+    }
+  }
+
+  async function saveEmailCorrection() {
+    setSavingEmail(true);
+    setResendMsg('');
+    try {
+      const out = await api.updateUnverifiedEmail(emailDraft.trim());
+      setResendMsg(out.message);
+      void refresh();
+    } catch (err) {
+      setResendMsg(err instanceof Error ? err.message : 'No se pudo actualizar el email.');
+    } finally {
+      setSavingEmail(false);
     }
   }
 
@@ -201,7 +228,59 @@ export function GraciasClient() {
             </div>
           </dl>
 
-          {result.uiStatus === 'confirmed' || result.uiStatus === 'processing' ? (
+          {result.awaitingEmailVerification ? (
+            <section
+              className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950"
+              aria-labelledby="verify-reminder-title"
+            >
+              <h2 id="verify-reminder-title" className="font-black">
+                Compra guardada · pendiente de verificar email
+              </h2>
+              <p className="mt-2 leading-6">
+                El pago está confirmado y vinculado a tu cuenta. Hasta verificar el email no se activa el
+                acceso a la guía, PRO, SMS, alertas ni WhatsApp. Te enviamos el enlace a{' '}
+                <strong>{result.email || 'tu correo'}</strong>.
+              </p>
+              <label className="mt-4 block text-xs font-semibold uppercase tracking-wide">
+                ¿Email incorrecto?
+                <input
+                  type="email"
+                  className="ds-control mt-1 w-full"
+                  value={emailDraft}
+                  onChange={(e) => setEmailDraft(e.target.value)}
+                />
+              </label>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  className="btn btn--primary"
+                  disabled={savingEmail || !emailDraft.trim()}
+                  onClick={() => void saveEmailCorrection()}
+                >
+                  {savingEmail ? 'Guardando…' : 'Corregir email y reenviar'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--secondary"
+                  disabled={resending}
+                  onClick={() => void resendVerification()}
+                >
+                  {resending ? 'Enviando…' : 'Reenviar verificación'}
+                </button>
+              </div>
+              {resendMsg ? (
+                <p className="mt-2 text-xs font-semibold" role="status">
+                  {resendMsg}
+                </p>
+              ) : null}
+              <Link href="/account" className="btn btn--secondary btn--block mt-4">
+                Ir a mi cuenta
+              </Link>
+            </section>
+          ) : null}
+
+          {!result.awaitingEmailVerification &&
+          (result.uiStatus === 'confirmed' || result.uiStatus === 'processing') ? (
             <div className="mt-6 space-y-3">
               <Link
                 href={result.ctaHref}
@@ -233,17 +312,16 @@ export function GraciasClient() {
             </div>
           ) : null}
 
-          {!result.emailVerified ? (
+          {!result.emailVerified && !result.awaitingEmailVerification ? (
             <section
               className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950"
-              aria-labelledby="verify-reminder-title"
+              aria-labelledby="verify-reminder-title-soft"
             >
-              <h2 id="verify-reminder-title" className="font-black">
+              <h2 id="verify-reminder-title-soft" className="font-black">
                 Verifica tu email
               </h2>
               <p className="mt-2 leading-6">
-                Tu compra puede estar activa, pero algunas funciones (avisos PRO y ciertas acciones de cuenta)
-                requieren email verificado. Te enviamos un enlace a{' '}
+                Hasta verificar no se activan los accesos comprados ni los avisos PRO. Te enviamos un enlace a{' '}
                 <strong>{result.email || 'tu correo'}</strong>.
               </p>
               <button

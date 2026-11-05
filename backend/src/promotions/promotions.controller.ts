@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiCookieAuth, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { CurrentUserPayload } from '../common/decorators/current-user.decorator';
 import { ListPromotionsDto } from './dto/list-promotions.dto';
@@ -22,8 +23,12 @@ export class PromotionsController {
   constructor(private readonly promotionsService: PromotionsService) {}
 
   @Get()
-  async list(@Query() query: ListPromotionsDto) {
-    return this.promotionsService.list(query);
+  @UseGuards(OptionalJwtAuthGuard)
+  async list(
+    @Query() query: ListPromotionsDto,
+    @CurrentUser() user?: CurrentUserPayload | null,
+  ) {
+    return this.promotionsService.list(query, user?.sub);
   }
 
   @Get('user/favorites')
@@ -39,8 +44,12 @@ export class PromotionsController {
   }
 
   @Get(':id')
-  async byId(@Param('id') id: string) {
-    return this.promotionsService.getById(id);
+  @UseGuards(OptionalJwtAuthGuard)
+  async byId(
+    @Param('id') id: string,
+    @CurrentUser() user?: CurrentUserPayload | null,
+  ) {
+    return this.promotionsService.getById(id, user?.sub);
   }
 
   @Post(':id/favorite')

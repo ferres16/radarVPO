@@ -8,6 +8,7 @@ import { ProfileHeader } from '@/components/profile/profile-header';
 import { ProStatusCard } from '@/components/pro/pro-status-card';
 import { MyCoursesSection } from '@/components/profile/my-courses-section';
 import { PersonalInfoSection } from '@/components/profile/personal-info-section';
+import { EmailVerificationBanner } from '@/components/profile/email-verification-banner';
 import { AccountManagementSection } from '@/components/profile/account-management-section';
 import { ProfileCard } from '@/components/profile-card';
 import type { UserCourseProgress, UserProfile } from '@/types';
@@ -105,16 +106,19 @@ export default function AccountPage() {
     <main className="lp lp--inner lp--app space-y-4 md:space-y-6">
       <div className="shell space-y-4 pb-6 md:space-y-6 md:pb-8">
         <ProfileHeader profile={me} />
+        <EmailVerificationBanner profile={me} onProfileUpdate={handleProfileUpdate} />
         {justPaidPro ? (
           <div
             role="status"
             className="rounded-2xl border border-[var(--stroke)] bg-white px-4 py-3 text-sm font-semibold text-[var(--ink)]"
           >
-            {proActive
-              ? 'Pago recibido: Radar VPO PRO ya está activo en tu cuenta.'
-              : activationTimedOut
-                ? 'Hemos recibido el pago, pero la activación está tardando más de lo normal. Recarga la página en unos minutos; si no se activa, escribe a soporte con el correo de tu cuenta.'
-                : 'Pago recibido. Estamos activando Radar VPO PRO…'}
+            {!me.emailVerifiedAt
+              ? 'Pago recibido y vinculado a tu cuenta. Verifica el email para activar PRO, SMS y WhatsApp.'
+              : proActive
+                ? 'Pago recibido: Radar VPO PRO ya está activo en tu cuenta.'
+                : activationTimedOut
+                  ? 'Hemos recibido el pago, pero la activación está tardando más de lo normal. Recarga la página en unos minutos; si no se activa, escribe a soporte con el correo de tu cuenta.'
+                  : 'Pago recibido. Estamos activando Radar VPO PRO…'}
           </div>
         ) : null}
         <ProStatusCard profile={me} onProfileUpdate={handleProfileUpdate} />

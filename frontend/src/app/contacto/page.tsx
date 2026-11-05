@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { LegalDocument, LegalSection, OwnerIdentity } from '@/components/legal-document';
-import { SUPPORT_SCOPE, legalOwner, supportEmail } from '@/lib/legal';
+import { SUPPORT_SCOPE, supportEmail } from '@/lib/legal';
 import { createMetadata } from '@/lib/seo';
 
 export const metadata: Metadata = createMetadata({
@@ -19,16 +19,13 @@ export default function ContactPage() {
     >
       <LegalSection title="Cómo escribirnos">
         <p>
-          El titular es {legalOwner.name}. Escríbenos a{' '}
+          Escríbenos a{' '}
           <a href={`mailto:${supportEmail}`} className="font-semibold text-[var(--green-700)] underline">
             {supportEmail}
           </a>
           . Atendemos {SUPPORT_SCOPE}, el ejercicio de derechos y las solicitudes de devolución.
         </p>
         <p>No hace falta iniciar sesión. Indica el correo de tu cuenta si la consulta se refiere a una compra.</p>
-      </LegalSection>
-
-      <LegalSection title="Identificación">
         <OwnerIdentity />
       </LegalSection>
     </LegalDocument>

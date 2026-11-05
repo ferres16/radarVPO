@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { freePlanFeatures } from '@/lib/pro';
+import { MARKETING_CONSENT_TEXT } from '@/lib/marketing-consent';
 import { resolveRegisterIntent } from '@/lib/register-intent';
 import { safeNextPath } from '@/lib/safe-next';
 import { FormField } from '@/components/design-system';
@@ -148,12 +149,12 @@ function RegisterForm() {
                   onChange={(event) => setAcceptedMarketing(event.target.checked)}
                   className="mt-1 h-4 w-4 shrink-0"
                 />
-                <span>
-                  Quiero recibir novedades y contenidos educativos de Radar VPO por email
-                  (opcional). Puedes darte de baja cuando quieras. No es necesario para usar la
-                  cuenta ni para PRO.
-                </span>
+                <span>{MARKETING_CONSENT_TEXT}</span>
               </label>
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-950">
+                Tras registrarte debes verificar el email. Hasta entonces mantienes permisos de visitante:
+                no se activan compras, guía, alertas PRO ni WhatsApp.
+              </p>
               {error ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="alert" aria-live="polite">
                   {error}

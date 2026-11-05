@@ -17,7 +17,7 @@ export const revalidate = 30;
 export const metadata: Metadata = createMetadata({
   title: 'Promociones publicadas de vivienda protegida en Cataluña',
   description:
-    'Consulta gratis las promociones de vivienda protegida publicadas en Cataluña y lee sus bases y documentos oficiales sin salir de la web.',
+    'Consulta promociones de vivienda protegida publicadas en Cataluña. Sin cuenta ves un adelanto; con email verificado abres todas las bases oficiales.',
   path: '/promotions',
   keywords: ['promociones publicadas VPO', 'vivienda pública cataluña', 'pisos protegidos cataluña'],
 });
@@ -48,7 +48,7 @@ export default async function PromotionsPage() {
         badge={copy.publishedPromotions}
         title="Promociones publicadas"
         titleAccent="con su documento oficial"
-        description="Abre las bases y anexos oficiales de cada promoción sin salir de Radar VPO. Es gratis y no necesitas cuenta."
+        description="Sin cuenta ves hasta 10 en listado y el detalle completo de las 2 últimas. Crea una cuenta gratuita y verifica el email para abrir el resto."
         footer={<ProofStats items={proofItems} />}
       />
 
@@ -74,16 +74,23 @@ export default async function PromotionsPage() {
           <SectionHeader
             title="Últimas promociones"
             description={`${visiblePromotions.length} ${
-              visiblePromotions.length === 1 ? 'promoción publicada' : 'promociones publicadas'
-            } con documento consultable. El recuento de esta página y el de cabecera usan la misma lista.`}
+              visiblePromotions.length === 1 ? 'promoción visible' : 'promociones visibles'
+            } en este listado. Sin cuenta verificada el servidor limita el listado y el detalle completo.`}
           />
           <PromotionsExplorer promotions={visiblePromotions} />
-          <p className="mt-6 text-sm text-[var(--ink-soft)]">
-            ¿Aún no está publicada?{' '}
-            <ButtonLink href="/alerts" variant="secondary">
-              Ver próximos lanzamientos
-            </ButtonLink>
-          </p>
+          <div className="mt-6 rounded-2xl border border-[var(--stroke)] bg-white p-4 text-sm leading-6 text-[var(--ink-soft)]">
+            <p className="font-semibold text-[var(--ink)]">¿Quieres ver todas las publicaciones?</p>
+            <p className="mt-1">
+              Crea una cuenta gratuita y verifica tu email. Así desbloqueas el listado completo y los PDF
+              de todas las promociones publicadas.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <ButtonLink href="/register?next=%2Fpromotions">Crear cuenta gratuita</ButtonLink>
+              <ButtonLink href="/alerts" variant="secondary">
+                Ver próximos lanzamientos
+              </ButtonLink>
+            </div>
+          </div>
           <InlineAdCard className="mt-6" />
         </PublicSection>
       )}
@@ -91,7 +98,7 @@ export default async function PromotionsPage() {
       <PublicSection animated={false} muted border>
         <AlertsProCtaBand
           title="Recibe un aviso cuando se publique la siguiente"
-          description="Consultar las promociones y sus documentos oficiales es gratis. Con Radar VPO PRO recibes avisos por email y SMS de nuevas promociones."
+          description="Con cuenta verificada abres todas las publicaciones. Con Radar VPO PRO (email verificado) recibes avisos por email y SMS."
           ctaLabel="Ver Radar VPO PRO"
         />
       </PublicSection>

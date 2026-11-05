@@ -7,7 +7,7 @@ import { EmptyState } from '@/components/empty-state';
 import { SkeletonCard } from '@/components/skeleton-card';
 import { StatusPill } from '@/components/status-pill';
 import { api } from '@/lib/api';
-import type { BackofficeUser, UserProfile } from '@/types';
+import type { BackofficeUser, BackofficeUsersResponse, UserProfile } from '@/types';
 
 type UserDraft = {
   fullName: string;
@@ -15,6 +15,9 @@ type UserDraft = {
   plan: 'free' | 'pro';
   stripeCustomerId: string;
 };
+
+type EmailFilter = '' | 'verified' | 'pending';
+type MarketingFilter = '' | 'opted_in' | 'opted_out' | 'never';
 
 function toDraft(user: BackofficeUser): UserDraft {
   return {
@@ -28,9 +31,12 @@ function toDraft(user: BackofficeUser): UserDraft {
 export default function AdminUsersPage() {
   const [me, setMe] = useState<UserProfile | null>(null);
   const [users, setUsers] = useState<BackofficeUser[]>([]);
+  const [counts, setCounts] = useState<BackofficeUsersResponse['counts'] | null>(null);
   const [selectedUserId, setSelectedUserId] = useState('');
   const [draft, setDraft] = useState<UserDraft | null>(null);
   const [query, setQuery] = useState('');
+  const [emailFilter, setEmailFilter] = useState<EmailFilter>('');
+  const [marketingFilter, setMarketingFilter] = useState<MarketingFilter>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -38,6 +44,21 @@ export default function AdminUsersPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  async function loadUsers(params?: {
+    q?: string;
+    emailVerified?: EmailFilter;
+    marketing?: MarketingFilter;
+  }) {
+    const response = await api.getBackofficeUsers({
+      q: params?.q?.trim() || undefined,
+      emailVerified: params?.emailVerified || undefined,
+      marketing: params?.marketing || undefined,
+    });
+    setUsers(response.items);
+    setCounts(response.counts);
+    return response.items;
+  }
 
   useEffect(() => {
     let active = true;
@@ -57,9 +78,7 @@ export default function AdminUsersPage() {
             ? ''
             : new URLSearchParams(window.location.search).get('q') || '';
         if (initialQuery) setQuery(initialQuery);
-        const rows = await api.getBackofficeUsers(initialQuery.trim() || undefined);
-        if (!active) return;
-        setUsers(rows);
+        await loadUsers({ q: initialQuery });
       } catch (err) {
         if (!active) return;
         setError(err instanceof Error ? err.message : 'No se pudo cargar usuarios');
@@ -93,8 +112,11 @@ export default function AdminUsersPage() {
   async function searchUsers() {
     setError('');
     try {
-      const rows = await api.getBackofficeUsers(query.trim() || undefined);
-      setUsers(rows);
+      const rows = await loadUsers({
+        q: query,
+        emailVerified: emailFilter,
+        marketing: marketingFilter,
+      });
       if (selectedUserId && !rows.some((row) => row.id === selectedUserId)) {
         setSelectedUserId('');
         setDraft(null);
@@ -200,9 +222,29 @@ export default function AdminUsersPage() {
               Administrar usuarios
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--ink-soft)]">
-              Busca por email, nombre, teléfono o Customer ID. Puedes editar rol/plan o eliminar la
-              cuenta por completo (borra el usuario y sus datos relacionados).
+              Busca por email, nombre, teléfono o Customer ID. Filtra verificación de email y
+              consentimiento comercial. Puedes editar rol/plan o eliminar la cuenta.
             </p>
+            {counts ? (
+              <dl className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm">
+                  <dt className="text-xs uppercase tracking-wide text-[var(--ink-soft)]">Email verificado</dt>
+                  <dd className="font-black text-[var(--ink)]">{counts.emailVerified}</dd>
+                </div>
+                <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm">
+                  <dt className="text-xs uppercase tracking-wide text-[var(--ink-soft)]">Email pendiente</dt>
+                  <dd className="font-black text-[var(--ink)]">{counts.emailPending}</dd>
+                </div>
+                <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm">
+                  <dt className="text-xs uppercase tracking-wide text-[var(--ink-soft)]">Marketing sí</dt>
+                  <dd className="font-black text-[var(--ink)]">{counts.marketingOptIn}</dd>
+                </div>
+                <div className="rounded-xl border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2 text-sm">
+                  <dt className="text-xs uppercase tracking-wide text-[var(--ink-soft)]">Marketing baja</dt>
+                  <dd className="font-black text-[var(--ink)]">{counts.marketingOptOut}</dd>
+                </div>
+              </dl>
+            ) : null}
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href="/admin/access"
@@ -253,6 +295,40 @@ export default function AdminUsersPage() {
                   </button>
                 </div>
               </label>
+              <div className="mt-3 grid gap-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
+                  Email
+                  <select
+                    value={emailFilter}
+                    onChange={(e) => setEmailFilter(e.target.value as EmailFilter)}
+                    className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                  >
+                    <option value="">Todos</option>
+                    <option value="verified">Verificados</option>
+                    <option value="pending">Pendientes</option>
+                  </select>
+                </label>
+                <label className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-soft)]">
+                  Marketing
+                  <select
+                    value={marketingFilter}
+                    onChange={(e) => setMarketingFilter(e.target.value as MarketingFilter)}
+                    className="mt-1 w-full rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm"
+                  >
+                    <option value="">Todos</option>
+                    <option value="opted_in">Aceptaron</option>
+                    <option value="opted_out">Bajas</option>
+                    <option value="never">Nunca aceptaron</option>
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => void searchUsers()}
+                  className="rounded-xl border border-[var(--stroke)] px-3 py-2 text-sm font-semibold"
+                >
+                  Aplicar filtros
+                </button>
+              </div>
               <div className="mt-4 space-y-2">
                 {sortedUsers.map((user) => (
                   <button
@@ -269,11 +345,31 @@ export default function AdminUsersPage() {
                       {user.fullName || user.email}
                     </span>
                     <span className="block text-xs text-[var(--ink-soft)]">{user.email}</span>
-                    {user.proCancellationRequestedAt ? (
-                      <span className="mt-1 inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
-                        Baja pendiente
+                    <span className="mt-1 flex flex-wrap gap-1">
+                      <span
+                        className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold ${
+                          user.emailVerifiedAt
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                            : 'border-amber-200 bg-amber-50 text-amber-800'
+                        }`}
+                      >
+                        {user.emailVerifiedAt ? 'Email OK' : 'Email pendiente'}
                       </span>
-                    ) : null}
+                      {user.marketingOptInAt ? (
+                        <span className="inline-flex rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[10px] font-bold text-sky-800">
+                          Marketing
+                        </span>
+                      ) : user.marketingOptOutAt ? (
+                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                          Baja marketing
+                        </span>
+                      ) : null}
+                      {user.proCancellationRequestedAt ? (
+                        <span className="inline-flex rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-800">
+                          Baja PRO
+                        </span>
+                      ) : null}
+                    </span>
                   </button>
                 ))}
                 {sortedUsers.length === 0 ? (
@@ -304,6 +400,24 @@ export default function AdminUsersPage() {
                       <p className="text-sm text-[var(--ink-soft)]">{selectedUser.email}</p>
                       <p className="mt-1 text-sm text-[var(--ink-soft)]">
                         Teléfono: {selectedUser.phone || '—'}
+                      </p>
+                      <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                        Email verificado:{' '}
+                        {selectedUser.emailVerifiedAt
+                          ? new Date(selectedUser.emailVerifiedAt).toLocaleString('es-ES')
+                          : 'Pendiente'}
+                      </p>
+                      <p className="mt-1 text-sm text-[var(--ink-soft)]">
+                        Marketing:{' '}
+                        {selectedUser.marketingOptInAt
+                          ? `Sí · ${new Date(selectedUser.marketingOptInAt).toLocaleString('es-ES')}${
+                              selectedUser.marketingOptInVersion
+                                ? ` · v${selectedUser.marketingOptInVersion}`
+                                : ''
+                            }`
+                          : selectedUser.marketingOptOutAt
+                            ? `Baja · ${new Date(selectedUser.marketingOptOutAt).toLocaleString('es-ES')}`
+                            : 'No'}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">

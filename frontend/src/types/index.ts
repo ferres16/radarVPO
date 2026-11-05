@@ -24,6 +24,11 @@ export type Promotion = {
   sourceUrl: string;
   /** Número de PDF oficiales públicos asociados (solo en listados). */
   pdfCount?: number;
+  /** Visitante: fechas estimadas ocultas por el servidor. */
+  datesLocked?: boolean;
+  detailLocked?: boolean;
+  lockReason?: 'register_verify' | null;
+  accessTier?: 'visitor' | 'registered' | 'pro';
 };
 
 /** Recuentos públicos del catálogo. Cifras exactas de la base; el front las redondea a umbrales. */
@@ -58,6 +63,8 @@ export type UserProfile = {
   plan: string;
   emailVerifiedAt?: string | null;
   marketingOptInAt?: string | null;
+  marketingOptInVersion?: string | null;
+  marketingOptOutAt?: string | null;
   smsAlertsEnabled?: boolean;
   alertMunicipalityIds?: string[];
   alertPromotionTypes?: Array<'venta' | 'alquiler' | 'mixto'>;
@@ -138,6 +145,10 @@ export type PromotionDetail = Promotion & {
   contactInfo?: Record<string, unknown> | null;
   documents: PromotionDocument[];
   units: PromotionUnit[];
+  detailLocked?: boolean;
+  lockReason?: 'register_verify' | null;
+  accessTier?: 'visitor' | 'registered' | 'pro';
+  datesLocked?: boolean;
 };
 
 export type NewsItem = {
@@ -217,9 +228,23 @@ export type BackofficeUser = {
   phone?: string | null;
   role: 'user' | 'admin';
   plan: 'free' | 'pro';
+  emailVerifiedAt?: string | null;
+  marketingOptInAt?: string | null;
+  marketingOptInVersion?: string | null;
+  marketingOptOutAt?: string | null;
   createdAt: string;
   stripeCustomerId?: string | null;
   proCancellationRequestedAt?: string | null;
+};
+
+export type BackofficeUsersResponse = {
+  items: BackofficeUser[];
+  counts: {
+    emailVerified: number;
+    emailPending: number;
+    marketingOptIn: number;
+    marketingOptOut: number;
+  };
 };
 
 export type BackofficeCancellationRequest = BackofficeUser & {
@@ -589,6 +614,8 @@ export type CheckoutResult = {
   sessionStatus: string | null;
   paid: boolean;
   accessReady: boolean;
+  entitlementsReady?: boolean;
+  awaitingEmailVerification?: boolean;
   product: 'pro' | 'pro_pack_3m' | 'course';
   productTitle: string;
   amountTotal: number | null;

@@ -62,12 +62,15 @@ export default async function AlertsPage() {
       <PublicPageHero
         badge={copy.upcomingLaunches}
         title="Próximos lanzamientos"
-        titleAccent="con días estimados"
-        description="Promociones que podrían publicarse próximamente en Cataluña. Los días restantes son una estimación: pueden no cumplirse o no llegar a publicarse. Con Radar VPO PRO te avisamos por SMS y email."
+        titleAccent="detectados"
+        description="Promociones que podrían publicarse próximamente en Cataluña. Sin cuenta verificada verás el listado sin fechas aproximadas ni contadores. Con email verificado aparecen las estimaciones cuando existan."
         actions={
           <div className="lp-hero__actions lp-hero__actions--stack">
             <ButtonLink href="/promotions" size="lg" block>
               Ver promociones publicadas
+            </ButtonLink>
+            <ButtonLink href="/register?next=%2Falerts" size="lg" variant="secondary" block>
+              Crear cuenta gratuita
             </ButtonLink>
           </div>
         }
@@ -77,7 +80,7 @@ export default async function AlertsPage() {
       <PublicSection id="lanzamientos" animated={false}>
         <SectionHeader
           title="Lanzamientos previstos"
-          description="Días estimados restantes y municipio. La única fecha oficial es la de publicación de la promoción."
+          description="Municipio y estado detectado. Las fechas aproximadas solo se muestran con email verificado. La única fecha oficial es la de publicación."
         />
 
         {alerts.length === 0 ? (

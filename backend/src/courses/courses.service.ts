@@ -753,6 +753,7 @@ export class CoursesService {
       select: {
         id: true,
         plan: true,
+        emailVerifiedAt: true,
         entitlements: true,
         purchases: { where: { status: 'paid' } },
         subscriptions: {
@@ -792,6 +793,7 @@ export class CoursesService {
     },
     profile: {
       plan: string;
+      emailVerifiedAt?: Date | null;
       entitlements: Array<{ key: string }>;
       purchases: Array<{ productKey: string; courseId: string | null }>;
       subscriptions: Array<{ planKey: string }>;
@@ -804,6 +806,11 @@ export class CoursesService {
       course.pricingType !== 'premium'
     ) {
       return { canAccess: true, reason: 'free' };
+    }
+
+    // Compra/PRO pueden existir, pero sin email verificado no se desbloquea.
+    if (!profile.emailVerifiedAt) {
+      return { canAccess: false, reason: 'locked' };
     }
 
     if (

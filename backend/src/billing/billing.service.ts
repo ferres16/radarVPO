@@ -759,12 +759,19 @@ export class BillingService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: meta.userId },
-      select: { id: true, email: true, fullName: true, stripeCustomerId: true },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        stripeCustomerId: true,
+        emailVerifiedAt: true,
+      },
     });
     if (!user) {
       this.logger.warn(`Checkout ${session.id}: user ${meta.userId} not found`);
       return;
     }
+    const emailVerified = Boolean(user.emailVerifiedAt);
     const siteUrl = resolvePublicSiteUrl();
     const displayName = user.fullName?.trim() || user.email;
 
@@ -941,26 +948,32 @@ export class BillingService {
         ? `Radar VPO PRO (pack 3 meses)${guideTitle ? ` + ${guideTitle}` : ''}`
         : 'Radar VPO PRO (suscripción mensual)';
 
-      // SMS de nuevas promociones: activado automáticamente al pagar PRO.
-      try {
-        const smsSetup = await this.notifications.enableProSmsAlerts(user.id, {
-          sourceRef: `pro_sms_configured:${session.id}`,
-          sendConfirmation: true,
-        });
-        if (!smsSetup.enabled) {
+      // SMS de bienvenida PRO: solo tras email verificado + pago (una vez).
+      if (emailVerified) {
+        try {
+          const smsSetup = await this.notifications.enableProSmsAlerts(user.id, {
+            sourceRef: `pro_sms_configured:${session.id}`,
+            sendConfirmation: true,
+          });
+          if (!smsSetup.enabled) {
+            this.logger.warn(
+              `PRO SMS auto-enable skipped for ${user.id}: ${smsSetup.reason || 'unknown'}`,
+            );
+          } else if (!smsSetup.smsSent && smsSetup.reason) {
+            this.logger.warn(
+              `PRO SMS confirmation not sent for ${user.id}: ${smsSetup.reason}`,
+            );
+          }
+        } catch (error) {
           this.logger.warn(
-            `PRO SMS auto-enable skipped for ${user.id}: ${smsSetup.reason || 'unknown'}`,
-          );
-        } else if (!smsSetup.smsSent && smsSetup.reason) {
-          this.logger.warn(
-            `PRO SMS confirmation not sent for ${user.id}: ${smsSetup.reason}`,
+            `PRO SMS auto-enable failed for ${user.id}: ${
+              error instanceof Error ? error.message : 'unknown'
+            }`,
           );
         }
-      } catch (error) {
-        this.logger.warn(
-          `PRO SMS auto-enable failed for ${user.id}: ${
-            error instanceof Error ? error.message : 'unknown'
-          }`,
+      } else {
+        this.logger.log(
+          `PRO SMS deferred for ${user.id}: email pending verification (checkout ${session.id})`,
         );
       }
 
@@ -1263,18 +1276,26 @@ export class BillingService {
         );
     }
 
+    const emailVerified = Boolean(user?.emailVerifiedAt);
+    const entitlementsReady = accessReady;
+    // Acceso usable solo con pago/vinculación + email verificado.
+    const usableAccess = entitlementsReady && emailVerified;
     const paid =
       paymentStatus === 'paid' || paymentStatus === 'no_payment_required';
     const failed =
       sessionStatus === 'expired' ||
       (!paid && sessionStatus !== 'open' && paymentStatus === 'unpaid');
-    const processing = paid && !accessReady && sessionStatus === 'complete';
-    const confirmed = paid && accessReady;
+    const awaitingEmailVerification =
+      paid && entitlementsReady && !emailVerified;
+    const processing =
+      paid && !entitlementsReady && sessionStatus === 'complete';
+    const confirmed = paid && usableAccess;
 
     let uiStatus: 'confirmed' | 'processing' | 'pending' | 'failed' = 'pending';
     if (failed) uiStatus = 'failed';
-    else if (confirmed) uiStatus = 'confirmed';
-    else if (processing || (paid && !accessReady)) uiStatus = 'processing';
+    // Pago OK pero email pendiente: no seguir en "processing" (evita polling/429).
+    else if (confirmed || awaitingEmailVerification) uiStatus = 'confirmed';
+    else if (processing || (paid && !entitlementsReady)) uiStatus = 'processing';
     else if (sessionStatus === 'open' || !paid) uiStatus = 'pending';
 
     return {
@@ -1283,14 +1304,18 @@ export class BillingService {
       paymentStatus,
       sessionStatus,
       paid,
-      accessReady,
+      accessReady: usableAccess,
+      entitlementsReady,
+      awaitingEmailVerification,
       product,
       productTitle,
       amountTotal: session.amount_total,
       currency: (session.currency || 'eur').toUpperCase(),
-      ctaHref,
-      ctaLabel,
-      emailVerified: Boolean(user?.emailVerifiedAt),
+      ctaHref: awaitingEmailVerification ? '/verify-email' : ctaHref,
+      ctaLabel: awaitingEmailVerification
+        ? 'Verificar email para activar el acceso'
+        : ctaLabel,
+      emailVerified,
       email: user?.email ?? null,
       consent: consent
         ? {

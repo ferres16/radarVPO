@@ -18,6 +18,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateUnverifiedEmailDto } from './dto/update-unverified-email.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 
 const isProduction = process.env.NODE_ENV === 'production';
@@ -142,6 +143,17 @@ export class AuthController {
   @Throttle({ default: { limit: 3, ttl: minutes(10) } })
   resendVerification(@CurrentUser() user: CurrentUserPayload) {
     return this.authService.resendVerificationEmail(user.sub);
+  }
+
+  @Post('update-unverified-email')
+  @ApiCookieAuth('access_token')
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 5, ttl: minutes(10) } })
+  updateUnverifiedEmail(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: UpdateUnverifiedEmailDto,
+  ) {
+    return this.authService.updateUnverifiedEmail(user.sub, dto.email);
   }
 
   private writeAuthCookies(

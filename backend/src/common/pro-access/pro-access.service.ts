@@ -20,6 +20,7 @@ export class ProAccessService {
       where: { id: userId },
       select: {
         plan: true,
+        emailVerifiedAt: true,
         createdAt: true,
         stripeCustomerId: true,
         proCancellationRequestedAt: true,
@@ -46,7 +47,9 @@ export class ProAccessService {
     const hasActiveSubscription =
       subscription !== null &&
       ACTIVE_SUBSCRIPTION_STATUSES.includes(subscription.status);
-    const hasAccess = hasPlanPro || hasActiveSubscription;
+    const paidPro = hasPlanPro || hasActiveSubscription;
+    // Sin email verificado: la compra queda vinculada, pero PRO no se activa.
+    const hasAccess = paidPro && Boolean(user.emailVerifiedAt);
 
     const status = this.resolveDisplayStatus({
       hasAccess,

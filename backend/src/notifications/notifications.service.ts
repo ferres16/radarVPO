@@ -1397,10 +1397,22 @@ export class NotificationsService {
   }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, phone: true, smsAlertsEnabled: true },
+      select: {
+        id: true,
+        phone: true,
+        smsAlertsEnabled: true,
+        emailVerifiedAt: true,
+      },
     });
     if (!user) {
       return { enabled: false, smsSent: false, reason: 'user_not_found' };
+    }
+    if (!user.emailVerifiedAt) {
+      return {
+        enabled: false,
+        smsSent: false,
+        reason: 'email_not_verified',
+      };
     }
 
     const phone = normalizePhoneForSms(user.phone);

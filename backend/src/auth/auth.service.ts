@@ -17,6 +17,11 @@ import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import {
+  MARKETING_CONSENT_TEXT,
+  MARKETING_CONSENT_VERSION,
+} from '../common/marketing-consent';
+import { ProAccessService } from '../common/pro-access/pro-access.service';
+import {
   createEmailVerificationToken,
   EMAIL_VERIFY_RESEND_COOLDOWN_MS,
   EMAIL_VERIFY_RESEND_MAX_PER_DAY,
@@ -40,6 +45,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly notifications: NotificationsService,
+    private readonly proAccess: ProAccessService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -54,6 +60,7 @@ export class AuthService {
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const marketingOptIn = dto.acceptedMarketing === true;
+    const now = new Date();
     const user = await this.prisma.user.create({
       data: {
         email: dto.email.toLowerCase(),
@@ -64,7 +71,11 @@ export class AuthService {
         role: 'user',
         plan: 'free',
         emailVerifiedAt: null,
-        marketingOptInAt: marketingOptIn ? new Date() : null,
+        marketingOptInAt: marketingOptIn ? now : null,
+        marketingOptInVersion: marketingOptIn
+          ? MARKETING_CONSENT_VERSION
+          : null,
+        marketingOptOutAt: null,
         smsAlertsEnabled: false,
       },
     });
@@ -77,8 +88,14 @@ export class AuthService {
         entityId: user.id,
         metadata: {
           source: 'register',
-          acceptedAt: new Date().toISOString(),
+          acceptedAt: now.toISOString(),
           marketingOptIn,
+          marketingOptInVersion: marketingOptIn
+            ? MARKETING_CONSENT_VERSION
+            : null,
+          marketingConsentText: marketingOptIn
+            ? MARKETING_CONSENT_TEXT
+            : null,
         },
       },
     });
@@ -246,10 +263,94 @@ export class AuthService {
       }),
     ]);
 
+    // Tras verificar: activar accesos ya pagados y SMS de bienvenida PRO (una vez).
+    await this.activatePaidAccessAfterVerification(row.userId);
+
     return {
       success: true,
-      message: 'Email verificado. Ya puedes comprar y activar avisos PRO.',
+      message:
+        'Email verificado. Si tenías una compra o PRO pendiente, el acceso ya está activo.',
     };
+  }
+
+  /**
+   * Corrige el email mientras la cuenta no esté verificada.
+   * No permite cambiar el email de cuentas ya verificadas.
+   */
+  async updateUnverifiedEmail(userId: string, nextEmailRaw: string) {
+    const nextEmail = nextEmailRaw.trim().toLowerCase();
+    if (!nextEmail) {
+      throw new BadRequestException('Indica un email válido.');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        fullName: true,
+        emailVerifiedAt: true,
+      },
+    });
+    if (!user) {
+      throw new BadRequestException('Usuario no encontrado.');
+    }
+    if (user.emailVerifiedAt) {
+      throw new BadRequestException(
+        'Tu email ya está verificado. Contacta con soporte si necesitas cambiarlo.',
+      );
+    }
+    if (user.email === nextEmail) {
+      throw new BadRequestException('Ese ya es tu email actual.');
+    }
+
+    const taken = await this.usersService.findByEmail(nextEmail);
+    if (taken) {
+      throw new BadRequestException(
+        'No se pudo actualizar el email con esos datos.',
+      );
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { email: nextEmail },
+      }),
+      this.prisma.emailVerificationToken.updateMany({
+        where: { userId, usedAt: null },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    await this.sendVerificationEmail(userId, nextEmail, user.fullName);
+    return {
+      success: true,
+      message: 'Email actualizado. Te hemos enviado un nuevo enlace de verificación.',
+      email: nextEmail,
+    };
+  }
+
+  private async activatePaidAccessAfterVerification(userId: string) {
+    try {
+      const pro = await this.proAccess.resolveForUser(userId);
+      if (!pro.hasAccess) return;
+
+      const smsSetup = await this.notifications.enableProSmsAlerts(userId, {
+        sourceRef: `pro_sms_configured:verify:${userId}`,
+        sendConfirmation: true,
+      });
+      if (!smsSetup.enabled && smsSetup.reason !== 'no_phone') {
+        this.logger.warn(
+          `Post-verify PRO SMS skipped for ${userId}: ${smsSetup.reason || 'unknown'}`,
+        );
+      }
+    } catch (error) {
+      this.logger.warn(
+        `Post-verify access activation failed for ${userId}: ${
+          error instanceof Error ? error.message : 'unknown'
+        }`,
+      );
+    }
   }
 
   async resendVerificationEmail(userId: string) {

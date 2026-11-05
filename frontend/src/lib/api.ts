@@ -6,6 +6,7 @@ import {
   BackofficeCancellationProcessResult,
   BackofficeWaitlistLead,
   BackofficeUser,
+  BackofficeUsersResponse,
   CatalogStats,
   CheckoutResult,
   CheckoutStatus,
@@ -175,14 +176,30 @@ async function request<T>(
   return res.json() as Promise<T>;
 }
 
-/** Public catalog/list reads — short ISR cache to cut repeated backend load. */
+async function serverCookieHeader(): Promise<string> {
+  if (typeof window !== 'undefined') return '';
+  try {
+    const { cookies } = await import('next/headers');
+    return (await cookies()).toString();
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Lecturas públicas. En SSR reenvía cookies para que el backend aplique el nivel
+ * de acceso (visitante vs cuenta verificada). Con sesión: sin caché.
+ */
 async function requestPublic<T>(path: string, revalidateSeconds = 45): Promise<T> {
+  const cookieHeader = await serverCookieHeader();
+  const authed = Boolean(cookieHeader);
   const res = await fetch(`${getBrowserApiBaseUrl()}${path}`, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...(cookieHeader ? { Cookie: cookieHeader } : {}),
     },
-    ...(revalidateSeconds <= 0
+    ...(authed || revalidateSeconds <= 0
       ? { cache: 'no-store' as const }
       : { next: { revalidate: revalidateSeconds } }),
   });
@@ -203,7 +220,8 @@ async function authRequest<T>(
     | '/reset-password'
     | '/refresh'
     | '/verify-email'
-    | '/resend-verification',
+    | '/resend-verification'
+    | '/update-unverified-email',
   init?: RequestInit,
 ): Promise<T> {
   const res = await fetch(`/api/auth${path}`, {
@@ -243,10 +261,10 @@ async function requestForm<T>(path: string, body: FormData): Promise<T> {
 }
 
 export const api = {
-  getPromotions: (query = '') => requestPublic<Promotion[]>(`/promotions${query}`),
+  getPromotions: (query = '') => requestPublic<Promotion[]>(`/promotions${query}`, 0),
   getCatalogStats: () => requestPublic<CatalogStats>('/promotions/stats', 120),
-  getPromotionById: (id: string) => requestPublic<PromotionDetail>(`/promotions/${id}`, 30),
-  getAlerts: () => requestPublic<Promotion[]>('/alerts/upcoming', 15),
+  getPromotionById: (id: string) => requestPublic<PromotionDetail>(`/promotions/${id}`, 0),
+  getAlerts: () => requestPublic<Promotion[]>('/alerts/upcoming', 0),
   getNews: () => requestPublic<NewsItem[]>('/news'),
   getNewsById: (id: string) => requestPublic<NewsItem & { rawText?: string }>(`/news/${id}`, 60),
   getMe: (options?: { allowRefresh?: boolean }) =>
@@ -415,7 +433,18 @@ export const api = {
     request<FileAsset>(`/backoffice/files/${id}/retry-delete`, {
       method: 'POST',
     }),
-  getBackofficeUsers: (q?: string) => request<BackofficeUser[]>(`/backoffice/users${queryString({ q })}`),
+  getBackofficeUsers: (params?: {
+    q?: string;
+    emailVerified?: 'verified' | 'pending';
+    marketing?: 'opted_in' | 'opted_out' | 'never';
+  }) =>
+    request<BackofficeUsersResponse>(
+      `/backoffice/users${queryString({
+        q: params?.q,
+        emailVerified: params?.emailVerified,
+        marketing: params?.marketing,
+      })}`,
+    ),
   getBackofficeWaitlist: (q?: string) =>
     request<BackofficeWaitlistLead[]>(`/backoffice/waitlist${queryString({ q })}`),
   updateBackofficeUser: (
@@ -830,6 +859,14 @@ export const api = {
     authRequest<{ success: true; message: string }>('/resend-verification', {
       method: 'POST',
     }),
+  updateUnverifiedEmail: (email: string) =>
+    authRequest<{ success: true; message: string; email: string }>(
+      '/update-unverified-email',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      },
+    ),
   updateMe: (payload: {
     fullName?: string;
     phone?: string;

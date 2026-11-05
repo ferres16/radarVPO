@@ -28,16 +28,21 @@ export default function ConditionsPage() {
       <LegalSection title="2. Qué ofrece Radar VPO">
         <ul className="list-disc space-y-1 pl-5">
           <li>
-            <strong className="text-[var(--ink)]">Gratis:</strong> consulta de promociones de vivienda protegida y
-            acceso a su documento oficial, y cuenta gratuita para gestionar compras y avisos.
+            <strong className="text-[var(--ink)]">Visitante:</strong> listado limitado de promociones, detalle
+            completo de las dos últimas publicadas y próximos lanzamientos sin fechas aproximadas.
           </li>
           <li>
-            <strong className="text-[var(--ink)]">Cursos:</strong> contenido formativo digital, de pago único.
+            <strong className="text-[var(--ink)]">Cuenta verificada:</strong> tras verificar el email, acceso a
+            todas las publicaciones, documentos oficiales y fechas estimadas de lanzamientos cuando existan.
+          </li>
+          <li>
+            <strong className="text-[var(--ink)]">Cursos / guía:</strong> contenido formativo digital de pago único.
+            La compra queda vinculada a la cuenta y solo se desbloquea con el email verificado.
           </li>
           <li>
             <strong className="text-[var(--ink)]">{proPlan.name}:</strong> suscripción mensual con avisos por email y
-            SMS de nuevas promociones y WhatsApp para consultas. Solo incluye una guía o curso si su ficha publicada
-            lo indica.
+            SMS de nuevas promociones y WhatsApp para consultas, solo con email verificado y suscripción activa.
+            Solo incluye una guía o curso si su ficha publicada lo indica.
           </li>
         </ul>
         <p>

@@ -205,6 +205,10 @@ model User {
    * Independiente de verificación de email y de PRO.
    */
   marketingOptInAt           DateTime?           @map("marketing_opt_in_at")
+  /** Versión del texto de consentimiento comercial aceptado. */
+  marketingOptInVersion      String?             @map("marketing_opt_in_version")
+  /** Baja del consentimiento comercial (conserva histórico del opt-in). */
+  marketingOptOutAt          DateTime?           @map("marketing_opt_out_at")
   /**
    * Quiere SMS de avisos PRO. false por defecto: guardar teléfono ≠ activar SMS.
    */
@@ -244,6 +248,8 @@ model User {
   purchaseConsents PurchaseConsent[]
   contentSupplyEvents ContentSupplyEvent[]
 
+  @@index([emailVerifiedAt])
+  @@index([marketingOptInAt])
   @@map("users")
 }
 

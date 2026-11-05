@@ -13,6 +13,13 @@ import {
   AMENDMENT_TITLE_CONTAINS,
   isAmendmentPublication,
 } from '../common/promotion-content-filters';
+import {
+  canUseRegisteredBenefits,
+  resolveAccessTier,
+  VISITOR_PROMOTION_DETAIL_LIMIT,
+  VISITOR_PROMOTION_LIST_LIMIT,
+  type AccessTier,
+} from '../common/access-tier';
 import { MetricsService } from '../metrics/metrics.service';
 import { FileStorageService } from '../storage/file-storage.service';
 
@@ -31,8 +38,72 @@ export class PromotionsService {
     private readonly metrics: MetricsService,
   ) {}
 
-  async list(filters: ListPromotionsDto) {
-    const limit = Math.min(filters.limit ?? 10, 100);
+  async resolveViewerTier(userId?: string | null): Promise<AccessTier> {
+    if (!userId) return 'visitor';
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        emailVerifiedAt: true,
+        plan: true,
+        subscriptions: {
+          where: {
+            planKey: 'pro',
+            status: {
+              in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+            },
+          },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+    return resolveAccessTier({
+      emailVerifiedAt: user?.emailVerifiedAt,
+      plan: user?.plan,
+      hasActiveProSubscription: (user?.subscriptions.length ?? 0) > 0,
+    });
+  }
+
+  /** Ids de las N promociones publicadas más recientes (detalle abierto a visitantes). */
+  async getLatestPublishedIds(
+    limit = VISITOR_PROMOTION_DETAIL_LIMIT,
+  ): Promise<string[]> {
+    const rows = await this.prisma.promotion.findMany({
+      where: {
+        status: { in: PUBLIC_PROMOTION_STATUSES },
+        AND: [
+          { NOT: { title: { contains: 'alerta', mode: 'insensitive' } } },
+          ...AMENDMENT_TITLE_CONTAINS.map((term) => ({
+            NOT: { title: { contains: term, mode: 'insensitive' as const } },
+          })),
+        ],
+      },
+      orderBy: [
+        { publishedAt: { sort: 'desc', nulls: 'last' } },
+        { createdAt: 'desc' },
+      ],
+      take: Math.max(limit * 4, 20),
+      select: {
+        id: true,
+        title: true,
+        publicDescription: true,
+      },
+    });
+
+    return rows
+      .filter(
+        (item) => !isAmendmentPublication(item.title, item.publicDescription),
+      )
+      .slice(0, limit)
+      .map((item) => item.id);
+  }
+
+  async list(filters: ListPromotionsDto, userId?: string | null) {
+    const tier = await this.resolveViewerTier(userId);
+    const requested = Math.min(filters.limit ?? 10, 100);
+    const limit = canUseRegisteredBenefits(tier)
+      ? requested
+      : Math.min(requested, VISITOR_PROMOTION_LIST_LIMIT);
     const offset = filters.offset ?? 0;
     const statusFilter = filters.status
       ? PUBLIC_PROMOTION_STATUSES.includes(filters.status)
@@ -121,7 +192,7 @@ export class PromotionsService {
       );
   }
 
-  async getById(id: string) {
+  async getById(id: string, userId?: string | null) {
     const item = await this.prisma.promotion.findFirst({
       where: {
         id,
@@ -196,7 +267,41 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
-    return withPromotionView(await this.withSignedPromotionDocuments(item));
+    const tier = await this.resolveViewerTier(userId);
+    const isPublished = PUBLIC_PROMOTION_STATUSES.includes(item.status);
+    let detailLocked = false;
+    if (!canUseRegisteredBenefits(tier) && isPublished) {
+      const unlockedIds = await this.getLatestPublishedIds(
+        VISITOR_PROMOTION_DETAIL_LIMIT,
+      );
+      detailLocked = !unlockedIds.includes(item.id);
+    }
+
+    if (detailLocked) {
+      const teaser = {
+        ...item,
+        documents: [],
+        units: [],
+        generalInfo: null,
+        importantDates: null,
+        requirements: null,
+        economicInfo: null,
+        feesAndReservations: null,
+        contactInfo: null,
+        availableUnitsText: null,
+        detailLocked: true as const,
+        lockReason: 'register_verify' as const,
+        accessTier: tier,
+      };
+      return withPromotionView(teaser);
+    }
+
+    return withPromotionView({
+      ...(await this.withSignedPromotionDocuments(item)),
+      detailLocked: false as const,
+      lockReason: null,
+      accessTier: tier,
+    });
   }
 
   async toggleFavorite(userId: string, promotionId: string) {
@@ -224,6 +329,7 @@ export class PromotionsService {
       throw new NotFoundException('Promotion not found');
     }
 
+    await this.assertEmailVerified(userId);
     await this.assertCanSaveAnotherFavorite(userId);
 
     await this.prisma.promotionFavorite.create({
@@ -236,12 +342,22 @@ export class PromotionsService {
     return { favorite: true };
   }
 
-  /** Las cuentas gratuitas pueden guardar hasta FREE_SAVED_PROMOTIONS_LIMIT promociones. */
+  private async assertEmailVerified(userId: string) {
+    const tier = await this.resolveViewerTier(userId);
+    if (!canUseRegisteredBenefits(tier)) {
+      throw new ForbiddenException(
+        'Verifica tu email para guardar promociones y usar las ventajas de la cuenta.',
+      );
+    }
+  }
+
+  /** Las cuentas gratuitas verificadas pueden guardar hasta FREE_SAVED_PROMOTIONS_LIMIT promociones. */
   private async assertCanSaveAnotherFavorite(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         plan: true,
+        emailVerifiedAt: true,
         subscriptions: {
           where: {
             planKey: 'pro',
@@ -252,7 +368,9 @@ export class PromotionsService {
         },
       },
     });
-    const isPro = user?.plan === 'pro' || (user?.subscriptions.length ?? 0) > 0;
+    const isPro =
+      Boolean(user?.emailVerifiedAt) &&
+      (user?.plan === 'pro' || (user?.subscriptions.length ?? 0) > 0);
     if (isPro) return;
 
     const saved = await this.prisma.promotionFavorite.count({

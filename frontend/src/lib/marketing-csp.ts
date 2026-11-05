@@ -12,6 +12,8 @@ export const MARKETING_SCRIPT_SRC = [
   'https://connect.facebook.net',
   'https://www.googletagmanager.com',
   'https://www.google-analytics.com',
+  // Param builder del pixel / CAPI Gateway.
+  'https://capi-automation.s3.us-east-2.amazonaws.com',
 ].join(' ');
 
 export const MARKETING_CONNECT_SRC = [
@@ -19,6 +21,11 @@ export const MARKETING_CONNECT_SRC = [
   'https://www.facebook.com',
   'https://*.facebook.com',
   'https://*.facebook.net',
+  'https://graph.facebook.com',
+  // Meta Pixel CEE / Conversions API Gateway (Cloud Run + fallback AWS).
+  'https://*.a.run.app',
+  'https://*.ecs.us-west-1.on.aws',
+  'https://capi-automation.s3.us-east-2.amazonaws.com',
   'https://www.googletagmanager.com',
   'https://*.googletagmanager.com',
   'https://www.google-analytics.com',

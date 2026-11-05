@@ -11,33 +11,45 @@ export function LegalSection({ title, children }: { title: string; children: Rea
   );
 }
 
+/**
+ * Datos del titular en formato compacto y discreto.
+ * Sigue siendo fácil de localizar y leer; no oculta información legal.
+ */
 export function OwnerIdentity() {
   const taxIdLabel = isTaxIdPublished() ? legalOwner.taxId : 'Pendiente de publicación';
   const addressLabel = legalOwner.address || 'Pendiente de publicación';
 
   return (
-    <div className="space-y-3">
-      <ul className="space-y-1">
-        <li>
-          <strong className="text-[var(--ink)]">Titular:</strong> {legalOwner.name}
-        </li>
-        <li>
-          <strong className="text-[var(--ink)]">NIF/CIF:</strong> {taxIdLabel}
-        </li>
-        <li>
-          <strong className="text-[var(--ink)]">Domicilio:</strong> {addressLabel}
-        </li>
-        <li>
-          <strong className="text-[var(--ink)]">Contacto:</strong>{' '}
-          <a href={`mailto:${supportEmail}`} className="font-semibold text-[var(--green-700)] underline">
-            {supportEmail}
-          </a>
-        </li>
-      </ul>
+    <div className="mt-3 space-y-2">
+      <dl className="rounded-lg border border-[var(--stroke)] bg-[var(--bg-app)] px-3 py-2.5 text-[11px] leading-5 text-[var(--ink-soft)] sm:text-xs">
+        <div className="flex flex-wrap gap-x-1.5">
+          <dt className="font-semibold text-[var(--ink)]">Titular</dt>
+          <dd>{legalOwner.name}</dd>
+        </div>
+        <div className="mt-1 flex flex-wrap gap-x-1.5">
+          <dt className="font-semibold text-[var(--ink)]">NIF/CIF</dt>
+          <dd>{taxIdLabel}</dd>
+        </div>
+        <div className="mt-1 flex flex-wrap gap-x-1.5">
+          <dt className="font-semibold text-[var(--ink)]">Domicilio</dt>
+          <dd>{addressLabel}</dd>
+        </div>
+        <div className="mt-1 flex flex-wrap gap-x-1.5">
+          <dt className="font-semibold text-[var(--ink)]">Contacto</dt>
+          <dd>
+            <a
+              href={`mailto:${supportEmail}`}
+              className="font-medium text-[var(--green-700)] underline decoration-[var(--stroke)] underline-offset-2"
+            >
+              {supportEmail}
+            </a>
+          </dd>
+        </div>
+      </dl>
       {!isTaxIdPublished() || !legalOwner.address ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-900">
-          El NIF y el domicilio se completarán en cuanto estén disponibles. El canal de contacto ya está
-          publicado y no requiere iniciar sesión.
+        <p className="text-[11px] leading-5 text-[var(--ink-soft)]">
+          El NIF y el domicilio se completarán en cuanto estén disponibles. El canal de contacto ya
+          está publicado y no requiere iniciar sesión.
         </p>
       ) : null}
     </div>

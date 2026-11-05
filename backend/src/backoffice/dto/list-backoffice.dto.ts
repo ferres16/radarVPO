@@ -2,6 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsBooleanString,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -14,6 +15,16 @@ export class BackofficeListDto {
   @IsOptional()
   @IsString()
   q?: string;
+
+  @ApiPropertyOptional({ enum: ['verified', 'pending'] })
+  @IsOptional()
+  @IsIn(['verified', 'pending'])
+  emailVerified?: 'verified' | 'pending';
+
+  @ApiPropertyOptional({ enum: ['opted_in', 'opted_out', 'never'] })
+  @IsOptional()
+  @IsIn(['opted_in', 'opted_out', 'never'])
+  marketing?: 'opted_in' | 'opted_out' | 'never';
 
   @ApiPropertyOptional()
   @IsOptional()

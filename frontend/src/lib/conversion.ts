@@ -4,11 +4,11 @@ import { COURSE_ACCESS_MIN_MONTHS, proPriceLabel } from '@/lib/offer';
 export const homeOfferLayers = [
   {
     id: 'consult',
-    eyebrow: 'Gratis',
+    eyebrow: 'Visitante / cuenta',
     title: 'Consulta las promociones',
     price: '0 €',
     description:
-      'Abre cada convocatoria y su documento oficial sin cuenta. Sin registro obligatorio para consultar.',
+      'Sin cuenta ves un adelanto. Con email verificado abres todas las publicaciones y las fechas estimadas de lanzamientos.',
     cta: 'Ver promociones',
     href: '/promotions',
     event: 'promotion_list_cta_clicked' as const,
@@ -18,7 +18,7 @@ export const homeOfferLayers = [
     eyebrow: 'Guía · pago único',
     title: 'Entiende el proceso y qué preparar',
     price: 'Precio en la ficha',
-    description: `Lectura en pantalla, acceso mínimo ${COURSE_ACCESS_MIN_MONTHS} meses. Registro, papeles y pasos hasta la firma.`,
+    description: `Lectura en pantalla, acceso mínimo ${COURSE_ACCESS_MIN_MONTHS} meses. Se desbloquea tras verificar el email.`,
     cta: 'Comprar la guía',
     href: '/cursos/guiav1#pagar',
     event: 'course_cta_clicked' as const,
@@ -29,7 +29,7 @@ export const homeOfferLayers = [
     title: 'Alertas y WhatsApp',
     price: proPriceLabel,
     description:
-      'Email y SMS cuando se publica una promoción, y WhatsApp para consultas. Renovación mensual; cancelas cuando quieras.',
+      'Email y SMS cuando se publica una promoción, y WhatsApp para consultas. Requiere email verificado. Renovación mensual; cancelas cuando quieras.',
     cta: 'Ver Radar PRO',
     href: '/pro',
     event: 'pro_cta_clicked' as const,
@@ -37,9 +37,9 @@ export const homeOfferLayers = [
 ] as const;
 
 export const homeHeroProof = [
-  'Consultar promociones y su documento oficial es gratis, sin registrarte.',
-  'La guía es lectura en pantalla, pago único, con acceso mínimo de 24 meses.',
-  `PRO (${proPriceLabel}) añade avisos por SMS y WhatsApp para consultas.`,
+  'Sin cuenta ves un adelanto; con email verificado abres todas las publicaciones.',
+  'La guía es lectura en pantalla, pago único; se activa tras verificar el email.',
+  `PRO (${proPriceLabel}) añade avisos por SMS y WhatsApp (email verificado).`,
 ] as const;
 
 export const homeFaqs = [
@@ -51,11 +51,11 @@ export const homeFaqs = [
   {
     question: '¿Puedo ver promociones sin pagar?',
     answer:
-      'Sí. Consultar las promociones y abrir su documento oficial es gratis, sin necesidad de registrarte.',
+      'Sí. Sin cuenta ves un listado limitado y el detalle de las dos últimas publicadas. Con cuenta gratuita y email verificado abres todas las publicaciones. PRO añade avisos y WhatsApp.',
   },
   {
     question: '¿Qué es Radar VPO PRO?',
-    answer: `Una suscripción de ${proPriceLabel} que añade avisos por email y SMS de nuevas promociones y WhatsApp para consultas. Se renueva cada mes hasta que la canceles; mantienes el acceso hasta el final del periodo ya pagado. Una guía concreta solo se incluye si aparece listada en la página PRO.`,
+    answer: `Una suscripción de ${proPriceLabel} que añade avisos por email y SMS de nuevas promociones y WhatsApp para consultas. Requiere email verificado. Se renueva cada mes hasta que la canceles; mantienes el acceso hasta el final del periodo ya pagado. Una guía concreta solo se incluye si aparece listada en la página PRO.`,
   },
   {
     question: 'Hay avisos por correo gratis en otros sitios. ¿Por qué PRO?',

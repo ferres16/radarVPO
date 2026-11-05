@@ -72,6 +72,7 @@ export default async function PromotionDetailPage({ params }: PromotionDetailPar
   const documents = getViewableDocuments(promotion.documents);
   const publishedOn = formatPublicationDate(promotion.publishedAt);
   const place = [promotion.municipality, promotion.province].filter(Boolean).join(', ');
+  const detailLocked = Boolean(promotion.detailLocked);
 
   return (
     <main className="shell space-y-4 pb-6 md:space-y-6 md:pb-8">
@@ -102,7 +103,34 @@ export default async function PromotionDetailPage({ params }: PromotionDetailPar
         </div>
       </header>
 
-      {documents.length > 0 ? (
+      {detailLocked ? (
+        <section className="premium-card border border-amber-200 bg-amber-50 p-5 text-center md:p-8">
+          <h2 className="text-lg font-bold text-amber-950">
+            Contenido completo para cuenta verificada
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-amber-950/90">
+            Sin cuenta (o sin verificar el email) solo puedes abrir el detalle completo de las dos
+            últimas promociones publicadas. Crea una cuenta gratuita y verifica tu correo para ver
+            este documento aquí.
+          </p>
+          <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
+            <ButtonLink
+              href={`/register?next=${encodeURIComponent(`/promotions/${promotion.id}`)}`}
+              variant="primary"
+            >
+              Crear cuenta gratuita
+            </ButtonLink>
+            <ButtonLink href="/verify-email" variant="secondary">
+              Ya tengo cuenta · verificar email
+            </ButtonLink>
+          </div>
+          <div className="mt-3">
+            <ButtonLink href={promotion.sourceUrl} variant="secondary">
+              Ver fuente oficial
+            </ButtonLink>
+          </div>
+        </section>
+      ) : documents.length > 0 ? (
         <PromotionPdfViewer
           promotionId={promotion.id}
           documents={documents}

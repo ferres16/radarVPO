@@ -8,6 +8,7 @@ import { UserPlan, UserRole } from '@prisma/client';
 import { BillingService } from '../billing/billing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProAccessService } from '../common/pro-access/pro-access.service';
+import { MARKETING_CONSENT_VERSION } from '../common/marketing-consent';
 import { CoursesService } from '../courses/courses.service';
 
 @Injectable()
@@ -61,6 +62,8 @@ export class UsersService {
         plan: true,
         emailVerifiedAt: true,
         marketingOptInAt: true,
+        marketingOptInVersion: true,
+        marketingOptOutAt: true,
         smsAlertsEnabled: true,
         alertMunicipalityIds: true,
         alertPromotionTypes: true,
@@ -92,6 +95,8 @@ export class UsersService {
       plan: UserPlan;
       emailVerifiedAt: Date | null;
       marketingOptInAt: Date | null;
+      marketingOptInVersion?: string | null;
+      marketingOptOutAt?: Date | null;
       smsAlertsEnabled: boolean;
       alertMunicipalityIds?: unknown;
       alertPromotionTypes?: unknown;
@@ -109,6 +114,8 @@ export class UsersService {
       plan: user.plan,
       emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
       marketingOptInAt: user.marketingOptInAt?.toISOString() ?? null,
+      marketingOptInVersion: user.marketingOptInVersion ?? null,
+      marketingOptOutAt: user.marketingOptOutAt?.toISOString() ?? null,
       smsAlertsEnabled: user.smsAlertsEnabled,
       alertMunicipalityIds: this.asStringArray(user.alertMunicipalityIds),
       alertPromotionTypes: this.asStringArray(user.alertPromotionTypes),
@@ -161,8 +168,11 @@ export class UsersService {
         fullName: true,
         phone: true,
         plan: true,
+        emailVerifiedAt: true,
         smsAlertsEnabled: true,
         marketingOptInAt: true,
+        marketingOptInVersion: true,
+        marketingOptOutAt: true,
         alertMunicipalityIds: true,
         alertPromotionTypes: true,
       },
@@ -176,12 +186,13 @@ export class UsersService {
       data.fullName === undefined ? current.fullName : (data.fullName ?? '');
     const nextPhone =
       data.phone === undefined ? current.phone : (data.phone ?? '');
-    // Si un PRO guarda/actualiza móvil sin tocar el toggle, activar SMS.
+    // Si un PRO verificado guarda/actualiza móvil sin tocar el toggle, activar SMS.
     const nextSms =
       typeof data.smsAlertsEnabled === 'boolean'
         ? data.smsAlertsEnabled
         : data.phone !== undefined &&
             current.plan === UserPlan.pro &&
+            Boolean(current.emailVerifiedAt) &&
             nextPhone.trim()
           ? true
           : current.smsAlertsEnabled;
@@ -229,6 +240,27 @@ export class UsersService {
         'Añade un teléfono antes de activar los SMS de avisos.',
       );
     }
+    if (nextSms && !current.emailVerifiedAt) {
+      throw new BadRequestException(
+        'Verifica tu email antes de activar los SMS de avisos PRO.',
+      );
+    }
+
+    const now = new Date();
+    const marketingUpdate =
+      typeof data.marketingOptIn === 'boolean'
+        ? data.marketingOptIn
+          ? {
+              marketingOptInAt: current.marketingOptInAt ?? now,
+              marketingOptInVersion: MARKETING_CONSENT_VERSION,
+              marketingOptOutAt: null,
+            }
+          : {
+              marketingOptInAt: null,
+              marketingOptInVersion: null,
+              marketingOptOutAt: current.marketingOptOutAt ?? now,
+            }
+        : {};
 
     return this.prisma.user.update({
       where: { id },
@@ -237,12 +269,7 @@ export class UsersService {
         phone: data.phone ?? undefined,
         smsAlertsEnabled:
           nextSms !== current.smsAlertsEnabled ? nextSms : undefined,
-        marketingOptInAt:
-          typeof data.marketingOptIn === 'boolean'
-            ? data.marketingOptIn
-              ? (current.marketingOptInAt ?? new Date())
-              : null
-            : undefined,
+        ...marketingUpdate,
         alertMunicipalityIds:
           data.alertMunicipalityIds === undefined
             ? undefined
@@ -261,6 +288,8 @@ export class UsersService {
         plan: true,
         emailVerifiedAt: true,
         marketingOptInAt: true,
+        marketingOptInVersion: true,
+        marketingOptOutAt: true,
         smsAlertsEnabled: true,
         alertMunicipalityIds: true,
         alertPromotionTypes: true,
@@ -449,6 +478,8 @@ export class UsersService {
           stripeCustomerId: null,
           proCancellationRequestedAt: null,
           marketingOptInAt: null,
+          marketingOptInVersion: null,
+          marketingOptOutAt: deletedAt,
           smsAlertsEnabled: false,
         },
       }),

@@ -107,7 +107,7 @@ export default async function Home() {
             <div className="lp-section__head">
               <p className="lp-eyebrow">Qué puedes hacer</p>
               <h2 id="offer-title" className="lp-title">
-                Gratis, guía o PRO: elige según lo que necesites
+                Visitante, cuenta, guía o PRO: elige según lo que necesites
               </h2>
             </div>
             <HomeOfferStrip
@@ -134,12 +134,13 @@ export default async function Home() {
           <section className="lp-section lp-section--muted" aria-labelledby="promos-title">
             <div className="shell">
               <div className="lp-section__head">
-                <p className="lp-eyebrow">Gratis</p>
+                <p className="lp-eyebrow">Promociones</p>
                 <h2 id="promos-title" className="lp-title">
                   Promociones publicadas, con su documento oficial
                 </h2>
                 <p className="lp-lead">
-                  Abre las bases en la fuente oficial, sin registrarte. El documento oficial es la referencia.
+                  Sin cuenta ves un adelanto. Con email verificado abres todas las bases oficiales. El documento
+                  oficial es la referencia.
                 </p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -149,7 +150,7 @@ export default async function Home() {
               </div>
               <div className="mt-6">
                 <ButtonLink href="/promotions" className="w-full sm:w-auto">
-                  Ver todas las promociones
+                  Ver promociones
                 </ButtonLink>
               </div>
             </div>
