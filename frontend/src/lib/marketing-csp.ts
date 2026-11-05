@@ -24,6 +24,8 @@ export const MARKETING_CONNECT_SRC = [
   'https://graph.facebook.com',
   // Meta Pixel CEE / Conversions API Gateway (Cloud Run + fallback AWS).
   'https://*.a.run.app',
+  // Gateway regional de Meta (p. ej. mpc-prod-*.us-central1.run.app); no basta *.a.run.app.
+  'https://*.us-central1.run.app',
   'https://*.ecs.us-west-1.on.aws',
   'https://capi-automation.s3.us-east-2.amazonaws.com',
   'https://www.googletagmanager.com',
