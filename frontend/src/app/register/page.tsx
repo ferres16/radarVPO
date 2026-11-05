@@ -151,9 +151,8 @@ function RegisterForm() {
                 />
                 <span>{MARKETING_CONSENT_TEXT}</span>
               </label>
-              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-950">
-                Tras registrarte debes verificar el email. Hasta entonces mantienes permisos de visitante:
-                no se activan compras, guía, alertas PRO ni WhatsApp.
+              <p className="text-xs leading-5 text-[var(--ink-soft)]">
+                Te enviaremos un email: confírmalo con un clic y tendrás todo desbloqueado.
               </p>
               {error ? (
                 <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900" role="alert" aria-live="polite">
@@ -175,7 +174,7 @@ function RegisterForm() {
           </div>
 
           <aside className="border-t border-[var(--stroke)] bg-[#f8faf9] p-5 md:border-l md:border-t-0 md:p-8">
-            <p className="lp-eyebrow">Qué incluye la cuenta gratuita</p>
+            <p className="lp-eyebrow">Qué desbloqueas al registrarte</p>
             <div className="mt-4 space-y-2">
               {freePlanFeatures.map((item) => (
                 <div key={item} className="flex items-center gap-2 rounded-xl border border-[var(--stroke)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--ink)]">

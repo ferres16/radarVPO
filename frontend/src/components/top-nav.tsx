@@ -205,12 +205,20 @@ export function TopNav() {
                 ) : null}
               </div>
             ) : (
-              <Link
-                href="/login"
-                className="whitespace-nowrap rounded-full border border-[var(--stroke)] bg-white/90 px-3.5 py-2 text-[13px] font-semibold text-[var(--ink)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-4 xl:text-sm"
-              >
-                Iniciar sesión
-              </Link>
+              <>
+                <Link
+                  href="/register"
+                  className="whitespace-nowrap rounded-full border border-[var(--green-700)] bg-[var(--bg-eco)] px-3.5 py-2 text-[13px] font-bold text-[var(--green-700)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-4 xl:text-sm"
+                >
+                  Regístrate gratis
+                </Link>
+                <Link
+                  href="/login"
+                  className="whitespace-nowrap rounded-full px-2 py-2 text-[13px] font-semibold text-[var(--ink)] transition hover:text-[var(--green-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:text-sm"
+                >
+                  Entrar
+                </Link>
+              </>
             )}
           </nav>
         </div>
@@ -288,15 +296,26 @@ export function TopNav() {
                 </button>
               </li>
             ) : (
-              <li>
-                <Link
-                  href="/login"
-                  className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-center text-sm font-semibold text-[var(--ink)]"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Iniciar Sesión
-                </Link>
-              </li>
+              <>
+                <li>
+                  <Link
+                    href="/register"
+                    className="block rounded-2xl border border-[var(--green-700)] bg-[var(--bg-eco)] px-4 py-3 text-center text-sm font-black text-[var(--green-700)]"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Regístrate gratis
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/login"
+                    className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-center text-sm font-semibold text-[var(--ink)]"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    Iniciar sesión
+                  </Link>
+                </li>
+              </>
             )}
           </ul>
         </nav>

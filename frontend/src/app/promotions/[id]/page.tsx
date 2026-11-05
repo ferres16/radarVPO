@@ -8,6 +8,7 @@ import { isAmendmentPublication } from '@/lib/promotion-content-filters';
 import { getViewableDocuments } from '@/lib/promotion-documents';
 import { ButtonLink } from '@/components/design-system';
 import { PromotionPdfViewer } from '@/components/pdf-viewer/promotion-pdf-viewer';
+import { RegisterPromo } from '@/components/conversion/register-promo';
 import { StructuredData } from '@/components/structured-data';
 import { pdfNextStep } from '@/lib/conversion';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
@@ -104,32 +105,7 @@ export default async function PromotionDetailPage({ params }: PromotionDetailPar
       </header>
 
       {detailLocked ? (
-        <section className="premium-card border border-amber-200 bg-amber-50 p-5 text-center md:p-8">
-          <h2 className="text-lg font-bold text-amber-950">
-            Contenido completo para cuenta verificada
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-amber-950/90">
-            Sin cuenta (o sin verificar el email) solo puedes abrir el detalle completo de las dos
-            últimas promociones publicadas. Crea una cuenta gratuita y verifica tu correo para ver
-            este documento aquí.
-          </p>
-          <div className="mt-4 flex flex-col justify-center gap-2 sm:flex-row">
-            <ButtonLink
-              href={`/register?next=${encodeURIComponent(`/promotions/${promotion.id}`)}`}
-              variant="primary"
-            >
-              Crear cuenta gratuita
-            </ButtonLink>
-            <ButtonLink href="/verify-email" variant="secondary">
-              Ya tengo cuenta · verificar email
-            </ButtonLink>
-          </div>
-          <div className="mt-3">
-            <ButtonLink href={promotion.sourceUrl} variant="secondary">
-              Ver fuente oficial
-            </ButtonLink>
-          </div>
-        </section>
+        <RegisterPromo reason="detail" next={`/promotions/${promotion.id}`} />
       ) : documents.length > 0 ? (
         <PromotionPdfViewer
           promotionId={promotion.id}

@@ -6,6 +6,7 @@ import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversi
 import { ButtonLink, SectionHeader, SurfaceCard } from '@/components/design-system';
 import { AlertsProCtaBand } from '@/components/conversion/alerts-pro-cta-band';
 import { AlertTimeline } from '@/components/saas/alert-timeline';
+import { RegisterButton, RegisterPromo } from '@/components/conversion/register-promo';
 import { StructuredData } from '@/components/structured-data';
 import { buildProofItems } from '@/lib/catalog-stats';
 import { breadcrumbJsonLd, createMetadata } from '@/lib/seo';
@@ -63,14 +64,23 @@ export default async function AlertsPage() {
         badge={copy.upcomingLaunches}
         title="Próximos lanzamientos"
         titleAccent="detectados"
-        description="Promociones que podrían publicarse próximamente en Cataluña. Sin cuenta verificada verás el listado sin fechas aproximadas ni contadores. Con email verificado aparecen las estimaciones cuando existan."
+        description="Promociones de vivienda protegida que podrían publicarse próximamente en Cataluña. Regístrate gratis para ver la fecha aproximada de cada lanzamiento y llegar con todo preparado."
         actions={
           <div className="lp-hero__actions lp-hero__actions--stack">
-            <ButtonLink href="/promotions" size="lg" block>
-              Ver promociones publicadas
-            </ButtonLink>
-            <ButtonLink href="/register?next=%2Falerts" size="lg" variant="secondary" block>
-              Crear cuenta gratuita
+            <RegisterButton
+              next="/alerts"
+              source="alerts_hero"
+              block
+              fallback={
+                <ButtonLink href="/promotions" size="lg" block>
+                  Ver promociones publicadas
+                </ButtonLink>
+              }
+            >
+              Regístrate gratis y ver las fechas
+            </RegisterButton>
+            <ButtonLink href="/pro" size="lg" variant="secondary" block>
+              Recibir avisos con PRO
             </ButtonLink>
           </div>
         }
@@ -80,8 +90,12 @@ export default async function AlertsPage() {
       <PublicSection id="lanzamientos" animated={false}>
         <SectionHeader
           title="Lanzamientos previstos"
-          description="Municipio y estado detectado. Las fechas aproximadas solo se muestran con email verificado. La única fecha oficial es la de publicación."
+          description="Municipio y estado de cada lanzamiento detectado. Las fechas son aproximadas: la única fecha oficial es la de publicación."
         />
+
+        {alerts.some((alert) => alert.datesLocked) ? (
+          <RegisterPromo reason="dates" next="/alerts" className="mt-6" />
+        ) : null}
 
         {alerts.length === 0 ? (
           <SurfaceCard premium className="empty-illus mt-6 border-0 shadow-none">

@@ -1,4 +1,5 @@
 import { TrackedButtonLink } from '@/components/tracked-link';
+import { RegisterButton } from '@/components/conversion/register-promo';
 import { homeOfferLayers } from '@/lib/conversion';
 
 type GuideOffer = {
@@ -22,6 +23,27 @@ export function HomeOfferStrip({ guide }: { guide?: GuideOffer }) {
             <h3 className="lp-offer-card__title">{layer.title}</h3>
             <p className="lp-offer-card__text">{layer.description}</p>
             <div className="mt-4">
+              {layer.id === 'consult' ? (
+                <RegisterButton
+                  source="home_offer"
+                  size="md"
+                  variant="secondary"
+                  block
+                  fallback={
+                    <TrackedButtonLink
+                      href="/promotions"
+                      event="promotion_list_cta_clicked"
+                      eventProperties={{ source: 'home_offer', layer: layer.id }}
+                      variant="secondary"
+                      block
+                    >
+                      Ver promociones
+                    </TrackedButtonLink>
+                  }
+                >
+                  {cta}
+                </RegisterButton>
+              ) : (
               <TrackedButtonLink
                 href={href}
                 event={layer.event}
@@ -31,6 +53,7 @@ export function HomeOfferStrip({ guide }: { guide?: GuideOffer }) {
               >
                 {cta}
               </TrackedButtonLink>
+              )}
             </div>
           </article>
         );

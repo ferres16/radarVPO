@@ -7,7 +7,7 @@ import {
 
 /**
  * Fuente única de Radar VPO PRO y de los tres niveles de acceso.
- * Visitante / Cuenta verificada / PRO (email verificado + suscripción activa).
+ * Sin registro / Registrado gratis / PRO. Técnicamente, "registrado" exige email confirmado.
  */
 export const proPlan = {
   name: 'Radar VPO PRO',
@@ -44,29 +44,29 @@ export function getProActiveMessage(seed?: string): string {
   return proActiveMessages[hash % proActiveMessages.length];
 }
 
-/** Ventajas de la cuenta gratuita verificada (no confundir con visitante). */
+/** Lo que desbloqueas al registrarte gratis. */
 export const freePlanFeatures = [
-  `Consultar el listado completo de promociones (el visitante ve hasta ${VISITOR_PROMOTION_LIST_LIMIT})`,
-  'Abrir el documento oficial (PDF) de todas las promociones publicadas',
-  'Ver próximos lanzamientos con fechas aproximadas cuando estén disponibles',
-  'Comprar la guía por separado (pago único; se activa tras verificar el email)',
+  'Todas las promociones que han salido, no solo las últimas',
+  'El documento oficial (PDF) de cada promoción publicada',
+  'Fechas aproximadas de los próximos lanzamientos',
+  'Gratis y sin tarjeta: solo confirmas tu email con un clic',
 ] as const;
 
 export const visitorPlanFeatures = [
-  `Listado de hasta ${VISITOR_PROMOTION_LIST_LIMIT} promociones publicadas`,
-  `Detalle completo solo de las ${VISITOR_PROMOTION_DETAIL_LIMIT} últimas publicadas`,
-  'Próximos lanzamientos sin fechas aproximadas ni contadores',
-  'Crear cuenta gratuita y verificar el email para desbloquear el resto',
+  `Las ${VISITOR_PROMOTION_LIST_LIMIT} promociones más recientes`,
+  `El PDF de las ${VISITOR_PROMOTION_DETAIL_LIMIT} últimas publicadas`,
+  'Próximos lanzamientos, sin fechas aproximadas',
+  'Regístrate gratis para verlo todo',
 ] as const;
 
 export const proExclusiveFeatures = [
   'Avisos por email de nuevas promociones y próximos lanzamientos',
-  'Avisos por SMS (se activan al verificar el email con PRO y móvil válido)',
+  'Avisos por SMS al móvil que nos indiques',
   'Acceso a WhatsApp para consultas',
 ] as const;
 
 export const freeVsProDescription =
-  'El visitante ve un adelanto. La cuenta verificada abre todas las publicaciones y fechas estimadas. PRO añade avisos por email y SMS, y WhatsApp. Ninguna compra se activa sin verificar el email.';
+  'Sin registro ves las últimas promociones. Registrándote gratis ves todas las que han salido y las fechas aproximadas de lanzamiento. Con PRO, además, te avisamos por email y SMS en cuanto sale una y tienes WhatsApp para dudas.';
 
 /** Inclusiones fijas de PRO (siempre verdaderas). */
 export const proIncludes = [
@@ -78,7 +78,7 @@ export const proIncludes = [
   {
     title: 'Avisos por SMS',
     description:
-      'Tras verificar tu email y pagar PRO con un móvil válido, recibes un SMS de confirmación y luego avisos de nuevas promociones aunque no mires el correo.',
+      'Con un móvil válido en tu cuenta recibes un SMS de bienvenida y luego avisos de nuevas promociones aunque no mires el correo.',
   },
   {
     title: 'WhatsApp para consultas',
@@ -114,7 +114,7 @@ export function proOfferIncludes(guideTitles: string[]) {
 export function proHomePitch(includedGuideTitles: string[] = []): string {
   const guides = proIncludedGuidesCopy(includedGuideTitles);
   const guideBit = guides ? ` y ${guides.description.split('.')[0].toLowerCase()}` : '';
-  return `Consulta un adelanto sin cuenta. Con email verificado abres todas las publicaciones. ${proPlan.name} añade avisos por email y SMS, y WhatsApp${guideBit}. ${proPlan.price}. Cancelas desde Mi cuenta.`;
+  return `Con ${proPlan.name} te avisamos por email y SMS en cuanto se publica una promoción, y tienes WhatsApp para dudas${guideBit}. ${proPlan.price}. Cancelas desde Mi cuenta cuando quieras.`;
 }
 
 export const proWhyPay = [
@@ -124,7 +124,7 @@ export const proWhyPay = [
   },
   {
     title: 'SMS, no solo correo',
-    body: 'Hay avisos por email gratuitos de terceros. PRO añade el SMS si tu cuenta tiene un móvil válido y el email verificado.',
+    body: 'Hay avisos por email gratuitos de terceros. PRO añade el SMS al móvil de tu cuenta para que te enteres aunque no abras el correo.',
   },
   {
     title: 'WhatsApp para consultas',
@@ -139,7 +139,7 @@ export const proForWhom = {
     'Prefieres un aviso sobrio de lo detectado, sin inventar urgencias ni plazas limitadas.',
   ],
   no: [
-    'Solo quieres mirar de vez en cuando un adelanto público: eso no requiere PRO.',
+    'Solo quieres consultar promociones y fechas de vez en cuando: para eso basta con registrarte gratis.',
     'Esperas que presentemos la solicitud o te representemos ante la administración: no lo hacemos.',
   ],
 } as const;
@@ -147,27 +147,27 @@ export const proForWhom = {
 export const proLimits = [
   'Los avisos PRO (email y SMS) cubren todas las promociones que detectamos; no hay filtro por municipio ni por compra/alquiler.',
   'Las fechas de próximos lanzamientos son estimaciones y se indican como tales: pueden no cumplirse o no publicarse.',
-  'Los SMS se activan al verificar el email con PRO y un móvil válido; puedes desactivarlos en Mi cuenta.',
+  'Los SMS requieren un móvil válido en tu cuenta; puedes desactivarlos en Mi cuenta.',
   'WhatsApp es para consultas orientativas sobre el proceso; no sustituye asesoramiento jurídico ni presenta solicitudes.',
   'Radar VPO no garantiza una adjudicación.',
   'Una guía concreta solo forma parte de PRO si aparece listada en esta página con su nombre y enlace.',
-  'Ninguna compra ni suscripción desbloquea contenidos antes de verificar el email.',
+  'Las compras y la suscripción se activan cuando confirmas tu email.',
 ] as const;
 
 export const proFaqs = [
   {
     question: '¿Qué recibo exactamente con PRO?',
     answer:
-      'Avisos por email (y por SMS si indicas tu móvil) cuando se publica una nueva promoción o detectamos un próximo lanzamiento, y acceso a WhatsApp para consultas. Una guía concreta solo forma parte de PRO si aparece listada en esta página. Requiere email verificado.',
+      'Avisos por email (y por SMS si indicas tu móvil) cuando se publica una nueva promoción o detectamos un próximo lanzamiento, y acceso a WhatsApp para consultas. Una guía concreta solo forma parte de PRO si aparece listada en esta página.',
   },
   {
-    question: '¿Qué puedo hacer sin cuenta?',
-    answer: `Ver hasta ${VISITOR_PROMOTION_LIST_LIMIT} promociones en listado, abrir el detalle completo solo de las ${VISITOR_PROMOTION_DETAIL_LIMIT} últimas publicadas, y ver próximos lanzamientos sin fechas aproximadas.`,
+    question: '¿Qué puedo ver sin registrarme?',
+    answer: `Las ${VISITOR_PROMOTION_LIST_LIMIT} promociones más recientes, el PDF de las ${VISITOR_PROMOTION_DETAIL_LIMIT} últimas y los próximos lanzamientos sin fecha. Regístrate gratis para verlo todo.`,
   },
   {
-    question: '¿Qué añade la cuenta gratuita verificada?',
+    question: '¿Qué gano registrándome gratis?',
     answer:
-      'Todas las publicaciones con su PDF, próximos lanzamientos con fechas aproximadas cuando existan, y la posibilidad de comprar la guía (que solo se desbloquea tras verificar).',
+      'Ver todas las promociones que han salido con su PDF oficial y las fechas aproximadas de los próximos lanzamientos. Es gratis y sin tarjeta; solo confirmas tu email con un clic.',
   },
   {
     question: 'Hay avisos por correo gratis. ¿Qué añade PRO?',
@@ -177,12 +177,12 @@ export const proFaqs = [
   {
     question: '¿Qué cubre el WhatsApp?',
     answer:
-      'Consultas sobre el proceso de la VPO y las promociones que monitorizamos, mientras tu suscripción esté activa y el email verificado. No presentamos tu solicitud ni damos asesoramiento jurídico personalizado.',
+      'Consultas sobre el proceso de la VPO y las promociones que monitorizamos, mientras tu suscripción esté activa. No presentamos tu solicitud ni damos asesoramiento jurídico personalizado.',
   },
   {
     question: '¿Incluye un curso o una guía?',
     answer:
-      'Solo si esa guía está publicada y marcada como incluida: entonces aparece aquí con nombre y enlace. Si no hay ninguna listada, PRO no incluye guía. Lo que compres aparte se conserva aunque canceles, y se activa tras verificar el email.',
+      'Solo si esa guía está publicada y marcada como incluida: entonces aparece aquí con nombre y enlace. Si no hay ninguna listada, PRO no incluye guía. Lo que compres aparte se conserva aunque canceles.',
   },
   {
     question: '¿Cuánto cuesta y cómo se cobra?',
@@ -196,12 +196,12 @@ export const proFaqs = [
   {
     question: '¿Las fechas de lanzamiento son seguras?',
     answer:
-      'No. Cuando mostramos una fecha estimada lo indicamos expresamente; solo la fecha de publicación oficial es un dato confirmado. Los visitantes no ven esas fechas.',
+      'No. Cuando mostramos una fecha estimada lo indicamos expresamente; solo la fecha de publicación oficial es un dato confirmado. Para verlas basta con registrarte gratis.',
   },
   {
-    question: '¿Puedo comprar antes de verificar el email?',
+    question: '¿Puedo pagar antes de confirmar mi email?',
     answer:
-      'Sí. La compra queda vinculada a tu cuenta como pendiente de verificación. Al verificar el email se activan los accesos pagados (y el SMS de bienvenida PRO una sola vez si hay móvil válido).',
+      'Sí. El pago queda guardado en tu cuenta y todo se activa en cuanto confirmas tu email con el enlace que te enviamos (incluido el SMS de bienvenida de PRO, una sola vez).',
   },
   {
     question: '¿Garantiza conseguir una vivienda protegida?',
@@ -212,31 +212,31 @@ export const proFaqs = [
 
 export const proComparisonRows = [
   {
-    feature: `Listado de promociones (hasta ${VISITOR_PROMOTION_LIST_LIMIT})`,
+    feature: `Las ${VISITOR_PROMOTION_LIST_LIMIT} promociones más recientes`,
     visitor: true as const,
     registered: true as const,
     pro: true as const,
   },
   {
-    feature: 'Todas las promociones publicadas',
+    feature: 'Todas las promociones que han salido',
     visitor: false as const,
     registered: true as const,
     pro: true as const,
   },
   {
-    feature: `Detalle completo (PDF) — solo ${VISITOR_PROMOTION_DETAIL_LIMIT} últimas`,
+    feature: `PDF de las ${VISITOR_PROMOTION_DETAIL_LIMIT} últimas promociones`,
     visitor: true as const,
     registered: true as const,
     pro: true as const,
   },
   {
-    feature: 'Detalle completo de todas las publicaciones',
+    feature: 'PDF oficial de todas las promociones',
     visitor: false as const,
     registered: true as const,
     pro: true as const,
   },
   {
-    feature: 'Próximos lanzamientos (sin fechas)',
+    feature: 'Próximos lanzamientos detectados',
     visitor: true as const,
     registered: true as const,
     pro: true as const,
@@ -248,13 +248,13 @@ export const proComparisonRows = [
     pro: true as const,
   },
   {
-    feature: 'Avisos por email',
+    feature: 'Aviso por email al publicarse',
     visitor: false as const,
     registered: false as const,
     pro: true as const,
   },
   {
-    feature: 'Avisos por SMS',
+    feature: 'Aviso por SMS al publicarse',
     visitor: false as const,
     registered: false as const,
     pro: true as const,
@@ -268,7 +268,7 @@ export const proComparisonRows = [
   {
     feature: 'Guía de pago',
     visitor: 'Compra aparte',
-    registered: 'Compra aparte (tras verificar)',
+    registered: 'Compra aparte',
     pro: 'Solo si aparece listada en PRO',
   },
 ] as const;

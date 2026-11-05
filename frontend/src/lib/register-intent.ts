@@ -1,6 +1,10 @@
 import { safeNextPath } from '@/lib/safe-next';
 
-export type RegisterIntent = 'buy_guide' | 'buy_pro' | 'general';
+export type RegisterIntent = 'buy_guide' | 'buy_pro' | 'see_dates' | 'see_promotions' | 'general';
+
+function isProPath(path: string): boolean {
+  return /^\/pro(?:[/?#]|$)/.test(path);
+}
 
 export function resolveRegisterIntent(nextRaw: string | null | undefined): {
   intent: RegisterIntent;
@@ -16,7 +20,7 @@ export function resolveRegisterIntent(nextRaw: string | null | undefined): {
     nextPath.includes('#pagar') ||
     (nextPath.startsWith('/cursos/') && (nextPath.includes('pagar') || nextPath.includes('checkout')))
   ) {
-    const isPro = nextPath.startsWith('/pro') || nextPath.includes('product=pro');
+    const isPro = isProPath(nextPath) || nextPath.includes('product=pro');
     if (isPro) {
       return {
         intent: 'buy_pro',
@@ -35,7 +39,7 @@ export function resolveRegisterIntent(nextRaw: string | null | undefined): {
     };
   }
 
-  if (nextPath.startsWith('/pro')) {
+  if (isProPath(nextPath)) {
     return {
       intent: 'buy_pro',
       nextPath,
@@ -55,12 +59,34 @@ export function resolveRegisterIntent(nextRaw: string | null | undefined): {
     };
   }
 
+  if (nextPath.startsWith('/alerts')) {
+    return {
+      intent: 'see_dates',
+      nextPath,
+      title: 'Regístrate gratis para ver las fechas de lanzamiento',
+      description:
+        'Te enseñamos cuándo esperamos que salga cada promoción. Gratis, sin tarjeta y en menos de un minuto.',
+      submitLabel: 'Registrarme y ver las fechas',
+    };
+  }
+
+  if (nextPath.startsWith('/promotions')) {
+    return {
+      intent: 'see_promotions',
+      nextPath,
+      title: 'Regístrate gratis para ver todas las promociones',
+      description:
+        'Accede a todas las promociones que han salido con su PDF oficial y a las fechas de los próximos lanzamientos.',
+      submitLabel: 'Registrarme y verlas todas',
+    };
+  }
+
   return {
     intent: 'general',
     nextPath: nextPath && !nextPath.startsWith('/mi-espacio') ? nextPath : '/account',
-    title: 'Crea tu cuenta en 1 minuto',
+    title: 'Regístrate gratis en 1 minuto',
     description:
-      'La cuenta es gratis. Con ella gestionas avisos y, tras comprar, abres la guía o activas PRO en tu perfil.',
-    submitLabel: 'Crear cuenta gratis',
+      'Ve todas las promociones que han salido, su PDF oficial y las fechas aproximadas de los próximos lanzamientos. Sin tarjeta.',
+    submitLabel: 'Registrarme gratis',
   };
 }

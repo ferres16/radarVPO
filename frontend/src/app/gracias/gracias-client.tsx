@@ -234,12 +234,11 @@ export function GraciasClient() {
               aria-labelledby="verify-reminder-title"
             >
               <h2 id="verify-reminder-title" className="font-black">
-                Compra guardada · pendiente de verificar email
+                Pago recibido · solo falta confirmar tu email
               </h2>
               <p className="mt-2 leading-6">
-                El pago está confirmado y vinculado a tu cuenta. Hasta verificar el email no se activa el
-                acceso a la guía, PRO, SMS, alertas ni WhatsApp. Te enviamos el enlace a{' '}
-                <strong>{result.email || 'tu correo'}</strong>.
+                Tu pago está guardado en tu cuenta. Abre el enlace que te enviamos a{' '}
+                <strong>{result.email || 'tu correo'}</strong> y todo se activa al momento.
               </p>
               <label className="mt-4 block text-xs font-semibold uppercase tracking-wide">
                 ¿Email incorrecto?
@@ -265,7 +264,7 @@ export function GraciasClient() {
                   disabled={resending}
                   onClick={() => void resendVerification()}
                 >
-                  {resending ? 'Enviando…' : 'Reenviar verificación'}
+                  {resending ? 'Enviando…' : 'Reenviar email'}
                 </button>
               </div>
               {resendMsg ? (
@@ -318,11 +317,11 @@ export function GraciasClient() {
               aria-labelledby="verify-reminder-title-soft"
             >
               <h2 id="verify-reminder-title-soft" className="font-black">
-                Verifica tu email
+                Confirma tu email
               </h2>
               <p className="mt-2 leading-6">
-                Hasta verificar no se activan los accesos comprados ni los avisos PRO. Te enviamos un enlace a{' '}
-                <strong>{result.email || 'tu correo'}</strong>.
+                Abre el enlace que te enviamos a <strong>{result.email || 'tu correo'}</strong> para activar tu
+                compra y los avisos.
               </p>
               <button
                 type="button"

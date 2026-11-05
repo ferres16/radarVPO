@@ -7,6 +7,7 @@ import { FeaturedCourseSpotlight } from '@/components/conversion/featured-course
 import { HomeFaq } from '@/components/conversion/home-faq';
 import { HomeFinalCtaBand, HomeHeroActions } from '@/components/conversion/home-pro-ctas';
 import { HomeOfferStrip } from '@/components/conversion/home-offer-strip';
+import { RegisterButton, RegisterPromo } from '@/components/conversion/register-promo';
 import { PromotionCard } from '@/components/promotion-card';
 import { TrackedButtonLink } from '@/components/tracked-link';
 import { StructuredData } from '@/components/structured-data';
@@ -78,7 +79,7 @@ export default async function Home() {
                 <p className="lp-hero__subtitle">
                   {featuredOwned
                     ? 'Ya tienes la guía en tu cuenta. Consultar promociones y documentos oficiales sigue siendo gratis.'
-                    : 'Consulta promociones y documentos oficiales gratis. Aprende a preparar el proceso con nuestra guía y recibe avisos con Radar PRO.'}
+                    : 'Regístrate gratis para ver todas las promociones que han salido y las fechas aproximadas de los próximos lanzamientos. Con Radar VPO PRO te avisamos en cuanto se publica una.'}
                 </p>
                 <HomeHeroActions guideHref={featuredHref} guideCta={featuredCta} />
               </div>
@@ -107,7 +108,7 @@ export default async function Home() {
             <div className="lp-section__head">
               <p className="lp-eyebrow">Qué puedes hacer</p>
               <h2 id="offer-title" className="lp-title">
-                Visitante, cuenta, guía o PRO: elige según lo que necesites
+                Empieza gratis y da el siguiente paso cuando lo necesites
               </h2>
             </div>
             <HomeOfferStrip
@@ -139,8 +140,8 @@ export default async function Home() {
                   Promociones publicadas, con su documento oficial
                 </h2>
                 <p className="lp-lead">
-                  Sin cuenta ves un adelanto. Con email verificado abres todas las bases oficiales. El documento
-                  oficial es la referencia.
+                  Las últimas convocatorias con su PDF oficial. Regístrate gratis para ver todas las que han
+                  salido y no perderte ninguna.
                 </p>
               </div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -148,11 +149,15 @@ export default async function Home() {
                   <PromotionCard key={promotion.id} promotion={promotion} layout="grid" animated={false} />
                 ))}
               </div>
-              <div className="mt-6">
-                <ButtonLink href="/promotions" className="w-full sm:w-auto">
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <RegisterButton next="/promotions" source="home_promos" size="md">
+                  Regístrate gratis y ver todas
+                </RegisterButton>
+                <ButtonLink href="/promotions" variant="secondary" className="w-full sm:w-auto">
                   Ver promociones
                 </ButtonLink>
               </div>
+              <RegisterPromo reason="dates" next="/alerts" className="mt-8" />
             </div>
           </section>
         ) : null}

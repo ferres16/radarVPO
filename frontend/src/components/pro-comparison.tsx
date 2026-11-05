@@ -8,6 +8,8 @@ import {
 } from '@/lib/pro';
 import { ButtonLink } from '@/components/design-system';
 import { ProGate } from '@/components/pro/pro-cta';
+import { RegisterButton } from '@/components/conversion/register-promo';
+import { ACCESS_TIER_LABELS } from '@/lib/access-tier';
 
 function ComparisonCell({
   value,
@@ -40,7 +42,7 @@ function cellLabel(value: ProComparisonCell) {
 }
 
 export function ProComparison({
-  title = 'Visitante, cuenta verificada y PRO',
+  title = 'Sin registro, registrado gratis o PRO',
   description = freeVsProDescription,
   compact = false,
   showHeader = true,
@@ -64,10 +66,11 @@ export function ProComparison({
             {title}
           </h2>
           {!compact && description ? <p className="lp-lead">{description}</p> : null}
-          <p className="mt-2 text-xs leading-5 text-[var(--ink-soft)]">
-            Registrar una cuenta no activa contenidos hasta verificar el email. Las compras quedan
-            vinculadas y se desbloquean al verificar.
-          </p>
+          <div className="mt-4">
+            <RegisterButton next="/promotions" source="comparison" size="md">
+              Regístrate gratis
+            </RegisterButton>
+          </div>
         </div>
       ) : null}
 
@@ -77,11 +80,11 @@ export function ProComparison({
             <p className="compare-mobile__feature">{row.feature}</p>
             <div className="compare-mobile__row compare-mobile__row--3">
               <div className="compare-mobile__plan">
-                <p className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">Visitante</p>
+                <p className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">Sin registro</p>
                 <p className="mt-1">{cellLabel(row.visitor)}</p>
               </div>
               <div className="compare-mobile__plan">
-                <p className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">Verificada</p>
+                <p className="text-[10px] uppercase tracking-wide text-[var(--ink-soft)]">Gratis</p>
                 <p className="mt-1">{cellLabel(row.registered)}</p>
               </div>
               <div className="compare-mobile__plan compare-mobile__plan--pro">
@@ -98,8 +101,8 @@ export function ProComparison({
           <thead>
             <tr>
               <th scope="col">Función</th>
-              <th scope="col">Visitante</th>
-              <th scope="col">Cuenta verificada</th>
+              <th scope="col">{ACCESS_TIER_LABELS.visitor}</th>
+              <th scope="col">{ACCESS_TIER_LABELS.registered}</th>
               <th scope="col" className="compare-table__pro-col">
                 {proPlan.name}
               </th>
@@ -131,7 +134,7 @@ export function ProComparison({
               {`${proPlan.ctaLabel} · ${proPlan.price}`}
             </ButtonLink>
             <p className="compare-block__note">
-              Cancela cuando quieras desde Mi cuenta · Requiere email verificado
+              Cancela cuando quieras desde Mi cuenta
             </p>
           </div>
         </ProGate>

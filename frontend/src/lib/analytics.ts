@@ -16,6 +16,7 @@ export type AnalyticsEventName =
   | 'pdf_fullscreen_toggled'
   | 'promotion_pdf_cta_clicked'
   | 'promotion_list_cta_clicked'
+  | 'register_cta_clicked'
   | 'pro_cta_clicked'
   | 'pro_whatsapp_opened'
   | 'pro_page_viewed'

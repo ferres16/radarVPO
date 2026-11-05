@@ -46,10 +46,10 @@ export function EmailVerificationBanner({ profile, onProfileUpdate }: Props) {
 
   return (
     <section className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-950">
-      <h2 className="font-black">Verifica tu email para activar accesos</h2>
+      <h2 className="font-black">Confirma tu email y lo tienes todo</h2>
       <p className="mt-2 leading-6">
-        Hasta verificar mantienes permisos de visitante. Las compras quedan guardadas y se activan al
-        confirmar el correo. Te enviamos el enlace a <strong>{profile.email}</strong>.
+        Abre el enlace que te enviamos a <strong>{profile.email}</strong> para ver todas las promociones y las
+        fechas de lanzamiento. Si has comprado algo, se activa en ese mismo momento.
       </p>
       <label className="mt-3 block text-xs font-semibold uppercase tracking-wide">
         Corregir email

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useProAccess } from '@/components/pro-access-provider';
 
 const tabLinks = [
   { href: '/', label: 'Inicio', icon: 'home' as const },
@@ -30,6 +31,13 @@ function Icon({ name }: { name: 'home' | 'alerts' | 'promotions' | 'courses' | '
 
 export function MobileNav() {
   const pathname = usePathname();
+  const { me, loading } = useProAccess();
+  const links =
+    !loading && !me
+      ? tabLinks.map((link) =>
+          link.icon === 'account' ? { ...link, href: '/register', label: 'Regístrate' } : link,
+        )
+      : tabLinks;
 
   if (pathname.startsWith('/admin')) {
     return null;
@@ -44,7 +52,7 @@ export function MobileNav() {
   return (
     <nav className="mobile-tab-bar md:hidden" aria-label="Navegación principal móvil">
       <div className="mobile-tab-bar__inner">
-        {tabLinks.map((link) => {
+        {links.map((link) => {
           const active = isActive(link.href);
           return (
             <Link

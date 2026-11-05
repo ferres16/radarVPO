@@ -4,6 +4,7 @@ import { copy } from '@/lib/navigation';
 import { InlineAdCard } from '@/components/ads';
 import { AlertsProCtaBand } from '@/components/conversion/alerts-pro-cta-band';
 import { PromotionsExplorer } from '@/components/conversion/promotions-explorer';
+import { RegisterButton, RegisterPromo } from '@/components/conversion/register-promo';
 import { ProofStats } from '@/components/conversion/proof-stats';
 import { PublicPage, PublicPageHero, PublicSection } from '@/components/conversion/public-shell';
 import { ButtonLink, SectionHeader } from '@/components/design-system';
@@ -17,7 +18,7 @@ export const revalidate = 30;
 export const metadata: Metadata = createMetadata({
   title: 'Promociones publicadas de vivienda protegida en Cataluña',
   description:
-    'Consulta promociones de vivienda protegida publicadas en Cataluña. Sin cuenta ves un adelanto; con email verificado abres todas las bases oficiales.',
+    'Consulta las promociones de vivienda protegida publicadas en Cataluña con su documento oficial. Regístrate gratis para ver todas las convocatorias.',
   path: '/promotions',
   keywords: ['promociones publicadas VPO', 'vivienda pública cataluña', 'pisos protegidos cataluña'],
 });
@@ -29,6 +30,7 @@ export default async function PromotionsPage() {
   ]);
   const listed = publicPublishedPromotions(promotions);
   const visiblePromotions = listed;
+  const hasLockedContent = listed.some((promotion) => promotion.detailLocked);
   const proofItems = buildProofItems(stats, {
     published: listed.length,
     municipalities: uniqueMunicipalities(listed).length,
@@ -48,7 +50,17 @@ export default async function PromotionsPage() {
         badge={copy.publishedPromotions}
         title="Promociones publicadas"
         titleAccent="con su documento oficial"
-        description="Sin cuenta ves hasta 10 en listado y el detalle completo de las 2 últimas. Crea una cuenta gratuita y verifica el email para abrir el resto."
+        description="Todas las convocatorias de vivienda protegida publicadas en Cataluña, con su PDF oficial. Regístrate gratis para ver todas las que han salido, no solo las últimas."
+        actions={
+          <div className="lp-hero__actions lp-hero__actions--stack">
+            <RegisterButton next="/promotions" source="promotions_hero" block>
+              Regístrate gratis y ver todas
+            </RegisterButton>
+            <ButtonLink href="/pro" size="lg" variant="secondary" block>
+              Avisos al momento con PRO
+            </ButtonLink>
+          </div>
+        }
         footer={<ProofStats items={proofItems} />}
       />
 
@@ -74,23 +86,16 @@ export default async function PromotionsPage() {
           <SectionHeader
             title="Últimas promociones"
             description={`${visiblePromotions.length} ${
-              visiblePromotions.length === 1 ? 'promoción visible' : 'promociones visibles'
-            } en este listado. Sin cuenta verificada el servidor limita el listado y el detalle completo.`}
+              visiblePromotions.length === 1 ? 'promoción' : 'promociones'
+            } con su documento oficial.`}
           />
+          {hasLockedContent ? (
+            <RegisterPromo reason="promotions" next="/promotions" compact className="mb-6" />
+          ) : null}
           <PromotionsExplorer promotions={visiblePromotions} />
-          <div className="mt-6 rounded-2xl border border-[var(--stroke)] bg-white p-4 text-sm leading-6 text-[var(--ink-soft)]">
-            <p className="font-semibold text-[var(--ink)]">¿Quieres ver todas las publicaciones?</p>
-            <p className="mt-1">
-              Crea una cuenta gratuita y verifica tu email. Así desbloqueas el listado completo y los PDF
-              de todas las promociones publicadas.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <ButtonLink href="/register?next=%2Fpromotions">Crear cuenta gratuita</ButtonLink>
-              <ButtonLink href="/alerts" variant="secondary">
-                Ver próximos lanzamientos
-              </ButtonLink>
-            </div>
-          </div>
+          {hasLockedContent ? (
+            <RegisterPromo reason="promotions" next="/promotions" className="mt-8" />
+          ) : null}
           <InlineAdCard className="mt-6" />
         </PublicSection>
       )}
@@ -98,7 +103,7 @@ export default async function PromotionsPage() {
       <PublicSection animated={false} muted border>
         <AlertsProCtaBand
           title="Recibe un aviso cuando se publique la siguiente"
-          description="Con cuenta verificada abres todas las publicaciones. Con Radar VPO PRO (email verificado) recibes avisos por email y SMS."
+          description="Con tu cuenta gratuita consultas todas las promociones. Con Radar VPO PRO te avisamos por email y SMS en cuanto sale una nueva, para que no se te pase ningún plazo."
           ctaLabel="Ver Radar VPO PRO"
         />
       </PublicSection>

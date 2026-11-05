@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { TrackedButtonLink } from '@/components/tracked-link';
+import { useProAccess } from '@/components/pro-access-provider';
 import { ProGate } from '@/components/pro/pro-cta';
 import { proHomePitch, proPlan } from '@/lib/pro';
 
@@ -11,6 +13,41 @@ export function HomeHeroActions({
   guideHref?: string;
   guideCta?: string;
 }) {
+  const { me, loading } = useProAccess();
+  const anonymous = !loading && !me;
+
+  if (anonymous) {
+    return (
+      <div className="lp-hero__actions lp-hero__actions--stack">
+        <TrackedButtonLink
+          href="/register"
+          size="lg"
+          block
+          event="register_cta_clicked"
+          eventProperties={{ source: 'home_hero' }}
+        >
+          Regístrate gratis
+        </TrackedButtonLink>
+        <TrackedButtonLink
+          href="/promotions"
+          variant="secondary"
+          size="lg"
+          block
+          event="promotion_list_cta_clicked"
+          eventProperties={{ source: 'home_hero' }}
+        >
+          Ver las últimas promociones
+        </TrackedButtonLink>
+        <p className="text-sm text-[var(--ink-soft)]">
+          ¿Quieres enterarte el primero?{' '}
+          <Link href={proPlan.landingHref} className="font-semibold text-[var(--green-700)] underline">
+            Descubre {proPlan.name}
+          </Link>
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="lp-hero__actions lp-hero__actions--stack">
       <TrackedButtonLink
@@ -20,7 +57,7 @@ export function HomeHeroActions({
         event="promotion_list_cta_clicked"
         eventProperties={{ source: 'home_hero' }}
       >
-        Ver promociones gratis
+        Ver promociones
       </TrackedButtonLink>
       <TrackedButtonLink
         href={guideHref}

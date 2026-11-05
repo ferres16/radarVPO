@@ -28,20 +28,22 @@ export default function ConditionsPage() {
       <LegalSection title="2. Qué ofrece Radar VPO">
         <ul className="list-disc space-y-1 pl-5">
           <li>
-            <strong className="text-[var(--ink)]">Visitante:</strong> listado limitado de promociones, detalle
-            completo de las dos últimas publicadas y próximos lanzamientos sin fechas aproximadas.
+            <strong className="text-[var(--ink)]">Sin registro:</strong> las promociones más recientes, el documento
+            oficial de las dos últimas publicadas y los próximos lanzamientos sin fechas aproximadas.
           </li>
           <li>
-            <strong className="text-[var(--ink)]">Cuenta verificada:</strong> tras verificar el email, acceso a
-            todas las publicaciones, documentos oficiales y fechas estimadas de lanzamientos cuando existan.
+            <strong className="text-[var(--ink)]">Usuario registrado (gratis):</strong> una vez confirmado el email,
+            acceso a todas las promociones publicadas, sus documentos oficiales y las fechas estimadas de los
+            próximos lanzamientos cuando existan.
           </li>
           <li>
             <strong className="text-[var(--ink)]">Cursos / guía:</strong> contenido formativo digital de pago único.
-            La compra queda vinculada a la cuenta y solo se desbloquea con el email verificado.
+            La compra queda vinculada a la cuenta y se activa cuando el email está confirmado.
           </li>
           <li>
             <strong className="text-[var(--ink)]">{proPlan.name}:</strong> suscripción mensual con avisos por email y
-            SMS de nuevas promociones y WhatsApp para consultas, solo con email verificado y suscripción activa.
+            SMS de nuevas promociones y WhatsApp para consultas mientras la suscripción esté activa y el email
+            confirmado.
             Solo incluye una guía o curso si su ficha publicada lo indica.
           </li>
         </ul>

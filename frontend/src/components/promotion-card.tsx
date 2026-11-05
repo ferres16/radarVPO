@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Promotion } from '@/types';
 import { canViewPromotionDocument, hasKnownPdf } from '@/lib/promotion-access';
 import { MotionCard } from './motion-primitives';
+import { PromotionLockedAction } from './promotion-locked-action';
 import { TrackedLink } from './tracked-link';
 
 function displayDate(promotion: Promotion) {
@@ -67,6 +68,10 @@ function PromotionAction({
     variant === 'rail'
       ? 'btn btn--primary min-h-11 w-full py-2.5 text-sm font-semibold'
       : 'inline-flex min-h-11 w-full items-center justify-center rounded-full bg-[var(--green-700)] px-4 py-2.5 text-sm font-semibold text-white outline-none transition duration-200 hover:bg-[var(--green-900)] focus-visible:ring-2 focus-visible:ring-[var(--green-700)] md:w-fit';
+
+  if (promotion.detailLocked) {
+    return <PromotionLockedAction promotionId={promotion.id} className={className} />;
+  }
 
   if (hasKnownPdf(promotion)) {
     return (

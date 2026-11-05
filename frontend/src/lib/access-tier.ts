@@ -9,8 +9,8 @@ export const VISITOR_PROMOTION_LIST_LIMIT = 10;
 export const VISITOR_PROMOTION_DETAIL_LIMIT = 2;
 
 export const ACCESS_TIER_LABELS: Record<AccessTier, string> = {
-  visitor: 'Visitante',
-  registered: 'Cuenta verificada',
+  visitor: 'Sin registro',
+  registered: 'Registrado gratis',
   pro: 'Radar VPO PRO',
 };
 

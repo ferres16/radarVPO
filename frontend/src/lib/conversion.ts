@@ -4,42 +4,42 @@ import { COURSE_ACCESS_MIN_MONTHS, proPriceLabel } from '@/lib/offer';
 export const homeOfferLayers = [
   {
     id: 'consult',
-    eyebrow: 'Visitante / cuenta',
-    title: 'Consulta las promociones',
+    eyebrow: 'Cuenta gratuita',
+    title: 'Todas las promociones y fechas',
     price: '0 €',
     description:
-      'Sin cuenta ves un adelanto. Con email verificado abres todas las publicaciones y las fechas estimadas de lanzamientos.',
-    cta: 'Ver promociones',
-    href: '/promotions',
-    event: 'promotion_list_cta_clicked' as const,
+      'Regístrate gratis para ver todas las promociones que han salido, su PDF oficial y las fechas aproximadas de los próximos lanzamientos.',
+    cta: 'Regístrate gratis',
+    href: '/register',
+    event: 'register_cta_clicked' as const,
   },
   {
     id: 'learn',
     eyebrow: 'Guía · pago único',
     title: 'Entiende el proceso y qué preparar',
     price: 'Precio en la ficha',
-    description: `Lectura en pantalla, acceso mínimo ${COURSE_ACCESS_MIN_MONTHS} meses. Se desbloquea tras verificar el email.`,
+    description: `Lectura en pantalla con acceso mínimo de ${COURSE_ACCESS_MIN_MONTHS} meses. Registro, documentación y pasos hasta la firma, en orden.`,
     cta: 'Comprar la guía',
     href: '/cursos/guiav1#pagar',
     event: 'course_cta_clicked' as const,
   },
   {
     id: 'pro',
-    eyebrow: 'Suscripción',
-    title: 'Alertas y WhatsApp',
+    eyebrow: 'Radar VPO PRO',
+    title: 'Que no se te escape ninguna',
     price: proPriceLabel,
     description:
-      'Email y SMS cuando se publica una promoción, y WhatsApp para consultas. Requiere email verificado. Renovación mensual; cancelas cuando quieras.',
-    cta: 'Ver Radar PRO',
+      'Aviso por email y SMS en cuanto se publica una promoción, y WhatsApp para resolver dudas. Renovación mensual; cancelas cuando quieras.',
+    cta: 'Ver Radar VPO PRO',
     href: '/pro',
     event: 'pro_cta_clicked' as const,
   },
 ] as const;
 
 export const homeHeroProof = [
-  'Sin cuenta ves un adelanto; con email verificado abres todas las publicaciones.',
-  'La guía es lectura en pantalla, pago único; se activa tras verificar el email.',
-  `PRO (${proPriceLabel}) añade avisos por SMS y WhatsApp (email verificado).`,
+  'Regístrate gratis y ve todas las promociones que han salido.',
+  'Fechas aproximadas de los próximos lanzamientos con tu cuenta gratuita.',
+  `Con PRO (${proPriceLabel}) te avisamos por SMS y email en cuanto sale una.`,
 ] as const;
 
 export const homeFaqs = [
@@ -51,11 +51,11 @@ export const homeFaqs = [
   {
     question: '¿Puedo ver promociones sin pagar?',
     answer:
-      'Sí. Sin cuenta ves un listado limitado y el detalle de las dos últimas publicadas. Con cuenta gratuita y email verificado abres todas las publicaciones. PRO añade avisos y WhatsApp.',
+      'Sí. Sin registrarte ves las últimas promociones. Si te registras gratis ves todas las que han salido, con su PDF oficial, y las fechas aproximadas de los próximos lanzamientos. Solo tienes que confirmar tu email con un clic.',
   },
   {
     question: '¿Qué es Radar VPO PRO?',
-    answer: `Una suscripción de ${proPriceLabel} que añade avisos por email y SMS de nuevas promociones y WhatsApp para consultas. Requiere email verificado. Se renueva cada mes hasta que la canceles; mantienes el acceso hasta el final del periodo ya pagado. Una guía concreta solo se incluye si aparece listada en la página PRO.`,
+    answer: `Una suscripción de ${proPriceLabel} que te avisa por email y SMS en cuanto se publica una promoción nueva y te da WhatsApp para consultas. Se renueva cada mes hasta que la canceles; mantienes el acceso hasta el final del periodo ya pagado. Una guía concreta solo se incluye si aparece listada en la página PRO.`,
   },
   {
     question: 'Hay avisos por correo gratis en otros sitios. ¿Por qué PRO?',
