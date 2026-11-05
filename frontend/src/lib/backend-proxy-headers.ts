@@ -44,3 +44,11 @@ export function buildBackendProxyHeaders(request: NextRequest) {
 
   return headers;
 }
+
+/** Cabeceras JSON para los proxies de /api/auth que reenvían la sesión al backend. */
+export function jsonProxyHeaders(request: NextRequest) {
+  const headers = buildBackendProxyHeaders(request);
+  headers.set('content-type', 'application/json');
+  headers.set('accept', 'application/json');
+  return headers;
+}

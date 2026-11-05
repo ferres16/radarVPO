@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { jsonProxyHeaders } from '@/lib/backend-proxy-headers';
 import { getBackendApiUrl } from '@/lib/backend-url';
 
 export async function POST(request: NextRequest) {
-  const cookie = request.headers.get('cookie') || '';
   const body = await request.text();
   const upstream = await fetch(
     `${getBackendApiUrl()}/auth/update-unverified-email`,
     {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        Cookie: cookie,
-      },
+      headers: jsonProxyHeaders(request),
       body,
       cache: 'no-store',
     },

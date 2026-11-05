@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { jsonProxyHeaders } from '@/lib/backend-proxy-headers';
 import { getBackendApiUrl } from '@/lib/backend-url';
 
 export async function POST(request: NextRequest) {
-  const cookie = request.headers.get('cookie') || '';
   const upstream = await fetch(`${getBackendApiUrl()}/auth/resend-verification`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-      Cookie: cookie,
-    },
+    headers: jsonProxyHeaders(request),
     cache: 'no-store',
   });
 
