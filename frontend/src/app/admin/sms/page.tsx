@@ -11,6 +11,8 @@ import type { DeliveryLog, SmsOpsSnapshot, UpcomingDelivery, UserProfile } from 
 type ChannelFilter = 'all' | 'sms' | 'email';
 type StatusFilter = 'all' | 'sent' | 'failed';
 
+const HISTORY_PAGE_SIZE = 50;
+
 function formatWhen(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -148,16 +150,18 @@ export default function AdminSmsPage() {
   const [status, setStatus] = useState<StatusFilter>('all');
   const [query, setQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [page, setPage] = useState(1);
 
   const load = useCallback(async () => {
     const snapshot = await api.getBackofficeSmsOps({
       channel,
       status,
       q: query,
-      limit: 150,
+      limit: HISTORY_PAGE_SIZE,
+      offset: (page - 1) * HISTORY_PAGE_SIZE,
     });
     setData(snapshot);
-  }, [channel, status, query]);
+  }, [channel, status, query, page]);
 
   useEffect(() => {
     let active = true;
@@ -228,6 +232,11 @@ export default function AdminSmsPage() {
       </main>
     );
   }
+
+  const totalLogs = data?.totalLogs ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalLogs / HISTORY_PAGE_SIZE));
+  const rangeFrom = totalLogs === 0 ? 0 : (page - 1) * HISTORY_PAGE_SIZE + 1;
+  const rangeTo = Math.min(page * HISTORY_PAGE_SIZE, totalLogs);
 
   return (
     <main className="shell pb-16">
@@ -416,7 +425,10 @@ export default function AdminSmsPage() {
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setChannel(value)}
+                  onClick={() => {
+                    setChannel(value);
+                    setPage(1);
+                  }}
                   className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.14em] ${
                     channel === value
                       ? 'bg-[var(--green-700)] text-white'
@@ -438,7 +450,10 @@ export default function AdminSmsPage() {
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setStatus(value)}
+                  onClick={() => {
+                    setStatus(value);
+                    setPage(1);
+                  }}
                   className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.14em] ${
                     status === value
                       ? 'bg-[var(--green-700)] text-white'
@@ -454,6 +469,7 @@ export default function AdminSmsPage() {
               onSubmit={(event) => {
                 event.preventDefault();
                 setQuery(searchInput.trim());
+                setPage(1);
               }}
             >
               <input
@@ -467,7 +483,9 @@ export default function AdminSmsPage() {
               </button>
             </form>
             <p className="text-xs text-[var(--ink-soft)]">
-              Mostrando {data?.logs.length ?? 0} de {data?.totalLogs ?? 0} registros.
+              {totalLogs === 0
+                ? 'Sin registros con estos filtros.'
+                : `Mostrando ${rangeFrom}–${rangeTo} de ${totalLogs} registros · página ${page} de ${totalPages}.`}
             </p>
           </SurfaceCard>
 
@@ -480,6 +498,31 @@ export default function AdminSmsPage() {
               logs={data?.logs ?? []}
               empty="No hay envíos con estos filtros. Cuando se mande un email o SMS aparecerá aquí."
             />
+            {totalPages > 1 ? (
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--stroke)] pt-3">
+                <p className="text-xs text-[var(--ink-soft)]">
+                  Página {page} de {totalPages}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={page <= 1 || Boolean(busy)}
+                    onClick={() => setPage((current) => Math.max(1, current - 1))}
+                    className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-bold text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    ← Anterior
+                  </button>
+                  <button
+                    type="button"
+                    disabled={page >= totalPages || Boolean(busy)}
+                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
+                    className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Siguiente →
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </SurfaceCard>
 
           <SurfaceCard className="space-y-3 p-4 md:p-5">
