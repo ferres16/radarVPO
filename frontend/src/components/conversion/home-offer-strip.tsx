@@ -2,7 +2,6 @@
 
 import { TrackedButtonLink } from '@/components/tracked-link';
 import { RegisterButton } from '@/components/conversion/register-promo';
-import { useLocale } from '@/components/i18n/locale-provider';
 import { homeOfferLayers } from '@/lib/conversion';
 import { proPlan } from '@/lib/pro';
 
@@ -13,8 +12,7 @@ type GuideOffer = {
 };
 
 export function HomeOfferStrip({ guide }: { guide?: GuideOffer }) {
-  const { t, format } = useLocale();
-  const proCta = format(t.pro.makeProWithPrice, { price: proPlan.priceShort });
+  const proCta = `Hazte PRO · ${proPlan.priceShort}`;
 
   return (
     <div className="lp-offer-grid">
@@ -27,13 +25,7 @@ export function HomeOfferStrip({ guide }: { guide?: GuideOffer }) {
               : layer.href;
         const price = layer.id === 'learn' && guide ? guide.price : layer.price;
         const cta =
-          layer.id === 'learn' && guide
-            ? guide.cta
-            : layer.id === 'pro'
-              ? proCta
-              : layer.id === 'consult'
-                ? t.home.offerConsultCta
-                : layer.cta;
+          layer.id === 'learn' && guide ? guide.cta : layer.id === 'pro' ? proCta : layer.cta;
         const emphasizePro = layer.id === 'pro';
         const primary = emphasizePro || layer.id === 'learn';
         return (
@@ -62,7 +54,7 @@ export function HomeOfferStrip({ guide }: { guide?: GuideOffer }) {
                       variant="secondary"
                       block
                     >
-                      {t.home.seePromosFallback}
+                      Ver promociones
                     </TrackedButtonLink>
                   }
                 >

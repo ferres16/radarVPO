@@ -5,57 +5,18 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
 import { primaryNavLinks } from '@/lib/navigation';
-import { LanguageSwitcher } from '@/components/i18n/language-switcher';
-import { useLocale } from '@/components/i18n/locale-provider';
 import { ProCtaLink } from '@/components/pro/pro-cta';
 import { useProAccess } from '@/components/pro-access-provider';
 import { proPlan } from '@/lib/pro';
+
+const primaryLinks = primaryNavLinks;
 
 export function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
   const { me, hasPro, setMe } = useProAccess();
-  const { t, format } = useLocale();
   const pathname = usePathname();
-
-  const navItems = useMemo(
-    () =>
-      primaryNavLinks.map((link) => {
-        if (link.href === '/') {
-          return { ...link, label: t.nav.home, navLabel: t.nav.home, mobileLabel: t.nav.home };
-        }
-        if (link.href === '/promotions') {
-          return {
-            ...link,
-            label: t.nav.published,
-            navLabel: t.nav.publishedShort,
-            mobileLabel: t.nav.published,
-          };
-        }
-        if (link.href === '/alerts') {
-          return {
-            ...link,
-            label: t.nav.launches,
-            navLabel: t.nav.launchesShort,
-            mobileLabel: t.nav.launches,
-          };
-        }
-        if (link.href.startsWith('/cursos/')) {
-          return { ...link, label: t.nav.guide, navLabel: t.nav.guide, mobileLabel: t.nav.guide };
-        }
-        if (link.href === '/pro') {
-          return { ...link, label: t.nav.pro, navLabel: 'PRO', mobileLabel: t.nav.pro };
-        }
-        if (link.href === '/news') {
-          return { ...link, label: t.nav.news, navLabel: t.nav.news, mobileLabel: t.nav.news };
-        }
-        return link;
-      }),
-    [t],
-  );
-
-  const proCtaLabel = format(t.pro.makeProWithPrice, { price: proPlan.priceShort });
 
   useEffect(() => {
     if (!mobileOpen) return;
@@ -131,9 +92,11 @@ export function TopNav() {
         </Link>
 
         <div className="ml-auto flex min-w-0 items-center gap-2 lg:hidden">
-          <LanguageSwitcher compact />
           {!hasPro ? (
-            <ProCtaLink label={proCtaLabel} className="pro-nav-cta shrink-0 px-3 text-xs sm:text-sm" />
+            <ProCtaLink
+              label={`Hazte PRO · ${proPlan.priceShort}`}
+              className="pro-nav-cta shrink-0 px-3 text-xs sm:text-sm"
+            />
           ) : null}
         <button
           type="button"
@@ -141,9 +104,9 @@ export function TopNav() {
           onClick={() => setMobileOpen((value) => !value)}
           aria-expanded={mobileOpen}
           aria-controls="mobile-navigation"
-          aria-label={mobileOpen ? t.nav.closeMenu : t.nav.openMenu}
+          aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
         >
-          <span className="sr-only">{mobileOpen ? t.nav.closeMenu : t.nav.openMenu}</span>
+          <span className="sr-only">{mobileOpen ? 'Cerrar menú' : 'Abrir menú'}</span>
           <span className="flex flex-col gap-1.5">
             <span className={`block h-0.5 w-5 rounded-full bg-current transition ${mobileOpen ? 'translate-y-2 rotate-45' : ''}`} />
             <span className={`block h-0.5 w-5 rounded-full bg-current transition ${mobileOpen ? 'opacity-0' : ''}`} />
@@ -157,7 +120,7 @@ export function TopNav() {
             className="flex min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             aria-label="Navegación principal"
           >
-            {navItems.map((link) => {
+            {primaryLinks.map((link) => {
               const active = isActive(link.href);
               const navLabel = link.navLabel ?? link.label;
               return (
@@ -183,9 +146,11 @@ export function TopNav() {
           </nav>
 
           <nav className="flex shrink-0 items-center gap-2" aria-label="Acceso de usuario">
-            <LanguageSwitcher />
             {!hasPro ? (
-              <ProCtaLink label={proCtaLabel} className="pro-nav-cta whitespace-nowrap xl:px-5 xl:text-sm" />
+              <ProCtaLink
+                label={`Hazte PRO · ${proPlan.priceShort}`}
+                className="pro-nav-cta whitespace-nowrap xl:px-5 xl:text-sm"
+              />
             ) : null}
             {me ? (
               <div className="relative">
@@ -195,12 +160,12 @@ export function TopNav() {
                   onClick={() => setMenuOpen((value) => !value)}
                   aria-expanded={menuOpen}
                   aria-haspopup="menu"
-                  aria-label={`${t.nav.userMenu}: ${me.fullName || me.email || ''}`}
+                  aria-label={`Menú de ${me.fullName || 'usuario'}`}
                 >
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--bg-eco)] text-xs font-bold text-[var(--green-700)] ring-1 ring-white">
                     {initials}
                   </span>
-                  <span className="hidden max-w-28 truncate text-sm 2xl:inline">{me.fullName || t.nav.account}</span>
+                  <span className="hidden max-w-28 truncate text-sm 2xl:inline">{me.fullName || 'Perfil'}</span>
                   <span aria-hidden="true" className={`hidden text-xs transition 2xl:inline ${menuOpen ? 'rotate-180' : ''}`}>
                     v
                   </span>
@@ -216,7 +181,7 @@ export function TopNav() {
                       onClick={() => setMenuOpen(false)}
                       role="menuitem"
                     >
-                      {t.nav.account}
+                      Mi cuenta
                     </Link>
                     {me.role === 'admin' ? (
                       <Link
@@ -225,7 +190,7 @@ export function TopNav() {
                         onClick={() => setMenuOpen(false)}
                         role="menuitem"
                       >
-                        {t.nav.admin}
+                        Panel admin
                       </Link>
                     ) : null}
                     <button
@@ -235,7 +200,7 @@ export function TopNav() {
                       onClick={() => void handleLogout()}
                       role="menuitem"
                     >
-                      {loggingOut ? t.nav.loggingOut : t.nav.logout}
+                      {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
                     </button>
                   </div>
                 ) : null}
@@ -246,13 +211,13 @@ export function TopNav() {
                   href="/register"
                   className="whitespace-nowrap rounded-full border border-[var(--green-700)] bg-[var(--bg-eco)] px-3.5 py-2 text-[13px] font-bold text-[var(--green-700)] transition hover:-translate-y-0.5 hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:px-4 xl:text-sm"
                 >
-                  {t.nav.registerFree}
+                  Regístrate gratis
                 </Link>
                 <Link
                   href="/login"
                   className="whitespace-nowrap rounded-full px-2 py-2 text-[13px] font-semibold text-[var(--ink)] transition hover:text-[var(--green-700)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--green-700)] xl:text-sm"
                 >
-                  {t.nav.login}
+                  Entrar
                 </Link>
               </>
             )}
@@ -275,15 +240,12 @@ export function TopNav() {
           aria-label="Navegación móvil"
         >
           <ul className="space-y-2">
-            <li className="px-1 pb-1">
-              <LanguageSwitcher />
-            </li>
             {!hasPro ? (
               <li>
-                <ProCtaLink label={proCtaLabel} className="pro-nav-cta pro-nav-cta--block" />
+                <ProCtaLink label={`Hazte PRO · ${proPlan.priceShort}`} className="pro-nav-cta pro-nav-cta--block" />
               </li>
             ) : null}
-            {navItems.map((link) => (
+            {primaryLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
@@ -305,7 +267,7 @@ export function TopNav() {
                   className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
                   onClick={() => setMobileOpen(false)}
                 >
-                  {t.nav.account}
+                  Mi cuenta
                 </Link>
               </li>
             ) : null}
@@ -316,7 +278,7 @@ export function TopNav() {
                   className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-sm font-semibold text-[var(--ink)]"
                   onClick={() => setMobileOpen(false)}
                 >
-                  {t.nav.admin}
+                  Panel admin
                 </Link>
               </li>
             ) : null}
@@ -331,7 +293,7 @@ export function TopNav() {
                     void handleLogout();
                   }}
                 >
-                  {loggingOut ? t.nav.loggingOut : t.nav.logout}
+                  {loggingOut ? 'Cerrando sesión...' : 'Cerrar sesión'}
                 </button>
               </li>
             ) : (
@@ -342,7 +304,7 @@ export function TopNav() {
                     className="block rounded-2xl border border-[var(--green-700)] bg-[var(--bg-eco)] px-4 py-3 text-center text-sm font-black text-[var(--green-700)]"
                     onClick={() => setMobileOpen(false)}
                   >
-                    {t.nav.registerFree}
+                    Regístrate gratis
                   </Link>
                 </li>
                 <li>
@@ -351,7 +313,7 @@ export function TopNav() {
                     className="block rounded-2xl border border-[var(--stroke)] bg-[var(--bg-app)] px-4 py-3 text-center text-sm font-semibold text-[var(--ink)]"
                     onClick={() => setMobileOpen(false)}
                   >
-                    {t.nav.login}
+                    Iniciar sesión
                   </Link>
                 </li>
               </>
