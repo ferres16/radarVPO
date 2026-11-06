@@ -1,6 +1,10 @@
+'use client';
+
 import { TrackedButtonLink } from '@/components/tracked-link';
 import { RegisterButton } from '@/components/conversion/register-promo';
+import { useLocale } from '@/components/i18n/locale-provider';
 import { homeOfferLayers } from '@/lib/conversion';
+import { proPlan } from '@/lib/pro';
 
 type GuideOffer = {
   href: string;
@@ -9,15 +13,36 @@ type GuideOffer = {
 };
 
 export function HomeOfferStrip({ guide }: { guide?: GuideOffer }) {
+  const { t, format } = useLocale();
+  const proCta = format(t.pro.makeProWithPrice, { price: proPlan.priceShort });
+
   return (
     <div className="lp-offer-grid">
       {homeOfferLayers.map((layer) => {
-        const href = layer.id === 'learn' && guide ? guide.href : layer.href;
+        const href =
+          layer.id === 'learn' && guide
+            ? guide.href
+            : layer.id === 'pro'
+              ? proPlan.checkoutHref
+              : layer.href;
         const price = layer.id === 'learn' && guide ? guide.price : layer.price;
-        const cta = layer.id === 'learn' && guide ? guide.cta : layer.cta;
-        const primary = layer.id === 'learn';
+        const cta =
+          layer.id === 'learn' && guide
+            ? guide.cta
+            : layer.id === 'pro'
+              ? proCta
+              : layer.id === 'consult'
+                ? t.home.offerConsultCta
+                : layer.cta;
+        const emphasizePro = layer.id === 'pro';
+        const primary = emphasizePro || layer.id === 'learn';
         return (
-          <article key={layer.id} className={`lp-offer-card${primary ? ' lp-offer-card--primary' : ''}`}>
+          <article
+            key={layer.id}
+            className={`lp-offer-card${primary ? ' lp-offer-card--primary' : ''}${
+              emphasizePro ? ' lp-offer-card--pro' : ''
+            }`}
+          >
             <p className="lp-offer-card__eyebrow">{layer.eyebrow}</p>
             <p className="lp-offer-card__price">{price}</p>
             <h3 className="lp-offer-card__title">{layer.title}</h3>
@@ -37,22 +62,22 @@ export function HomeOfferStrip({ guide }: { guide?: GuideOffer }) {
                       variant="secondary"
                       block
                     >
-                      Ver promociones
+                      {t.home.seePromosFallback}
                     </TrackedButtonLink>
                   }
                 >
                   {cta}
                 </RegisterButton>
               ) : (
-              <TrackedButtonLink
-                href={href}
-                event={layer.event}
-                eventProperties={{ source: 'home_offer', layer: layer.id }}
-                variant={primary ? 'primary' : 'secondary'}
-                block
-              >
-                {cta}
-              </TrackedButtonLink>
+                <TrackedButtonLink
+                  href={href}
+                  event={layer.event}
+                  eventProperties={{ source: 'home_offer', layer: layer.id }}
+                  variant={emphasizePro || layer.id === 'learn' ? 'primary' : 'secondary'}
+                  block
+                >
+                  {cta}
+                </TrackedButtonLink>
               )}
             </div>
           </article>

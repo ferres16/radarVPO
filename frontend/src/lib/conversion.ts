@@ -30,8 +30,8 @@ export const homeOfferLayers = [
     price: proPriceLabel,
     description:
       'Aviso por email y SMS en cuanto se publica una promoción, y WhatsApp para resolver dudas. Renovación mensual; cancelas cuando quieras.',
-    cta: 'Ver Radar VPO PRO',
-    href: '/pro',
+    cta: 'Hazte PRO',
+    href: '/pro#pagar',
     event: 'pro_cta_clicked' as const,
   },
 ] as const;

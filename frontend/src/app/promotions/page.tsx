@@ -56,8 +56,8 @@ export default async function PromotionsPage() {
             <RegisterButton next="/promotions" source="promotions_hero" block>
               Regístrate gratis y ver todas
             </RegisterButton>
-            <ButtonLink href="/pro" size="lg" variant="secondary" block>
-              Avisos al momento con PRO
+            <ButtonLink href="/pro#pagar" size="lg" block className="font-black">
+              Hazte PRO · avisos al momento
             </ButtonLink>
           </div>
         }
@@ -104,7 +104,6 @@ export default async function PromotionsPage() {
         <AlertsProCtaBand
           title="Recibe un aviso cuando se publique la siguiente"
           description="Con tu cuenta gratuita consultas todas las promociones. Con Radar VPO PRO te avisamos por email y SMS en cuanto sale una nueva, para que no se te pase ningún plazo."
-          ctaLabel="Ver Radar VPO PRO"
         />
       </PublicSection>
     </PublicPage>

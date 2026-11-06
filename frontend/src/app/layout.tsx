@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Inter } from "next/font/google";
 import { Space_Grotesk } from "next/font/google";
 import { PublicAdFrame } from "@/components/ads";
@@ -7,9 +8,11 @@ import { ConsentProvider } from "@/components/consent/consent-provider";
 import { ConsentedScripts } from "@/components/consent/consented-scripts";
 import { CookieBanner } from "@/components/consent/cookie-banner";
 import { VisitTracker } from "@/components/conversion/visit-tracker";
+import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { ProAccessProvider } from "@/components/pro-access-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { TopNav } from "@/components/top-nav";
+import { DEFAULT_LOCALE, LOCALE_COOKIE, htmlLang, parseLocale } from "@/lib/i18n/locales";
 import { siteConfig } from "@/lib/seo";
 import "./globals.css";
 
@@ -66,27 +69,32 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const initialLocale = parseLocale(cookieStore.get(LOCALE_COOKIE)?.value) || DEFAULT_LOCALE;
+
   return (
-    <html lang="es" className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}>
+    <html lang={htmlLang(initialLocale)} className={`${inter.variable} ${spaceGrotesk.variable} h-full antialiased`}>
       <head>
         <AdsenseSiteVerification />
       </head>
       <body className="min-h-full flex flex-col pt-[4.25rem] md:pt-20">
         <ConsentProvider>
-          <ProAccessProvider>
-            <VisitTracker />
-            <TopNav />
-            <div className="flex-1">
-              <PublicAdFrame>{children}</PublicAdFrame>
-            </div>
-            <SiteFooter />
-            <CookieBanner />
-          </ProAccessProvider>
+          <LocaleProvider initialLocale={initialLocale}>
+            <ProAccessProvider>
+              <VisitTracker />
+              <TopNav />
+              <div className="flex-1">
+                <PublicAdFrame>{children}</PublicAdFrame>
+              </div>
+              <SiteFooter />
+              <CookieBanner />
+            </ProAccessProvider>
+          </LocaleProvider>
           <ConsentedScripts vercelAnalytics={process.env.VERCEL === '1'} />
         </ConsentProvider>
       </body>

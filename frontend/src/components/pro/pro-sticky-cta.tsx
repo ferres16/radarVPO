@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { TrackedButtonLink } from '@/components/tracked-link';
+import { useLocale } from '@/components/i18n/locale-provider';
 import { useProAccess } from '@/components/pro-access-provider';
 import { proPlan } from '@/lib/pro';
 
 /** Misma barra móvil que la guía (`course-sticky-buy`). */
 export function ProStickyCta() {
   const { me, loading } = useProAccess();
+  const { t } = useLocale();
   const [pastCheckout, setPastCheckout] = useState(false);
   const hasPro = Boolean(me?.proAccess?.hasAccess ?? me?.plan === 'pro');
 
@@ -31,10 +33,10 @@ export function ProStickyCta() {
   if (!pastCheckout) return null;
 
   return (
-    <div className="course-sticky-buy md:hidden" role="region" aria-label="Activar Radar VPO PRO">
+    <div className="course-sticky-buy md:hidden" role="region" aria-label={t.pro.activate}>
       <div className="course-sticky-buy__inner">
         <div className="min-w-0">
-          <p className="course-sticky-buy__label">Suscripción mensual</p>
+          <p className="course-sticky-buy__label">{t.pro.monthly}</p>
           <p className="course-sticky-buy__price">{proPlan.priceShort}</p>
         </div>
         <div className="course-sticky-buy__actions">
@@ -42,9 +44,9 @@ export function ProStickyCta() {
             href="#pagar"
             event="pro_cta_clicked"
             eventProperties={{ source: 'pro_sticky' }}
-            className="btn btn--primary btn--sm shrink-0"
+            className="btn btn--primary btn--sm shrink-0 font-black"
           >
-            Activar PRO
+            {t.pro.activate}
           </TrackedButtonLink>
         </div>
       </div>

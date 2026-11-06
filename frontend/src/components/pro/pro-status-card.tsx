@@ -119,8 +119,8 @@ export function ProStatusCard({ profile, onProfileUpdate }: ProStatusCardProps) 
             ))}
           </ul>
           <div className="mt-6">
-            <ButtonLink href={proPlan.landingHref} size="lg" block>
-              Ver Radar VPO PRO
+            <ButtonLink href={proPlan.checkoutHref} size="lg" block className="font-black">
+              {proPlan.ctaLabelWithPrice}
             </ButtonLink>
           </div>
         </div>

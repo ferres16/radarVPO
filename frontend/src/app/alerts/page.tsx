@@ -79,8 +79,8 @@ export default async function AlertsPage() {
             >
               Regístrate gratis y ver las fechas
             </RegisterButton>
-            <ButtonLink href="/pro" size="lg" variant="secondary" block>
-              Recibir avisos con PRO
+            <ButtonLink href="/pro#pagar" size="lg" block className="font-black">
+              Hazte PRO · recibir avisos
             </ButtonLink>
           </div>
         }
@@ -118,7 +118,6 @@ export default async function AlertsPage() {
         <AlertsProCtaBand
           title="Avisos cuando se confirme una publicación"
           description="Estas fechas son estimaciones. Con Radar VPO PRO te avisamos por email y SMS cuando se publica una promoción o detectamos un próximo lanzamiento."
-          ctaLabel="Ver Radar VPO PRO"
         />
       </PublicSection>
     </PublicPage>

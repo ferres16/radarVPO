@@ -84,7 +84,7 @@ export default async function Home() {
                 <HomeHeroActions guideHref={featuredHref} guideCta={featuredCta} />
               </div>
               <figure className="lp-product-shot">
-                <Link href="/pro" aria-label="Ver Radar VPO PRO">
+                <Link href="/pro#pagar" aria-label="Hazte Radar VPO PRO">
                   <Image
                     src={proPlan.productImageSrc}
                     alt={proPlan.productImageAlt}

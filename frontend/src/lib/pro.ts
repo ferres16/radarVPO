@@ -18,6 +18,8 @@ export const proPlan = {
   currency: 'EUR',
   interval: 'month' as const,
   ctaLabel: 'Hazte PRO',
+  /** CTA corto con precio para dar más visibilidad en nav y bandas. */
+  ctaLabelWithPrice: `Hazte PRO · ${formatEuro(PRO_PRICE_AMOUNT, { decimals: 2 })}`,
   landingHref: '/pro',
   checkoutHref: '/pro#pagar',
   /** Foto de producto / creativo de campaña. */
