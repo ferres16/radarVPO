@@ -104,13 +104,19 @@ export class JobsService implements OnApplicationBootstrap {
       if (options.notify) {
         for (const alertId of registre.createdAlertIds) {
           proAlertResults.push(
-            await this.notificationsService.notifyProUsersForPromotion(alertId),
+            await this.notificationsService.notifyProUsersForPromotion(
+              alertId,
+              {
+                trigger: 'registre_scraper',
+              },
+            ),
           );
         }
         for (const publicationId of registre.createdPublicationIds) {
           proAlertResults.push(
             await this.notificationsService.notifyProUsersForPublication(
               publicationId,
+              { trigger: 'registre_scraper' },
             ),
           );
         }

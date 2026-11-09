@@ -34,6 +34,7 @@ import {
   BackofficeListPromotionsDto,
 } from './dto/list-backoffice.dto';
 import { BackofficeDeliveryOpsDto } from './dto/delivery-ops.dto';
+import { PreviewProNotificationDto } from './dto/preview-pro-notification.dto';
 import { SimulateProAlertsDto } from './dto/simulate-pro-alerts.dto';
 import { ReorderCourseItemsDto } from './dto/reorder-course-items.dto';
 import { ReorderUnitsDto } from './dto/reorder-units.dto';
@@ -127,6 +128,14 @@ export class BackofficeController {
     return this.backofficeService.syncProSmsAlerts(user.sub);
   }
 
+  @Get('notifications/pro-alerts/preview')
+  previewProNotification(@Query() query: PreviewProNotificationDto) {
+    return this.backofficeService.previewProNotification(
+      query.promotionId,
+      query.kind,
+    );
+  }
+
   @Post('notifications/pro-alerts/dispatch')
   dispatchProAlertNotifications(@Query('force') force?: string) {
     return this.backofficeService.dispatchPendingProAlertNotifications(
@@ -206,6 +215,11 @@ export class BackofficeController {
   @Get('message-templates')
   listMessageTemplates() {
     return this.backofficeService.listMessageTemplates();
+  }
+
+  @Get('message-templates/preview')
+  previewMessageTemplates() {
+    return this.backofficeService.previewMessageTemplates();
   }
 
   @Patch('message-templates/:key')

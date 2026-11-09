@@ -24,7 +24,12 @@ import {
   getCourseCoverMaxSizeBytes,
 } from '../storage/upload-limits';
 import { S3StorageService } from '../storage/s3-storage.service';
-import { NotificationsService } from '../notifications/notifications.service';
+import {
+  describeProNotifyKind,
+  describeProNotifyTrigger,
+  NotificationsService,
+} from '../notifications/notifications.service';
+import type { ProNotifyKind } from '../notifications/pro-notify.util';
 import { BillingService } from '../billing/billing.service';
 import { CommerceService } from '../commerce/commerce.service';
 import type { CommerceSettings } from '../commerce/commerce.types';
@@ -64,6 +69,30 @@ import { UploadCourseBlockAssetDto } from './dto/upload-course-block-asset.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpsertUnitDto } from './dto/upsert-unit.dto';
+
+type DeliveryLogRow = {
+  id: string;
+  channel: string;
+  status: string;
+  target: string;
+  sourceRef: string | null;
+  errorCode: string | null;
+  errorDetail: unknown;
+  subject?: string | null;
+  content?: string | null;
+  context?: unknown;
+  createdAt: Date;
+};
+
+/** pro_alert:<kind>:<promotionId> → { kind, promotionId } */
+export function parseDeliverySourceRef(sourceRef: string | null | undefined): {
+  kind?: string;
+  promotionId?: string;
+} {
+  if (!sourceRef?.startsWith('pro_alert:')) return {};
+  const [, kind, promotionId] = sourceRef.split(':');
+  return { kind: kind || undefined, promotionId: promotionId || undefined };
+}
 
 @Injectable()
 export class BackofficeService {
@@ -322,8 +351,10 @@ export class BackofficeService {
     const limit = Math.min(query.limit ?? 100, 500);
     const offset = query.offset ?? 0;
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const channel = query.channel && query.channel !== 'all' ? query.channel : undefined;
-    const status = query.status && query.status !== 'all' ? query.status : undefined;
+    const channel =
+      query.channel && query.channel !== 'all' ? query.channel : undefined;
+    const status =
+      query.status && query.status !== 'all' ? query.status : undefined;
     const search = query.q?.trim();
 
     const logWhere = {
@@ -486,16 +517,32 @@ export class BackofficeService {
     };
   }
 
-  private toDeliveryLogDto(row: {
-    id: string;
-    channel: string;
-    status: string;
-    target: string;
-    sourceRef: string | null;
-    errorCode: string | null;
-    errorDetail: unknown;
-    createdAt: Date;
-  }) {
+  private toDeliveryLogDto(
+    row: DeliveryLogRow,
+    promotionTitles: Map<string, string> = new Map(),
+  ) {
+    const context =
+      row.context && typeof row.context === 'object'
+        ? (row.context as Record<string, unknown>)
+        : null;
+    const parsed = parseDeliverySourceRef(row.sourceRef);
+    const kind = (context?.kind as string | undefined) ?? parsed.kind;
+    const promotionId =
+      (context?.promotionId as string | undefined) ?? parsed.promotionId;
+    const trigger = context?.trigger as string | undefined;
+    const promotionTitle =
+      (context?.promotionTitle as string | undefined) ??
+      (promotionId ? promotionTitles.get(promotionId) : undefined) ??
+      null;
+    const whyParts = [
+      kind ? describeProNotifyKind(kind) : '',
+      trigger
+        ? describeProNotifyTrigger(trigger)
+        : kind
+          ? 'Origen no registrado (envío anterior al registro de motivos).'
+          : '',
+    ].filter(Boolean);
+
     return {
       id: row.id,
       channel: row.channel,
@@ -505,27 +552,41 @@ export class BackofficeService {
       errorCode: row.errorCode,
       errorDetail: row.errorDetail,
       createdAt: row.createdAt.toISOString(),
+      subject: row.subject ?? null,
+      content: row.content ?? null,
+      context,
+      kind: kind ?? null,
+      trigger: trigger ?? null,
+      promotionId: promotionId ?? null,
+      promotionTitle,
+      why: whyParts.join(' ') || null,
       recipientName: null as string | null,
       recipientEmail: null as string | null,
       recipientUserId: null as string | null,
     };
   }
 
-  private async enrichDeliveryLogs(
-    rows: Array<{
-      id: string;
-      channel: string;
-      status: string;
-      target: string;
-      sourceRef: string | null;
-      errorCode: string | null;
-      errorDetail: unknown;
-      createdAt: Date;
-    }>,
-  ) {
+  private async enrichDeliveryLogs(rows: DeliveryLogRow[]) {
     const unique = new Map(rows.map((row) => [row.id, row]));
     const list = [...unique.values()];
     if (list.length === 0) return [];
+
+    const promotionIds = [
+      ...new Set(
+        list
+          .map((row) => parseDeliverySourceRef(row.sourceRef).promotionId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const promotionTitles = new Map(
+      (promotionIds.length
+        ? await this.prisma.promotion.findMany({
+            where: { id: { in: promotionIds } },
+            select: { id: true, title: true },
+          })
+        : []
+      ).map((row) => [row.id, row.title] as const),
+    );
 
     const targets = [...new Set(list.map((row) => row.target).filter(Boolean))];
     const emails = targets.filter((target) => target.includes('@'));
@@ -536,9 +597,14 @@ export class BackofficeService {
         phones.flatMap((phone) => {
           const digits = phone.replace(/[^\d]/g, '');
           const local = digits.startsWith('34') ? digits.slice(2) : digits;
-          return [phone, digits, `+${digits}`, local, `+34${local}`, `34${local}`].filter(
-            Boolean,
-          );
+          return [
+            phone,
+            digits,
+            `+${digits}`,
+            local,
+            `+34${local}`,
+            `34${local}`,
+          ].filter(Boolean);
         }),
       ),
     ];
@@ -550,7 +616,9 @@ export class BackofficeService {
             where: {
               OR: [
                 ...(emails.length ? [{ email: { in: emails } }] : []),
-                ...(phoneVariants.length ? [{ phone: { in: phoneVariants } }] : []),
+                ...(phoneVariants.length
+                  ? [{ phone: { in: phoneVariants } }]
+                  : []),
               ],
             },
             select: {
@@ -583,9 +651,10 @@ export class BackofficeService {
             byPhone.get(row.target.replace(/[^\d]/g, ''));
 
       return {
-        ...this.toDeliveryLogDto(row),
+        ...this.toDeliveryLogDto(row, promotionTitles),
         recipientName: matched?.fullName?.trim() || null,
-        recipientEmail: matched?.email || (row.channel === 'email' ? row.target : null),
+        recipientEmail:
+          matched?.email || (row.channel === 'email' ? row.target : null),
         recipientUserId: matched?.id || null,
       };
     });
@@ -602,6 +671,14 @@ export class BackofficeService {
     return this.notificationsService.notifyProUsersForPendingAlerts(20, {
       force,
     });
+  }
+
+  async previewProNotification(promotionId: string, kind: ProNotifyKind) {
+    return this.notificationsService.previewProEvent(promotionId, kind);
+  }
+
+  async previewMessageTemplates() {
+    return this.notificationsService.previewAllTemplates();
   }
 
   async simulateProAlertNotifications(
@@ -718,15 +795,19 @@ export class BackofficeService {
       skip: offset,
     });
 
-    const [verifiedCount, pendingCount, marketingOptInCount, marketingOptOutCount] =
-      await Promise.all([
-        this.prisma.user.count({ where: { emailVerifiedAt: { not: null } } }),
-        this.prisma.user.count({ where: { emailVerifiedAt: null } }),
-        this.prisma.user.count({ where: { marketingOptInAt: { not: null } } }),
-        this.prisma.user.count({
-          where: { marketingOptOutAt: { not: null }, marketingOptInAt: null },
-        }),
-      ]);
+    const [
+      verifiedCount,
+      pendingCount,
+      marketingOptInCount,
+      marketingOptOutCount,
+    ] = await Promise.all([
+      this.prisma.user.count({ where: { emailVerifiedAt: { not: null } } }),
+      this.prisma.user.count({ where: { emailVerifiedAt: null } }),
+      this.prisma.user.count({ where: { marketingOptInAt: { not: null } } }),
+      this.prisma.user.count({
+        where: { marketingOptOutAt: { not: null }, marketingOptInAt: null },
+      }),
+    ]);
 
     return {
       items: rows.map((row) => ({
@@ -984,10 +1065,7 @@ export class BackofficeService {
       },
     });
 
-    if (
-      dto.plan === UserPlan.pro &&
-      existing.plan !== UserPlan.pro
-    ) {
+    if (dto.plan === UserPlan.pro && existing.plan !== UserPlan.pro) {
       try {
         await this.notificationsService.enableProSmsAlerts(userId, {
           sourceRef: `pro_sms_configured:admin:${userId}`,
@@ -2147,14 +2225,18 @@ export class BackofficeService {
 
     if (status === 'pending_review') {
       void this.notificationsService
-        .notifyProUsersForPromotion(promotion.id)
+        .notifyProUsersForPromotion(promotion.id, {
+          trigger: 'admin_create_promotion',
+        })
         .catch(() => undefined);
     } else if (
       status === 'published_unreviewed' ||
       status === 'published_reviewed'
     ) {
       void this.notificationsService
-        .notifyProUsersForPublication(promotion.id)
+        .notifyProUsersForPublication(promotion.id, {
+          trigger: 'admin_create_promotion',
+        })
         .catch(() => undefined);
     }
 
@@ -2298,7 +2380,9 @@ export class BackofficeService {
       current.status !== 'pending_review'
     ) {
       void this.notificationsService
-        .notifyProUsersForPromotion(promotionId)
+        .notifyProUsersForPromotion(promotionId, {
+          trigger: 'admin_status_change',
+        })
         .catch(() => undefined);
     }
 
@@ -2309,7 +2393,9 @@ export class BackofficeService {
       current.status !== 'published_reviewed'
     ) {
       void this.notificationsService
-        .notifyProUsersForPublication(promotionId)
+        .notifyProUsersForPublication(promotionId, {
+          trigger: 'admin_status_change',
+        })
         .catch(() => undefined);
     }
 

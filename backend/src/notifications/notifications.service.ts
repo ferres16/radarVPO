@@ -23,7 +23,10 @@ import {
   formatLocation,
   formatMadridDate,
   hasIncompleteRender,
+  renderTemplate,
 } from './message-vars';
+import { prepareSms, type PreparedSms } from './sms-content';
+import { MESSAGE_TEMPLATE_SEEDS } from '../commerce/message-templates.defaults';
 /** SMS PRO: mismos avisos que el email (si el usuario tiene SMS activado y móvil válido). */
 const PRO_SMS_KINDS = new Set<ProNotifyKind>([
   'new_alert',
@@ -31,6 +34,53 @@ const PRO_SMS_KINDS = new Set<ProNotifyKind>([
   'reminder_1d',
   'new_publication',
 ]);
+
+export function describeProNotifyKind(kind: string): string {
+  switch (kind) {
+    case 'new_publication':
+      return 'Publicación oficial: el Registre publicó un "Anunci d\'inici de procediment" y se avisa a todos los PRO verificados (email + SMS si lo tienen activado).';
+    case 'new_alert':
+      return 'Anuncio previo: el Registre publicó una "ALERTA: Propera adjudicació" y se avisa a todos los PRO verificados.';
+    case 'reminder_7d':
+      return 'Recordatorio D-7: faltan 7 días para la fecha estimada; solo a PRO que guardaron la promoción.';
+    case 'reminder_1d':
+      return 'Recordatorio D-1: mañana es la fecha estimada; solo a PRO que guardaron la promoción.';
+    default:
+      return '';
+  }
+}
+
+export function describeProNotifyTrigger(trigger: string | undefined): string {
+  switch (trigger) {
+    case 'registre_scraper':
+      return 'Automático: la revisión periódica del Registre detectó una entrada nueva.';
+    case 'admin_create_promotion':
+      return 'Manual: un admin creó la promoción en el backoffice.';
+    case 'admin_status_change':
+      return 'Manual: un admin cambió el estado de la promoción en el backoffice.';
+    case 'admin_dispatch_pending':
+      return 'Manual: un admin pulsó «Enviar avisos pendientes».';
+    case 'admin_force_resend':
+      return 'Manual: un admin forzó el reenvío.';
+    case 'cron_reminder':
+      return 'Automático: tarea diaria de recordatorios (08:00).';
+    case 'admin_simulation':
+      return 'Prueba: simulación lanzada desde el backoffice.';
+    case 'pro_sms_confirmation':
+      return 'Confirmación de alta de SMS PRO.';
+    case 'transactional':
+      return 'Email transaccional (compra, cuenta, baja…).';
+    default:
+      return '';
+  }
+}
+
+function templateKeyToKind(key: string): ProNotifyKind {
+  if (key === 'pro.new_publication') return 'new_publication';
+  if (key === 'pro.reminder_7d') return 'reminder_7d';
+  if (key === 'pro.reminder_1d') return 'reminder_1d';
+  return 'new_alert';
+}
 
 /** Remitente alfanumérico Brevo: 3–11 letras/números (sin +34…). */
 function resolveBrevoSmsSender(raw?: string) {
@@ -66,6 +116,51 @@ type BrevoSmsPayload = {
   recipient: string;
   content: string;
   type?: 'transactional';
+};
+
+/** Por qué se dispara un aviso PRO (se guarda en delivery_logs.context). */
+export type ProNotifyTrigger =
+  | 'registre_scraper'
+  | 'admin_create_promotion'
+  | 'admin_status_change'
+  | 'admin_dispatch_pending'
+  | 'admin_force_resend'
+  | 'cron_reminder'
+  | 'admin_simulation'
+  | 'unknown';
+
+export type DeliveryContext = {
+  trigger?: string;
+  kind?: string;
+  templateKey?: string;
+  promotionId?: string;
+  promotionTitle?: string;
+  location?: string;
+  smsUnits?: number;
+  smsSegments?: number;
+  smsTruncated?: boolean;
+  [key: string]: unknown;
+};
+
+type DeliveryMeta = {
+  subject?: string | null;
+  content?: string | null;
+  context?: DeliveryContext;
+};
+
+export type ProNotifyPreview = {
+  promotionId: string;
+  kind: ProNotifyKind;
+  title: string;
+  location: string;
+  wouldSend: boolean;
+  skipReason?: string;
+  templateKey: string;
+  templateActive: boolean;
+  email: { subject: string; html: string } | null;
+  sms: (PreparedSms & { enabledForKind: boolean }) | null;
+  recipients: { email: number; sms: number };
+  explanation: string;
 };
 
 type NotifyResult = {
@@ -105,7 +200,9 @@ export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name);
   private readonly apiKey = process.env.BREVO_API_KEY;
   /** Remitente alfanumérico Brevo (máx. 11 chars). "RadarVPO PRO" → RadarVPOPro. */
-  private readonly smsSender = resolveBrevoSmsSender(process.env.BREVO_SMS_SENDER);
+  private readonly smsSender = resolveBrevoSmsSender(
+    process.env.BREVO_SMS_SENDER,
+  );
   private readonly emailSender =
     process.env.BREVO_EMAIL_SENDER || 'Radar VPO <info@radarvpo.com>';
   private readonly proAlertsEnabled =
@@ -239,7 +336,10 @@ export class NotificationsService {
                 some: {
                   planKey: 'pro',
                   status: {
-                    in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+                    in: [
+                      SubscriptionStatus.active,
+                      SubscriptionStatus.trialing,
+                    ],
                   },
                 },
               },
@@ -257,7 +357,10 @@ export class NotificationsService {
                 some: {
                   planKey: 'pro',
                   status: {
-                    in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+                    in: [
+                      SubscriptionStatus.active,
+                      SubscriptionStatus.trialing,
+                    ],
                   },
                 },
               },
@@ -269,10 +372,7 @@ export class NotificationsService {
       }),
       this.prisma.promotion.findMany({
         where: { status: 'pending_review' },
-        orderBy: [
-          { estimatedPublicationDate: 'asc' },
-          { createdAt: 'desc' },
-        ],
+        orderBy: [{ estimatedPublicationDate: 'asc' }, { createdAt: 'desc' }],
         take: 100,
         select: {
           id: true,
@@ -367,9 +467,7 @@ export class NotificationsService {
         kind: input.kind,
         channels,
         state: input.state,
-        scheduledFor: input.scheduledFor
-          ? madridYmd(input.scheduledFor)
-          : null,
+        scheduledFor: input.scheduledFor ? madridYmd(input.scheduledFor) : null,
         daysUntil: input.daysUntil,
         estimatedPublicationDate: input.estimatedPublicationDate
           ? madridYmd(input.estimatedPublicationDate)
@@ -554,7 +652,7 @@ export class NotificationsService {
 
   async notifyProUsersForPendingAlerts(
     limit = 20,
-    options: { force?: boolean } = {},
+    options: { force?: boolean; trigger?: ProNotifyTrigger } = {},
   ): Promise<ProAlertDispatchResult> {
     const diagnostics = await this.getProAlertsDiagnostics();
 
@@ -598,10 +696,12 @@ export class NotificationsService {
     let sent = 0;
 
     for (const promotion of promotions) {
-      const result = await this.notifyProUsersForPromotion(
-        promotion.id,
-        options,
-      );
+      const result = await this.notifyProUsersForPromotion(promotion.id, {
+        force: options.force,
+        trigger:
+          options.trigger ??
+          (options.force ? 'admin_force_resend' : 'admin_dispatch_pending'),
+      });
       promotionResults.push({ ...result, title: promotion.title });
       if (!result.skipped) {
         sent += result.sent;
@@ -635,14 +735,14 @@ export class NotificationsService {
 
   async notifyProUsersForPromotion(
     promotionId: string,
-    options: { force?: boolean } = {},
+    options: { force?: boolean; trigger?: ProNotifyTrigger } = {},
   ): Promise<NotifyResult> {
     return this.notifyProEvent(promotionId, 'new_alert', options);
   }
 
   async notifyProUsersForPublication(
     promotionId: string,
-    options: { force?: boolean } = {},
+    options: { force?: boolean; trigger?: ProNotifyTrigger } = {},
   ): Promise<NotifyResult> {
     return this.notifyProEvent(promotionId, 'new_publication', options);
   }
@@ -664,6 +764,7 @@ export class NotificationsService {
       const result = await this.notifyProEvent(promotionId, kind, {
         simulate: true,
         onlyUserId: options.onlyUserId,
+        trigger: 'admin_simulation',
       });
       promotionResults.push(result);
       if (!result.skipped) sent += result.sent;
@@ -723,7 +824,9 @@ export class NotificationsService {
       const kind: ProNotifyKind | null =
         days === 7 ? 'reminder_7d' : days === 1 ? 'reminder_1d' : null;
       if (!kind) continue;
-      const result = await this.notifyProEvent(alert.id, kind);
+      const result = await this.notifyProEvent(alert.id, kind, {
+        trigger: 'cron_reminder',
+      });
       results.push(result);
       if (!result.skipped) sent += result.sent;
     }
@@ -737,7 +840,12 @@ export class NotificationsService {
   private async notifyProEvent(
     promotionId: string,
     kind: ProNotifyKind,
-    options: { force?: boolean; simulate?: boolean; onlyUserId?: string } = {},
+    options: {
+      force?: boolean;
+      simulate?: boolean;
+      onlyUserId?: string;
+      trigger?: ProNotifyTrigger;
+    } = {},
   ): Promise<NotifyResult> {
     if (!this.isProAlertsConfigured()) {
       return {
@@ -862,6 +970,9 @@ export class NotificationsService {
       promotion,
       kind,
       options.onlyUserId,
+      options.force && options.trigger !== 'admin_simulation'
+        ? 'admin_force_resend'
+        : (options.trigger ?? 'unknown'),
     );
     if (result.sent > 0 && !options.simulate) {
       if (existing && options.force) {
@@ -932,6 +1043,7 @@ export class NotificationsService {
     promotion: ProAlertPromotion,
     kind: ProNotifyKind,
     onlyUserId?: string,
+    trigger: ProNotifyTrigger = 'unknown',
   ) {
     const isReminder = kind === 'reminder_7d' || kind === 'reminder_1d';
     const favoriteUserIds = isReminder
@@ -996,6 +1108,39 @@ export class NotificationsService {
       };
     }
 
+    const baseContext: DeliveryContext = {
+      trigger,
+      kind,
+      templateKey: copy.templateKey,
+      promotionId: promotion.id,
+      promotionTitle: promotion.title,
+      location: copy.location,
+    };
+
+    const smsEligible = recipients.some(
+      (user) => user.smsAlertsEnabled && normalizePhoneForSms(user.phone),
+    );
+    if (smsEligible && PRO_SMS_KINDS.has(kind) && !copy.smsPrepared.ok) {
+      this.logger.error(
+        `PRO ${kind} SMS blocked for ${promotion.id}: ${copy.smsPrepared.reason} -> "${copy.smsPrepared.content}"`,
+      );
+      await this.recordDelivery({
+        channel: 'sms',
+        status: 'failed',
+        target: 'pro_broadcast',
+        sourceRef: `pro_alert:${kind}:${promotion.id}`,
+        errorCode: 'SMS_BLOCKED_INVALID_CONTENT',
+        detail: copy.smsPrepared.reason,
+        content: copy.smsPrepared.content,
+        context: {
+          ...baseContext,
+          smsUnits: copy.smsPrepared.units,
+          smsSegments: copy.smsPrepared.segments,
+          smsTruncated: copy.smsPrepared.truncated,
+        },
+      });
+    }
+
     for (const user of recipients) {
       const displayName = displayNameOrEmpty(user.fullName);
       const html = this.buildSlimProEmailHtml({
@@ -1012,6 +1157,7 @@ export class NotificationsService {
           htmlContent: html,
         },
         alertSourceRef,
+        { context: { ...baseContext, userId: user.id } },
       );
       if (emailSent) {
         sent += 1;
@@ -1022,6 +1168,7 @@ export class NotificationsService {
       const wantSms =
         user.smsAlertsEnabled &&
         PRO_SMS_KINDS.has(kind) &&
+        copy.smsPrepared.ok &&
         Boolean(copy.sms?.trim());
       const normalizedPhone = wantSms ? normalizePhoneForSms(user.phone) : null;
       if (normalizedPhone && copy.sms) {
@@ -1033,6 +1180,15 @@ export class NotificationsService {
             type: 'transactional',
           },
           alertSourceRef,
+          {
+            context: {
+              ...baseContext,
+              userId: user.id,
+              smsUnits: copy.smsPrepared.units,
+              smsSegments: copy.smsPrepared.segments,
+              smsTruncated: copy.smsPrepared.truncated,
+            },
+          },
         );
         if (smsSentForUser) {
           sent += 1;
@@ -1128,8 +1284,15 @@ export class NotificationsService {
       tpl?.smsBody != null
         ? this.templates.render(tpl.smsBody, vars)
         : fallback.sms;
-    const smsBodyOnly = smsRaw.replace(pageUrl, '').trim();
-    const sms = fitSmsContent(smsBodyOnly || smsRaw, pageUrl);
+    const smsBodyOnly = smsRaw
+      .split(pageUrl)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const smsPrepared = prepareSms(smsBodyOnly || smsRaw, pageUrl, {
+      requiredFragments: [location],
+    });
+    const sms = smsPrepared.content;
 
     if (
       hasIncompleteRender(subject, { location }) ||
@@ -1146,8 +1309,222 @@ export class NotificationsService {
       subject: subject.slice(0, 140),
       intro,
       sms,
+      smsPrepared,
+      templateKey,
+      templateActive: tpl?.active ?? true,
       pageUrl,
       disclaimer: null,
+    };
+  }
+
+  /**
+   * Lo que se enviaría ahora mismo para (promoción, tipo), sin enviar nada:
+   * asunto + HTML exacto, SMS exacto (GSM-7, segmentos) y si se bloquearía.
+   */
+  async previewProEvent(
+    promotionId: string,
+    kind: ProNotifyKind,
+  ): Promise<ProNotifyPreview> {
+    const promotion = await this.prisma.promotion.findUnique({
+      where: { id: promotionId },
+      select: {
+        id: true,
+        title: true,
+        municipality: true,
+        municipalityId: true,
+        province: true,
+        promotionType: true,
+        estimatedPublicationDate: true,
+        status: true,
+      },
+    });
+    const empty: ProNotifyPreview = {
+      promotionId,
+      kind,
+      title: promotion?.title ?? '',
+      location: promotion
+        ? formatLocation({
+            municipality: promotion.municipality,
+            province: promotion.province,
+          })
+        : '',
+      wouldSend: false,
+      templateKey: '',
+      templateActive: false,
+      email: null,
+      sms: null,
+      recipients: { email: 0, sms: 0 },
+      explanation: describeProNotifyKind(kind),
+    };
+    if (!promotion) return { ...empty, skipReason: 'not_found' };
+
+    const skipReason = await this.proEventSkipReason(promotion, kind);
+    const copy = await this.buildProCopy(promotion, kind);
+    const recipients = await this.countProRecipients(promotion.id, kind);
+
+    if (!copy) {
+      return {
+        ...empty,
+        recipients,
+        skipReason: skipReason ?? 'missing_location_or_template',
+      };
+    }
+
+    const smsEnabledForKind = PRO_SMS_KINDS.has(kind);
+    const smsBlocked =
+      smsEnabledForKind && recipients.sms > 0 && !copy.smsPrepared.ok;
+
+    return {
+      ...empty,
+      location: copy.location,
+      templateKey: copy.templateKey,
+      templateActive: copy.templateActive,
+      wouldSend: !skipReason && recipients.email + recipients.sms > 0,
+      skipReason:
+        skipReason ?? (smsBlocked ? copy.smsPrepared.reason : undefined),
+      email: {
+        subject: copy.subject,
+        html: this.buildSlimProEmailHtml({
+          bodyHtml: copy.intro,
+          pageUrl: copy.pageUrl,
+        }),
+      },
+      sms: { ...copy.smsPrepared, enabledForKind: smsEnabledForKind },
+      recipients,
+    };
+  }
+
+  /** Todas las plantillas renderizadas con datos de ejemplo (email + SMS final). */
+  async previewAllTemplates() {
+    const templates = await this.templates.list();
+    const sampleUrl = `${this.publicSiteUrl}/promotions/ejemplo123`;
+    const vars: Record<string, string> = {
+      name: 'Ana García',
+      email: 'ana@example.com',
+      title:
+        "Anunci d'inici de procediment d'adjudicació a Sant Cugat del Vallès",
+      location: 'Sant Cugat del Vallès, Barcelona',
+      date: '15 de diciembre de 2026',
+      url: sampleUrl,
+      product: 'Guía VPO Catalunya',
+      price: '19,99 €',
+      phone: '+34600000000',
+      access_until: '10 de febrero de 2027',
+      billing_summary:
+        'Importe: 9,99 € al mes. Se renueva automáticamente cada mes hasta que canceles desde Mi cuenta.',
+    };
+    const seedKeys = new Set(MESSAGE_TEMPLATE_SEEDS.map((seed) => seed.key));
+
+    return templates.map((tpl) => {
+      const isProAlert = tpl.key.startsWith('pro.');
+      const subject = tpl.emailSubject
+        ? renderTemplate(tpl.emailSubject, vars)
+        : null;
+      const body = tpl.emailBody ? renderTemplate(tpl.emailBody, vars) : null;
+      const html = body
+        ? isProAlert
+          ? this.buildSlimProEmailHtml({ bodyHtml: body, pageUrl: sampleUrl })
+          : `<div style="font-family:Inter,Arial,sans-serif;line-height:1.6;color:#0b1220;max-width:560px;">${body}</div>`
+        : null;
+      let sms: PreparedSms | null = null;
+      if (tpl.smsBody) {
+        const raw = renderTemplate(tpl.smsBody, vars);
+        const bodyOnly = raw
+          .split(sampleUrl)
+          .join(' ')
+          .replace(/\s+/g, ' ')
+          .trim();
+        sms = prepareSms(bodyOnly || raw, sampleUrl, {
+          requiredFragments: isProAlert ? [vars.location] : [],
+        });
+      }
+      return {
+        key: tpl.key,
+        label: tpl.label,
+        description: tpl.description,
+        channel: tpl.channel,
+        active: tpl.active,
+        isCustomized: tpl.isCustomized,
+        isKnown: seedKeys.has(tpl.key),
+        smsSentForThisTemplate:
+          isProAlert && PRO_SMS_KINDS.has(templateKeyToKind(tpl.key)),
+        email:
+          subject || html ? { subject: subject ?? '', html: html ?? '' } : null,
+        sms,
+        sampleVars: vars,
+      };
+    });
+  }
+
+  private async proEventSkipReason(
+    promotion: ProAlertPromotion,
+    kind: ProNotifyKind,
+  ): Promise<string | undefined> {
+    if (!this.isProAlertsConfigured()) return 'brevo_not_configured';
+    if (isAmendmentPublication(promotion.title)) return 'amendment_excluded';
+    if (
+      kind === 'new_publication' &&
+      !isOfficialProcedureStartAnnouncement(promotion.title)
+    ) {
+      return 'not_official_publication_announcement';
+    }
+    if (
+      (kind === 'new_alert' ||
+        kind === 'reminder_7d' ||
+        kind === 'reminder_1d') &&
+      promotion.status !== 'pending_review'
+    ) {
+      return 'not_pending_alert';
+    }
+    if (
+      kind === 'new_publication' &&
+      promotion.status !== 'published_unreviewed' &&
+      promotion.status !== 'published_reviewed'
+    ) {
+      return 'not_published';
+    }
+    const existing = await this.prisma.publishedPost.findFirst({
+      where: {
+        sourceKind: PRO_NOTIFY_SOURCE_KIND[kind],
+        sourceId: promotion.id,
+        audience: AudienceType.pro,
+        channel: 'brevo',
+        status: 'sent',
+      },
+      select: { id: true },
+    });
+    return existing ? 'already_sent' : undefined;
+  }
+
+  private async countProRecipients(promotionId: string, kind: ProNotifyKind) {
+    const isReminder = kind === 'reminder_7d' || kind === 'reminder_1d';
+    const users = await this.prisma.user.findMany({
+      where: {
+        emailVerifiedAt: { not: null },
+        OR: [
+          { plan: 'pro' },
+          {
+            subscriptions: {
+              some: {
+                planKey: 'pro',
+                status: {
+                  in: [SubscriptionStatus.active, SubscriptionStatus.trialing],
+                },
+              },
+            },
+          },
+        ],
+        ...(isReminder ? { favorites: { some: { promotionId } } } : {}),
+      },
+      select: { phone: true, smsAlertsEnabled: true },
+    });
+    return {
+      email: users.length,
+      sms: PRO_SMS_KINDS.has(kind)
+        ? users.filter(
+            (user) => user.smsAlertsEnabled && normalizePhoneForSms(user.phone),
+          ).length
+        : 0,
     };
   }
 
@@ -1201,6 +1578,7 @@ export class NotificationsService {
         htmlContent: html,
       },
       `email:${input.templateKey}`,
+      { context: { trigger: 'transactional', templateKey: input.templateKey } },
     );
   }
 
@@ -1459,6 +1837,7 @@ export class NotificationsService {
         type: 'transactional',
       },
       sourceRef,
+      { context: { trigger: 'pro_sms_confirmation', userId } },
     );
     return {
       enabled: true,
@@ -1480,7 +1859,12 @@ export class NotificationsService {
     enabled: number;
     smsSent: number;
     skipped: number;
-    results: Array<{ userId: string; enabled: boolean; smsSent: boolean; reason?: string }>;
+    results: Array<{
+      userId: string;
+      enabled: boolean;
+      smsSent: boolean;
+      reason?: string;
+    }>;
   }> {
     const limit = Math.min(options?.limit ?? 200, 500);
     const users = await this.prisma.user.findMany({
@@ -1548,23 +1932,33 @@ export class NotificationsService {
     };
   }
 
-  private async sendEmail(payload: BrevoEmailPayload, sourceRef = 'radar_vpo_pro') {
+  private async sendEmail(
+    payload: BrevoEmailPayload,
+    sourceRef = 'radar_vpo_pro',
+    meta: DeliveryMeta = {},
+  ) {
     return this.postBrevo(
       'https://api.brevo.com/v3/smtp/email',
       payload,
       'email',
       payload.to[0]?.email,
       sourceRef,
+      { subject: payload.subject, content: payload.htmlContent, ...meta },
     );
   }
 
-  private async sendSms(payload: BrevoSmsPayload, sourceRef = 'radar_vpo_pro') {
+  private async sendSms(
+    payload: BrevoSmsPayload,
+    sourceRef = 'radar_vpo_pro',
+    meta: DeliveryMeta = {},
+  ) {
     return this.postBrevo(
       'https://api.brevo.com/v3/transactionalSMS/sms',
       payload,
       'sms',
       payload.recipient,
       sourceRef,
+      { content: payload.content, ...meta },
     );
   }
 
@@ -1574,6 +1968,7 @@ export class NotificationsService {
     channel: string,
     target?: string,
     sourceRef = 'radar_vpo_pro',
+    meta: DeliveryMeta = {},
   ) {
     if (!this.apiKey) {
       await this.recordDelivery({
@@ -1583,6 +1978,7 @@ export class NotificationsService {
         sourceRef,
         errorCode: 'BREVO_API_KEY_MISSING',
         detail: 'BREVO_API_KEY no configurada',
+        ...meta,
       });
       return false;
     }
@@ -1606,6 +2002,7 @@ export class NotificationsService {
           sourceRef,
           errorCode: `BREVO_${response.status}`,
           detail: await response.text(),
+          ...meta,
         });
         return false;
       }
@@ -1615,6 +2012,7 @@ export class NotificationsService {
         status: 'sent',
         target: target || 'unknown',
         sourceRef,
+        ...meta,
       });
       return true;
     } catch (error) {
@@ -1625,6 +2023,7 @@ export class NotificationsService {
         sourceRef,
         errorCode: 'BREVO_REQUEST_FAILED',
         detail: error instanceof Error ? error.message : 'unknown',
+        ...meta,
       });
       return false;
     }
@@ -1637,6 +2036,9 @@ export class NotificationsService {
     sourceRef: string;
     errorCode?: string;
     detail?: string;
+    subject?: string | null;
+    content?: string | null;
+    context?: DeliveryContext;
   }) {
     try {
       await this.prisma.deliveryLog.create({
@@ -1646,7 +2048,14 @@ export class NotificationsService {
           target: input.target,
           sourceRef: input.sourceRef,
           errorCode: input.errorCode,
-          errorDetail: input.detail ? { detail: input.detail.slice(0, 2000) } : undefined,
+          errorDetail: input.detail
+            ? { detail: input.detail.slice(0, 2000) }
+            : undefined,
+          subject: input.subject ? input.subject.slice(0, 300) : undefined,
+          content: input.content ? input.content.slice(0, 20000) : undefined,
+          context: input.context
+            ? (JSON.parse(JSON.stringify(input.context)) as object)
+            : undefined,
         },
       });
     } catch (error) {
@@ -1663,7 +2072,9 @@ export class NotificationsService {
             target: input.target,
             sourceRef: input.sourceRef,
             errorCode: input.errorCode || 'UNKNOWN',
-            errorDetail: input.detail ? { detail: input.detail.slice(0, 2000) } : undefined,
+            errorDetail: input.detail
+              ? { detail: input.detail.slice(0, 2000) }
+              : undefined,
           },
         });
       } catch (error) {

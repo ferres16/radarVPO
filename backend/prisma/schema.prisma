@@ -1032,6 +1032,12 @@ model DeliveryLog {
   sourceRef   String?  @map("source_ref")
   errorCode   String?  @map("error_code")
   errorDetail Json?    @map("error_detail")
+  /// Asunto del email (null en SMS).
+  subject     String?
+  /// Texto exacto del SMS o HTML exacto del email enviado a Brevo.
+  content     String?
+  /// Por qué se envió: trigger, tipo de aviso, promoción, etc.
+  context     Json?
   createdAt   DateTime @default(now()) @map("created_at")
 
   @@index([channel, createdAt])
