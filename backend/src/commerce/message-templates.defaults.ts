@@ -129,7 +129,7 @@ export const MESSAGE_TEMPLATE_SEEDS: MessageTemplateSeed[] = [
   {
     key: 'pro.reminder_7d',
     label: 'PRO · Recordatorio ~1 semana (email)',
-    description: 'Solo email, a quienes tienen la promoción guardada',
+    description: 'Solo email, a todos los usuarios PRO',
     channel: 'email',
     emailSubject: 'Fecha estimada en ~1 semana: {{location}}',
     emailBody:

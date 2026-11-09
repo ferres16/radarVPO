@@ -1046,18 +1046,6 @@ export class NotificationsService {
     onlyUserId?: string,
     trigger: ProNotifyTrigger = 'unknown',
   ) {
-    const isReminder = kind === 'reminder_7d' || kind === 'reminder_1d';
-    const favoriteUserIds = isReminder
-      ? new Set(
-          (
-            await this.prisma.promotionFavorite.findMany({
-              where: { promotionId: promotion.id },
-              select: { userId: true },
-            })
-          ).map((row) => row.userId),
-        )
-      : null;
-
     const users = await this.prisma.user.findMany({
       where: onlyUserId
         ? { id: onlyUserId, emailVerifiedAt: { not: null } }
@@ -1089,10 +1077,9 @@ export class NotificationsService {
       },
     });
 
-    // Sin filtro territorial: todos los PRO verificados reciben el aviso.
-    const recipients = favoriteUserIds
-      ? users.filter((user) => favoriteUserIds.has(user.id))
-      : users;
+    // Sin filtro territorial ni de favoritos: todos los PRO verificados reciben
+    // todos los avisos, recordatorios incluidos.
+    const recipients = users;
 
     const channels: string[] = [];
     let sent = 0;
@@ -1367,7 +1354,7 @@ export class NotificationsService {
 
     const skipReason = await this.proEventSkipReason(promotion, kind);
     const copy = await this.buildProCopy(promotion, kind);
-    const recipients = await this.countProRecipients(promotion.id, kind);
+    const recipients = await this.countProRecipients(kind);
 
     if (!copy) {
       return {
@@ -1507,8 +1494,7 @@ export class NotificationsService {
     return existing ? 'already_sent' : undefined;
   }
 
-  private async countProRecipients(promotionId: string, kind: ProNotifyKind) {
-    const isReminder = kind === 'reminder_7d' || kind === 'reminder_1d';
+  private async countProRecipients(kind: ProNotifyKind) {
     const users = await this.prisma.user.findMany({
       where: {
         emailVerifiedAt: { not: null },
@@ -1525,7 +1511,6 @@ export class NotificationsService {
             },
           },
         ],
-        ...(isReminder ? { favorites: { some: { promotionId } } } : {}),
       },
       select: { phone: true, smsAlertsEnabled: true },
     });

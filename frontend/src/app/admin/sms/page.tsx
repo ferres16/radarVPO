@@ -101,13 +101,6 @@ function skipReasonLabel(reason?: string | null) {
   return SKIP_REASON_LABELS[reason] ?? smsBlockReasonLabel(reason) ?? reason;
 }
 
-function noRecipientsLabel(kind: UpcomingDelivery['kind']) {
-  if (kind === 'reminder_7d' || kind === 'reminder_1d') {
-    return 'ningún usuario PRO tiene esta promoción guardada (los recordatorios solo llegan a quien la guarda).';
-  }
-  return 'no hay usuarios PRO activos con el email verificado.';
-}
-
 function ProPreviewPanel({
   promotionId,
   kind,
@@ -152,7 +145,7 @@ function ProPreviewPanel({
         >
           {preview.wouldSend && !preview.skipReason
             ? 'Se enviaría tal cual se muestra.'
-            : `No se enviaría ahora: ${skipReasonLabel(preview.skipReason) || noRecipientsLabel(kind)}`}
+            : `No se enviaría ahora: ${skipReasonLabel(preview.skipReason) || 'no hay usuarios PRO activos con el email verificado.'}`}
         </p>
       </div>
       <div className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
