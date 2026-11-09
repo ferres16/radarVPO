@@ -43,9 +43,9 @@ export function describeProNotifyKind(kind: string): string {
     case 'new_alert':
       return 'Anuncio previo: el Registre publicó una "ALERTA: Propera adjudicació" y se avisa a todos los PRO verificados.';
     case 'reminder_7d':
-      return 'Recordatorio D-7: faltan 7 días para la fecha estimada; solo a PRO que guardaron la promoción.';
+      return 'Recordatorio D-7: faltan 7 días para la fecha estimada; a todos los usuarios PRO.';
     case 'reminder_1d':
-      return 'Recordatorio D-1: mañana es la fecha estimada; solo a PRO que guardaron la promoción.';
+      return 'Recordatorio D-1: mañana es la fecha estimada; a todos los usuarios PRO.';
     default:
       return '';
   }
