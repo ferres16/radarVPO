@@ -22,6 +22,7 @@ import {
 } from '../common/access-tier';
 import { MetricsService } from '../metrics/metrics.service';
 import { FileStorageService } from '../storage/file-storage.service';
+import { isValidShortCode } from '../notifications/short-link';
 
 export const FREE_SAVED_PROMOTIONS_LIMIT = 3;
 
@@ -201,6 +202,28 @@ export class PromotionsService {
           detailLocked: unlockedIds ? !unlockedIds.has(item.id) : false,
         }),
       );
+  }
+
+  /** Enlace corto de SMS (/p/<código>) → id de la promoción visible. */
+  async resolveShortCode(code: string): Promise<{ id: string }> {
+    const normalized = code.trim().toLowerCase();
+    if (!isValidShortCode(normalized)) {
+      throw new NotFoundException('Enlace no válido');
+    }
+    const matches = await this.prisma.promotion.findMany({
+      where: {
+        id: { endsWith: normalized },
+        status: {
+          in: ['pending_review', 'published_unreviewed', 'published_reviewed'],
+        },
+      },
+      select: { id: true },
+      take: 2,
+    });
+    if (matches.length !== 1) {
+      throw new NotFoundException('Enlace no encontrado');
+    }
+    return { id: matches[0].id };
   }
 
   async getById(id: string, userId?: string | null) {

@@ -26,6 +26,7 @@ import {
   renderTemplate,
 } from './message-vars';
 import { prepareSms, type PreparedSms } from './sms-content';
+import { promotionSmsLink, smsLink } from './short-link';
 import { MESSAGE_TEMPLATE_SEEDS } from '../commerce/message-templates.defaults';
 /** SMS PRO: mismos avisos que el email (si el usuario tiene SMS activado y móvil válido). */
 const PRO_SMS_KINDS = new Set<ProNotifyKind>([
@@ -1280,16 +1281,22 @@ export class NotificationsService {
       tpl?.emailBody != null
         ? this.templates.render(tpl.emailBody, vars)
         : fallback.intro;
+    const smsUrl =
+      kind === 'new_publication'
+        ? promotionSmsLink(this.publicSiteUrl, promotion.id)
+        : smsLink(this.publicSiteUrl, '/alerts');
     const smsRaw =
       tpl?.smsBody != null
-        ? this.templates.render(tpl.smsBody, vars)
+        ? this.templates.render(tpl.smsBody, { ...vars, url: smsUrl })
         : fallback.sms;
     const smsBodyOnly = smsRaw
       .split(pageUrl)
       .join(' ')
+      .split(smsUrl)
+      .join(' ')
       .replace(/\s+/g, ' ')
       .trim();
-    const smsPrepared = prepareSms(smsBodyOnly || smsRaw, pageUrl, {
+    const smsPrepared = prepareSms(smsBodyOnly || smsRaw, smsUrl, {
       requiredFragments: [location],
     });
     const sms = smsPrepared.content;
@@ -1428,13 +1435,17 @@ export class NotificationsService {
         : null;
       let sms: PreparedSms | null = null;
       if (tpl.smsBody) {
-        const raw = renderTemplate(tpl.smsBody, vars);
+        const sampleSmsUrl =
+          tpl.key === 'pro.new_publication' || !isProAlert
+            ? promotionSmsLink(this.publicSiteUrl, 'ejemplo1234567')
+            : smsLink(this.publicSiteUrl, '/alerts');
+        const raw = renderTemplate(tpl.smsBody, { ...vars, url: sampleSmsUrl });
         const bodyOnly = raw
-          .split(sampleUrl)
+          .split(sampleSmsUrl)
           .join(' ')
           .replace(/\s+/g, ' ')
           .trim();
-        sms = prepareSms(bodyOnly || raw, sampleUrl, {
+        sms = prepareSms(bodyOnly || raw, sampleSmsUrl, {
           requiredFragments: isProAlert ? [vars.location] : [],
         });
       }
@@ -1824,7 +1835,7 @@ export class NotificationsService {
       return { enabled: true, smsSent: false, reason: 'already_notified' };
     }
 
-    const accountUrl = `${this.publicSiteUrl}/account`;
+    const accountUrl = smsLink(this.publicSiteUrl, '/account');
     const content = fitSmsContent(
       'Radar VPO PRO activo. Avisos SMS de nuevas promociones configurados correctamente.',
       accountUrl,

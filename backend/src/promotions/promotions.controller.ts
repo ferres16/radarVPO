@@ -43,6 +43,11 @@ export class PromotionsController {
     return this.promotionsService.publicStats();
   }
 
+  @Get('short/:code')
+  async resolveShortCode(@Param('code') code: string) {
+    return this.promotionsService.resolveShortCode(code);
+  }
+
   @Get(':id')
   @UseGuards(OptionalJwtAuthGuard)
   async byId(
