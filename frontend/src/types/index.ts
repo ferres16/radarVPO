@@ -705,6 +705,56 @@ export type DeliveryLog = {
   recipientName?: string | null;
   recipientEmail?: string | null;
   recipientUserId?: string | null;
+  /** Asunto exacto del email (null en SMS o envíos antiguos). */
+  subject?: string | null;
+  /** Texto exacto del SMS o HTML exacto del email (null en envíos antiguos). */
+  content?: string | null;
+  context?: Record<string, unknown> | null;
+  kind?: UpcomingDelivery['kind'] | string | null;
+  trigger?: string | null;
+  promotionId?: string | null;
+  promotionTitle?: string | null;
+  /** Explicación legible de por qué se envió. */
+  why?: string | null;
+};
+
+export type PreparedSmsPreview = {
+  ok: boolean;
+  content: string;
+  units: number;
+  segments: number;
+  encoding: 'GSM-7';
+  truncated: boolean;
+  reason?: string;
+};
+
+export type ProNotifyPreview = {
+  promotionId: string;
+  kind: UpcomingDelivery['kind'];
+  title: string;
+  location: string;
+  wouldSend: boolean;
+  skipReason?: string;
+  templateKey: string;
+  templateActive: boolean;
+  email: { subject: string; html: string } | null;
+  sms: (PreparedSmsPreview & { enabledForKind: boolean }) | null;
+  recipients: { email: number; sms: number };
+  explanation: string;
+};
+
+export type MessageTemplatePreview = {
+  key: string;
+  label: string;
+  description: string | null;
+  channel: string;
+  active: boolean;
+  isCustomized: boolean;
+  isKnown: boolean;
+  smsSentForThisTemplate: boolean;
+  email: { subject: string; html: string } | null;
+  sms: PreparedSmsPreview | null;
+  sampleVars: Record<string, string>;
 };
 
 export type UpcomingDelivery = {

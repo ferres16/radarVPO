@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
+import { TemplatePreviews } from '@/components/admin/template-previews';
 import { api } from '@/lib/api';
 import type { MessageTemplate, UserProfile } from '@/types';
 
@@ -34,6 +35,7 @@ export default function AdminMessageTemplatesPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [previewVersion, setPreviewVersion] = useState(0);
 
   useEffect(() => {
     let active = true;
@@ -97,6 +99,7 @@ export default function AdminMessageTemplatesPage() {
       });
       setTemplates((prev) => prev.map((item) => (item.key === updated.key ? updated : item)));
       setDraft(updated);
+      setPreviewVersion((value) => value + 1);
       setMessage('Plantilla guardada. Los próximos envíos usarán este texto.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo guardar.');
@@ -114,6 +117,7 @@ export default function AdminMessageTemplatesPage() {
       const updated = await api.resetBackofficeMessageTemplate(draft.key);
       setTemplates((prev) => prev.map((item) => (item.key === updated.key ? updated : item)));
       setDraft(updated);
+      setPreviewVersion((value) => value + 1);
       setMessage('Restaurada la plantilla por defecto del código (revisión de seeds).');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo restaurar.');
@@ -270,12 +274,16 @@ export default function AdminMessageTemplatesPage() {
               </div>
               {draft.smsBody ? (
                 <p className="mt-3 rounded-xl bg-white px-3 py-2 text-[11px] leading-5 text-[var(--ink)]">
-                  SMS: {previewHtml(draft.smsBody).replace(/<[^>]+>/g, '')}
+                  SMS (borrador): {previewHtml(draft.smsBody).replace(/<[^>]+>/g, '')}
+                  <span className="mt-1 block text-[10px] text-[var(--ink-soft)]">
+                    Guarda y revisa abajo el SMS final exacto (sin tildes y con recuento).
+                  </span>
                 </p>
               ) : null}
             </section>
           ) : null}
         </div>
+        <TemplatePreviews refreshKey={previewVersion} />
         </div>
       </div>
     </main>

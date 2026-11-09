@@ -1,12 +1,19 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
 import { PageHero, SurfaceCard } from '@/components/design-system';
 import { SkeletonCard } from '@/components/skeleton-card';
+import { EmailPreview, SmsBubble, smsBlockReasonLabel } from '@/components/admin/message-preview';
 import { api } from '@/lib/api';
-import type { DeliveryLog, SmsOpsSnapshot, UpcomingDelivery, UserProfile } from '@/types';
+import type {
+  DeliveryLog,
+  ProNotifyPreview,
+  SmsOpsSnapshot,
+  UpcomingDelivery,
+  UserProfile,
+} from '@/types';
 
 type ChannelFilter = 'all' | 'sms' | 'email';
 type StatusFilter = 'all' | 'sent' | 'failed';
@@ -77,7 +84,152 @@ function recipientLabel(log: DeliveryLog) {
   return log.target;
 }
 
+const SKIP_REASON_LABELS: Record<string, string> = {
+  brevo_not_configured: 'Brevo no configurado o avisos PRO desactivados.',
+  amendment_excluded: 'Es una corrección (esmena): no se avisa.',
+  not_official_publication_announcement:
+    'El título no es un "Anunci d\'inici de procediment": no se avisa como publicación oficial.',
+  not_pending_alert: 'La promoción ya no está como alerta pendiente.',
+  not_published: 'La promoción no está publicada.',
+  already_sent: 'Este aviso ya se envió antes (no se repetirá salvo reenvío forzado).',
+  not_found: 'Promoción no encontrada.',
+  missing_location_or_template: 'Falta ubicación/fecha o la plantilla está desactivada: no se enviaría.',
+};
+
+function skipReasonLabel(reason?: string | null) {
+  if (!reason) return '';
+  return SKIP_REASON_LABELS[reason] ?? smsBlockReasonLabel(reason) ?? reason;
+}
+
+function ProPreviewPanel({
+  promotionId,
+  kind,
+}: {
+  promotionId: string;
+  kind: UpcomingDelivery['kind'];
+}) {
+  const [preview, setPreview] = useState<ProNotifyPreview | null>(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    api
+      .previewProNotification(promotionId, kind)
+      .then((result) => {
+        if (active) setPreview(result);
+      })
+      .catch((err) => {
+        if (active) setError(err instanceof Error ? err.message : 'No se pudo generar la vista previa.');
+      });
+    return () => {
+      active = false;
+    };
+  }, [promotionId, kind]);
+
+  if (error) return <p className="text-sm text-red-700">{error}</p>;
+  if (!preview) return <p className="text-sm text-[var(--ink-soft)]">Generando vista previa…</p>;
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-1 text-sm">
+        <p className="text-[var(--ink)]">{preview.explanation}</p>
+        <p className="text-xs text-[var(--ink-soft)]">
+          Plantilla <code>{preview.templateKey || '—'}</code>
+          {preview.templateActive ? '' : ' (desactivada)'} · Destinatarios: {preview.recipients.email} email ·{' '}
+          {preview.recipients.sms} SMS
+        </p>
+        <p
+          className={`text-xs font-semibold ${
+            preview.wouldSend && !preview.skipReason ? 'text-[var(--green-700)]' : 'text-amber-800'
+          }`}
+        >
+          {preview.wouldSend && !preview.skipReason
+            ? 'Se enviaría tal cual se muestra.'
+            : `No se enviaría ahora: ${skipReasonLabel(preview.skipReason) || 'sin destinatarios.'}`}
+        </p>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]">
+        {preview.sms ? (
+          preview.sms.enabledForKind ? (
+            <SmsBubble content={preview.sms.content} meta={preview.sms} />
+          ) : (
+            <p className="text-sm text-[var(--ink-soft)]">Este tipo de aviso no envía SMS.</p>
+          )
+        ) : (
+          <p className="text-sm text-[var(--ink-soft)]">Sin SMS.</p>
+        )}
+        {preview.email ? <EmailPreview subject={preview.email.subject} html={preview.email.html} /> : null}
+      </div>
+    </div>
+  );
+}
+
+function DeliveryDetail({ log }: { log: DeliveryLog }) {
+  const kind = log.kind as UpcomingDelivery['kind'] | null | undefined;
+  const canRebuild =
+    !log.content &&
+    log.promotionId &&
+    (kind === 'new_alert' || kind === 'new_publication' || kind === 'reminder_7d' || kind === 'reminder_1d');
+  const [rebuild, setRebuild] = useState(false);
+
+  return (
+    <div className="space-y-4 rounded-xl bg-[var(--bg-app)] p-4">
+      <div className="space-y-1 text-sm">
+        <p className="font-semibold text-[var(--ink)]">Por qué se envió</p>
+        <p className="text-[var(--ink)]">{log.why || sourceLabel(log.sourceRef)}</p>
+        {log.promotionId ? (
+          <p className="text-xs text-[var(--ink-soft)]">
+            Promoción:{' '}
+            <Link
+              href={`/promotions/${log.promotionId}`}
+              target="_blank"
+              className="font-semibold text-[var(--green-700)] underline"
+            >
+              {log.promotionTitle || log.promotionId}
+            </Link>
+          </p>
+        ) : null}
+        {log.errorCode ? (
+          <p className="text-xs text-red-800">
+            Error: {log.errorCode}
+            {log.errorDetail ? ` · ${JSON.stringify(log.errorDetail).slice(0, 300)}` : ''}
+          </p>
+        ) : null}
+      </div>
+
+      {log.content ? (
+        log.channel === 'sms' ? (
+          <SmsBubble content={log.content} />
+        ) : (
+          <EmailPreview subject={log.subject || ''} html={log.content} />
+        )
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs text-amber-900">
+            Envío anterior al registro de contenido: no se guardó el texto exacto que se mandó.
+          </p>
+          {canRebuild ? (
+            rebuild ? (
+              <ProPreviewPanel promotionId={log.promotionId as string} kind={kind as UpcomingDelivery['kind']} />
+            ) : (
+              <button
+                type="button"
+                className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--ink)]"
+                onClick={() => setRebuild(true)}
+              >
+                Ver cómo se enviaría hoy
+              </button>
+            )
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function DeliveryTable({ logs, empty }: { logs: DeliveryLog[]; empty: string }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+
   if (logs.length === 0) {
     return <p className="text-sm text-[var(--ink-soft)]">{empty}</p>;
   }
@@ -93,46 +245,71 @@ function DeliveryTable({ logs, empty }: { logs: DeliveryLog[]; empty: string }) 
             <th className="px-2 py-2 font-semibold">Destinatario</th>
             <th className="px-2 py-2 font-semibold">Tipo</th>
             <th className="px-2 py-2 font-semibold">Error</th>
+            <th className="px-2 py-2 font-semibold">Mensaje</th>
           </tr>
         </thead>
         <tbody>
-          {logs.map((log) => (
-            <tr key={log.id} className="border-b border-[var(--stroke)] align-top">
-              <td className="whitespace-nowrap px-2 py-2">{formatWhen(log.createdAt)}</td>
-              <td className="px-2 py-2">
-                <span className="rounded-full bg-[var(--bg-app)] px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-[var(--ink)]">
-                  {log.channel}
-                </span>
-              </td>
-              <td className="px-2 py-2">
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                    log.status === 'sent'
-                      ? 'bg-[rgba(22,112,85,0.12)] text-[var(--green-700)]'
-                      : 'bg-red-100 text-red-800'
-                  }`}
-                >
-                  {log.status === 'sent' ? 'enviado' : 'fallido'}
-                </span>
-              </td>
-              <td className="px-2 py-2">
-                <span className="font-semibold text-[var(--ink)]">{recipientLabel(log)}</span>
-                {log.recipientUserId ? (
-                  <Link
-                    href={`/admin/users?q=${encodeURIComponent(log.recipientEmail || log.target)}`}
-                    className="mt-1 block text-xs font-semibold text-[var(--green-700)]"
-                  >
-                    Ver usuario
-                  </Link>
+          {logs.map((log) => {
+            const open = openId === log.id;
+            return (
+              <Fragment key={log.id}>
+                <tr className="border-b border-[var(--stroke)] align-top">
+                  <td className="whitespace-nowrap px-2 py-2">{formatWhen(log.createdAt)}</td>
+                  <td className="px-2 py-2">
+                    <span className="rounded-full bg-[var(--bg-app)] px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-[var(--ink)]">
+                      {log.channel}
+                    </span>
+                  </td>
+                  <td className="px-2 py-2">
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                        log.status === 'sent'
+                          ? 'bg-[rgba(22,112,85,0.12)] text-[var(--green-700)]'
+                          : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {log.status === 'sent' ? 'enviado' : 'fallido'}
+                    </span>
+                  </td>
+                  <td className="px-2 py-2">
+                    <span className="font-semibold text-[var(--ink)]">{recipientLabel(log)}</span>
+                    {log.recipientUserId ? (
+                      <Link
+                        href={`/admin/users?q=${encodeURIComponent(log.recipientEmail || log.target)}`}
+                        className="mt-1 block text-xs font-semibold text-[var(--green-700)]"
+                      >
+                        Ver usuario
+                      </Link>
+                    ) : null}
+                  </td>
+                  <td className="px-2 py-2 text-xs text-[var(--ink-soft)]">
+                    {sourceLabel(log.sourceRef)}
+                    {log.promotionTitle ? (
+                      <span className="mt-1 block text-[var(--ink)]">{log.promotionTitle}</span>
+                    ) : null}
+                  </td>
+                  <td className="px-2 py-2 text-xs text-red-800">{log.errorCode || '—'}</td>
+                  <td className="px-2 py-2">
+                    <button
+                      type="button"
+                      aria-expanded={open}
+                      onClick={() => setOpenId(open ? null : log.id)}
+                      className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-bold text-[var(--ink)]"
+                    >
+                      {open ? 'Ocultar' : 'Ver'}
+                    </button>
+                  </td>
+                </tr>
+                {open ? (
+                  <tr className="border-b border-[var(--stroke)]">
+                    <td colSpan={7} className="px-2 py-3">
+                      <DeliveryDetail log={log} />
+                    </td>
+                  </tr>
                 ) : null}
-              </td>
-              <td className="px-2 py-2 text-xs text-[var(--ink-soft)]">
-                {sourceLabel(log.sourceRef)}
-                <span className="mt-1 block break-all opacity-70">{log.sourceRef || ''}</span>
-              </td>
-              <td className="px-2 py-2 text-xs text-red-800">{log.errorCode || '—'}</td>
-            </tr>
-          ))}
+              </Fragment>
+            );
+          })}
         </tbody>
       </table>
     </div>
@@ -151,6 +328,7 @@ export default function AdminSmsPage() {
   const [query, setQuery] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const snapshot = await api.getBackofficeSmsOps({
@@ -332,6 +510,12 @@ export default function AdminSmsPage() {
                   {' '}(mismo aviso por email y SMS a PRO con SMS activo).
                 </p>
               </div>
+              <Link
+                href="/admin/message-templates#vista-previa"
+                className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--ink)]"
+              >
+                Ver todas las plantillas renderizadas
+              </Link>
             </div>
             {(data?.upcoming?.items.length ?? 0) === 0 ? (
               <p className="text-sm text-[var(--ink-soft)]">
@@ -348,11 +532,13 @@ export default function AdminSmsPage() {
                       <th className="px-2 py-2 font-semibold">Canales</th>
                       <th className="px-2 py-2 font-semibold">Promoción</th>
                       <th className="px-2 py-2 font-semibold">Destinatarios</th>
+                      <th className="px-2 py-2 font-semibold">Mensaje</th>
                     </tr>
                   </thead>
                   <tbody>
                     {data?.upcoming?.items.map((item) => (
-                      <tr key={item.id} className="border-b border-[var(--stroke)] align-top">
+                      <Fragment key={item.id}>
+                      <tr className="border-b border-[var(--stroke)] align-top">
                         <td className="px-2 py-2">
                           <span
                             className={`rounded-full px-2 py-0.5 text-xs font-bold ${
@@ -404,7 +590,27 @@ export default function AdminSmsPage() {
                             <span className="mt-1 block text-[var(--ink-soft)]">Sin SMS</span>
                           )}
                         </td>
+                        <td className="px-2 py-2">
+                          <button
+                            type="button"
+                            aria-expanded={previewId === item.id}
+                            onClick={() => setPreviewId(previewId === item.id ? null : item.id)}
+                            className="whitespace-nowrap rounded-full bg-[var(--green-700)] px-3 py-1 text-xs font-bold text-white"
+                          >
+                            {previewId === item.id ? 'Ocultar' : 'Previsualizar'}
+                          </button>
+                        </td>
                       </tr>
+                      {previewId === item.id ? (
+                        <tr className="border-b border-[var(--stroke)]">
+                          <td colSpan={7} className="px-2 py-3">
+                            <div className="rounded-xl bg-[var(--bg-app)] p-4">
+                              <ProPreviewPanel promotionId={item.promotionId} kind={item.kind} />
+                            </div>
+                          </td>
+                        </tr>
+                      ) : null}
+                      </Fragment>
                     ))}
                   </tbody>
                 </table>

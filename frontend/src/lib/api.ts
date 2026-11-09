@@ -13,6 +13,8 @@ import {
   CommercePromoRule,
   CommerceSettings,
   MessageTemplate,
+  MessageTemplatePreview,
+  ProNotifyPreview,
   Course,
   CourseAccessRule,
   CourseAccessRuleType,
@@ -342,6 +344,14 @@ export const api = {
     const qs = search.toString();
     return request<SmsOpsSnapshot>(`/backoffice/sms-ops${qs ? `?${qs}` : ''}`);
   },
+  previewProNotification: (promotionId: string, kind: ProNotifyPreview['kind']) =>
+    request<ProNotifyPreview>(
+      `/backoffice/notifications/pro-alerts/preview?promotionId=${encodeURIComponent(
+        promotionId,
+      )}&kind=${encodeURIComponent(kind)}`,
+    ),
+  getBackofficeMessageTemplatePreviews: () =>
+    request<MessageTemplatePreview[]>('/backoffice/message-templates/preview'),
   syncBackofficeProSms: () =>
     request<SmsSyncResult>('/backoffice/sms-ops/sync', { method: 'POST' }),
   confirmMyBackofficeProSms: () =>
