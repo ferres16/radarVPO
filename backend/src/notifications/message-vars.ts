@@ -1,4 +1,5 @@
 import { formatEuroAmount } from '../billing/stripe-fulfillment';
+import { prepareSms } from './sms-content';
 
 const MADRID_TZ = 'Europe/Madrid';
 
@@ -113,22 +114,7 @@ export function hasIncompleteRender(
   return false;
 }
 
-/** SMS: presupuesto GSM-7 (~160) vs UCS-2 (~70) de forma conservadora. */
+/** SMS en GSM-7 (sin tildes) de hasta 2 segmentos; ver prepareSms. */
 export function fitSmsContent(body: string, url: string): string {
-  const sample = `${body}${url}`;
-  let hasUnicode = false;
-  for (let i = 0; i < sample.length; i += 1) {
-    if (sample.charCodeAt(i) > 127) {
-      hasUnicode = true;
-      break;
-    }
-  }
-  const max = hasUnicode ? 70 : 160;
-  const reserved = url.length + 1;
-  const budget = Math.max(0, max - reserved);
-  const trimmed =
-    body.length > budget
-      ? `${body.slice(0, Math.max(0, budget - 3)).trimEnd()}...`
-      : body;
-  return `${trimmed} ${url}`.slice(0, max);
+  return prepareSms(body, url).content;
 }
