@@ -15,7 +15,8 @@
     "dev:frontend": "npm --workspace frontend run dev",
     "lint": "npm --workspace backend run lint && npm --workspace frontend run lint",
     "test": "npm --workspace backend run test:unit && npm --workspace backend run test:integration && npm --workspace frontend run test",
-    "build": "npm --workspace backend run build && npm --workspace frontend run build"
+    "build": "npm --workspace backend run build && npm --workspace frontend run build",
+    "docs:reference": "node scripts/generate-reference-docs.mjs"
   },
   "keywords": [],
   "author": "",
