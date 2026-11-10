@@ -17,8 +17,10 @@ export type ProAlertPromotionMatch = {
 
 /** Siempre true: no se filtra por municipio ni régimen. */
 export function userMatchesProAlertPreferences(
-  _user: ProAlertPreferenceUser,
-  _promotion: ProAlertPromotionMatch,
+  user: ProAlertPreferenceUser,
+  promotion: ProAlertPromotionMatch,
 ): boolean {
+  void user;
+  void promotion;
   return true;
 }

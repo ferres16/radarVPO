@@ -38,7 +38,6 @@ export function CourseAccessProvider({
 
   useEffect(() => {
     let active = true;
-    let timer: number | undefined;
 
     if (initialCanAccess || isFree) {
       setCanAccess(true);
@@ -80,18 +79,18 @@ export function CourseAccessProvider({
       const ok = await checkAccess();
       attempts += 1;
       if (ok || attempts >= 8) {
-        if (timer) window.clearInterval(timer);
+        window.clearInterval(timer);
         if (active) setResolved(true);
       }
     };
-    void poll();
-    timer = window.setInterval(() => {
+    const timer = window.setInterval(() => {
       void poll();
     }, 2500);
+    void poll();
 
     return () => {
       active = false;
-      if (timer) window.clearInterval(timer);
+      window.clearInterval(timer);
     };
   }, [accessType, initialCanAccess, isFree, pricingType, slug]);
 

@@ -100,14 +100,8 @@ export const AMENDMENT_TITLE_CONTAINS = [
  */
 export function shortenAlertTitle(title: string): string {
   return title
-    .replace(
-      /\s*En el termini de\s+\d+\s*dies\s+es\s+publicar[\s\S]*$/i,
-      '',
-    )
-    .replace(
-      /\s*En el plazo de\s+\d+\s*d[ií]as\s+se\s+publicar[\s\S]*$/i,
-      '',
-    )
+    .replace(/\s*En el termini de\s+\d+\s*dies\s+es\s+publicar[\s\S]*$/i, '')
+    .replace(/\s*En el plazo de\s+\d+\s*d[ií]as\s+se\s+publicar[\s\S]*$/i, '')
     .replace(/\s+/g, ' ')
     .replace(/^[-:;,.\s]+/, '')
     .replace(/\s*[.]*\s*$/, '')

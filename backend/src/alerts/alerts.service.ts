@@ -73,11 +73,9 @@ export class AlertsService {
 
     const enriched = valid.map((alert) => {
       const inferred = extractMunicipalityFromAlertTitle(alert.title);
-      const municipality =
-        inferred.canonicalName ||
-        alert.municipality ||
-        null;
-      const municipalityId = inferred.canonicalId || alert.municipalityId || null;
+      const municipality = inferred.canonicalName || alert.municipality || null;
+      const municipalityId =
+        inferred.canonicalId || alert.municipalityId || null;
 
       // Autocorregir en caliente si el scrape dejó el municipio vacío o en MAYÚSCULAS.
       if (

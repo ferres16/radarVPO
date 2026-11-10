@@ -36,9 +36,7 @@ export class WaitlistService {
       update: {
         municipality,
         waitlistConsentAt: now,
-        marketingConsentAt: dto.marketingConsent
-          ? now
-          : undefined,
+        marketingConsentAt: dto.marketingConsent ? now : undefined,
         sourcePath: dto.sourcePath?.trim() || undefined,
         userId: userId || undefined,
       },

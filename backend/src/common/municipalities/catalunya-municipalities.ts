@@ -12,41 +12,93 @@ export type CanonicalMunicipality = {
 /** Subconjunto operativo + aliases observados en scraping (preposiciones, sin acento). */
 export const CATALUNYA_MUNICIPALITIES: CanonicalMunicipality[] = [
   { id: 'barcelona', name: 'Barcelona', aliases: ['bcn'] },
-  { id: 'hospitalet-de-llobregat', name: "L'Hospitalet de Llobregat", aliases: ['hospitalet', "l'hospitalet", 'l hospitalet de llobregat'] },
+  {
+    id: 'hospitalet-de-llobregat',
+    name: "L'Hospitalet de Llobregat",
+    aliases: ['hospitalet', "l'hospitalet", 'l hospitalet de llobregat'],
+  },
   { id: 'badalona', name: 'Badalona', aliases: [] },
   { id: 'terrassa', name: 'Terrassa', aliases: ['tarrasa'] },
   { id: 'sabadell', name: 'Sabadell', aliases: [] },
   { id: 'lleida', name: 'Lleida', aliases: ['lerida'] },
   { id: 'tarragona', name: 'Tarragona', aliases: [] },
   { id: 'mataro', name: 'Mataró', aliases: ['mataro'] },
-  { id: 'santa-coloma-de-gramenet', name: 'Santa Coloma de Gramenet', aliases: ['santa coloma'] },
+  {
+    id: 'santa-coloma-de-gramenet',
+    name: 'Santa Coloma de Gramenet',
+    aliases: ['santa coloma'],
+  },
   { id: 'reus', name: 'Reus', aliases: [] },
   { id: 'girona', name: 'Girona', aliases: ['gerona'] },
-  { id: 'sant-cugat-del-valles', name: 'Sant Cugat del Vallès', aliases: ['sant cugat', 'sant cugat del valles'] },
-  { id: 'cornella-de-llobregat', name: 'Cornellà de Llobregat', aliases: ['cornella', 'cornella de llobregat'] },
-  { id: 'sant-boi-de-llobregat', name: 'Sant Boi de Llobregat', aliases: ['sant boi'] },
+  {
+    id: 'sant-cugat-del-valles',
+    name: 'Sant Cugat del Vallès',
+    aliases: ['sant cugat', 'sant cugat del valles'],
+  },
+  {
+    id: 'cornella-de-llobregat',
+    name: 'Cornellà de Llobregat',
+    aliases: ['cornella', 'cornella de llobregat'],
+  },
+  {
+    id: 'sant-boi-de-llobregat',
+    name: 'Sant Boi de Llobregat',
+    aliases: ['sant boi'],
+  },
   { id: 'rubi', name: 'Rubí', aliases: ['rubi'] },
   { id: 'manresa', name: 'Manresa', aliases: [] },
-  { id: 'vilanova-i-la-geltru', name: 'Vilanova i la Geltrú', aliases: ['vilanova', 'vilanova i la geltru'] },
+  {
+    id: 'vilanova-i-la-geltru',
+    name: 'Vilanova i la Geltrú',
+    aliases: ['vilanova', 'vilanova i la geltru'],
+  },
   { id: 'viladecans', name: 'Viladecans', aliases: [] },
   { id: 'castelldefels', name: 'Castelldefels', aliases: [] },
-  { id: 'el-prat-de-llobregat', name: 'El Prat de Llobregat', aliases: ['el prat', 'prat de llobregat'] },
+  {
+    id: 'el-prat-de-llobregat',
+    name: 'El Prat de Llobregat',
+    aliases: ['el prat', 'prat de llobregat'],
+  },
   { id: 'granollers', name: 'Granollers', aliases: [] },
-  { id: 'cerdanyola-del-valles', name: 'Cerdanyola del Vallès', aliases: ['cerdanyola', 'cerdanyola del valles'] },
-  { id: 'mollet-del-valles', name: 'Mollet del Vallès', aliases: ['mollet', 'mollet del valles'] },
-  { id: 'sant-feliu-de-llobregat', name: 'Sant Feliu de Llobregat', aliases: ['sant feliu'] },
+  {
+    id: 'cerdanyola-del-valles',
+    name: 'Cerdanyola del Vallès',
+    aliases: ['cerdanyola', 'cerdanyola del valles'],
+  },
+  {
+    id: 'mollet-del-valles',
+    name: 'Mollet del Vallès',
+    aliases: ['mollet', 'mollet del valles'],
+  },
+  {
+    id: 'sant-feliu-de-llobregat',
+    name: 'Sant Feliu de Llobregat',
+    aliases: ['sant feliu'],
+  },
   { id: 'igualada', name: 'Igualada', aliases: [] },
   { id: 'vic', name: 'Vic', aliases: [] },
   { id: 'blanes', name: 'Blanes', aliases: [] },
-  { id: 'vilafranca-del-penedes', name: 'Vilafranca del Penedès', aliases: ['vilafranca', 'vilafranca del penedes'] },
-  { id: 'vilallonga-del-camp', name: 'Vilallonga del Camp', aliases: ['vilallonga', 'vilallonga del camp'] },
+  {
+    id: 'vilafranca-del-penedes',
+    name: 'Vilafranca del Penedès',
+    aliases: ['vilafranca', 'vilafranca del penedes'],
+  },
+  {
+    id: 'vilallonga-del-camp',
+    name: 'Vilallonga del Camp',
+    aliases: ['vilallonga', 'vilallonga del camp'],
+  },
   { id: 'figueres', name: 'Figueres', aliases: ['figueras'] },
   { id: 'lloret-de-mar', name: 'Lloret de Mar', aliases: ['lloret'] },
   { id: 'martorell', name: 'Martorell', aliases: [] },
   { id: 'sitges', name: 'Sitges', aliases: [] },
   { id: 'montgat', name: 'Montgat', aliases: ['a montgat'] },
   { id: 'arenys-de-mar', name: 'Arenys de Mar', aliases: ['arenys'] },
-  { id: 'sant-pere-de-ribes', name: 'Sant Pere de Ribes', aliases: ['sant pere ribes'] },
+  {
+    id: 'sant-pere-de-ribes',
+    name: 'Sant Pere de Ribes',
+    aliases: ['sant pere ribes'],
+  },
   { id: 'calafell', name: 'Calafell', aliases: [] },
   { id: 'vendrell', name: 'El Vendrell', aliases: ['vendrell', 'el vendrell'] },
   { id: 'valls', name: 'Valls', aliases: [] },
@@ -55,26 +107,58 @@ export const CATALUNYA_MUNICIPALITIES: CanonicalMunicipality[] = [
   { id: 'altafulla', name: 'Altafulla', aliases: [] },
   { id: 'roquetes', name: 'Roquetes', aliases: [] },
   { id: 'deltebre', name: 'Deltebre', aliases: [] },
-  { id: 'sant-carles-de-la-rapita', name: 'Sant Carles de la Ràpita', aliases: ['la rapita', 'sant carles'] },
+  {
+    id: 'sant-carles-de-la-rapita',
+    name: 'Sant Carles de la Ràpita',
+    aliases: ['la rapita', 'sant carles'],
+  },
   { id: 'ampolla', name: "L'Ampolla", aliases: ['ampolla'] },
-  { id: 'hospitalet-de-infant', name: "L'Hospitalet de l'Infant", aliases: ['hospitalet de infant'] },
-  { id: 'sant-andreu-de-la-barca', name: 'Sant Andreu de la Barca', aliases: [] },
-  { id: 'sant-vicenc-dels-horts', name: "Sant Vicenç dels Horts", aliases: ['sant vicenc dels horts', 'sant vicenç dels horts'] },
+  {
+    id: 'hospitalet-de-infant',
+    name: "L'Hospitalet de l'Infant",
+    aliases: ['hospitalet de infant'],
+  },
+  {
+    id: 'sant-andreu-de-la-barca',
+    name: 'Sant Andreu de la Barca',
+    aliases: [],
+  },
+  {
+    id: 'sant-vicenc-dels-horts',
+    name: 'Sant Vicenç dels Horts',
+    aliases: ['sant vicenc dels horts', 'sant vicenç dels horts'],
+  },
   { id: 'esparreguera', name: 'Esparreguera', aliases: ['esparraguera'] },
-  { id: 'olesa-de-montserrat', name: 'Olesa de Montserrat', aliases: ['olesa'] },
-  { id: 'premia-de-mar', name: 'Premià de Mar', aliases: ['premia de mar', 'premia'] },
+  {
+    id: 'olesa-de-montserrat',
+    name: 'Olesa de Montserrat',
+    aliases: ['olesa'],
+  },
+  {
+    id: 'premia-de-mar',
+    name: 'Premià de Mar',
+    aliases: ['premia de mar', 'premia'],
+  },
   { id: 'el-masnou', name: 'El Masnou', aliases: ['masnou'] },
   { id: 'pineda-de-mar', name: 'Pineda de Mar', aliases: ['pineda'] },
   { id: 'malgrat-de-mar', name: 'Malgrat de Mar', aliases: ['malgrat'] },
   { id: 'tossa-de-mar', name: 'Tossa de Mar', aliases: ['tossa'] },
   { id: 'palamos', name: 'Palamós', aliases: ['palamos'] },
-  { id: 'sant-feliu-de-guixols', name: 'Sant Feliu de Guíxols', aliases: ['sant feliu de guixols'] },
+  {
+    id: 'sant-feliu-de-guixols',
+    name: 'Sant Feliu de Guíxols',
+    aliases: ['sant feliu de guixols'],
+  },
   { id: 'olot', name: 'Olot', aliases: [] },
   { id: 'banyoles', name: 'Banyoles', aliases: [] },
   { id: 'ripoll', name: 'Ripoll', aliases: [] },
   { id: 'puigcerda', name: 'Puigcerdà', aliases: ['puigcerda'] },
   { id: 'tremp', name: 'Tremp', aliases: [] },
-  { id: 'seu-durgell', name: "La Seu d'Urgell", aliases: ["la seu d'urgell", 'seu durgell', 'la seu'] },
+  {
+    id: 'seu-durgell',
+    name: "La Seu d'Urgell",
+    aliases: ["la seu d'urgell", 'seu durgell', 'la seu'],
+  },
   { id: 'balaguer', name: 'Balaguer', aliases: [] },
   { id: 'tarrega', name: 'Tàrrega', aliases: ['tarrega', 'tàrrega'] },
   { id: 'amposta', name: 'Amposta', aliases: [] },
@@ -90,20 +174,60 @@ export const CATALUNYA_MUNICIPALITIES: CanonicalMunicipality[] = [
   { id: 'calella', name: 'Calella', aliases: [] },
   { id: 'sant-celoni', name: 'Sant Celoni', aliases: [] },
   { id: 'cardedeu', name: 'Cardedeu', aliases: [] },
-  { id: 'la-roca-del-valles', name: 'La Roca del Vallès', aliases: ['la roca', 'roca del valles'] },
+  {
+    id: 'la-roca-del-valles',
+    name: 'La Roca del Vallès',
+    aliases: ['la roca', 'roca del valles'],
+  },
   { id: 'montcada-i-reixac', name: 'Montcada i Reixac', aliases: ['montcada'] },
   { id: 'ripolet', name: 'Ripollet', aliases: [] },
-  { id: 'barbera-del-valles', name: 'Barberà del Vallès', aliases: ['barbera', 'barbera del valles'] },
-  { id: 'sant-quirze-del-valles', name: 'Sant Quirze del Vallès', aliases: ['sant quirze'] },
-  { id: 'castellar-del-valles', name: 'Castellar del Vallès', aliases: ['castellar'] },
+  {
+    id: 'barbera-del-valles',
+    name: 'Barberà del Vallès',
+    aliases: ['barbera', 'barbera del valles'],
+  },
+  {
+    id: 'sant-quirze-del-valles',
+    name: 'Sant Quirze del Vallès',
+    aliases: ['sant quirze'],
+  },
+  {
+    id: 'castellar-del-valles',
+    name: 'Castellar del Vallès',
+    aliases: ['castellar'],
+  },
   { id: 'sentmenat', name: 'Sentmenat', aliases: [] },
-  { id: 'palau-solita-i-plegamans', name: 'Palau-solità i Plegamans', aliases: ['palau solita'] },
-  { id: 'santa-perpetua-de-mogoda', name: 'Santa Perpètua de Mogoda', aliases: ['santa perpetua'] },
+  {
+    id: 'palau-solita-i-plegamans',
+    name: 'Palau-solità i Plegamans',
+    aliases: ['palau solita'],
+  },
+  {
+    id: 'santa-perpetua-de-mogoda',
+    name: 'Santa Perpètua de Mogoda',
+    aliases: ['santa perpetua'],
+  },
   { id: 'molins-de-rei', name: 'Molins de Rei', aliases: ['molins'] },
-  { id: 'sant-joan-despi', name: 'Sant Joan Despí', aliases: ['sant joandespi', 'sant joan despi'] },
-  { id: 'sant-just-desvern', name: 'Sant Just Desvern', aliases: ['sant just'] },
-  { id: 'esplugues-de-llobregat', name: 'Esplugues de Llobregat', aliases: ['esplugues'] },
-  { id: 'sant-adria-de-besos', name: 'Sant Adrià de Besòs', aliases: ['sant adria', 'sant adrià de besòs'] },
+  {
+    id: 'sant-joan-despi',
+    name: 'Sant Joan Despí',
+    aliases: ['sant joandespi', 'sant joan despi'],
+  },
+  {
+    id: 'sant-just-desvern',
+    name: 'Sant Just Desvern',
+    aliases: ['sant just'],
+  },
+  {
+    id: 'esplugues-de-llobregat',
+    name: 'Esplugues de Llobregat',
+    aliases: ['esplugues'],
+  },
+  {
+    id: 'sant-adria-de-besos',
+    name: 'Sant Adrià de Besòs',
+    aliases: ['sant adria', 'sant adrià de besòs'],
+  },
 ];
 
 export type MunicipalityNormalization = {
@@ -122,10 +246,7 @@ function stripDiacritics(value: string) {
 export function cleanMunicipalityRaw(raw: string): string {
   return raw
     .replace(/\d+/g, ' ')
-    .replace(
-      /^(a|al|als|de|del|dels|d'|l'|el|la|les|los|en)\s+/gi,
-      '',
-    )
+    .replace(/^(a|al|als|de|del|dels|d'|l'|el|la|les|los|en)\s+/gi, '')
     .replace(/\s+/g, ' ')
     .replace(/^[-:;,.\s]+|[-:;,.\s]+$/g, '')
     .trim();
@@ -176,7 +297,13 @@ export function normalizeMunicipality(
 ): MunicipalityNormalization {
   const raw = (rawInput || '').trim();
   if (!raw) {
-    return { raw: '', canonicalId: null, canonicalName: null, needsReview: true, reason: 'empty' };
+    return {
+      raw: '',
+      canonicalId: null,
+      canonicalName: null,
+      needsReview: true,
+      reason: 'empty',
+    };
   }
 
   if (looksLikeStreetOrNoise(raw)) {
@@ -204,7 +331,12 @@ export function normalizeMunicipality(
   // Coincidencia por contención solo si el catálogo aparece como token completo.
   for (const item of CATALUNYA_MUNICIPALITIES) {
     const nameKey = normalizeKey(item.name);
-    if (nameKey.length >= 4 && (key === nameKey || key.endsWith(` ${nameKey}`) || key.startsWith(`${nameKey} `))) {
+    if (
+      nameKey.length >= 4 &&
+      (key === nameKey ||
+        key.endsWith(` ${nameKey}`) ||
+        key.startsWith(`${nameKey} `))
+    ) {
       return {
         raw,
         canonicalId: item.id,
@@ -283,7 +415,11 @@ function finalizeCandidate(rawValue: string): MunicipalityNormalization {
     return normalized;
   }
   const display = titleCaseMunicipality(rawValue);
-  if (!display || looksLikeStreetOrNoise(display) || isRejectedMunicipalityToken(display)) {
+  if (
+    !display ||
+    looksLikeStreetOrNoise(display) ||
+    isRejectedMunicipalityToken(display)
+  ) {
     return {
       raw: rawValue,
       canonicalId: null,
@@ -341,7 +477,9 @@ export function extractMunicipalityFromAlertTitle(
 }
 
 /** Extrae el mejor candidato municipal desde un bloque de texto (título + cuerpo). */
-export function inferMunicipalityFromText(text: string): MunicipalityNormalization {
+export function inferMunicipalityFromText(
+  text: string,
+): MunicipalityNormalization {
   const fromTitle = extractMunicipalityFromAlertTitle(text);
   if (fromTitle.canonicalName) {
     return fromTitle;
@@ -355,7 +493,10 @@ export function inferMunicipalityFromText(text: string): MunicipalityNormalizati
   for (const item of ranked) {
     const nameKey = normalizeKey(item.name);
     if (nameKey.length < 4) continue;
-    const re = new RegExp(`(?:^|\\s)${nameKey.replace(/\s+/g, '\\s+')}(?:\\s|$|\\.|,)`, 'i');
+    const re = new RegExp(
+      `(?:^|\\s)${nameKey.replace(/\s+/g, '\\s+')}(?:\\s|$|\\.|,)`,
+      'i',
+    );
     if (re.test(haystack)) {
       return {
         raw: item.name,

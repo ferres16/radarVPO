@@ -4,7 +4,10 @@ describe('userMatchesProAlertPreferences', () => {
   it('always matches regardless of stored municipality or type prefs', () => {
     expect(
       userMatchesProAlertPreferences(
-        { alertMunicipalityIds: ['montgat'], alertPromotionTypes: ['alquiler'] },
+        {
+          alertMunicipalityIds: ['montgat'],
+          alertPromotionTypes: ['alquiler'],
+        },
         {
           municipalityId: 'calafell',
           promotionType: 'venta',
@@ -14,7 +17,11 @@ describe('userMatchesProAlertPreferences', () => {
     expect(
       userMatchesProAlertPreferences(
         {},
-        { municipality: 'Reus', municipalityId: 'reus', promotionType: 'venta' },
+        {
+          municipality: 'Reus',
+          municipalityId: 'reus',
+          promotionType: 'venta',
+        },
       ),
     ).toBe(true);
   });

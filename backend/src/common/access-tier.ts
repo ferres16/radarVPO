@@ -13,17 +13,17 @@ export const VISITOR_PROMOTION_LIST_LIMIT = 10;
 /** Detalle completo (PDF/docs) solo de las N últimas publicadas para visitantes. */
 export const VISITOR_PROMOTION_DETAIL_LIMIT = 2;
 
-export function isEmailVerified(
-  value?: Date | string | null,
-): boolean {
+export function isEmailVerified(value?: Date | string | null): boolean {
   return Boolean(value);
 }
 
-export function resolveAccessTier(input?: {
-  emailVerifiedAt?: Date | string | null;
-  plan?: string | null;
-  hasActiveProSubscription?: boolean;
-} | null): AccessTier {
+export function resolveAccessTier(
+  input?: {
+    emailVerifiedAt?: Date | string | null;
+    plan?: string | null;
+    hasActiveProSubscription?: boolean;
+  } | null,
+): AccessTier {
   if (!input || !isEmailVerified(input.emailVerifiedAt)) {
     return 'visitor';
   }
