@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { cookies } from 'next/headers';
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import { api } from '@/lib/api';
+import { serverRenderHeadersWithClientIp } from '@/lib/backend-url';
 import { CheckoutPanel } from '@/components/checkout/checkout-panel';
 import { CourseCheckoutBanner } from '@/components/checkout/course-checkout-banner';
 import { AccessSwitch, CourseAccessLink, CourseAccessProvider, LockedOnly } from '@/components/course-access';
@@ -60,9 +62,9 @@ type CourseDetailParams = {
   searchParams?: Promise<{ canceled?: string }>;
 };
 
-async function getPublicCourse(slug: string) {
+const getPublicCourse = cache(async (slug: string) => {
   return api.getCourse(slug).catch(() => null);
-}
+});
 
 async function getCourseWithAccess(slug: string) {
   const cookieHeader = (await cookies()).toString();
@@ -70,6 +72,7 @@ async function getCourseWithAccess(slug: string) {
 
   const response = await fetch(`${API_BASE_URL}/courses/${slug}/access`, {
     headers: {
+      ...(await serverRenderHeadersWithClientIp()),
       Cookie: cookieHeader,
       Accept: 'application/json',
     },

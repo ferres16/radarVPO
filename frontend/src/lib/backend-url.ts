@@ -24,3 +24,19 @@ export function serverRenderHeaders(): Record<string, string> {
   const secret = process.env.BACKEND_PROXY_SECRET;
   return secret ? { 'x-radar-proxy-secret': secret } : {};
 }
+
+/**
+ * Solo para peticiones SSR ya dinámicas (con cookies de sesión): añade la IP del
+ * visitante para que cada usuario tenga su propio cupo en el backend en vez de
+ * compartir el de "frontend-ssr".
+ */
+export async function serverRenderHeadersWithClientIp(): Promise<Record<string, string>> {
+  const base = serverRenderHeaders();
+  if (!base['x-radar-proxy-secret']) return base;
+  const { headers } = await import('next/headers');
+  const incoming = await headers();
+  const clientIp =
+    incoming.get('x-real-ip')?.trim() ||
+    incoming.get('x-forwarded-for')?.split(',')[0]?.trim();
+  return clientIp ? { ...base, 'x-radar-client-ip': clientIp } : base;
+}

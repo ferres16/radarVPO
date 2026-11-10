@@ -1,11 +1,11 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 import { AdminNav } from '@/components/admin-nav';
 import { api } from '@/lib/api';
-import { CourseLessonEditor } from '@/components/course-lesson-editor';
 import type {
   Course,
   CourseAccessType,
@@ -19,6 +19,14 @@ import type {
   LessonType,
   UserProfile,
 } from '@/types';
+
+const CourseLessonEditor = dynamic(
+  () => import('@/components/course-lesson-editor').then((m) => m.CourseLessonEditor),
+  {
+    ssr: false,
+    loading: () => <p className="text-sm text-slate-500">Cargando editor…</p>,
+  },
+);
 
 const emptyModule: Partial<CourseModule> = {
   title: '',

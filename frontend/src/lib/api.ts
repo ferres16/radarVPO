@@ -41,7 +41,11 @@ import {
   SmsSyncResult,
   JobRun,
 } from '@/types';
-import { getBrowserApiBaseUrl, serverRenderHeaders } from '@/lib/backend-url';
+import {
+  getBrowserApiBaseUrl,
+  serverRenderHeaders,
+  serverRenderHeadersWithClientIp,
+} from '@/lib/backend-url';
 
 type CourseMutationPayload = Partial<
   Pick<
@@ -196,10 +200,12 @@ async function serverCookieHeader(): Promise<string> {
 async function requestPublic<T>(path: string, revalidateSeconds = 45): Promise<T> {
   const cookieHeader = await serverCookieHeader();
   const authed = Boolean(cookieHeader);
+  const proxyHeaders = authed ? await serverRenderHeadersWithClientIp() : serverRenderHeaders();
   const res = await fetch(`${getBrowserApiBaseUrl()}${path}`, {
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...proxyHeaders,
       ...(cookieHeader ? { Cookie: cookieHeader } : {}),
     },
     ...(authed || revalidateSeconds <= 0
