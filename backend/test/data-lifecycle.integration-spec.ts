@@ -36,6 +36,39 @@ describeDb('data lifecycle (PostgreSQL)', () => {
     });
   }
 
+  it('refuses to anonymize while Stripe cannot cancel an active subscription', async () => {
+    const user = await createUser(`subscriber-${suffix}@example.test`);
+    await prisma.subscription.create({
+      data: {
+        userId: user.id,
+        provider: 'stripe',
+        providerRef: `sub_test_${suffix}`,
+        planKey: 'pro',
+        status: 'active',
+      },
+    });
+    const billing = {
+      cancelStripeSubscriptionsForUser: jest
+        .fn()
+        .mockRejectedValue(new Error('stripe down')),
+    };
+    const users = new UsersService(
+      prisma as never,
+      {} as never,
+      {} as never,
+      billing as never,
+    );
+
+    await expect(users.deleteMyAccount(user.id)).rejects.toThrow(
+      /No hemos podido cancelar/,
+    );
+    const untouched = await prisma.user.findUniqueOrThrow({
+      where: { id: user.id },
+    });
+    expect(untouched.email).toBe(`subscriber-${suffix}@example.test`);
+    expect(untouched.phone).toBe('+34600000000');
+  });
+
   it('anonymizes an account but keeps purchases and checkout consent', async () => {
     const user = await createUser(`buyer-${suffix}@example.test`);
     const purchase = await prisma.purchase.create({

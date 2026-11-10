@@ -1,7 +1,9 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { Prisma, UserPlan, UserRole } from '@prisma/client';
@@ -13,6 +15,8 @@ import { CoursesService } from '../courses/courses.service';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly proAccess: ProAccessService,
@@ -458,8 +462,25 @@ export class UsersService {
         email: user.email,
         stripeCustomerId: user.stripeCustomerId,
       });
-    } catch {
-      // La supresión sigue: las compras se conservan para obligaciones fiscales.
+    } catch (error) {
+      const activeSubscription = await this.prisma.subscription.findFirst({
+        where: {
+          userId: user.id,
+          status: { in: ['active', 'trialing', 'past_due'] },
+        },
+        select: { id: true },
+      });
+      if (activeSubscription) {
+        // Anonimizar sin cancelar en Stripe dejaría cobrando a una cuenta que ya no existe.
+        throw new ServiceUnavailableException(
+          'No hemos podido cancelar tu suscripción en este momento. No se ha borrado nada; inténtalo de nuevo en unos minutos.',
+        );
+      }
+      this.logger.warn(
+        `Stripe cancel failed during anonymization of ${user.id} (no active subscription): ${
+          error instanceof Error ? error.name : 'unknown'
+        }`,
+      );
     }
 
     const deletedAt = new Date();
