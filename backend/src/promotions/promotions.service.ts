@@ -102,10 +102,17 @@ export class PromotionsService {
   async list(filters: ListPromotionsDto, userId?: string | null) {
     const tier = await this.resolveViewerTier(userId);
     const requested = Math.min(filters.limit ?? 10, 100);
-    const limit = canUseRegisteredBenefits(tier)
+    const requestedOffset = filters.offset ?? 0;
+    // Visitantes: ventana fija de las primeras N; el offset no permite recorrer
+    // el resto del catálogo.
+    const registeredViewer = canUseRegisteredBenefits(tier);
+    if (!registeredViewer && requestedOffset >= VISITOR_PROMOTION_LIST_LIMIT) {
+      return [];
+    }
+    const limit = registeredViewer
       ? requested
-      : Math.min(requested, VISITOR_PROMOTION_LIST_LIMIT);
-    const offset = filters.offset ?? 0;
+      : Math.min(requested, VISITOR_PROMOTION_LIST_LIMIT - requestedOffset);
+    const offset = requestedOffset;
     const statusFilter = filters.status
       ? PUBLIC_PROMOTION_STATUSES.includes(filters.status)
         ? (filters.status as PromotionStatus)

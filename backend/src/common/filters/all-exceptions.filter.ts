@@ -42,13 +42,26 @@ export class AllExceptionsFilter implements ExceptionFilter {
         logPayload.error = 'Unknown internal exception';
       }
     } else {
-      // In production avoid logging exception messages or stacks (may contain sensitive data)
+      // Sin el mensaje (puede incluir datos personales o valores de consulta),
+      // pero con las líneas de la traza para poder diagnosticar los 5xx.
       logPayload.error =
         exception instanceof Error ? exception.name : 'InternalException';
-      logPayload.message = 'redacted';
+      const code = (exception as { code?: unknown } | null)?.code;
+      if (typeof code === 'string') logPayload.code = code;
+      if (status >= 500 && exception instanceof Error && exception.stack) {
+        logPayload.stack = exception.stack
+          .split('\n')
+          .filter((line) => line.trimStart().startsWith('at '))
+          .slice(0, 12)
+          .join('\n');
+      }
     }
 
-    this.logger.error(JSON.stringify(logPayload));
+    if (status >= 500) {
+      this.logger.error(JSON.stringify(logPayload));
+    } else {
+      this.logger.warn(JSON.stringify(logPayload));
+    }
 
     response.status(status).json({
       success: false,

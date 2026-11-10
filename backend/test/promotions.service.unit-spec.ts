@@ -78,6 +78,7 @@ describe('PromotionsService list', () => {
           { publishedAt: { sort: 'desc', nulls: 'last' } },
           { createdAt: 'desc' },
         ],
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         take: expect.any(Number),
       }),
     );
@@ -121,10 +122,27 @@ describe('PromotionsService list', () => {
     }>;
 
     expect(result).toHaveLength(10);
-    expect(result.filter((item) => !item.detailLocked).map((item) => item.id)).toEqual([
-      'p0',
-      'p1',
-    ]);
+    expect(
+      result.filter((item) => !item.detailLocked).map((item) => item.id),
+    ).toEqual(['p0', 'p1']);
+  });
+
+  it('does not let visitors page past the first 10 with offset', async () => {
+    const findMany = jest.fn().mockResolvedValue([]);
+    const prisma = {
+      promotion: { findMany },
+      user: { findUnique: jest.fn().mockResolvedValue(null) },
+    } as unknown as PrismaService;
+    const service = new PromotionsService(
+      prisma,
+      {} as FileStorageService,
+      {
+        getVisitorCount: jest.fn().mockResolvedValue(0),
+      } as unknown as MetricsService,
+    );
+
+    await expect(service.list({ limit: 10, offset: 10 })).resolves.toEqual([]);
+    expect(findMany).not.toHaveBeenCalled();
   });
 });
 
