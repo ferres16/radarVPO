@@ -16,6 +16,7 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { hashRefreshToken, refreshTokenMatches } from './refresh-token.util';
 import {
   MARKETING_CONSENT_TEXT,
   MARKETING_CONSENT_VERSION,
@@ -34,6 +35,8 @@ import {
   hashPasswordResetToken,
   PASSWORD_RESET_TOKEN_TTL_MS,
 } from './password-reset.util';
+
+const TIMING_EQUALIZER_HASH = bcrypt.hashSync('radarvpo-timing-equalizer', 10);
 
 @Injectable()
 export class AuthService {
@@ -93,9 +96,7 @@ export class AuthService {
           marketingOptInVersion: marketingOptIn
             ? MARKETING_CONSENT_VERSION
             : null,
-          marketingConsentText: marketingOptIn
-            ? MARKETING_CONSENT_TEXT
-            : null,
+          marketingConsentText: marketingOptIn ? MARKETING_CONSENT_TEXT : null,
         },
       },
     });
@@ -112,6 +113,8 @@ export class AuthService {
       dto.email.toLowerCase(),
     );
     if (!user) {
+      // Mismo coste que un login real: no revelar por tiempo si el email existe.
+      await bcrypt.compare(dto.password, TIMING_EQUALIZER_HASH);
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -146,7 +149,7 @@ export class AuthService {
       throw new UnauthorizedException('Session expired');
     }
 
-    const matches = await bcrypt.compare(
+    const matches = await refreshTokenMatches(
       refreshToken,
       session.refreshTokenHash,
     );
@@ -325,7 +328,8 @@ export class AuthService {
     await this.sendVerificationEmail(userId, nextEmail, user.fullName);
     return {
       success: true,
-      message: 'Email actualizado. Te hemos enviado un nuevo enlace de verificación.',
+      message:
+        'Email actualizado. Te hemos enviado un nuevo enlace de verificación.',
       email: nextEmail,
     };
   }
@@ -495,14 +499,14 @@ export class AuthService {
     );
 
     const refreshToken = await this.jwtService.signAsync(
-      { sub: userId, sessionId },
+      { sub: userId, sessionId, jti: crypto.randomUUID() },
       {
         secret: this.config.getOrThrow<string>('JWT_REFRESH_SECRET'),
         expiresIn: '30d',
       },
     );
 
-    const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
+    const refreshTokenHash = hashRefreshToken(refreshToken);
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 
     await this.prisma.session.upsert({
