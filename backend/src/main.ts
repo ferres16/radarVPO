@@ -44,7 +44,14 @@ async function bootstrap() {
   app.use(cookieParser());
   app.use((req: Request, res: Response, next: NextFunction) => {
     const path = req.path || '';
+    // Rutas "opcionales" (promociones, cursos) cambian según el nivel de acceso:
+    // con credenciales nunca deben acabar en una caché compartida.
+    const hasCredentials = Boolean(
+      req.headers.authorization ||
+      (req.cookies as Record<string, string> | undefined)?.access_token,
+    );
     if (
+      hasCredentials ||
       /\/(users|backoffice|auth|billing|promotions\/user|courses\/.+\/access)/.test(
         path,
       )
