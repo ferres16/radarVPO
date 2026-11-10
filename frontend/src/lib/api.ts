@@ -41,7 +41,7 @@ import {
   SmsSyncResult,
   JobRun,
 } from '@/types';
-import { getBrowserApiBaseUrl } from '@/lib/backend-url';
+import { getBrowserApiBaseUrl, serverRenderHeaders } from '@/lib/backend-url';
 
 type CourseMutationPayload = Partial<
   Pick<
@@ -159,6 +159,7 @@ async function request<T>(
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      ...serverRenderHeaders(),
       ...(init?.headers || {}),
     },
     cache: 'no-store',

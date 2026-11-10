@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { applyClientIpHeaders } from '@/lib/backend-proxy-headers';
 import { getBackendApiUrl } from '@/lib/backend-url';
 
 // Enlace corto de los SMS: /p/<código> → /promotions/<id>.
@@ -26,7 +27,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
   try {
     const res = await fetch(
       `${getBackendApiUrl()}/promotions/short/${encodeURIComponent(code)}`,
-      { cache: 'no-store', signal: AbortSignal.timeout(8_000) },
+      {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(8_000),
+        headers: applyClientIpHeaders(new Headers(), request),
+      },
     );
     if (res.ok) {
       const data = (await res.json()) as { id?: unknown };

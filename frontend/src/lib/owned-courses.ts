@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { getBackendApiUrl } from '@/lib/backend-url';
+import { getBackendApiUrl, serverRenderHeaders } from '@/lib/backend-url';
 
 /** Cursos/guías a los que la sesión actual ya tiene acceso. */
 export async function getOwnedCourseSlugs(): Promise<Set<string>> {
@@ -11,6 +11,7 @@ export async function getOwnedCourseSlugs(): Promise<Set<string>> {
       headers: {
         Cookie: cookieHeader,
         Accept: 'application/json',
+        ...serverRenderHeaders(),
       },
       cache: 'no-store',
     });

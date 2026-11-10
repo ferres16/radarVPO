@@ -1,5 +1,6 @@
 import { promises as dns } from 'node:dns';
 import { NextRequest, NextResponse } from 'next/server';
+import { applyClientIpHeaders } from '@/lib/backend-proxy-headers';
 import { getBackendApiUrl } from '@/lib/backend-url';
 import {
   buildPdfFileName,
@@ -85,10 +86,11 @@ export async function GET(request: NextRequest, context: RouteContext) {
       {
         cache: 'no-store',
         signal: AbortSignal.timeout(10_000),
-        headers: {
-          // Reenvía la sesión para respetar el gate de visitante vs cuenta verificada.
-          Cookie: request.headers.get('cookie') || '',
-        },
+        // Reenvía la sesión para respetar el gate de visitante vs cuenta verificada.
+        headers: applyClientIpHeaders(
+          new Headers({ Cookie: request.headers.get('cookie') || '' }),
+          request,
+        ),
       },
     );
     if (backendResponse.status === 404) return errorResponse(404, 'not_found');

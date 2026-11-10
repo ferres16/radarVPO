@@ -193,6 +193,12 @@ class EnvironmentVariables {
   @IsString()
   JOBS_ADMIN_TOKEN?: string;
 
+  /** Secreto compartido con el frontend para reenviar la IP real al rate limit. */
+  @IsOptional()
+  @IsString()
+  @MinLength(32)
+  BACKEND_PROXY_SECRET?: string;
+
   @IsOptional()
   @IsUrl()
   OPENAI_BASE_URL?: string;

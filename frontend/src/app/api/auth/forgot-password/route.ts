@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { anonymousJsonProxyHeaders } from '@/lib/backend-proxy-headers';
 import { getBackendApiUrl } from '@/lib/backend-url';
 
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const upstream = await fetch(`${getBackendApiUrl()}/auth/forgot-password`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
+    headers: anonymousJsonProxyHeaders(request),
     body: JSON.stringify(body),
     cache: 'no-store',
   });

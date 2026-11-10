@@ -13,3 +13,14 @@ export function getBrowserApiBaseUrl() {
 
   return getBackendApiUrl();
 }
+
+/**
+ * Renderizado en servidor: identifica la petición ante el rate limit del
+ * backend. BACKEND_PROXY_SECRET no lleva prefijo NEXT_PUBLIC_, así que nunca
+ * llega al bundle del navegador.
+ */
+export function serverRenderHeaders(): Record<string, string> {
+  if (typeof window !== 'undefined') return {};
+  const secret = process.env.BACKEND_PROXY_SECRET;
+  return secret ? { 'x-radar-proxy-secret': secret } : {};
+}

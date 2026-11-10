@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { anonymousJsonProxyHeaders } from '@/lib/backend-proxy-headers';
 import { getBackendApiUrl } from '@/lib/backend-url';
 
 /**
@@ -6,11 +7,11 @@ import { getBackendApiUrl } from '@/lib/backend-url';
  * Siempre responde 204: un fallo de métricas no debe mostrarse como 404
  * en la consola justo después de aceptar cookies.
  */
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
     await fetch(`${getBackendApiUrl()}/metrics/visit`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: anonymousJsonProxyHeaders(request),
       body: '{}',
       cache: 'no-store',
     });
