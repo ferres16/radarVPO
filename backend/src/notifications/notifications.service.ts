@@ -1266,7 +1266,7 @@ export class NotificationsService {
         : fallback.subject;
     const intro =
       tpl?.emailBody != null
-        ? this.templates.render(tpl.emailBody, vars)
+        ? this.templates.renderHtml(tpl.emailBody, vars)
         : fallback.intro;
     const smsUrl =
       kind === 'new_publication'
@@ -1414,7 +1414,9 @@ export class NotificationsService {
       const subject = tpl.emailSubject
         ? renderTemplate(tpl.emailSubject, vars)
         : null;
-      const body = tpl.emailBody ? renderTemplate(tpl.emailBody, vars) : null;
+      const body = tpl.emailBody
+        ? renderTemplate(tpl.emailBody, vars, { html: true })
+        : null;
       const html = body
         ? isProAlert
           ? this.buildSlimProEmailHtml({ bodyHtml: body, pageUrl: sampleUrl })
@@ -1555,7 +1557,7 @@ export class NotificationsService {
         : input.fallbackSubject;
     const body =
       tpl?.active && tpl.emailBody
-        ? this.templates.render(tpl.emailBody, vars)
+        ? this.templates.renderHtml(tpl.emailBody, vars)
         : input.fallbackHtml;
     if (hasIncompleteRender(subject, {}) || hasIncompleteRender(body, {})) {
       this.logger.warn(

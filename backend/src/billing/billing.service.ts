@@ -29,6 +29,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import {
   buildBillingSummary,
+  escapeHtmlText,
   formatMadridDate,
 } from '../notifications/message-vars';
 import {
@@ -914,7 +915,7 @@ export class BillingService {
           },
           requiredVars: ['product', 'url', 'price', 'consent_summary'],
           fallbackSubject: `Confirmación de compra: ${courseTitle}`,
-          fallbackHtml: `<p>Hola,</p><p>Compra confirmada: ${courseTitle} (${formatEuroAmount(session.amount_total ?? 0)}). Ref. ${purchaseRef}.</p><p>${consentBlock}</p><p><a href="${courseUrl}">Acceder</a></p><p>Versión contractual: ${consent?.termsVersion ?? CONTRACT_TERMS_VERSION}</p>`,
+          fallbackHtml: `<p>Hola,</p><p>Compra confirmada: ${escapeHtmlText(courseTitle)} (${formatEuroAmount(session.amount_total ?? 0)}). Ref. ${purchaseRef}.</p><p>${escapeHtmlText(consentBlock)}</p><p><a href="${courseUrl}">Acceder</a></p><p>Versión contractual: ${consent?.termsVersion ?? CONTRACT_TERMS_VERSION}</p>`,
         });
       }
       return;
@@ -1041,7 +1042,7 @@ export class BillingService {
         fallbackSubject: isPack
           ? 'Confirmación: pack PRO de tres meses'
           : 'Confirmación: Radar VPO PRO',
-        fallbackHtml: `<p>Hola,</p><p>${productLabel} confirmado (${formatEuroAmount(session.amount_total ?? 0)}). Ref. ${session.id}.</p><p>Acceso hasta ${accessUntil || 'el final del periodo pagado'}.</p><p>${consentBlock}</p><p><a href="${siteUrl}/account">Mi cuenta</a></p><p>Versión contractual: ${consent?.termsVersion ?? CONTRACT_TERMS_VERSION}</p>`,
+        fallbackHtml: `<p>Hola,</p><p>${escapeHtmlText(productLabel)} confirmado (${formatEuroAmount(session.amount_total ?? 0)}). Ref. ${session.id}.</p><p>Acceso hasta ${accessUntil || 'el final del periodo pagado'}.</p><p>${escapeHtmlText(consentBlock)}</p><p><a href="${siteUrl}/account">Mi cuenta</a></p><p>Versión contractual: ${consent?.termsVersion ?? CONTRACT_TERMS_VERSION}</p>`,
       });
     }
   }

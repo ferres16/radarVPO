@@ -1,3 +1,4 @@
+import { renderTemplate } from '../message-vars';
 import { gsm7Units, prepareSms, smsSegments, toGsm7 } from '../sms-content';
 
 const promoUrl =
@@ -47,5 +48,25 @@ describe('prepareSms', () => {
     expect(smsSegments(160)).toBe(1);
     expect(smsSegments(161)).toBe(2);
     expect(smsSegments(306)).toBe(2);
+  });
+});
+
+describe('renderTemplate html escaping', () => {
+  it('escapes user-controlled variables in email bodies only', () => {
+    const vars = {
+      name: '<a href="https://evil.test">Pulsa</a>',
+      url: 'https://www.radarvpo.com/a?b=1&c=2',
+    };
+    const html = renderTemplate(
+      '<p>Hola {{name}},</p><a href="{{url}}">x</a>',
+      vars,
+      { html: true },
+    );
+    expect(html).not.toContain('<a href="https://evil.test">');
+    expect(html).toContain('&lt;a href=&quot;https://evil.test&quot;&gt;');
+    expect(html).toContain('href="https://www.radarvpo.com/a?b=1&amp;c=2"');
+    expect(renderTemplate('Hola {{name}}', { name: 'Ana & Co' })).toBe(
+      'Hola Ana & Co,',
+    );
   });
 });

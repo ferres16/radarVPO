@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { resolvePublicSiteUrl } from '../common/public-site-url';
+import { escapeHtmlText } from '../notifications/message-vars';
 import { NotificationsService } from '../notifications/notifications.service';
 import { UsersService } from '../users/users.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -430,7 +431,7 @@ export class AuthService {
         phone: '',
       },
       fallbackSubject: 'Confirma tu email en Radar VPO',
-      fallbackHtml: `<p>Hola ${displayName},</p><p>Confirma tu dirección de correo para comprar y recibir avisos.</p><p><a href="${verifyUrl}">Verificar email</a></p>`,
+      fallbackHtml: `<p>Hola ${escapeHtmlText(displayName)},</p><p>Confirma tu dirección de correo para comprar y recibir avisos.</p><p><a href="${verifyUrl}">Verificar email</a></p>`,
     });
     if (!sent) {
       throw new BadRequestException(

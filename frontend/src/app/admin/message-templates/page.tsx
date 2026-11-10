@@ -267,9 +267,12 @@ export default function AdminMessageTemplatesPage() {
                   <p className="truncate text-[11px] font-semibold text-[var(--ink)]">{subjectPreview}</p>
                   <p className="text-[10px] text-[var(--ink-soft)]">Radar VPO</p>
                 </div>
-                <div
-                  className="max-h-[420px] overflow-y-auto px-3 py-3 text-[12px] leading-5 text-[var(--ink)] [&_a]:font-bold [&_a]:text-[var(--green-700)]"
-                  dangerouslySetInnerHTML={{ __html: emailPreview }}
+                {/* iframe sin permisos: el HTML editable no se ejecuta en el origen del admin. */}
+                <iframe
+                  title="Vista previa del email"
+                  sandbox=""
+                  srcDoc={`<!doctype html><meta charset="utf-8"><body style="margin:0;padding:12px;font:12px/1.6 Inter,Arial,sans-serif;color:#0b1220">${emailPreview}</body>`}
+                  className="h-[420px] w-full bg-white"
                 />
               </div>
               {draft.smsBody ? (

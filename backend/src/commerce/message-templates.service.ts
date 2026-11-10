@@ -165,6 +165,13 @@ export class MessageTemplatesService {
     return renderTemplate(template, vars);
   }
 
+  renderHtml(
+    template: string | null | undefined,
+    vars: Record<string, string>,
+  ) {
+    return renderTemplate(template, vars, { html: true });
+  }
+
   private toDto(row: {
     id: string;
     key: string;

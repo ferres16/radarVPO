@@ -82,16 +82,32 @@ export function buildBillingSummary(input: {
  * Sustituye {{var}} y aplica saludo "Hola," cuando name está vacío
  * (reemplaza "Hola {{name}}," / "Hola {{name}}").
  */
+export function escapeHtmlText(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * `html: true` para cuerpos de email: las variables (nombre del usuario, títulos…)
+ * se escapan para que no puedan inyectar enlaces o marcado en correos enviados
+ * desde nuestro dominio. Asuntos y SMS son texto plano.
+ */
 export function renderTemplate(
   template: string | null | undefined,
   vars: MessageVars,
+  options: { html?: boolean } = {},
 ): string {
   if (!template) return '';
+  const encode = options.html ? escapeHtmlText : (value: string) => value;
   const name = vars.name ?? '';
   let out = template
-    .replace(/Hola\s*\{\{\s*name\s*\}\}\s*,?/gi, formatGreeting(name))
+    .replace(/Hola\s*\{\{\s*name\s*\}\}\s*,?/gi, formatGreeting(encode(name)))
     .replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key: string) => {
-      return vars[key] ?? '';
+      return encode(vars[key] ?? '');
     });
   // Evitar párrafos vacíos de variables opcionales.
   out = out.replace(/<p>\s*<\/p>/gi, '');
