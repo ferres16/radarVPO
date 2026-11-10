@@ -2,7 +2,7 @@
 
 > Generado por `scripts/generate-reference-docs.mjs`. No editar a mano: ejecuta `npm run docs:reference`.
 
-**501** ficheros versionados (`git ls-files`), excluyendo los propios documentos generados en `docs/reference/`.
+**510** ficheros versionados (`git ls-files`), excluyendo los propios documentos generados en `docs/reference/`.
 
 ## Exclusiones
 
@@ -26,27 +26,35 @@ No se inventarían porque no están versionados o se regeneran:
 | Utilidad backend | 37 |
 | Migración SQL (aplicada por `prisma migrate deploy`) | 32 |
 | Servicio NestJS (lógica de negocio) | 25 |
+| Documentación | 21 |
 | Módulo NestJS | 19 |
 | Configuración de herramientas | 16 |
 | Route handler Next (proxy/servidor) | 16 |
-| Documentación | 13 |
 | Controlador HTTP NestJS | 12 |
-| Otro | 11 |
-| Recurso estático público | 10 |
+| Recurso estático público | 11 |
 | Script operativo backend | 5 |
 | Configuración de despliegue | 4 |
 | Guard de autorización / rate limit | 4 |
 | Configuración/tests de integración | 4 |
+| Componente React de ruta | 3 |
 | Pipeline CI/CD | 2 |
 | Exclusiones de git | 2 |
 | Plantilla de variables de entorno (sin valores reales) | 2 |
 | Metadato/SEO generado | 2 |
+| Configuración del editor | 1 |
+| Configuración de Prisma | 1 |
 | Rollback manual de la migración | 1 |
+| Bloqueo de proveedor de migraciones Prisma | 1 |
 | Esquema de datos (fuente de verdad) | 1 |
+| Datos iniciales (seed) de Prisma | 1 |
 | Estrategia Passport | 1 |
 | Estado especial de ruta Next | 1 |
+| Estilos globales | 1 |
 | Layout Next | 1 |
+| Hook React | 1 |
+| Middleware Next (se ejecuta en cada petición) | 1 |
 | Tipos compartidos frontend | 1 |
+| Script de mantenimiento del repositorio | 1 |
 
 ## Listado completo
 
@@ -64,7 +72,7 @@ No se inventarían porque no están versionados o se regeneran:
 
 | Fichero | Tipo |
 |---|---|
-| `.cursor/settings.json` | Otro |
+| `.cursor/settings.json` | Configuración del editor |
 
 ### `.github/workflows` (2)
 
@@ -85,7 +93,7 @@ No se inventarían porque no están versionados o se regeneran:
 | `backend/nest-cli.json` | Configuración de herramientas |
 | `backend/package-lock.json` | Configuración de herramientas |
 | `backend/package.json` | Configuración de herramientas |
-| `backend/prisma.config.ts` | Otro |
+| `backend/prisma.config.ts` | Configuración de Prisma |
 | `backend/railway.json` | Configuración de despliegue |
 | `backend/tsconfig.build.json` | Configuración de herramientas |
 | `backend/tsconfig.json` | Configuración de herramientas |
@@ -95,7 +103,7 @@ No se inventarían porque no están versionados o se regeneran:
 | Fichero | Tipo |
 |---|---|
 | `backend/prisma/schema.prisma` | Esquema de datos (fuente de verdad) |
-| `backend/prisma/seed.ts` | Otro |
+| `backend/prisma/seed.ts` | Datos iniciales (seed) de Prisma |
 
 ### `backend/prisma/migrations` (34)
 
@@ -134,7 +142,7 @@ No se inventarían porque no están versionados o se regeneran:
 | `backend/prisma/migrations/20261110000000_delivery_log_content/migration.sql` | Migración SQL (aplicada por `prisma migrate deploy`) |
 | `backend/prisma/migrations/20261110120000_audit_indexes/down.sql` | Rollback manual de la migración |
 | `backend/prisma/migrations/20261110120000_audit_indexes/migration.sql` | Migración SQL (aplicada por `prisma migrate deploy`) |
-| `backend/prisma/migrations/migration_lock.toml` | Otro |
+| `backend/prisma/migrations/migration_lock.toml` | Bloqueo de proveedor de migraciones Prisma |
 
 ### `backend/scripts` (5)
 
@@ -425,15 +433,23 @@ No se inventarían porque no están versionados o se regeneran:
 | `backend/test/pdf-ocr.service.unit-spec.ts` | Test automatizado |
 | `backend/test/promotions.service.unit-spec.ts` | Test automatizado |
 
-### `docs` (6)
+### `docs` (14)
 
 | Fichero | Tipo |
 |---|---|
+| `docs/README.md` | Documentación |
 | `docs/ads-meta-diagnosis.md` | Documentación |
 | `docs/adsense-getting-ready.md` | Documentación |
+| `docs/architecture.md` | Documentación |
 | `docs/auditoria-rv01-rv06-2026-10-29.md` | Documentación |
 | `docs/checkout-thankyou-consent.md` | Documentación |
 | `docs/estrategia-lanzamiento.md` | Documentación |
+| `docs/flows.md` | Documentación |
+| `docs/integrations.md` | Documentación |
+| `docs/legal-privacy.md` | Documentación |
+| `docs/operations.md` | Documentación |
+| `docs/performance.md` | Documentación |
+| `docs/security-audit.md` | Documentación |
 | `docs/ux-ui-audit.md` | Documentación |
 
 ### `docs/research` (2)
@@ -485,7 +501,7 @@ No se inventarían porque no están versionados o se regeneran:
 
 | Fichero | Tipo |
 |---|---|
-| `frontend/src/middleware.ts` | Otro |
+| `frontend/src/middleware.ts` | Middleware Next (se ejecuta en cada petición) |
 
 ### `frontend/src/app` (66)
 
@@ -503,8 +519,8 @@ No se inventarían porque no están versionados o se regeneran:
 | `frontend/src/app/admin/news/page.tsx` | Página Next (App Router) |
 | `frontend/src/app/admin/page.tsx` | Página Next (App Router) |
 | `frontend/src/app/admin/promotions/[id]/page.tsx` | Página Next (App Router) |
-| `frontend/src/app/admin/promotions/create-promotion-form.tsx` | Otro |
-| `frontend/src/app/admin/promotions/delete-promotion-button.tsx` | Otro |
+| `frontend/src/app/admin/promotions/create-promotion-form.tsx` | Componente React de ruta |
+| `frontend/src/app/admin/promotions/delete-promotion-button.tsx` | Componente React de ruta |
 | `frontend/src/app/admin/promotions/page.tsx` | Página Next (App Router) |
 | `frontend/src/app/admin/services/page.tsx` | Página Next (App Router) |
 | `frontend/src/app/admin/sms/page.tsx` | Página Next (App Router) |
@@ -535,10 +551,10 @@ No se inventarían porque no están versionados o se regeneran:
 | `frontend/src/app/cursos/[slug]/page.tsx` | Página Next (App Router) |
 | `frontend/src/app/cursos/page.tsx` | Página Next (App Router) |
 | `frontend/src/app/dashboard/loading.tsx` | Estado especial de ruta Next |
-| `frontend/src/app/favicon.ico` | Otro |
+| `frontend/src/app/favicon.ico` | Recurso estático público |
 | `frontend/src/app/forgot-password/page.tsx` | Página Next (App Router) |
-| `frontend/src/app/globals.css` | Otro |
-| `frontend/src/app/gracias/gracias-client.tsx` | Otro |
+| `frontend/src/app/globals.css` | Estilos globales |
+| `frontend/src/app/gracias/gracias-client.tsx` | Componente React de ruta |
 | `frontend/src/app/gracias/page.tsx` | Página Next (App Router) |
 | `frontend/src/app/layout.tsx` | Layout Next |
 | `frontend/src/app/login/page.tsx` | Página Next (App Router) |
@@ -650,7 +666,7 @@ No se inventarían porque no están versionados o se regeneran:
 
 | Fichero | Tipo |
 |---|---|
-| `frontend/src/hooks/use-pdf-fullscreen.ts` | Otro |
+| `frontend/src/hooks/use-pdf-fullscreen.ts` | Hook React |
 
 ### `frontend/src/lib` (83)
 
@@ -745,4 +761,10 @@ No se inventarían porque no están versionados o se regeneran:
 | Fichero | Tipo |
 |---|---|
 | `frontend/src/types/index.ts` | Tipos compartidos frontend |
+
+### `scripts` (1)
+
+| Fichero | Tipo |
+|---|---|
+| `scripts/generate-reference-docs.mjs` | Script de mantenimiento del repositorio |
 

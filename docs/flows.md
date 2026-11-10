@@ -20,7 +20,7 @@ sequenceDiagram
   BE-->>FE: tokens → cookies httpOnly
   U->>FE: abre enlace /verify-email?token=…
   FE->>BE: POST /auth/verify-email
-  BE->>DB: users.emailVerifiedAt = now; invalida otros tokens
+  BE->>DB: users.emailVerifiedAt = now, invalida otros tokens
   BE->>BE: activatePaidAccessAfterVerification (compras/PRO ya pagados, SMS bienvenida una vez)
 ```
 
