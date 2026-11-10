@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import {
   Injectable,
   InternalServerErrorException,
@@ -60,7 +61,9 @@ export class S3StorageService {
     }
 
     const safeName = params.fileName.replace(/[^a-zA-Z0-9._-]+/g, '_');
-    const key = `${params.folder}/${Date.now()}-${safeName}`;
+    // Sufijo aleatorio: la clave no se puede adivinar aunque el bucket tuviera
+    // lectura pública a nivel de bucket (objetos privados como la guía de pago).
+    const key = `${params.folder}/${Date.now()}-${randomBytes(12).toString('hex')}-${safeName}`;
 
     try {
       await this.client.send(

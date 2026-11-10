@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import {
   Controller,
   Headers,
@@ -9,6 +10,11 @@ import {
 import { ApiExcludeController } from '@nestjs/swagger';
 import { NewsCoverService } from '../news/news-cover.service';
 import { NewsAutomationService } from './news-automation.service';
+
+function safeEqual(a: string, b: string): boolean {
+  const digest = (value: string) => createHash('sha256').update(value).digest();
+  return timingSafeEqual(digest(a), digest(b));
+}
 
 /**
  * Endpoints operativos protegidos por JOBS_ADMIN_TOKEN.
@@ -24,7 +30,7 @@ export class JobsController {
 
   private assertToken(token?: string) {
     const expected = process.env.JOBS_ADMIN_TOKEN?.trim();
-    if (!expected || !token || token !== expected) {
+    if (!expected || !token || !safeEqual(token, expected)) {
       throw new UnauthorizedException('Invalid job token');
     }
   }
