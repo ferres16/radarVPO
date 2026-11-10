@@ -5,6 +5,11 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RegistreScraperService } from './registre-scraper.service';
 import { NewsAutomationService } from './news-automation.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import {
+  isDataRetentionEnabled,
+  RETENTION_DAYS,
+  retentionCutoff,
+} from './data-retention';
 
 const inMemoryLocks = new Set<string>();
 
@@ -151,6 +156,70 @@ export class JobsService implements OnApplicationBootstrap {
 
       return this.newsAutomationService.generateDailyCatalunyaNews();
     });
+  }
+
+  /** Desactivado por defecto: borra datos técnicos caducados (ver data-retention.ts). */
+  @Cron(process.env.CRON_DATA_RETENTION || '30 3 * * *', {
+    timeZone: process.env.JOB_TIMEZONE || 'Europe/Madrid',
+  })
+  async purgeExpiredData() {
+    if (!this.cronsEnabled() || !isDataRetentionEnabled()) return;
+    await this.runWithLock('data_retention', () => this.runDataRetention());
+  }
+
+  async runDataRetention(now = new Date()) {
+    const cutoff = (days: number) => retentionCutoff(days, now);
+    const [
+      sessions,
+      resetTokens,
+      verificationTokens,
+      deliveryLogs,
+      deliveryFailures,
+      jobRuns,
+      stripeEvents,
+    ] = await this.prisma.$transaction([
+      this.prisma.session.deleteMany({
+        where: {
+          OR: [
+            { expiresAt: { lt: cutoff(RETENTION_DAYS.sessions) } },
+            { revokedAt: { lt: cutoff(RETENTION_DAYS.sessions) } },
+          ],
+        },
+      }),
+      this.prisma.passwordResetToken.deleteMany({
+        where: { expiresAt: { lt: cutoff(RETENTION_DAYS.authTokens) } },
+      }),
+      this.prisma.emailVerificationToken.deleteMany({
+        where: { expiresAt: { lt: cutoff(RETENTION_DAYS.authTokens) } },
+      }),
+      this.prisma.deliveryLog.deleteMany({
+        where: { createdAt: { lt: cutoff(RETENTION_DAYS.deliveryLogs) } },
+      }),
+      this.prisma.deliveryFailure.deleteMany({
+        where: { createdAt: { lt: cutoff(RETENTION_DAYS.deliveryFailures) } },
+      }),
+      this.prisma.jobRun.deleteMany({
+        where: {
+          startedAt: { lt: cutoff(RETENTION_DAYS.jobRuns) },
+          status: { not: 'running' },
+        },
+      }),
+      this.prisma.stripeProcessedEvent.deleteMany({
+        where: {
+          createdAt: { lt: cutoff(RETENTION_DAYS.stripeEvents) },
+          status: 'processed',
+        },
+      }),
+    ]);
+    return {
+      sessions: sessions.count,
+      passwordResetTokens: resetTokens.count,
+      emailVerificationTokens: verificationTokens.count,
+      deliveryLogs: deliveryLogs.count,
+      deliveryFailures: deliveryFailures.count,
+      jobRuns: jobRuns.count,
+      stripeEvents: stripeEvents.count,
+    };
   }
 
   private async runWithLock(

@@ -733,7 +733,9 @@ export class NewsAutomationService {
 
       // No publicar automáticamente: la aceptación RV01 exige revisión humana.
       if (grounding.ok) {
-        await this.newsCover.attachGeneratedCover(created.id).catch(() => false);
+        await this.newsCover
+          .attachGeneratedCover(created.id)
+          .catch(() => false);
       }
 
       await this.prisma.newsFeedItem.update({
