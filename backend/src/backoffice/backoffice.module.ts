@@ -5,12 +5,14 @@ import { JobsModule } from '../jobs/jobs.module';
 import { NewsModule } from '../news/news.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { StorageModule } from '../storage/storage.module';
+import { UsersModule } from '../users/users.module';
 import { BackofficeController } from './backoffice.controller';
 import { BackofficeService } from './backoffice.service';
 
 @Module({
   imports: [
     StorageModule,
+    UsersModule,
     NotificationsModule,
     BillingModule,
     CommerceModule,

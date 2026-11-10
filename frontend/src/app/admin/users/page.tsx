@@ -168,13 +168,17 @@ export default function AdminUsersPage() {
     setError('');
     setSuccess('');
     try {
-      await api.deleteBackofficeUser(selectedUser.id);
+      const result = await api.deleteBackofficeUser(selectedUser.id);
       setUsers((prev) => prev.filter((item) => item.id !== selectedUser.id));
       setSelectedUserId('');
       setDraft(null);
       setShowDeleteConfirm(false);
       setConfirmDeleteEmail('');
-      setSuccess(`Usuario ${selectedUser.email} eliminado por completo.`);
+      setSuccess(
+        result.mode === 'anonymized'
+          ? `Usuario ${selectedUser.email} anonimizado: tenía compras o suscripciones, que se conservan sin datos personales.`
+          : `Usuario ${selectedUser.email} eliminado por completo.`,
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo eliminar el usuario');
     } finally {
@@ -527,7 +531,9 @@ export default function AdminUsersPage() {
                     <div className="mt-4 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-900">
                       <p className="font-semibold">Borrado completo e irreversible</p>
                       <p className="mt-2 leading-6">
-                        Se elimina la cuenta, sesiones, favoritos, accesos y compras asociadas. Si
+                        Se eliminan los datos personales, sesiones, favoritos y accesos. Si tiene
+                        compras, suscripciones o consentimientos de compra, la cuenta se anonimiza
+                        y esos registros se conservan sin datos personales (obligación legal). Si
                         hay suscripción Stripe, se intenta cancelar antes. Escribe el email del
                         usuario para confirmar:
                       </p>

@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
-import { UserPlan, UserRole } from '@prisma/client';
+import { Prisma, UserPlan, UserRole } from '@prisma/client';
 import { BillingService } from '../billing/billing.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProAccessService } from '../common/pro-access/pro-access.service';
@@ -229,8 +229,14 @@ export class UsersService {
       nextPhone === current.phone &&
       nextSms === current.smsAlertsEnabled &&
       nextMarketing === Boolean(current.marketingOptInAt) &&
-      sameList(nextMunicipalities, this.asStringArray(current.alertMunicipalityIds)) &&
-      sameList(nextPromotionTypes, this.asStringArray(current.alertPromotionTypes));
+      sameList(
+        nextMunicipalities,
+        this.asStringArray(current.alertMunicipalityIds),
+      ) &&
+      sameList(
+        nextPromotionTypes,
+        this.asStringArray(current.alertPromotionTypes),
+      );
     if (unchanged) {
       throw new BadRequestException('No hay cambios que guardar.');
     }
@@ -415,11 +421,24 @@ export class UsersService {
   }
 
   async deleteMyAccount(userId: string) {
+    return this.anonymizeAccount(userId, { actorUserId: userId });
+  }
+
+  /**
+   * Supresión por anonimización: borra datos personales y de uso, pero conserva
+   * compras, suscripciones y evidencias de consentimiento (obligaciones fiscales
+   * y prueba de la renuncia al desistimiento) desvinculadas de la identidad.
+   */
+  async anonymizeAccount(
+    userId: string,
+    options: { actorUserId: string; allowAdmin?: boolean },
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         email: true,
+        phone: true,
         role: true,
         stripeCustomerId: true,
       },
@@ -427,7 +446,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    if (user.role === UserRole.admin) {
+    if (user.role === UserRole.admin && !options.allowAdmin) {
       throw new BadRequestException(
         'Las cuentas de administración no se pueden eliminar desde aquí.',
       );
@@ -452,6 +471,15 @@ export class UsersService {
         data: { revokedAt: deletedAt },
       }),
       this.prisma.passwordResetToken.deleteMany({ where: { userId } }),
+      this.prisma.emailVerificationToken.deleteMany({ where: { userId } }),
+      this.prisma.waitlistLead.deleteMany({ where: { userId } }),
+      this.prisma.waitlistLead.deleteMany({ where: { email: user.email } }),
+      this.prisma.deliveryLog.updateMany({
+        where: {
+          target: { in: [user.email, ...(user.phone ? [user.phone] : [])] },
+        },
+        data: { target: 'deleted', content: null, subject: null },
+      }),
       this.prisma.promotionFavorite.deleteMany({ where: { userId } }),
       this.prisma.savedSearch.deleteMany({ where: { userId } }),
       this.prisma.userAlert.deleteMany({ where: { userId } }),
@@ -474,7 +502,11 @@ export class UsersService {
           fullName: 'Cuenta eliminada',
           phone: '',
           passwordHash,
+          role: UserRole.user,
           plan: UserPlan.free,
+          emailVerifiedAt: null,
+          alertMunicipalityIds: Prisma.DbNull,
+          alertPromotionTypes: Prisma.DbNull,
           stripeCustomerId: null,
           proCancellationRequestedAt: null,
           marketingOptInAt: null,
@@ -485,8 +517,11 @@ export class UsersService {
       }),
       this.prisma.auditLog.create({
         data: {
-          userId,
-          action: 'auth.account.deleted',
+          userId: options.actorUserId === userId ? userId : options.actorUserId,
+          action:
+            options.actorUserId === userId
+              ? 'auth.account.deleted'
+              : 'admin.user.anonymized',
           entity: 'User',
           entityId: userId,
           metadata: { deletedAt: deletedAt.toISOString() },

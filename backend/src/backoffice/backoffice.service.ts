@@ -69,6 +69,7 @@ import { UploadCourseBlockAssetDto } from './dto/upload-course-block-asset.dto';
 import { UploadCourseAssetDto } from './dto/upload-course-asset.dto';
 import { UploadDocumentDto } from './dto/upload-document.dto';
 import { UpsertUnitDto } from './dto/upsert-unit.dto';
+import { UsersService } from '../users/users.service';
 
 type DeliveryLogRow = {
   id: string;
@@ -107,6 +108,7 @@ export class BackofficeService {
     private readonly promoRules: PromoRulesService,
     private readonly newsCover: NewsCoverService,
     private readonly newsAutomation: NewsAutomationService,
+    private readonly usersService: UsersService,
   ) {}
 
   getCommerceSettings(): Promise<CommerceSettings> {
@@ -1114,6 +1116,26 @@ export class BackofficeService {
       }
     }
 
+    // Con compras, suscripciones o consentimientos de checkout no se borra la
+    // fila: el ON DELETE CASCADE eliminaría registros que hay que conservar.
+    const [purchases, subscriptions, consents] = await Promise.all([
+      this.prisma.purchase.count({ where: { userId } }),
+      this.prisma.subscription.count({ where: { userId } }),
+      this.prisma.purchaseConsent.count({ where: { userId } }),
+    ]);
+    if (purchases + subscriptions + consents > 0) {
+      await this.usersService.anonymizeAccount(userId, {
+        actorUserId,
+        allowAdmin: true,
+      });
+      return {
+        success: true as const,
+        id: userId,
+        email: existing.email,
+        mode: 'anonymized' as const,
+      };
+    }
+
     // Cancela suscripciones Stripe si las hay; el borrado local sigue igual.
     try {
       await this.billingService.cancelStripeSubscriptionsForUser({
@@ -1126,7 +1148,12 @@ export class BackofficeService {
     }
 
     await this.prisma.user.delete({ where: { id: userId } });
-    return { success: true as const, id: userId, email: existing.email };
+    return {
+      success: true as const,
+      id: userId,
+      email: existing.email,
+      mode: 'deleted' as const,
+    };
   }
 
   async listNews(query: BackofficeListDto) {

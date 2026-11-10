@@ -467,7 +467,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   deleteBackofficeUser: (id: string) =>
-    request<{ success: true }>(`/backoffice/users/${id}`, {
+    request<{ success: true; mode?: 'deleted' | 'anonymized' }>(`/backoffice/users/${id}`, {
       method: 'DELETE',
     }),
   getBackofficeCancellations: () =>
