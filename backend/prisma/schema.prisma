@@ -69,7 +69,9 @@ enum CoursePricingType {
   premium
 }
 
-/** standard = lecciones; guide_pdf = una sola guía PDF (solo visualización). */
+/**
+ * standard = lecciones; guide_pdf = una sola guía PDF (solo visualización).
+ */
 enum CourseFormat {
   standard
   guide_pdf
@@ -85,7 +87,9 @@ enum LessonStatus {
   published
 }
 
-/** Estado editorial de noticias (RV01 / RV19). */
+/**
+ * Estado editorial de noticias (RV01 / RV19).
+ */
 enum NewsEditorialStatus {
   draft
   published
@@ -191,62 +195,68 @@ enum ServiceType {
 }
 
 model User {
-  id                         String              @id @default(cuid())
-  email                      String              @unique
-  fullName                   String              @map("full_name")
-  phone                      String              @map("phone")
-  passwordHash               String              @map("password_hash")
-  role                       UserRole            @default(user)
-  plan                       UserPlan            @default(free)
-  /** null = pendiente de verificar (cuentas nuevas). Cuentas legacy se rellenan en migración. */
-  emailVerifiedAt            DateTime?           @map("email_verified_at")
+  id                         String                   @id @default(cuid())
+  email                      String                   @unique
+  fullName                   String                   @map("full_name")
+  phone                      String                   @map("phone")
+  passwordHash               String                   @map("password_hash")
+  role                       UserRole                 @default(user)
+  plan                       UserPlan                 @default(free)
+  /**
+   * null = pendiente de verificar (cuentas nuevas). Cuentas legacy se rellenan en migración.
+   */
+  emailVerifiedAt            DateTime?                @map("email_verified_at")
   /**
    * Opt-in comercial (LSSI). null = no aceptó campañas.
    * Independiente de verificación de email y de PRO.
    */
-  marketingOptInAt           DateTime?           @map("marketing_opt_in_at")
-  /** Versión del texto de consentimiento comercial aceptado. */
-  marketingOptInVersion      String?             @map("marketing_opt_in_version")
-  /** Baja del consentimiento comercial (conserva histórico del opt-in). */
-  marketingOptOutAt          DateTime?           @map("marketing_opt_out_at")
+  marketingOptInAt           DateTime?                @map("marketing_opt_in_at")
+  /**
+   * Versión del texto de consentimiento comercial aceptado.
+   */
+  marketingOptInVersion      String?                  @map("marketing_opt_in_version")
+  /**
+   * Baja del consentimiento comercial (conserva histórico del opt-in).
+   */
+  marketingOptOutAt          DateTime?                @map("marketing_opt_out_at")
   /**
    * Quiere SMS de avisos PRO. false por defecto: guardar teléfono ≠ activar SMS.
    */
-  smsAlertsEnabled           Boolean             @default(false) @map("sms_alerts_enabled")
+  smsAlertsEnabled           Boolean                  @default(false) @map("sms_alerts_enabled")
   /**
    * Preferencias PRO de avisos (RV06): ids canónicos de municipio.
    * null/[] = sin filtro territorial (comportamiento previo).
    */
-  alertMunicipalityIds       Json?               @map("alert_municipality_ids")
+  alertMunicipalityIds       Json?                    @map("alert_municipality_ids")
   /**
    * Preferencias PRO: venta | alquiler | mixto.
    * null/[] = sin filtro por régimen.
    */
-  alertPromotionTypes        Json?               @map("alert_promotion_types")
-  stripeCustomerId           String?             @map("stripe_customer_id")
-  proCancellationRequestedAt DateTime?           @map("pro_cancellation_requested_at")
-  createdAt                  DateTime            @default(now()) @map("created_at")
-  updatedAt                  DateTime            @updatedAt @map("updated_at")
-  lastLoginAt                DateTime?           @map("last_login_at")
-  sessions      Session[]
-  savedSearches SavedSearch[]
-  alerts        UserAlert[]
-  reminders     Reminder[]
-  auditLogs     AuditLog[]
-  favorites     PromotionFavorite[]
-  entitlements  UserEntitlement[]
-  purchases     Purchase[]
-  subscriptions Subscription[]
-  courseProgresses CourseProgress[]
-  lessonProgresses LessonProgress[]
-  courseAccesses UserCourseAccess[]
-  serviceAccesses UserServiceAccess[]
-  uploadedFiles FileAsset[]
-  passwordResetTokens PasswordResetToken[]
-  emailVerificationTokens EmailVerificationToken[]
-  waitlistLeads WaitlistLead[]
-  purchaseConsents PurchaseConsent[]
-  contentSupplyEvents ContentSupplyEvent[]
+  alertPromotionTypes        Json?                    @map("alert_promotion_types")
+  stripeCustomerId           String?                  @map("stripe_customer_id")
+  proCancellationRequestedAt DateTime?                @map("pro_cancellation_requested_at")
+  createdAt                  DateTime                 @default(now()) @map("created_at")
+  updatedAt                  DateTime                 @updatedAt @map("updated_at")
+  lastLoginAt                DateTime?                @map("last_login_at")
+  sessions                   Session[]
+  savedSearches              SavedSearch[]
+  alerts                     UserAlert[]
+  reminders                  Reminder[]
+  auditLogs                  AuditLog[]
+  favorites                  PromotionFavorite[]
+  entitlements               UserEntitlement[]
+  purchases                  Purchase[]
+  subscriptions              Subscription[]
+  courseProgresses           CourseProgress[]
+  lessonProgresses           LessonProgress[]
+  courseAccesses             UserCourseAccess[]
+  serviceAccesses            UserServiceAccess[]
+  uploadedFiles              FileAsset[]
+  passwordResetTokens        PasswordResetToken[]
+  emailVerificationTokens    EmailVerificationToken[]
+  waitlistLeads              WaitlistLead[]
+  purchaseConsents           PurchaseConsent[]
+  contentSupplyEvents        ContentSupplyEvent[]
 
   @@index([emailVerifiedAt])
   @@index([marketingOptInAt])
@@ -279,27 +289,29 @@ model EmailVerificationToken {
   @@map("email_verification_tokens")
 }
 
-/** Claim atómico de eventos Stripe (evt_…) para idempotencia del webhook. */
+/**
+ * Claim atómico de eventos Stripe (evt_…) para idempotencia del webhook.
+ */
 model StripeProcessedEvent {
-  eventId     String   @id @map("event_id")
-  type        String
-  status      String   @default("processing")
-  errorMessage String? @map("error_message")
-  createdAt   DateTime @default(now()) @map("created_at")
-  processedAt DateTime? @map("processed_at")
+  eventId      String    @id @map("event_id")
+  type         String
+  status       String    @default("processing")
+  errorMessage String?   @map("error_message")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  processedAt  DateTime? @map("processed_at")
 
   @@index([status, createdAt])
   @@map("stripe_processed_events")
 }
 
 model Session {
-  id               String   @id
-  userId           String   @map("user_id")
-  refreshTokenHash String   @map("refresh_token_hash")
-  expiresAt        DateTime @map("expires_at")
+  id               String    @id
+  userId           String    @map("user_id")
+  refreshTokenHash String    @map("refresh_token_hash")
+  expiresAt        DateTime  @map("expires_at")
   revokedAt        DateTime? @map("revoked_at")
-  createdAt        DateTime @default(now()) @map("created_at")
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now()) @map("created_at")
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([revokedAt, expiresAt])
@@ -307,15 +319,15 @@ model Session {
 }
 
 model Source {
-  id                  String    @id @default(cuid())
+  id                  String      @id @default(cuid())
   name                String
-  sourceType          String    @map("source_type")
-  baseUrl             String    @map("base_url")
-  active              Boolean   @default(true)
-  scrapeConfig        Json?     @map("scrape_config")
-  lastSuccessfulRunAt DateTime? @map("last_successful_run_at")
-  createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  sourceType          String      @map("source_type")
+  baseUrl             String      @map("base_url")
+  active              Boolean     @default(true)
+  scrapeConfig        Json?       @map("scrape_config")
+  lastSuccessfulRunAt DateTime?   @map("last_successful_run_at")
+  createdAt           DateTime    @default(now()) @map("created_at")
+  updatedAt           DateTime    @updatedAt @map("updated_at")
   promotions          Promotion[]
 
   @@map("sources")
@@ -326,13 +338,21 @@ model Promotion {
   sourceId                 String              @map("source_id")
   title                    String
   location                 String?
-  /** Texto municipal canónico para filtros (p. ej. Montgat). */
+  /**
+   * Texto municipal canónico para filtros (p. ej. Montgat).
+   */
   municipality             String?
-  /** Texto original detectado antes de normalizar (p. ej. "a Montgat"). */
+  /**
+   * Texto original detectado antes de normalizar (p. ej. "a Montgat").
+   */
   municipalityRaw          String?             @map("municipality_raw")
-  /** Identificador estable del catálogo canónico. */
+  /**
+   * Identificador estable del catálogo canónico.
+   */
   municipalityId           String?             @map("municipality_id")
-  /** true si la normalización no fue inequívoca y requiere revisión humana. */
+  /**
+   * true si la normalización no fue inequívoca y requiere revisión humana.
+   */
   municipalityNeedsReview  Boolean             @default(false) @map("municipality_needs_review")
   province                 String?
   autonomousCommunity      String?             @map("autonomous_community")
@@ -371,64 +391,65 @@ model Promotion {
   favorites                PromotionFavorite[]
 
   @@index([municipality, province, status])
-  @@index([status, publishedAt])
-  @@index([status, estimatedPublicationDate])
+  @@index([status, publishedAt], map: "idx_promotions_status_published_at")
+  @@index([status, estimatedPublicationDate], map: "idx_promotions_status_estimated_publication_date")
   @@index([province, municipality, publishedAt])
+  @@index([manuallyRemovedAt])
+  @@index([sourceUrl])
   @@map("promotions")
 }
 
 model PromotionDocument {
-  id          String    @id @default(cuid())
-  promotionId String    @map("promotion_id")
-  fileAssetId String?   @map("file_asset_id")
+  id           String                @id @default(cuid())
+  promotionId  String                @map("promotion_id")
+  fileAssetId  String?               @map("file_asset_id")
   documentKind PromotionDocumentKind @map("document_kind")
-  title       String?
-  description String?
-  altText     String?   @map("alt_text")
-  sortOrder   Int      @default(0) @map("sort_order")
-  isFeatured  Boolean  @default(false) @map("is_featured")
-  isPublic    Boolean  @default(true) @map("is_public")
-  section     String?
-  reviewStatus String   @default("published") @map("review_status")
-  fileType    String    @map("file_type")
-  originalName String?  @map("original_name")
-  storagePath String    @map("storage_path")
-  publicUrl   String    @map("public_url")
-  uploadedBy  String?   @map("uploaded_by")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
-  fileAsset   FileAsset? @relation(fields: [fileAssetId], references: [id], onDelete: SetNull)
+  title        String?
+  description  String?
+  altText      String?               @map("alt_text")
+  sortOrder    Int                   @default(0) @map("sort_order")
+  isFeatured   Boolean               @default(false) @map("is_featured")
+  isPublic     Boolean               @default(true) @map("is_public")
+  section      String?
+  reviewStatus String                @default("published") @map("review_status")
+  fileType     String                @map("file_type")
+  originalName String?               @map("original_name")
+  storagePath  String                @map("storage_path")
+  publicUrl    String                @map("public_url")
+  uploadedBy   String?               @map("uploaded_by")
+  createdAt    DateTime              @default(now()) @map("created_at")
+  promotion    Promotion             @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  fileAsset    FileAsset?            @relation(fields: [fileAssetId], references: [id], onDelete: SetNull)
 
   @@index([promotionId, documentKind])
   @@index([promotionId, sortOrder])
   @@index([fileAssetId])
-
   @@map("promotion_documents")
 }
 
 model FileAsset {
-  id               String          @id @default(cuid())
-  entityType       FileEntityType  @map("entity_type")
-  entityId         String          @map("entity_id")
-  fileName         String          @map("file_name")
-  originalName     String          @map("original_name")
-  mimeType         String          @map("mime_type")
-  size             Int
-  s3Key            String          @map("s3_key")
-  s3Bucket         String          @map("s3_bucket")
-  url              String?
-  isPublic         Boolean         @default(true) @map("is_public")
-  uploadedByUserId String?         @map("uploaded_by_user_id")
-  status           FileAssetStatus @default(active)
-  deleteError      String?         @map("delete_error")
-  deletedAt        DateTime?       @map("deleted_at")
-  createdAt        DateTime        @default(now()) @map("created_at")
-  updatedAt        DateTime        @updatedAt @map("updated_at")
-  uploadedBy       User?           @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  id                 String              @id @default(cuid())
+  entityType         FileEntityType      @map("entity_type")
+  entityId           String              @map("entity_id")
+  fileName           String              @map("file_name")
+  originalName       String              @map("original_name")
+  mimeType           String              @map("mime_type")
+  size               Int
+  s3Key              String              @map("s3_key")
+  s3Bucket           String              @map("s3_bucket")
+  url                String?
+  isPublic           Boolean             @default(true) @map("is_public")
+  uploadedByUserId   String?             @map("uploaded_by_user_id")
+  status             FileAssetStatus     @default(active)
+  deleteError        String?             @map("delete_error")
+  deletedAt          DateTime?           @map("deleted_at")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  uploadedBy         User?               @relation(fields: [uploadedByUserId], references: [id], onDelete: SetNull)
   promotionDocuments PromotionDocument[]
-  courseResources CourseResource[]
-  courseAssets CourseAsset[]
-  guideCourses Course[] @relation("CourseGuidePdf")
+  courseResources    CourseResource[]
+  courseAssets       CourseAsset[]
+  guideCourses       Course[]            @relation("CourseGuidePdf")
 
   @@unique([s3Bucket, s3Key])
   @@index([entityType, entityId])
@@ -438,121 +459,135 @@ model FileAsset {
 }
 
 model PromotionUnit {
-  id          String    @id @default(cuid())
-  promotionId String    @map("promotion_id")
-  rowOrder    Int       @default(0) @map("row_order")
-  unitLabel   String?   @map("unit_label")
-  building    String?
-  stair       String?
-  floor       String?
-  door        String?
-  bedrooms    Int?
-  bathrooms   Int?
-  usefulAreaM2 Decimal? @db.Decimal(8, 2) @map("useful_area_m2")
-  builtAreaM2 Decimal?  @db.Decimal(8, 2) @map("built_area_m2")
-  priceSale   Decimal?  @db.Decimal(12, 2) @map("price_sale")
-  monthlyRent Decimal?  @db.Decimal(12, 2) @map("monthly_rent")
-  reservation Decimal?  @db.Decimal(12, 2)
-  notes       String?
-  extraData   Json?     @map("extra_data")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  promotionId  String    @map("promotion_id")
+  rowOrder     Int       @default(0) @map("row_order")
+  unitLabel    String?   @map("unit_label")
+  building     String?
+  stair        String?
+  floor        String?
+  door         String?
+  bedrooms     Int?
+  bathrooms    Int?
+  usefulAreaM2 Decimal?  @map("useful_area_m2") @db.Decimal(8, 2)
+  builtAreaM2  Decimal?  @map("built_area_m2") @db.Decimal(8, 2)
+  priceSale    Decimal?  @map("price_sale") @db.Decimal(12, 2)
+  monthlyRent  Decimal?  @map("monthly_rent") @db.Decimal(12, 2)
+  reservation  Decimal?  @db.Decimal(12, 2)
+  notes        String?
+  extraData    Json?     @map("extra_data")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  promotion    Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
 
   @@index([promotionId, rowOrder])
-
   @@map("promotion_units")
 }
 
 model Reminder {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
   kind      String
   payload   Json
-  remindAt  DateTime @map("remind_at")
+  remindAt  DateTime  @map("remind_at")
   sentAt    DateTime? @map("sent_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([sentAt, remindAt])
   @@map("reminders")
 }
 
 model NewsItem {
-  id          String   @id @default(cuid())
-  slug        String?  @unique
-  sourceName  String   @map("source_name")
-  sourceUrl   String   @map("source_url")
-  itemUrl     String   @unique @map("item_url")
-  title       String
-  rawText     String?  @map("raw_text")
-  summary     String?
-  body        String?
-  practicalImpact String? @map("practical_impact")
-  relevance   String
-  category    String   @default("general")
-  topic       String?
-  municipality String?
-  /** draft = no público hasta revisión; archived = retirado con trazabilidad. */
-  editorialStatus NewsEditorialStatus @default(draft) @map("editorial_status")
-  /** Motivos de rechazo automático de anclaje a fuente (JSON string[]). */
-  groundingIssues Json? @map("grounding_issues")
-  /** Nota pública/admin cuando una publicación indujo a error y se corrigió. */
-  correctionNote String? @map("correction_note")
-  reviewedAt  DateTime? @map("reviewed_at")
-  /** URL pública de la imagen de portada en S3 (generada o subida). */
-  coverImageUrl String? @map("cover_image_url")
-  coverImageAssetId String? @map("cover_image_asset_id")
-  contentHash String   @unique @map("content_hash")
-  publishedAt DateTime @map("published_at")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id                String              @id @default(cuid())
+  slug              String?             @unique
+  sourceName        String              @map("source_name")
+  sourceUrl         String              @map("source_url")
+  itemUrl           String              @unique @map("item_url")
+  title             String
+  rawText           String?             @map("raw_text")
+  summary           String?
+  body              String?
+  practicalImpact   String?             @map("practical_impact")
+  relevance         String
+  category          String              @default("general")
+  topic             String?
+  municipality      String?
+  /**
+   * draft = no público hasta revisión; archived = retirado con trazabilidad.
+   */
+  editorialStatus   NewsEditorialStatus @default(draft) @map("editorial_status")
+  /**
+   * Motivos de rechazo automático de anclaje a fuente (JSON string[]).
+   */
+  groundingIssues   Json?               @map("grounding_issues")
+  /**
+   * Nota pública/admin cuando una publicación indujo a error y se corrigió.
+   */
+  correctionNote    String?             @map("correction_note")
+  reviewedAt        DateTime?           @map("reviewed_at")
+  /**
+   * URL pública de la imagen de portada en S3 (generada o subida).
+   */
+  coverImageUrl     String?             @map("cover_image_url")
+  coverImageAssetId String?             @map("cover_image_asset_id")
+  contentHash       String              @unique @map("content_hash")
+  publishedAt       DateTime            @map("published_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
 
-  @@index([publishedAt])
+  @@index([publishedAt], map: "idx_news_items_published_at")
   @@index([category, publishedAt])
   @@index([editorialStatus, publishedAt])
-
   @@map("news_items")
 }
 
-/** Captación mientras las ventas están cerradas (RV02). */
+/**
+ * Captación mientras las ventas están cerradas (RV02).
+ */
 model WaitlistLead {
-  id                String   @id @default(cuid())
-  email             String
-  product           String
-  municipality      String?
-  /** Consentimiento del aviso solicitado (lista de espera). */
-  waitlistConsentAt DateTime @map("waitlist_consent_at")
-  /** Consentimiento opcional a campañas futuras (separado). */
+  id                 String    @id @default(cuid())
+  email              String
+  product            String
+  municipality       String?
+  /**
+   * Consentimiento del aviso solicitado (lista de espera).
+   */
+  waitlistConsentAt  DateTime  @map("waitlist_consent_at")
+  /**
+   * Consentimiento opcional a campañas futuras (separado).
+   */
   marketingConsentAt DateTime? @map("marketing_consent_at")
-  sourcePath        String?  @map("source_path")
-  userId            String?  @map("user_id")
-  createdAt         DateTime @default(now()) @map("created_at")
-  user              User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sourcePath         String?   @map("source_path")
+  userId             String?   @map("user_id")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  user               User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@unique([email, product])
   @@index([createdAt])
+  @@index([userId])
   @@map("waitlist_leads")
 }
 
 model NewsFeedItem {
-  id             String   @id @default(cuid())
-  contentHash    String   @unique @map("content_hash")
-  feedUrl        String   @map("feed_url")
-  sourceName     String   @map("source_name")
-  sourceUrl      String   @map("source_url")
-  title          String
-  link           String   @map("link")
-  snippet        String?  @map("snippet")
-  publishedAt    DateTime @map("published_at")
-  category       String?  @map("category")
-  relevanceScore Int      @default(0) @map("relevance_score")
-  matchedKeywords Json?   @map("matched_keywords")
-  selectedAt     DateTime? @map("selected_at")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id              String    @id @default(cuid())
+  contentHash     String    @unique @map("content_hash")
+  feedUrl         String    @map("feed_url")
+  sourceName      String    @map("source_name")
+  sourceUrl       String    @map("source_url")
+  title           String
+  link            String    @map("link")
+  snippet         String?   @map("snippet")
+  publishedAt     DateTime  @map("published_at")
+  category        String?   @map("category")
+  relevanceScore  Int       @default(0) @map("relevance_score")
+  matchedKeywords Json?     @map("matched_keywords")
+  selectedAt      DateTime? @map("selected_at")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   @@index([publishedAt, relevanceScore])
   @@index([category, selectedAt])
-
   @@map("news_feed_items")
 }
 
@@ -566,27 +601,33 @@ model SystemSetting {
   @@map("system_settings")
 }
 
-/** Plantillas de email/SMS editables desde el admin (Brevo sigue siendo el envío). */
+/**
+ * Plantillas de email/SMS editables desde el admin (Brevo sigue siendo el envío).
+ */
 model MessageTemplate {
-  id          String   @id @default(cuid())
-  key         String   @unique
-  label       String
-  description String?
-  /** email | sms | both */
-  channel     String   @default("both")
-  emailSubject String? @map("email_subject")
-  /** HTML o texto con {{variables}} */
-  emailBody   String?  @map("email_body") @db.Text
-  smsBody     String?  @map("sms_body")
-  active      Boolean  @default(true)
+  id           String   @id @default(cuid())
+  key          String   @unique
+  label        String
+  description  String?
+  /**
+   * email | sms | both
+   */
+  channel      String   @default("both")
+  emailSubject String?  @map("email_subject")
+  /**
+   * HTML o texto con {{variables}}
+   */
+  emailBody    String?  @map("email_body") @db.Text
+  smsBody      String?  @map("sms_body")
+  active       Boolean  @default(true)
   /**
    * Si false, ensureDefaults puede refrescar el texto desde seeds.
    * Al editar en admin pasa a true.
    */
-  isCustomized Boolean @default(false) @map("is_customized")
-  seedRevision Int     @default(1) @map("seed_revision")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  isCustomized Boolean  @default(false) @map("is_customized")
+  seedRevision Int      @default(1) @map("seed_revision")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   @@map("message_templates")
 }
@@ -601,7 +642,9 @@ model CommercePromoRule {
   name      String
   ruleType  String   @map("rule_type")
   enabled   Boolean  @default(true)
-  /** JSON: guideSlug, months, priceCents, … */
+  /**
+   * JSON: guideSlug, months, priceCents, …
+   */
   config    Json?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -609,31 +652,32 @@ model CommercePromoRule {
   @@map("commerce_promo_rules")
 }
 
-
 model Course {
-  id                String           @id @default(cuid())
+  id                String             @id @default(cuid())
   title             String
-  slug              String           @unique
-  shortDescription  String?          @map("short_description")
-  longDescription   String?          @map("long_description")
-  coverImage        String?          @map("cover_image")
-  pricingType       CoursePricingType @default(free) @map("pricing_type")
-  price             Decimal?         @db.Decimal(12, 2)
-  salePrice         Decimal?         @db.Decimal(12, 2) @map("sale_price")
-  currency          String?          @db.VarChar(8)
-  stripePaymentLink String?          @map("stripe_payment_link")
-  status            CourseStatus     @default(draft)
-  accessType        CourseAccessType @default(free) @map("access_type")
-  format            CourseFormat     @default(standard)
-  /** PDF de la guía (solo visualización; no descarga pública). */
-  guidePdfAssetId   String?          @map("guide_pdf_asset_id")
-  order             Int              @default(0)
-  seoTitle          String?          @map("seo_title")
-  seoDescription    String?          @map("seo_description")
-  seoMetadata       Json?            @map("seo_metadata")
-  publishedAt       DateTime?        @map("published_at")
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
+  slug              String             @unique
+  shortDescription  String?            @map("short_description")
+  longDescription   String?            @map("long_description")
+  coverImage        String?            @map("cover_image")
+  pricingType       CoursePricingType  @default(free) @map("pricing_type")
+  price             Decimal?           @db.Decimal(12, 2)
+  salePrice         Decimal?           @map("sale_price") @db.Decimal(12, 2)
+  currency          String?            @db.VarChar(8)
+  stripePaymentLink String?            @map("stripe_payment_link")
+  status            CourseStatus       @default(draft)
+  accessType        CourseAccessType   @default(free) @map("access_type")
+  format            CourseFormat       @default(standard)
+  /**
+   * PDF de la guía (solo visualización; no descarga pública).
+   */
+  guidePdfAssetId   String?            @map("guide_pdf_asset_id")
+  order             Int                @default(0)
+  seoTitle          String?            @map("seo_title")
+  seoDescription    String?            @map("seo_description")
+  seoMetadata       Json?              @map("seo_metadata")
+  publishedAt       DateTime?          @map("published_at")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
   modules           CourseModule[]
   lessons           CourseLesson[]
   resources         CourseResource[]
@@ -642,8 +686,8 @@ model Course {
   progresses        CourseProgress[]
   lessonProgresses  LessonProgress[]
   purchases         Purchase[]
-  userAccesses       UserCourseAccess[]
-  guidePdfAsset     FileAsset?       @relation("CourseGuidePdf", fields: [guidePdfAssetId], references: [id], onDelete: SetNull)
+  userAccesses      UserCourseAccess[]
+  guidePdfAsset     FileAsset?         @relation("CourseGuidePdf", fields: [guidePdfAssetId], references: [id], onDelete: SetNull)
 
   @@index([status, accessType])
   @@index([status, order, createdAt])
@@ -652,18 +696,18 @@ model Course {
 }
 
 model CourseModule {
-  id          String                 @id @default(cuid())
-  courseId    String                 @map("course_id")
-  title       String
-  description String?
-  order       Int                    @default(0)
-  visibility  CourseModuleVisibility @default(visible)
-  createdAt   DateTime               @default(now()) @map("created_at")
-  updatedAt   DateTime               @updatedAt @map("updated_at")
-  course      Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons     CourseLesson[]
-  resources   CourseResource[]
-  assets      CourseAsset[]
+  id               String                 @id @default(cuid())
+  courseId         String                 @map("course_id")
+  title            String
+  description      String?
+  order            Int                    @default(0)
+  visibility       CourseModuleVisibility @default(visible)
+  createdAt        DateTime               @default(now()) @map("created_at")
+  updatedAt        DateTime               @updatedAt @map("updated_at")
+  course           Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons          CourseLesson[]
+  resources        CourseResource[]
+  assets           CourseAsset[]
   lessonProgresses LessonProgress[]
 
   @@index([courseId, order])
@@ -671,26 +715,26 @@ model CourseModule {
 }
 
 model CourseLesson {
-  id              String        @id @default(cuid())
-  courseId        String        @map("course_id")
-  moduleId        String        @map("module_id")
+  id              String               @id @default(cuid())
+  courseId        String               @map("course_id")
+  moduleId        String               @map("module_id")
   title           String
   slug            String
   summary         String?
-  contentJson     Json?         @map("content_json")
-  order           Int           @default(0)
-  durationMinutes Int?          @map("duration_minutes")
-  status          LessonStatus  @default(draft)
-  type            LessonType    @default(text)
-  createdAt       DateTime      @default(now()) @map("created_at")
-  updatedAt       DateTime      @updatedAt @map("updated_at")
-  course          Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  module          CourseModule  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  contentJson     Json?                @map("content_json")
+  order           Int                  @default(0)
+  durationMinutes Int?                 @map("duration_minutes")
+  status          LessonStatus         @default(draft)
+  type            LessonType           @default(text)
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+  course          Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module          CourseModule         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   resources       CourseResource[]
   blocks          CourseContentBlock[]
   assets          CourseAsset[]
   progresses      LessonProgress[]
-  lastProgresses  CourseProgress[] @relation("LastLessonProgress")
+  lastProgresses  CourseProgress[]     @relation("LastLessonProgress")
 
   @@unique([courseId, slug])
   @@index([moduleId, order])
@@ -713,27 +757,27 @@ model CourseContentBlock {
 }
 
 model CourseAsset {
-  id               String              @id @default(cuid())
-  courseId         String              @map("course_id")
-  moduleId         String?             @map("module_id")
-  lessonId         String?             @map("lesson_id")
-  blockId          String?             @map("block_id")
-  fileAssetId      String?             @map("file_asset_id")
-  kind             CourseAssetKind
-  originalName     String?             @map("original_name")
-  mimeType         String              @map("mime_type")
-  size             Int                 @default(0)
-  s3Key            String              @map("s3_key")
-  url              String?
-  isPublic         Boolean             @default(false) @map("is_public")
-  altText          String?             @map("alt_text")
-  caption          String?
-  createdAt        DateTime            @default(now()) @map("created_at")
-  course           Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  module           CourseModule?       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  lesson           CourseLesson?       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  block            CourseContentBlock? @relation(fields: [blockId], references: [id], onDelete: Cascade)
-  fileAsset        FileAsset?          @relation(fields: [fileAssetId], references: [id], onDelete: SetNull)
+  id           String              @id @default(cuid())
+  courseId     String              @map("course_id")
+  moduleId     String?             @map("module_id")
+  lessonId     String?             @map("lesson_id")
+  blockId      String?             @map("block_id")
+  fileAssetId  String?             @map("file_asset_id")
+  kind         CourseAssetKind
+  originalName String?             @map("original_name")
+  mimeType     String              @map("mime_type")
+  size         Int                 @default(0)
+  s3Key        String              @map("s3_key")
+  url          String?
+  isPublic     Boolean             @default(false) @map("is_public")
+  altText      String?             @map("alt_text")
+  caption      String?
+  createdAt    DateTime            @default(now()) @map("created_at")
+  course       Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module       CourseModule?       @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lesson       CourseLesson?       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  block        CourseContentBlock? @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  fileAsset    FileAsset?          @relation(fields: [fileAssetId], references: [id], onDelete: SetNull)
 
   @@index([courseId])
   @@index([lessonId])
@@ -766,30 +810,30 @@ model CourseResource {
 }
 
 model CourseAccessRule {
-  id         String              @id @default(cuid())
-  courseId   String              @map("course_id")
+  id         String               @id @default(cuid())
+  courseId   String               @map("course_id")
   ruleType   CourseAccessRuleType @map("rule_type")
-  configJson Json                @map("config_json")
-  createdAt  DateTime            @default(now()) @map("created_at")
-  course     Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  configJson Json                 @map("config_json")
+  createdAt  DateTime             @default(now()) @map("created_at")
+  course     Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([courseId, ruleType])
   @@map("course_access_rules")
 }
 
 model Service {
-  id                String            @id @default(cuid())
-  key               String            @unique
+  id                String              @id @default(cuid())
+  key               String              @unique
   name              String
   description       String?
-  price             Decimal?          @db.Decimal(12, 2)
-  salePrice         Decimal?          @db.Decimal(12, 2) @map("sale_price")
-  currency          String?           @db.VarChar(8)
-  status            ServiceStatus     @default(active)
-  serviceType       ServiceType       @default(manual) @map("service_type")
-  stripePaymentLink String?           @map("stripe_payment_link")
-  createdAt         DateTime          @default(now()) @map("created_at")
-  updatedAt         DateTime          @updatedAt @map("updated_at")
+  price             Decimal?            @db.Decimal(12, 2)
+  salePrice         Decimal?            @map("sale_price") @db.Decimal(12, 2)
+  currency          String?             @db.VarChar(8)
+  status            ServiceStatus       @default(active)
+  serviceType       ServiceType         @default(manual) @map("service_type")
+  stripePaymentLink String?             @map("stripe_payment_link")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
   accesses          UserServiceAccess[]
 
   @@index([status])
@@ -797,18 +841,18 @@ model Service {
 }
 
 model UserCourseAccess {
-  id           String   @id @default(cuid())
-  userId       String   @map("user_id")
-  courseId     String   @map("course_id")
-  isActive     Boolean  @default(true) @map("is_active")
-  activatedAt  DateTime @default(now()) @map("activated_at")
-  activatedBy  String?  @map("activated_by")
-  activatedByAdmin Boolean @default(true) @map("activated_by_admin")
-  notes        String?
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course       Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  userId           String   @map("user_id")
+  courseId         String   @map("course_id")
+  isActive         Boolean  @default(true) @map("is_active")
+  activatedAt      DateTime @default(now()) @map("activated_at")
+  activatedBy      String?  @map("activated_by")
+  activatedByAdmin Boolean  @default(true) @map("activated_by_admin")
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
   @@index([userId, isActive])
@@ -817,18 +861,18 @@ model UserCourseAccess {
 }
 
 model UserServiceAccess {
-  id           String   @id @default(cuid())
-  userId       String   @map("user_id")
-  serviceId    String   @map("service_id")
-  isActive     Boolean  @default(true) @map("is_active")
-  activatedAt  DateTime @default(now()) @map("activated_at")
-  activatedBy  String?  @map("activated_by")
-  activatedByAdmin Boolean @default(true) @map("activated_by_admin")
-  notes        String?
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  service      Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  userId           String   @map("user_id")
+  serviceId        String   @map("service_id")
+  isActive         Boolean  @default(true) @map("is_active")
+  activatedAt      DateTime @default(now()) @map("activated_at")
+  activatedBy      String?  @map("activated_by")
+  activatedByAdmin Boolean  @default(true) @map("activated_by_admin")
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service          Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@unique([userId, serviceId])
   @@index([userId, isActive])
@@ -837,39 +881,40 @@ model UserServiceAccess {
 }
 
 model UserEntitlement {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
   key       String
   source    String
-  sourceId  String?  @map("source_id")
+  sourceId  String?   @map("source_id")
   startsAt  DateTime? @map("starts_at")
   endsAt    DateTime? @map("ends_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now()) @map("created_at")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, key])
   @@map("user_entitlements")
 }
 
 model Purchase {
-  id          String         @id @default(cuid())
-  userId      String         @map("user_id")
-  courseId    String?        @map("course_id")
+  id          String           @id @default(cuid())
+  userId      String           @map("user_id")
+  courseId    String?          @map("course_id")
   provider    String
-  providerRef String?        @map("provider_ref")
-  productKey  String         @map("product_key")
-  status      PurchaseStatus @default(pending)
-  amount      Decimal?       @db.Decimal(12, 2)
-  currency    String?        @db.VarChar(8)
-  purchasedAt DateTime?      @map("purchased_at")
-  createdAt   DateTime       @default(now()) @map("created_at")
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course      Course?        @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  providerRef String?          @map("provider_ref")
+  productKey  String           @map("product_key")
+  status      PurchaseStatus   @default(pending)
+  amount      Decimal?         @db.Decimal(12, 2)
+  currency    String?          @db.VarChar(8)
+  purchasedAt DateTime?        @map("purchased_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course?          @relation(fields: [courseId], references: [id], onDelete: SetNull)
   consent     PurchaseConsent?
 
+  @@unique([provider, providerRef])
   @@index([userId, status])
   @@index([courseId, status])
-  @@unique([provider, providerRef])
+  @@index([status, purchasedAt])
   @@map("purchases")
 }
 
@@ -878,51 +923,59 @@ model Purchase {
  * Independiente del estado de pago: se crea al iniciar Stripe y se vincula al pagar.
  */
 model PurchaseConsent {
-  id                         String    @id @default(cuid())
-  userId                     String    @map("user_id")
-  purchaseId                 String?   @unique @map("purchase_id")
-  stripeSessionId            String    @unique @map("stripe_session_id")
-  productKey                 String    @map("product_key")
-  courseId                   String?   @map("course_id")
-  termsVersion               String    @map("terms_version")
-  termsTextSnapshot          String    @map("terms_text_snapshot") @db.Text
-  termsAcceptedAt            DateTime  @map("terms_accepted_at")
-  immediateConsentVersion    String?   @map("immediate_consent_version")
-  immediateTextSnapshot      String?   @map("immediate_text_snapshot") @db.Text
-  immediateAcceptedAt        DateTime? @map("immediate_accepted_at")
-  /** pending | sent | failed | skipped */
-  confirmationEmailStatus    String    @default("pending") @map("confirmation_email_status")
-  confirmationEmailSentAt    DateTime? @map("confirmation_email_sent_at")
-  confirmationEmailError     String?   @map("confirmation_email_error") @db.Text
-  /** Inicio efectivo del suministro (criterio técnico documentado; no prueba lectura completa). */
-  firstContentOpenedAt       DateTime? @map("first_content_opened_at")
-  lastContentOpenedAt        DateTime? @map("last_content_opened_at")
-  accessGrantedAt            DateTime? @map("access_granted_at")
-  createdAt                  DateTime  @default(now()) @map("created_at")
-  updatedAt                  DateTime  @updatedAt @map("updated_at")
-  user                       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  purchase                   Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
+  id                      String    @id @default(cuid())
+  userId                  String    @map("user_id")
+  purchaseId              String?   @unique @map("purchase_id")
+  stripeSessionId         String    @unique @map("stripe_session_id")
+  productKey              String    @map("product_key")
+  courseId                String?   @map("course_id")
+  termsVersion            String    @map("terms_version")
+  termsTextSnapshot       String    @map("terms_text_snapshot") @db.Text
+  termsAcceptedAt         DateTime  @map("terms_accepted_at")
+  immediateConsentVersion String?   @map("immediate_consent_version")
+  immediateTextSnapshot   String?   @map("immediate_text_snapshot") @db.Text
+  immediateAcceptedAt     DateTime? @map("immediate_accepted_at")
+  /**
+   * pending | sent | failed | skipped
+   */
+  confirmationEmailStatus String    @default("pending") @map("confirmation_email_status")
+  confirmationEmailSentAt DateTime? @map("confirmation_email_sent_at")
+  confirmationEmailError  String?   @map("confirmation_email_error") @db.Text
+  /**
+   * Inicio efectivo del suministro (criterio técnico documentado; no prueba lectura completa).
+   */
+  firstContentOpenedAt    DateTime? @map("first_content_opened_at")
+  lastContentOpenedAt     DateTime? @map("last_content_opened_at")
+  accessGrantedAt         DateTime? @map("access_granted_at")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  purchase                Purchase? @relation(fields: [purchaseId], references: [id], onDelete: SetNull)
 
   @@index([userId, createdAt])
   @@index([productKey, createdAt])
   @@index([confirmationEmailStatus])
+  @@index([courseId])
   @@map("purchase_consents")
 }
 
 model ContentSupplyEvent {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  courseId  String?  @map("course_id")
-  consentId String?  @map("consent_id")
-  productKey String  @map("product_key")
-  /** open = apertura efectiva del contenido con acceso activo */
-  kind      String   @default("open")
-  path      String?
-  createdAt DateTime @default(now()) @map("created_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  courseId   String?  @map("course_id")
+  consentId  String?  @map("consent_id")
+  productKey String   @map("product_key")
+  /**
+   * open = apertura efectiva del contenido con acceso activo
+   */
+  kind       String   @default("open")
+  path       String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, courseId, createdAt])
   @@index([consentId, createdAt])
+  @@index([courseId])
   @@map("content_supply_events")
 }
 
@@ -939,47 +992,51 @@ model Subscription {
   createdAt          DateTime           @default(now()) @map("created_at")
   user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([provider, providerRef])
   @@index([userId, status])
   @@index([status, currentPeriodEnd])
-  @@unique([provider, providerRef])
   @@map("subscriptions")
 }
 
 model CourseProgress {
-  id               String      @id @default(cuid())
-  userId           String      @map("user_id")
-  courseId         String      @map("course_id")
-  progressPercent  Int         @default(0) @map("progress_percent")
-  completedLessons Int         @default(0) @map("completed_lessons")
-  totalLessons     Int         @default(0) @map("total_lessons")
-  lastLessonId     String?     @map("last_lesson_id")
-  createdAt        DateTime    @default(now()) @map("created_at")
-  updatedAt        DateTime    @updatedAt @map("updated_at")
-  user             User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course           Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  id               String        @id @default(cuid())
+  userId           String        @map("user_id")
+  courseId         String        @map("course_id")
+  progressPercent  Int           @default(0) @map("progress_percent")
+  completedLessons Int           @default(0) @map("completed_lessons")
+  totalLessons     Int           @default(0) @map("total_lessons")
+  lastLessonId     String?       @map("last_lesson_id")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course           Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
   lastLesson       CourseLesson? @relation("LastLessonProgress", fields: [lastLessonId], references: [id], onDelete: SetNull)
 
   @@unique([userId, courseId])
+  @@index([courseId])
+  @@index([lastLessonId])
   @@map("course_progress")
 }
 
 model LessonProgress {
-  id          String              @id @default(cuid())
-  userId      String              @map("user_id")
-  courseId    String              @map("course_id")
-  moduleId    String              @map("module_id")
-  lessonId    String              @map("lesson_id")
+  id          String               @id @default(cuid())
+  userId      String               @map("user_id")
+  courseId    String               @map("course_id")
+  moduleId    String               @map("module_id")
+  lessonId    String               @map("lesson_id")
   status      LessonProgressStatus @default(not_started)
-  completedAt DateTime?           @map("completed_at")
-  createdAt   DateTime            @default(now()) @map("created_at")
-  updatedAt   DateTime            @updatedAt @map("updated_at")
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course      Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  module      CourseModule        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  lesson      CourseLesson        @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  completedAt DateTime?            @map("completed_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course               @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  module      CourseModule         @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  lesson      CourseLesson         @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@unique([userId, lessonId])
   @@index([courseId, userId])
+  @@index([lessonId])
+  @@index([moduleId])
   @@map("lesson_progress")
 }
 
@@ -994,6 +1051,7 @@ model PublishedPost {
   sentAt      DateTime?    @map("sent_at")
   createdAt   DateTime     @default(now()) @map("created_at")
 
+  @@index([sourceId, sourceKind, audience, channel, status])
   @@map("published_posts")
 }
 
@@ -1008,6 +1066,8 @@ model JobRun {
   createdAt    DateTime     @default(now()) @map("created_at")
 
   @@index([jobName, startedAt])
+  @@index([startedAt])
+  @@index([status, startedAt])
   @@map("job_runs")
 }
 
@@ -1020,10 +1080,14 @@ model DeliveryFailure {
   errorDetail Json?    @map("error_detail")
   createdAt   DateTime @default(now()) @map("created_at")
 
+  @@index([createdAt])
+  @@index([sourceRef])
   @@map("delivery_failures")
 }
 
-/** Historial de entregas Brevo (éxitos y errores) para operación SMS/email. */
+/**
+ * Historial de entregas Brevo (éxitos y errores) para operación SMS/email.
+ */
 model DeliveryLog {
   id          String   @id @default(cuid())
   channel     String
@@ -1043,33 +1107,36 @@ model DeliveryLog {
   @@index([channel, createdAt])
   @@index([status, createdAt])
   @@index([sourceRef])
+  @@index([target])
   @@map("delivery_logs")
 }
 
 model SavedSearch {
-  id             String   @id @default(cuid())
-  userId         String   @map("user_id")
-  name           String
-  filtersJson    Json     @map("filters_json")
-  notificationsOn Boolean @default(true) @map("notifications_on")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  name            String
+  filtersJson     Json     @map("filters_json")
+  notificationsOn Boolean  @default(true) @map("notifications_on")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("saved_searches")
 }
 
 model UserAlert {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  type      String
-  enabled   Boolean  @default(true)
-  channel   String
-  configJson Json?   @map("config_json")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String   @map("user_id")
+  type       String
+  enabled    Boolean  @default(true)
+  channel    String
+  configJson Json?    @map("config_json")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("user_alerts")
 }
 
@@ -1084,6 +1151,8 @@ model AuditLog {
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([entity, entityId])
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
   @@map("audit_logs")
 }
 
@@ -1095,18 +1164,19 @@ enum FavoriteStage {
 }
 
 model PromotionFavorite {
-  id          String    @id @default(cuid())
-  userId      String    @map("user_id")
-  promotionId String    @map("promotion_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  id            String        @id @default(cuid())
+  userId        String        @map("user_id")
+  promotionId   String        @map("promotion_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @default(now()) @updatedAt @map("updated_at")
   /// Seguimiento personal del usuario (Mi espacio). No es un expediente gestionado por Radar VPO.
   stage         FavoriteStage @default(interested)
   notes         String?
   checklistDone String[]      @default([]) @map("checklist_done")
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Cascade)
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  promotion     Promotion     @relation(fields: [promotionId], references: [id], onDelete: Cascade)
 
   @@unique([userId, promotionId])
+  @@index([promotionId])
   @@map("promotion_favorites")
 }

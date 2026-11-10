@@ -1,0 +1,23 @@
+-- Reversión manual de 20261110120000_audit_indexes (no la ejecuta Prisma).
+-- psql "$DATABASE_URL" -f down.sql && DELETE FROM _prisma_migrations WHERE migration_name = '20261110120000_audit_indexes';
+DROP INDEX IF EXISTS "audit_logs_user_id_created_at_idx";
+DROP INDEX IF EXISTS "audit_logs_action_created_at_idx";
+DROP INDEX IF EXISTS "content_supply_events_course_id_idx";
+DROP INDEX IF EXISTS "course_progress_course_id_idx";
+DROP INDEX IF EXISTS "course_progress_last_lesson_id_idx";
+DROP INDEX IF EXISTS "delivery_failures_created_at_idx";
+DROP INDEX IF EXISTS "delivery_failures_source_ref_idx";
+DROP INDEX IF EXISTS "delivery_logs_target_idx";
+DROP INDEX IF EXISTS "job_runs_started_at_idx";
+DROP INDEX IF EXISTS "job_runs_status_started_at_idx";
+DROP INDEX IF EXISTS "lesson_progress_lesson_id_idx";
+DROP INDEX IF EXISTS "lesson_progress_module_id_idx";
+DROP INDEX IF EXISTS "promotion_favorites_promotion_id_idx";
+DROP INDEX IF EXISTS "published_posts_source_id_source_kind_audience_channel_stat_idx";
+DROP INDEX IF EXISTS "purchase_consents_course_id_idx";
+DROP INDEX IF EXISTS "purchases_status_purchased_at_idx";
+DROP INDEX IF EXISTS "reminders_user_id_idx";
+DROP INDEX IF EXISTS "reminders_sent_at_remind_at_idx";
+DROP INDEX IF EXISTS "saved_searches_user_id_idx";
+DROP INDEX IF EXISTS "user_alerts_user_id_idx";
+DROP INDEX IF EXISTS "waitlist_leads_user_id_idx";
