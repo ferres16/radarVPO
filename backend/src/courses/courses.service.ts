@@ -754,7 +754,14 @@ export class CoursesService {
         id: true,
         plan: true,
         emailVerifiedAt: true,
-        entitlements: true,
+        entitlements: {
+          where: {
+            AND: [
+              { OR: [{ startsAt: null }, { startsAt: { lte: new Date() } }] },
+              { OR: [{ endsAt: null }, { endsAt: { gt: new Date() } }] },
+            ],
+          },
+        },
         purchases: { where: { status: 'paid' } },
         subscriptions: {
           where: {

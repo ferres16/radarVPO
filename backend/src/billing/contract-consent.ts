@@ -4,7 +4,8 @@
  */
 
 export const CONTRACT_TERMS_VERSION = 'terms-v2026-10-30';
-export const DIGITAL_IMMEDIATE_CONSENT_VERSION = 'digital-immediate-v2026-10-30';
+export const DIGITAL_IMMEDIATE_CONSENT_VERSION =
+  'digital-immediate-v2026-10-30';
 export const PRO_IMMEDIATE_CONSENT_VERSION = 'pro-service-start-v2026-10-30';
 
 export const CONTRACT_TERMS_TEXT =

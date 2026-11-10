@@ -71,6 +71,16 @@ const ACTIVE_SUBSCRIPTION_STATUSES: SubscriptionStatus[] = [
   SubscriptionStatus.trialing,
 ];
 
+/** Un claim 'processing' más antiguo se considera abandonado (proceso caído). */
+export const WEBHOOK_CLAIM_STALE_MS = 10 * 60 * 1000;
+
+export function isStaleWebhookClaim(
+  createdAt: Date,
+  now = new Date(),
+): boolean {
+  return now.getTime() - createdAt.getTime() > WEBHOOK_CLAIM_STALE_MS;
+}
+
 @Injectable()
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
@@ -655,14 +665,28 @@ export class BillingService {
     // Si falló antes, se puede reclamar para reintentar el fulfill.
     const existing = await this.prisma.stripeProcessedEvent.findUnique({
       where: { eventId: event.id },
-      select: { status: true },
+      select: { status: true, createdAt: true },
     });
     if (existing?.status === 'processed') {
       return { received: true, duplicate: true };
     }
     if (existing?.status === 'processing') {
-      // Otro worker lo está tratando ahora.
-      return { received: true, duplicate: true };
+      if (!isStaleWebhookClaim(existing.createdAt)) {
+        // Otro worker lo está tratando ahora.
+        return { received: true, duplicate: true };
+      }
+      // El proceso que lo reclamó murió (deploy/reinicio): se libera para que
+      // este reintento de Stripe lo complete. deleteMany condicional = atómico.
+      const released = await this.prisma.stripeProcessedEvent.deleteMany({
+        where: {
+          eventId: event.id,
+          status: 'processing',
+          createdAt: existing.createdAt,
+        },
+      });
+      if (released.count === 0) {
+        return { received: true, duplicate: true };
+      }
     }
     if (existing?.status === 'failed') {
       await this.prisma.stripeProcessedEvent.delete({
@@ -691,7 +715,11 @@ export class BillingService {
         case 'customer.subscription.created':
         case 'customer.subscription.updated':
         case 'customer.subscription.deleted':
-          await this.syncSubscription(event.data.object);
+          // Stripe no garantiza el orden: se sincroniza el estado actual, no
+          // la instantánea del evento (un evento antiguo no revierte uno nuevo).
+          await this.syncSubscription(
+            await this.latestSubscriptionState(stripe, event.data.object),
+          );
           break;
         case 'charge.refunded':
           await this.handleChargeRefunded(event.data.object);
@@ -874,7 +902,8 @@ export class BillingService {
             date: '',
             price: formatEuroAmount(session.amount_total ?? 0),
             phone: '',
-            access_until: 'Acceso mínimo 24 meses desde la compra (según condiciones).',
+            access_until:
+              'Acceso mínimo 24 meses desde la compra (según condiciones).',
             billing_summary: buildBillingSummary({
               kind: 'course',
               amountCents: session.amount_total ?? 0,
@@ -951,10 +980,13 @@ export class BillingService {
       // SMS de bienvenida PRO: solo tras email verificado + pago (una vez).
       if (emailVerified) {
         try {
-          const smsSetup = await this.notifications.enableProSmsAlerts(user.id, {
-            sourceRef: `pro_sms_configured:${session.id}`,
-            sendConfirmation: true,
-          });
+          const smsSetup = await this.notifications.enableProSmsAlerts(
+            user.id,
+            {
+              sourceRef: `pro_sms_configured:${session.id}`,
+              sendConfirmation: true,
+            },
+          );
           if (!smsSetup.enabled) {
             this.logger.warn(
               `PRO SMS auto-enable skipped for ${user.id}: ${smsSetup.reason || 'unknown'}`,
@@ -1174,7 +1206,11 @@ export class BillingService {
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'email_send_error';
-      await this.markConfirmationEmail(input.stripeSessionId, 'failed', message);
+      await this.markConfirmationEmail(
+        input.stripeSessionId,
+        'failed',
+        message,
+      );
     }
   }
 
@@ -1224,7 +1260,7 @@ export class BillingService {
     const paymentStatus = session.payment_status; // paid | unpaid | no_payment_required
     const sessionStatus = session.status; // open | complete | expired
 
-    let product: 'pro' | 'pro_pack_3m' | 'course' =
+    const product: 'pro' | 'pro_pack_3m' | 'course' =
       meta.product === 'pro_pack_3m'
         ? 'pro_pack_3m'
         : meta.product === 'course'
@@ -1295,7 +1331,8 @@ export class BillingService {
     if (failed) uiStatus = 'failed';
     // Pago OK pero email pendiente: no seguir en "processing" (evita polling/429).
     else if (confirmed || awaitingEmailVerification) uiStatus = 'confirmed';
-    else if (processing || (paid && !entitlementsReady)) uiStatus = 'processing';
+    else if (processing || (paid && !entitlementsReady))
+      uiStatus = 'processing';
     else if (sessionStatus === 'open' || !paid) uiStatus = 'pending';
 
     return {
@@ -1359,16 +1396,15 @@ export class BillingService {
       select: { id: true },
     });
     if (!access) {
-      throw new BadRequestException('No tienes acceso activo a este contenido.');
+      throw new BadRequestException(
+        'No tienes acceso activo a este contenido.',
+      );
     }
 
     const consent = await this.prisma.purchaseConsent.findFirst({
       where: {
         userId,
-        OR: [
-          { courseId: course.id },
-          { productKey: `course:${course.slug}` },
-        ],
+        OR: [{ courseId: course.id }, { productKey: `course:${course.slug}` }],
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -1407,6 +1443,20 @@ export class BillingService {
    * Sincroniza una suscripción de Stripe con `subscriptions` y con el plan del usuario.
    * `fallbackUserId` se usa cuando todavía no hay fila previa ni cliente vinculado.
    */
+  private async latestSubscriptionState(
+    stripe: Stripe,
+    snapshot: Stripe.Subscription,
+  ): Promise<Stripe.Subscription> {
+    try {
+      return await stripe.subscriptions.retrieve(snapshot.id);
+    } catch (error) {
+      if ((error as { statusCode?: number }).statusCode === 404) {
+        return snapshot;
+      }
+      throw error;
+    }
+  }
+
   private async syncSubscription(
     subscription: Stripe.Subscription,
     fallbackUserId?: string,

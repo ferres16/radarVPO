@@ -1,3 +1,4 @@
+import { isStaleWebhookClaim } from '../billing.service';
 import { SubscriptionStatus } from '@prisma/client';
 import {
   amountToCents,
@@ -213,5 +214,17 @@ describe('amount helpers', () => {
     expect(amountToCents(9.99)).toBe(999);
     expect(amountToCents('0')).toBeNull();
     expect(amountToCents('abc')).toBeNull();
+  });
+});
+
+describe('isStaleWebhookClaim', () => {
+  it('only releases processing claims older than the stale window', () => {
+    const now = new Date('2026-11-10T12:00:00Z');
+    expect(isStaleWebhookClaim(new Date('2026-11-10T11:55:00Z'), now)).toBe(
+      false,
+    );
+    expect(isStaleWebhookClaim(new Date('2026-11-10T11:40:00Z'), now)).toBe(
+      true,
+    );
   });
 });
