@@ -2,7 +2,7 @@
 
 > Generado por `scripts/generate-reference-docs.mjs`. No editar a mano: ejecuta `npm run docs:reference`.
 
-**510** ficheros versionados (`git ls-files`), excluyendo los propios documentos generados en `docs/reference/`.
+**515** ficheros versionados (`git ls-files`), excluyendo los propios documentos generados en `docs/reference/`.
 
 ## Exclusiones
 
@@ -18,15 +18,15 @@ No se inventarían porque no están versionados o se regeneran:
 
 | Tipo | Ficheros |
 |---|---|
-| Componente React | 82 |
-| Test automatizado | 56 |
-| Utilidad frontend | 54 |
+| Componente React | 83 |
+| Test automatizado | 57 |
+| Utilidad frontend | 55 |
 | DTO de validación (class-validator) | 46 |
 | Página Next (App Router) | 41 |
-| Utilidad backend | 37 |
+| Utilidad backend | 38 |
 | Migración SQL (aplicada por `prisma migrate deploy`) | 32 |
 | Servicio NestJS (lógica de negocio) | 25 |
-| Documentación | 21 |
+| Documentación | 22 |
 | Módulo NestJS | 19 |
 | Configuración de herramientas | 16 |
 | Route handler Next (proxy/servidor) | 16 |
@@ -266,11 +266,12 @@ No se inventarían porque no están versionados o se regeneran:
 | `backend/src/commerce/message-templates.service.ts` | Servicio NestJS (lógica de negocio) |
 | `backend/src/commerce/promo-rules.service.ts` | Servicio NestJS (lógica de negocio) |
 
-### `backend/src/common` (29)
+### `backend/src/common` (31)
 
 | Fichero | Tipo |
 |---|---|
 | `backend/src/common/__tests__/access-tier.unit-spec.ts` | Test automatizado |
+| `backend/src/common/__tests__/app-environment.unit-spec.ts` | Test automatizado |
 | `backend/src/common/__tests__/client-ip-throttler.unit-spec.ts` | Test automatizado |
 | `backend/src/common/__tests__/pro-alert-preferences.unit-spec.ts` | Test automatizado |
 | `backend/src/common/__tests__/promotion-content-filters.unit-spec.ts` | Test automatizado |
@@ -278,6 +279,7 @@ No se inventarían porque no están versionados o se regeneran:
 | `backend/src/common/__tests__/public-site-url.unit-spec.ts` | Test automatizado |
 | `backend/src/common/__tests__/request-origin.unit-spec.ts` | Test automatizado |
 | `backend/src/common/access-tier.ts` | Utilidad backend |
+| `backend/src/common/app-environment.ts` | Utilidad backend |
 | `backend/src/common/decorators/current-user.decorator.ts` | Utilidad backend |
 | `backend/src/common/decorators/roles.decorator.ts` | Utilidad backend |
 | `backend/src/common/filters/all-exceptions.filter.ts` | Utilidad backend |
@@ -433,7 +435,7 @@ No se inventarían porque no están versionados o se regeneran:
 | `backend/test/pdf-ocr.service.unit-spec.ts` | Test automatizado |
 | `backend/test/promotions.service.unit-spec.ts` | Test automatizado |
 
-### `docs` (14)
+### `docs` (15)
 
 | Fichero | Tipo |
 |---|---|
@@ -450,6 +452,7 @@ No se inventarían porque no están versionados o se regeneran:
 | `docs/operations.md` | Documentación |
 | `docs/performance.md` | Documentación |
 | `docs/security-audit.md` | Documentación |
+| `docs/staging.md` | Documentación |
 | `docs/ux-ui-audit.md` | Documentación |
 
 ### `docs/research` (2)
@@ -574,7 +577,7 @@ No se inventarían porque no están versionados o se regeneran:
 | `frontend/src/app/sitemap.ts` | Metadato/SEO generado |
 | `frontend/src/app/verify-email/page.tsx` | Página Next (App Router) |
 
-### `frontend/src/components` (83)
+### `frontend/src/components` (84)
 
 | Fichero | Tipo |
 |---|---|
@@ -628,6 +631,7 @@ No se inventarían porque no están versionados o se regeneran:
 | `frontend/src/components/course-tiptap-renderer.tsx` | Componente React |
 | `frontend/src/components/design-system.tsx` | Componente React |
 | `frontend/src/components/empty-state.tsx` | Componente React |
+| `frontend/src/components/environment-badge.tsx` | Componente React |
 | `frontend/src/components/guide-pdf-viewer.tsx` | Componente React |
 | `frontend/src/components/legal-document.tsx` | Componente React |
 | `frontend/src/components/mobile-nav.tsx` | Componente React |
@@ -668,7 +672,7 @@ No se inventarían porque no están versionados o se regeneran:
 |---|---|
 | `frontend/src/hooks/use-pdf-fullscreen.ts` | Hook React |
 
-### `frontend/src/lib` (83)
+### `frontend/src/lib` (84)
 
 | Fichero | Tipo |
 |---|---|
@@ -687,6 +691,7 @@ No se inventarían porque no están versionados o se regeneran:
 | `frontend/src/lib/alert-title.ts` | Utilidad frontend |
 | `frontend/src/lib/analytics.ts` | Utilidad frontend |
 | `frontend/src/lib/api.ts` | Utilidad frontend |
+| `frontend/src/lib/app-env.ts` | Utilidad frontend |
 | `frontend/src/lib/auth-cookies.ts` | Utilidad frontend |
 | `frontend/src/lib/backend-proxy-headers.test.ts` | Test automatizado |
 | `frontend/src/lib/backend-proxy-headers.ts` | Utilidad frontend |

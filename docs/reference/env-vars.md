@@ -9,6 +9,7 @@ Nombres detectados en el código (`process.env.X` y `ConfigService.get('X')`). *
 | `ALERTS_TAKE` | sí |  |  |  | `backend:alerts/alerts.service.ts` |
 | `ALLOWED_FILE_MIME_TYPES` | sí |  | sí | backend | `backend:storage/file-storage.service.ts` |
 | `API_URL` |  | sí |  | frontend | `frontend:app/cursos/[slug]/page.tsx`, `frontend:lib/backend-url.ts`, `frontend:lib/course-media-url.ts` |
+| `APP_ENV` | sí |  | sí | backend | `backend:notifications/notifications.service.ts` |
 | `AWS_ACCESS_KEY_ID` | sí |  | sí | backend | `backend/scripts/cleanup-db.ts`, `backend/scripts/cleanup-s3-assets.ts`, `backend:storage/s3-storage.service.ts` |
 | `AWS_REGION` | sí |  | sí | backend | `backend/scripts/cleanup-db.ts`, `backend/scripts/cleanup-s3-assets.ts`, `backend:storage/s3-storage.service.ts` |
 | `AWS_S3_BUCKET` | sí |  | sí | backend | `backend/scripts/cleanup-db.ts`, `backend/scripts/cleanup-s3-assets.ts`, `backend:storage/s3-storage.service.ts` |
@@ -50,6 +51,7 @@ Nombres detectados en el código (`process.env.X` y `ConfigService.get('X')`). *
 | `NEXT_PUBLIC_ADSENSE_SLOT_MOBILE_STICKY` |  | sí |  | frontend | `frontend:lib/ads.ts` |
 | `NEXT_PUBLIC_ADSENSE_SLOT_SIDEBAR` |  | sí |  | frontend | `frontend:lib/ads.ts` |
 | `NEXT_PUBLIC_API_URL` |  | sí |  | backend, frontend | `frontend:app/cursos/[slug]/page.tsx`, `frontend:lib/backend-url.ts`, `frontend:lib/course-media-url.ts` |
+| `NEXT_PUBLIC_APP_ENV` |  | sí |  | frontend | `frontend/next.config.ts`, `frontend:lib/app-env.ts` |
 | `NEXT_PUBLIC_COURSE_AUTHOR_BIO` |  | sí |  |  | `frontend:lib/offer.ts` |
 | `NEXT_PUBLIC_COURSE_AUTHOR_NAME` |  | sí |  |  | `frontend:lib/offer.ts` |
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID` |  | sí |  | frontend | `frontend:lib/marketing.ts` |

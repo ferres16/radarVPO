@@ -38,6 +38,8 @@ CI (`.github/workflows/ci.yml`) ejecuta todo lo anterior en cada push/PR, con un
 
 ## Despliegue
 
+Para probar antes de producción, ver [staging.md](./staging.md).
+
 ### Backend (Railway)
 
 `backend/railway.json`: build Nixpacks; arranque `npm --workspace backend run prisma:deploy && npm --workspace backend run start:prod`; healthcheck `GET /api/v1/healthz`; reinicio `ON_FAILURE` (10 reintentos).

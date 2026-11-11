@@ -9,6 +9,7 @@ Documento principal. Está pensado para que otro desarrollador pueda entender, o
 | [architecture.md](./architecture.md) | Componentes, módulos, controles transversales, niveles de acceso |
 | [flows.md](./flows.md) | Registro, verificación, sesión, compra, guía, suscripción, notificaciones, cancelación, baja, retención |
 | [integrations.md](./integrations.md) | Stripe, Brevo (email/SMS), S3, WhatsApp, IA, analítica y publicidad |
+| [staging.md](./staging.md) | Entorno de pruebas replicado (Railway environment + rama de Vercel), protecciones y paso a paso |
 | [operations.md](./operations.md) | Instalación, desarrollo, pruebas, despliegue, checklist de lanzamiento, rate limit, migraciones y rollback, copias y restauración, observabilidad, reembolsos, rotación de secretos |
 | [security-audit.md](./security-audit.md) | Hallazgos por severidad (fichero, causa, riesgo, corrección), verificaciones y riesgos pendientes |
 | [performance.md](./performance.md) | Mediciones antes/después y mejoras pendientes |
