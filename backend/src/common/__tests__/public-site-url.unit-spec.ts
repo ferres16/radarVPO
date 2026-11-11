@@ -26,3 +26,17 @@ describe('resolvePublicSiteUrl', () => {
     ).toBe('http://localhost:3001');
   });
 });
+
+describe('resolvePublicSiteUrl outside production', () => {
+  it('keeps a vercel.app frontend URL so test links never point to production', () => {
+    expect(
+      resolvePublicSiteUrl({
+        APP_ENV: 'staging',
+        FRONTEND_URL: 'https://radarvpo-staging.vercel.app/',
+      }),
+    ).toBe('https://radarvpo-staging.vercel.app');
+    expect(resolvePublicSiteUrl({ APP_ENV: 'staging' })).not.toContain(
+      'radarvpo.com',
+    );
+  });
+});

@@ -1,6 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AudienceType, Promotion, SubscriptionStatus } from '@prisma/client';
 import { MessageTemplatesService } from '../commerce/message-templates.service';
+import {
+  isProductionAppEnv,
+  isRecipientAllowed,
+  messagingAllowlist,
+} from '../common/app-environment';
 import { PrismaService } from '../prisma/prisma.service';
 import { normalizePhoneForSms } from './phone-normalize';
 import {
@@ -213,7 +218,13 @@ export class NotificationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly templates: MessageTemplatesService,
-  ) {}
+  ) {
+    if (!isProductionAppEnv() && messagingAllowlist() === null) {
+      this.logger.warn(
+        `APP_ENV=${process.env.APP_ENV} sin MESSAGING_ALLOWLIST: los emails/SMS no están filtrados`,
+      );
+    }
+  }
 
   isProAlertsConfigured() {
     return Boolean(this.proAlertsEnabled && this.apiKey);
@@ -1968,6 +1979,19 @@ export class NotificationsService {
     sourceRef = 'radar_vpo_pro',
     meta: DeliveryMeta = {},
   ) {
+    if (!isRecipientAllowed(target, messagingAllowlist())) {
+      await this.recordDelivery({
+        channel,
+        status: 'skipped',
+        target: target || 'unknown',
+        sourceRef,
+        errorCode: 'NON_PRODUCTION_RECIPIENT_BLOCKED',
+        detail: `APP_ENV=${process.env.APP_ENV}: destinatario fuera de MESSAGING_ALLOWLIST`,
+        ...meta,
+      });
+      return false;
+    }
+
     if (!this.apiKey) {
       await this.recordDelivery({
         channel,
@@ -2029,7 +2053,7 @@ export class NotificationsService {
 
   private async recordDelivery(input: {
     channel: string;
-    status: 'sent' | 'failed';
+    status: 'sent' | 'failed' | 'skipped';
     target: string;
     sourceRef: string;
     errorCode?: string;

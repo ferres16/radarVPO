@@ -12,6 +12,8 @@ import { SiteFooter } from "@/components/site-footer";
 import { TopNav } from "@/components/top-nav";
 import { siteConfig } from "@/lib/seo";
 import "./globals.css";
+import { EnvironmentBadge } from '@/components/environment-badge';
+import { isProductionSite } from '@/lib/app-env';
 
 const inter = Inter({
   variable: "--font-inter",
@@ -54,11 +56,11 @@ export const metadata: Metadata = {
     description: siteConfig.description,
   },
   robots: {
-    index: true,
-    follow: true,
+    index: isProductionSite,
+    follow: isProductionSite,
     googleBot: {
-      index: true,
-      follow: true,
+      index: isProductionSite,
+      follow: isProductionSite,
       "max-image-preview": "large",
       "max-snippet": -1,
       "max-video-preview": -1,
@@ -86,6 +88,7 @@ export default function RootLayout({
             </div>
             <SiteFooter />
             <CookieBanner />
+            <EnvironmentBadge />
           </ProAccessProvider>
           <ConsentedScripts vercelAnalytics={process.env.VERCEL === '1'} />
         </ConsentProvider>

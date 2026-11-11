@@ -1,4 +1,5 @@
 import { plainToInstance } from 'class-transformer';
+import { isProductionAppEnv } from '../common/app-environment';
 import {
   IsBooleanString,
   IsInt,
@@ -60,6 +61,10 @@ class EnvironmentVariables {
   @IsOptional()
   @IsString()
   APP_ENV?: string;
+
+  @IsOptional()
+  @IsString()
+  MESSAGING_ALLOWLIST?: string;
 
   @IsOptional()
   @IsString()
@@ -315,6 +320,14 @@ export function validateEnv(config: Record<string, unknown>) {
   }
 
   const stripeSecret = stringValue(config.STRIPE_SECRET_KEY);
+  if (
+    !isProductionAppEnv({ APP_ENV: stringValue(config.APP_ENV) }) &&
+    /^(sk|rk)_live_/.test(stripeSecret.trim())
+  ) {
+    throw new Error(
+      'APP_ENV is not production: use Stripe test keys (sk_test_…), never live keys',
+    );
+  }
   const stripeWebhook = stringValue(config.STRIPE_WEBHOOK_SECRET);
   if (nodeEnv === 'production' && stripeSecret && !stripeWebhook) {
     throw new Error(

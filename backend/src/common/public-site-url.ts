@@ -1,3 +1,5 @@
+import { isProductionAppEnv } from './app-environment';
+
 export const PRODUCTION_SITE_URL = 'https://www.radarvpo.com';
 
 function stripTrailingSlash(value: string) {
@@ -13,7 +15,9 @@ export function resolvePublicSiteUrl(
   }
 
   const frontend = env.FRONTEND_URL?.trim();
-  if (frontend && /vercel\.app/i.test(frontend)) {
+  // En producción una URL *.vercel.app es la de despliegue, no la pública.
+  // En pruebas sí es la pública: los enlaces no deben llevar a producción.
+  if (frontend && /vercel\.app/i.test(frontend) && isProductionAppEnv(env)) {
     return PRODUCTION_SITE_URL;
   }
 
@@ -21,5 +25,7 @@ export function resolvePublicSiteUrl(
     return stripTrailingSlash(frontend);
   }
 
-  return PRODUCTION_SITE_URL;
+  return isProductionAppEnv(env)
+    ? PRODUCTION_SITE_URL
+    : 'http://localhost:3001';
 }

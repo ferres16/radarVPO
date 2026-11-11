@@ -265,10 +265,13 @@ function DeliveryTable({ logs, empty }: { logs: DeliveryLog[]; empty: string }) 
                       className={`rounded-full px-2 py-0.5 text-xs font-bold ${
                         log.status === 'sent'
                           ? 'bg-[rgba(22,112,85,0.12)] text-[var(--green-700)]'
-                          : 'bg-red-100 text-red-800'
+                          : log.status === 'skipped'
+                            ? 'bg-amber-100 text-amber-900'
+                            : 'bg-red-100 text-red-800'
                       }`}
+                      title={log.status === 'skipped' ? 'Entorno de pruebas: destinatario fuera de MESSAGING_ALLOWLIST' : undefined}
                     >
-                      {log.status === 'sent' ? 'enviado' : 'fallido'}
+                      {log.status === 'sent' ? 'enviado' : log.status === 'skipped' ? 'bloqueado (pruebas)' : 'fallido'}
                     </span>
                   </td>
                   <td className="px-2 py-2">

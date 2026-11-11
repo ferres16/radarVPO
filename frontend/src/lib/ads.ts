@@ -1,3 +1,4 @@
+import { isProductionSite } from '@/lib/app-env';
 /**
  * Configuración AdSense.
  *
@@ -40,7 +41,7 @@ export const adUnitPlacements = {
 } as const;
 
 export const adsConfig = {
-  enabled: process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true',
+  enabled: isProductionSite && process.env.NEXT_PUBLIC_ADSENSE_ENABLED === 'true',
   clientId: process.env.NEXT_PUBLIC_ADSENSE_CLIENT_ID?.trim() || '',
   publisherId,
   slots: {

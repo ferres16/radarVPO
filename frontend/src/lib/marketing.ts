@@ -1,3 +1,4 @@
+import { isProductionSite } from '@/lib/app-env';
 /**
  * Píxeles de medición / ads (Meta + Google Analytics 4 vía gtag).
  * Nota: el snippet del compi es gtag GA4 (G-…), no un contenedor GTM-….
@@ -11,8 +12,16 @@ function envOrDefault(value: string | undefined, fallback: string) {
 
 /** IDs públicos del ad account / GA (Oct 2026). Override con env en Vercel si cambian. */
 export const marketingConfig = {
-  metaPixelId: envOrDefault(process.env.NEXT_PUBLIC_META_PIXEL_ID, '1303653491853194'),
-  gaMeasurementId: envOrDefault(process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID, 'G-EQPBRQLPQ6'),
+  // Fuera de producción no hay IDs por defecto: las pruebas no deben contaminar
+  // las conversiones ni las audiencias reales.
+  metaPixelId: envOrDefault(
+    process.env.NEXT_PUBLIC_META_PIXEL_ID,
+    isProductionSite ? '1303653491853194' : '',
+  ),
+  gaMeasurementId: envOrDefault(
+    process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
+    isProductionSite ? 'G-EQPBRQLPQ6' : '',
+  ),
   /**
    * Google Ads (AW-…). Vacío hasta configurar la etiqueta de conversión en Ads.
    * Sin esto NO hay conversiones de compra en Google Ads (solo GA4 si hay G-).

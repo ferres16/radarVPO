@@ -83,6 +83,11 @@ const nextConfig: NextConfig = {
       { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
     ];
 
+    const appEnv = process.env.NEXT_PUBLIC_APP_ENV?.trim().toLowerCase() || "production";
+    if (appEnv !== "production") {
+      securityHeaders.push({ key: "X-Robots-Tag", value: "noindex, nofollow" });
+    }
+
     if (isProduction) {
       securityHeaders.push({
         key: "Strict-Transport-Security",

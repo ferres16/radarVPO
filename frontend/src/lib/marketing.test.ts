@@ -13,6 +13,7 @@ describe('marketing config', () => {
   });
 
   it('defaults to the shared Meta Pixel and GA4 ids', async () => {
+    delete process.env.NEXT_PUBLIC_APP_ENV;
     delete process.env.NEXT_PUBLIC_META_PIXEL_ID;
     delete process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
     const { marketingConfig, hasMetaPixel, hasGoogleAnalytics } = await import('./marketing');
@@ -31,5 +32,14 @@ describe('marketing config', () => {
     expect(hasGoogleAnalytics()).toBe(false);
     expect(needsMarketingConsentCategory(false)).toBe(false);
     expect(needsMarketingConsentCategory(true)).toBe(true);
+  });
+
+  it('has no default pixel ids outside production', async () => {
+    process.env.NEXT_PUBLIC_APP_ENV = 'staging';
+    delete process.env.NEXT_PUBLIC_META_PIXEL_ID;
+    delete process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
+    const { hasMetaPixel, hasGoogleAnalytics } = await import('./marketing');
+    expect(hasMetaPixel()).toBe(false);
+    expect(hasGoogleAnalytics()).toBe(false);
   });
 });
