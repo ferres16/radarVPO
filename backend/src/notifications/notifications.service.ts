@@ -66,6 +66,8 @@ export function describeProNotifyTrigger(trigger: string | undefined): string {
       return 'Manual: un admin cambió el estado de la promoción en el backoffice.';
     case 'admin_dispatch_pending':
       return 'Manual: un admin pulsó «Enviar avisos pendientes».';
+    case 'admin_send_single':
+      return 'Manual: un admin envió este aviso concreto desde «Próximos envíos».';
     case 'admin_force_resend':
       return 'Manual: un admin forzó el reenvío.';
     case 'cron_reminder':
@@ -130,6 +132,7 @@ export type ProNotifyTrigger =
   | 'admin_create_promotion'
   | 'admin_status_change'
   | 'admin_dispatch_pending'
+  | 'admin_send_single'
   | 'admin_force_resend'
   | 'cron_reminder'
   | 'admin_simulation'
@@ -759,6 +762,16 @@ export class NotificationsService {
     return this.notifyProEvent(promotionId, 'new_publication', options);
   }
 
+  /** Never resends: an already-sent notice returns `already_sent`. */
+  async sendSingleProNotification(
+    promotionId: string,
+    kind: ProNotifyKind,
+  ): Promise<NotifyResult> {
+    return this.notifyProEvent(promotionId, kind, {
+      trigger: 'admin_send_single',
+    });
+  }
+
   async simulateProNotificationsForPromotion(
     promotionId: string,
     options: { kinds?: ProNotifyKind[]; onlyUserId?: string } = {},
@@ -1038,7 +1051,9 @@ export class NotificationsService {
         result.sent === 0
           ? result.proUsers === 0
             ? 'no_pro_users'
-            : 'brevo_delivery_failed'
+            : result.noCopy
+              ? 'missing_location_or_template'
+              : 'brevo_delivery_failed'
           : undefined,
       sent: result.sent,
       channels: result.channels,
@@ -1104,6 +1119,7 @@ export class NotificationsService {
         proUsers: recipients.length,
         emailsSent: 0,
         smsSent: 0,
+        noCopy: true,
       };
     }
 
@@ -1203,6 +1219,7 @@ export class NotificationsService {
       proUsers: recipients.length,
       emailsSent,
       smsSent,
+      noCopy: false,
     };
   }
 

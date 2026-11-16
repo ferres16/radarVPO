@@ -675,6 +675,13 @@ export class BackofficeService {
     });
   }
 
+  async sendProNotification(promotionId: string, kind: ProNotifyKind) {
+    return this.notificationsService.sendSingleProNotification(
+      promotionId,
+      kind,
+    );
+  }
+
   async previewProNotification(promotionId: string, kind: ProNotifyKind) {
     return this.notificationsService.previewProEvent(promotionId, kind);
   }
