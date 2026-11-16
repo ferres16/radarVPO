@@ -357,6 +357,18 @@ export const api = {
         promotionId,
       )}&kind=${encodeURIComponent(kind)}`,
     ),
+  sendProNotification: (promotionId: string, kind: ProNotifyPreview['kind']) =>
+    request<{
+      skipped: boolean;
+      reason?: string;
+      sent: number;
+      emailsSent?: number;
+      smsSent?: number;
+      proUsers?: number;
+    }>('/backoffice/notifications/pro-alerts/send', {
+      method: 'POST',
+      body: JSON.stringify({ promotionId, kind }),
+    }),
   getBackofficeMessageTemplatePreviews: () =>
     request<MessageTemplatePreview[]>('/backoffice/message-templates/preview'),
   syncBackofficeProSms: () =>

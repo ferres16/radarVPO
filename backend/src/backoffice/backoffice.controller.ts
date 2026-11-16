@@ -143,6 +143,14 @@ export class BackofficeController {
     );
   }
 
+  @Post('notifications/pro-alerts/send')
+  sendProNotification(@Body() dto: PreviewProNotificationDto) {
+    return this.backofficeService.sendProNotification(
+      dto.promotionId,
+      dto.kind,
+    );
+  }
+
   @Post('notifications/pro-alerts/simulate')
   simulateProAlertNotifications(
     @CurrentUser() user: CurrentUserPayload,
