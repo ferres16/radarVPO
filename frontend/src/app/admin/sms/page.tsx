@@ -18,7 +18,77 @@ import type {
 type ChannelFilter = 'all' | 'sms' | 'email';
 type StatusFilter = 'all' | 'sent' | 'failed';
 
-const HISTORY_PAGE_SIZE = 50;
+const HISTORY_PAGE_SIZE = 20;
+const CONFIRMATION_PAGE_SIZE = 10;
+
+function pageWindow(page: number, totalPages: number): Array<number | 'gap'> {
+  const pages = new Set([1, totalPages, page - 1, page, page + 1]);
+  const sorted = [...pages].filter((p) => p >= 1 && p <= totalPages).sort((a, b) => a - b);
+  const result: Array<number | 'gap'> = [];
+  sorted.forEach((p, index) => {
+    if (index > 0 && p - sorted[index - 1] > 1) result.push('gap');
+    result.push(p);
+  });
+  return result;
+}
+
+function Pager({
+  page,
+  totalPages,
+  onChange,
+  disabled,
+}: {
+  page: number;
+  totalPages: number;
+  onChange: (page: number) => void;
+  disabled?: boolean;
+}) {
+  if (totalPages <= 1) return null;
+  const base =
+    'min-w-9 rounded-full px-3 py-1.5 text-xs font-bold disabled:cursor-not-allowed disabled:opacity-40';
+  return (
+    <nav aria-label="Paginación" className="flex flex-wrap items-center gap-1.5">
+      <button
+        type="button"
+        disabled={disabled || page <= 1}
+        onClick={() => onChange(page - 1)}
+        className={`${base} border border-[var(--stroke)] bg-white text-[var(--ink)]`}
+      >
+        ← Anterior
+      </button>
+      {pageWindow(page, totalPages).map((item, index) =>
+        item === 'gap' ? (
+          <span key={`gap-${index}`} className="px-1 text-xs text-[var(--ink-soft)]">
+            …
+          </span>
+        ) : (
+          <button
+            key={item}
+            type="button"
+            disabled={disabled}
+            aria-current={item === page ? 'page' : undefined}
+            onClick={() => onChange(item)}
+            className={`${base} ${
+              item === page
+                ? 'bg-[var(--green-700)] text-white'
+                : 'border border-[var(--stroke)] bg-white text-[var(--ink)]'
+            }`}
+          >
+            {item}
+          </button>
+        ),
+      )}
+      <button
+        type="button"
+        disabled={disabled || page >= totalPages}
+        onClick={() => onChange(page + 1)}
+        className={`${base} border border-[var(--stroke)] bg-white text-[var(--ink)]`}
+      >
+        Siguiente →
+      </button>
+    </nav>
+  );
+}
 
 function formatWhen(value: string) {
   const date = new Date(value);
@@ -94,6 +164,8 @@ const SKIP_REASON_LABELS: Record<string, string> = {
   already_sent: 'Este aviso ya se envió antes (no se repetirá salvo reenvío forzado).',
   not_found: 'Promoción no encontrada.',
   missing_location_or_template: 'Falta ubicación/fecha o la plantilla está desactivada: no se enviaría.',
+  no_pro_users: 'No hay usuarios PRO activos con el email verificado.',
+  brevo_delivery_failed: 'Brevo rechazó todos los envíos (mira el historial para ver el error).',
 };
 
 function skipReasonLabel(reason?: string | null) {
@@ -227,94 +299,111 @@ function DeliveryDetail({ log }: { log: DeliveryLog }) {
   );
 }
 
-function DeliveryTable({ logs, empty }: { logs: DeliveryLog[]; empty: string }) {
+function DeliveryTable({
+  logs,
+  empty,
+  pageSize,
+}: {
+  logs: DeliveryLog[];
+  empty: string;
+  /** Paginates client-side; omit when the caller already pages server-side. */
+  pageSize?: number;
+}) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [localPage, setLocalPage] = useState(1);
 
   if (logs.length === 0) {
     return <p className="text-sm text-[var(--ink-soft)]">{empty}</p>;
   }
 
+  const localTotalPages = pageSize ? Math.max(1, Math.ceil(logs.length / pageSize)) : 1;
+  const currentPage = Math.min(localPage, localTotalPages);
+  const visible = pageSize ? logs.slice((currentPage - 1) * pageSize, currentPage * pageSize) : logs;
+
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-[var(--stroke)] text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">
-            <th className="px-2 py-2 font-semibold">Cuándo</th>
-            <th className="px-2 py-2 font-semibold">Canal</th>
-            <th className="px-2 py-2 font-semibold">Estado</th>
-            <th className="px-2 py-2 font-semibold">Destinatario</th>
-            <th className="px-2 py-2 font-semibold">Tipo</th>
-            <th className="px-2 py-2 font-semibold">Error</th>
-            <th className="px-2 py-2 font-semibold">Mensaje</th>
-          </tr>
-        </thead>
-        <tbody>
-          {logs.map((log) => {
-            const open = openId === log.id;
-            return (
-              <Fragment key={log.id}>
-                <tr className="border-b border-[var(--stroke)] align-top">
-                  <td className="whitespace-nowrap px-2 py-2">{formatWhen(log.createdAt)}</td>
-                  <td className="px-2 py-2">
-                    <span className="rounded-full bg-[var(--bg-app)] px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-[var(--ink)]">
-                      {log.channel}
-                    </span>
-                  </td>
-                  <td className="px-2 py-2">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                        log.status === 'sent'
-                          ? 'bg-[rgba(22,112,85,0.12)] text-[var(--green-700)]'
-                          : log.status === 'skipped'
-                            ? 'bg-amber-100 text-amber-900'
-                            : 'bg-red-100 text-red-800'
-                      }`}
-                      title={log.status === 'skipped' ? 'Entorno de pruebas: destinatario fuera de MESSAGING_ALLOWLIST' : undefined}
-                    >
-                      {log.status === 'sent' ? 'enviado' : log.status === 'skipped' ? 'bloqueado (pruebas)' : 'fallido'}
-                    </span>
-                  </td>
-                  <td className="px-2 py-2">
-                    <span className="font-semibold text-[var(--ink)]">{recipientLabel(log)}</span>
-                    {log.recipientUserId ? (
-                      <Link
-                        href={`/admin/users?q=${encodeURIComponent(log.recipientEmail || log.target)}`}
-                        className="mt-1 block text-xs font-semibold text-[var(--green-700)]"
+    <div className="space-y-3">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-[var(--stroke)] text-xs uppercase tracking-[0.12em] text-[var(--ink-soft)]">
+              <th className="px-2 py-2 font-semibold">Cuándo</th>
+              <th className="px-2 py-2 font-semibold">Canal</th>
+              <th className="px-2 py-2 font-semibold">Estado</th>
+              <th className="px-2 py-2 font-semibold">Destinatario</th>
+              <th className="px-2 py-2 font-semibold">Tipo</th>
+              <th className="px-2 py-2 font-semibold">Error</th>
+              <th className="px-2 py-2 font-semibold">Mensaje</th>
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map((log) => {
+              const open = openId === log.id;
+              return (
+                <Fragment key={log.id}>
+                  <tr className="border-b border-[var(--stroke)] align-top">
+                    <td className="whitespace-nowrap px-2 py-2">{formatWhen(log.createdAt)}</td>
+                    <td className="px-2 py-2">
+                      <span className="rounded-full bg-[var(--bg-app)] px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-[var(--ink)]">
+                        {log.channel}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                          log.status === 'sent'
+                            ? 'bg-[rgba(22,112,85,0.12)] text-[var(--green-700)]'
+                            : log.status === 'skipped'
+                              ? 'bg-amber-100 text-amber-900'
+                              : 'bg-red-100 text-red-800'
+                        }`}
+                        title={log.status === 'skipped' ? 'Entorno de pruebas: destinatario fuera de MESSAGING_ALLOWLIST' : undefined}
                       >
-                        Ver usuario
-                      </Link>
-                    ) : null}
-                  </td>
-                  <td className="px-2 py-2 text-xs text-[var(--ink-soft)]">
-                    {sourceLabel(log.sourceRef)}
-                    {log.promotionTitle ? (
-                      <span className="mt-1 block text-[var(--ink)]">{log.promotionTitle}</span>
-                    ) : null}
-                  </td>
-                  <td className="px-2 py-2 text-xs text-red-800">{log.errorCode || '—'}</td>
-                  <td className="px-2 py-2">
-                    <button
-                      type="button"
-                      aria-expanded={open}
-                      onClick={() => setOpenId(open ? null : log.id)}
-                      className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-bold text-[var(--ink)]"
-                    >
-                      {open ? 'Ocultar' : 'Ver'}
-                    </button>
-                  </td>
-                </tr>
-                {open ? (
-                  <tr className="border-b border-[var(--stroke)]">
-                    <td colSpan={7} className="px-2 py-3">
-                      <DeliveryDetail log={log} />
+                        {log.status === 'sent' ? 'enviado' : log.status === 'skipped' ? 'bloqueado (pruebas)' : 'fallido'}
+                      </span>
+                    </td>
+                    <td className="px-2 py-2">
+                      <span className="font-semibold text-[var(--ink)]">{recipientLabel(log)}</span>
+                      {log.recipientUserId ? (
+                        <Link
+                          href={`/admin/users?q=${encodeURIComponent(log.recipientEmail || log.target)}`}
+                          className="mt-1 block text-xs font-semibold text-[var(--green-700)]"
+                        >
+                          Ver usuario
+                        </Link>
+                      ) : null}
+                    </td>
+                    <td className="px-2 py-2 text-xs text-[var(--ink-soft)]">
+                      {sourceLabel(log.sourceRef)}
+                      {log.promotionTitle ? (
+                        <span className="mt-1 block text-[var(--ink)]">{log.promotionTitle}</span>
+                      ) : null}
+                    </td>
+                    <td className="px-2 py-2 text-xs text-red-800">{log.errorCode || '—'}</td>
+                    <td className="px-2 py-2">
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        onClick={() => setOpenId(open ? null : log.id)}
+                        className="rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-bold text-[var(--ink)]"
+                      >
+                        {open ? 'Ocultar' : 'Ver'}
+                      </button>
                     </td>
                   </tr>
-                ) : null}
-              </Fragment>
-            );
-          })}
-        </tbody>
-      </table>
+                  {open ? (
+                    <tr className="border-b border-[var(--stroke)]">
+                      <td colSpan={7} className="px-2 py-3">
+                        <DeliveryDetail log={log} />
+                      </td>
+                    </tr>
+                  ) : null}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {pageSize ? <Pager page={currentPage} totalPages={localTotalPages} onChange={setLocalPage} /> : null}
     </div>
   );
 }
@@ -418,6 +507,11 @@ export default function AdminSmsPage() {
   const totalPages = Math.max(1, Math.ceil(totalLogs / HISTORY_PAGE_SIZE));
   const rangeFrom = totalLogs === 0 ? 0 : (page - 1) * HISTORY_PAGE_SIZE + 1;
   const rangeTo = Math.min(page * HISTORY_PAGE_SIZE, totalLogs);
+
+  const goToHistoryPage = (next: number) => {
+    setPage(Math.min(Math.max(1, next), totalPages));
+    document.getElementById('historial-envios')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <main className="shell pb-16">
@@ -594,14 +688,48 @@ export default function AdminSmsPage() {
                           )}
                         </td>
                         <td className="px-2 py-2">
-                          <button
-                            type="button"
-                            aria-expanded={previewId === item.id}
-                            onClick={() => setPreviewId(previewId === item.id ? null : item.id)}
-                            className="whitespace-nowrap rounded-full bg-[var(--green-700)] px-3 py-1 text-xs font-bold text-white"
-                          >
-                            {previewId === item.id ? 'Ocultar' : 'Previsualizar'}
-                          </button>
+                          <div className="flex flex-col items-start gap-2">
+                            <button
+                              type="button"
+                              aria-expanded={previewId === item.id}
+                              onClick={() => setPreviewId(previewId === item.id ? null : item.id)}
+                              className="whitespace-nowrap rounded-full border border-[var(--stroke)] bg-white px-3 py-1 text-xs font-bold text-[var(--ink)]"
+                            >
+                              {previewId === item.id ? 'Ocultar' : 'Previsualizar'}
+                            </button>
+                            {item.state === 'ready' ? (
+                              <button
+                                type="button"
+                                disabled={Boolean(busy)}
+                                onClick={() => {
+                                  const recipients = item.channels.includes('sms')
+                                    ? `${item.emailRecipients} emails y ${item.smsRecipients} SMS`
+                                    : `${item.emailRecipients} emails`;
+                                  if (
+                                    !window.confirm(
+                                      `Se enviará «${kindLabel(item.kind)}» de «${item.title}» a usuarios PRO reales (~${recipients}). ¿Continuar?`,
+                                    )
+                                  ) {
+                                    return;
+                                  }
+                                  void runAction(
+                                    `send:${item.id}`,
+                                    () => api.sendProNotification(item.promotionId, item.kind),
+                                    (result) => {
+                                      const r = result as Awaited<ReturnType<typeof api.sendProNotification>>;
+                                      if (r.skipped) {
+                                        return `«${item.title}»: no se ha enviado. ${skipReasonLabel(r.reason)}`;
+                                      }
+                                      return `«${item.title}»: enviado (${r.emailsSent ?? 0} emails · ${r.smsSent ?? 0} SMS).`;
+                                    },
+                                  );
+                                }}
+                                className="whitespace-nowrap rounded-full bg-[var(--green-700)] px-3 py-1 text-xs font-bold text-white disabled:opacity-60"
+                              >
+                                {busy === `send:${item.id}` ? 'Enviando…' : 'Enviar ahora'}
+                              </button>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
                       {previewId === item.id ? (
@@ -698,11 +826,21 @@ export default function AdminSmsPage() {
             </p>
           </SurfaceCard>
 
-          <SurfaceCard className="space-y-3 p-4 md:p-5">
-            <h2 className="text-lg font-bold text-[var(--ink)]">Historial de envíos</h2>
-            <p className="text-sm text-[var(--ink-soft)]">
-              Cada fila es un intento real a Brevo (éxito o error), con destinatario y tipo de mensaje.
-            </p>
+          <SurfaceCard id="historial-envios" className="scroll-mt-4 space-y-3 p-4 md:p-5">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-[var(--ink)]">Historial de envíos</h2>
+                <p className="text-sm text-[var(--ink-soft)]">
+                  Cada fila es un intento real a Brevo (éxito o error), con destinatario y tipo de mensaje.
+                </p>
+                <p className="mt-1 text-xs text-[var(--ink-soft)]">
+                  {totalLogs === 0
+                    ? 'Sin registros.'
+                    : `${rangeFrom}–${rangeTo} de ${totalLogs} · ${HISTORY_PAGE_SIZE} por página`}
+                </p>
+              </div>
+              <Pager page={page} totalPages={totalPages} onChange={goToHistoryPage} disabled={Boolean(busy)} />
+            </div>
             <DeliveryTable
               logs={data?.logs ?? []}
               empty="No hay envíos con estos filtros. Cuando se mande un email o SMS aparecerá aquí."
@@ -712,24 +850,7 @@ export default function AdminSmsPage() {
                 <p className="text-xs text-[var(--ink-soft)]">
                   Página {page} de {totalPages}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={page <= 1 || Boolean(busy)}
-                    onClick={() => setPage((current) => Math.max(1, current - 1))}
-                    className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-sm font-bold text-[var(--ink)] disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    ← Anterior
-                  </button>
-                  <button
-                    type="button"
-                    disabled={page >= totalPages || Boolean(busy)}
-                    onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-                    className="rounded-full bg-[var(--green-700)] px-4 py-2 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    Siguiente →
-                  </button>
-                </div>
+                <Pager page={page} totalPages={totalPages} onChange={goToHistoryPage} disabled={Boolean(busy)} />
               </div>
             ) : null}
           </SurfaceCard>
@@ -823,6 +944,7 @@ export default function AdminSmsPage() {
             <h2 className="text-lg font-bold text-[var(--ink)]">SMS de confirmación PRO</h2>
             <DeliveryTable
               logs={data?.confirmationLogs ?? []}
+              pageSize={CONFIRMATION_PAGE_SIZE}
               empty="Todavía no hay SMS de confirmación. Usa «Enviar SMS de configuración a mí» para probar."
             />
           </SurfaceCard>
